@@ -13,9 +13,12 @@ class EventAdmin(admin.ModelAdmin):
 class SpeedRangeAdmin(admin.ModelAdmin):
     list_display = ('lower_limit', 'upper_limit',)
 
+class RouteAdmin(admin.ModelAdmin):
+    list_display = ('name', 'url',)
+
 admin.site.register(Program)
 admin.site.register(Member)
-admin.site.register(Route)
-admin.site.register(SpeedRange)
+admin.site.register(Route, RouteAdmin)
+admin.site.register(SpeedRange, SpeedRangeAdmin)
 admin.site.register(Event, EventAdmin)
 admin.site.register(Registration)
