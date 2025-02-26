@@ -1,5 +1,5 @@
-from django.db import models
 from django.core.exceptions import ValidationError
+from django.db import models
 
 
 class Member(models.Model):
@@ -8,6 +8,7 @@ class Member(models.Model):
 
     def __str__(self):
         return self.full_name
+
 
 class Program(models.Model):
     name = models.CharField(max_length=128)
@@ -52,6 +53,9 @@ class SpeedRange(models.Model):
         else:
             return f"{self.lower_limit} - {self.upper_limit} km/h"
 
+    class Meta:
+        ordering = ['lower_limit']
+
 
 class Ride(models.Model):
     name = models.CharField(max_length=128)
@@ -73,17 +77,23 @@ class Registration(models.Model):
     emergency_contact_name = models.CharField(max_length=128, blank=True)
     emergency_contact_phone = models.CharField(max_length=128, blank=True)
 
-
     def __str__(self):
-        return f"{self.full_name} - {self.event} - {self.ride.name if self.ride else 'No ride'}"
+        return f"{self.name} - {self.event} - {self.ride.name if self.ride else 'No ride'}"
 
     def clean(self):
-        # Validate that the selected speed range is available for this ride
         if self.ride and self.speed_range_preference:
             if not self.ride.speed_ranges.filter(id=self.speed_range_preference.id).exists():
                 raise ValidationError({
                     'speed_range_preference': f"The speed range '{self.speed_range_preference}' is not available for this ride."
                 })
+
+        if self.event.requires_emergency_contact:
+            if not self.emergency_contact_name or not self.emergency_contact_phone:
+                raise ValidationError({
+                    'emergency_contact_name': "This field is required as the event requires an emergency contact.",
+                    'emergency_contact_phone': "This field is required as the event requires an emergency contact."
+                })
+
 
     def save(self, *args, **kwargs):
         self.clean()
