@@ -43,7 +43,10 @@ class SpeedRange(models.Model):
     upper_limit = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.lower_limit} - {self.upper_limit} km/h"
+        if self.upper_limit is None:
+            return f"{self.lower_limit} - {self.upper_limit} km/h"
+        else:
+            return f"{self.lower_limit}+ km/h"
 
 
 class Ride(models.Model):

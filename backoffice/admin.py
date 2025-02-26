@@ -10,6 +10,9 @@ class EventAdmin(admin.ModelAdmin):
     list_display = ('name', 'starts_at', 'virtual', 'ride_leaders_wanted')
     inlines = [RideInline]
 
+class SpeedRangeAdmin(admin.ModelAdmin):
+    list_display = ('lower_limit', 'upper_limit',)
+
 admin.site.register(Program)
 admin.site.register(Member)
 admin.site.register(Route)
