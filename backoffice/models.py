@@ -26,6 +26,7 @@ class Event(models.Model):
     ride_leaders_wanted = models.BooleanField(default=True)
     requires_emergency_contact = models.BooleanField(default=True)
 
+
     def __str__(self):
         return self.name
 
