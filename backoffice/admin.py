@@ -8,10 +8,10 @@ class RideInline(admin.TabularInline):
     autocomplete_fields = ('route',)
 
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('name', 'starts_at', 'virtual', 'ride_leaders_wanted')
+    list_display = ('name', 'starts_at', 'virtual', 'ride_count')
     inlines = [RideInline]
-    date_hierarchy = 'starts_at'
     ordering = ('starts_at',)
+    date_hierarchy = 'starts_at'
     list_filter = ('virtual',)
     search_fields = ('name',)
 

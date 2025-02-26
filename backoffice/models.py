@@ -26,6 +26,9 @@ class Event(models.Model):
     ride_leaders_wanted = models.BooleanField(default=True)
     requires_emergency_contact = models.BooleanField(default=True)
 
+    @property
+    def ride_count(self):
+        return self.ride_set.count()
 
     def __str__(self):
         return self.name
