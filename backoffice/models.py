@@ -69,11 +69,22 @@ class Ride(models.Model):
 
 
 class Registration(models.Model):
+    RIDE_LEADER_YES = 'y'
+    RIDE_LEADER_NO = 'n'
+    RIDE_LEADER_NOT_APPLICABLE = 'na'
+
+    RIDE_LEADER_CHOICES = [
+        (RIDE_LEADER_YES, 'Yes'),
+        (RIDE_LEADER_NO, 'No'),
+        (RIDE_LEADER_NOT_APPLICABLE, 'N/A')
+    ]
+
     name = models.CharField(max_length=128)
     email = models.EmailField()
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     ride = models.ForeignKey(Ride, on_delete=models.CASCADE, null=True, blank=True)
     speed_range_preference = models.ForeignKey(SpeedRange, on_delete=models.CASCADE, null=True, blank=True)
+    ride_leader_preference = models.CharField(max_length=2, choices=RIDE_LEADER_CHOICES, default=RIDE_LEADER_NOT_APPLICABLE)
     emergency_contact_name = models.CharField(max_length=128, blank=True)
     emergency_contact_phone = models.CharField(max_length=128, blank=True)
 
@@ -94,6 +105,11 @@ class Registration(models.Model):
                     'emergency_contact_phone': "This field is required as the event requires an emergency contact."
                 })
 
+        if self.event.ride_leaders_wanted:
+            if not self.ride_leader_preference != self.RIDE_LEADER_NOT_APPLICABLE:
+                raise ValidationError({
+                    'ride_leader_preference': "This field is required as the event requires a ride leader."
+                })
 
     def save(self, *args, **kwargs):
         self.clean()
