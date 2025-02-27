@@ -18,7 +18,7 @@ class EventAdmin(admin.ModelAdmin):
 
 
 class SpeedRangeAdmin(admin.ModelAdmin):
-    list_display = ('lower_limit', 'upper_limit',)
+    list_display = ('range', 'lower_limit', 'upper_limit',)
 
 
 class RouteAdmin(admin.ModelAdmin):
