@@ -14,7 +14,7 @@
         {% for ride in event.ride_set.all %}
         <h2>Ride: {{ride.name}}</h2>
         <p>{{ride.description}}</p>
-        <img src="https://ridewithgps.com/routes/{{ride.route.ride_with_gps_id}}/card.png"/>
+        <img class="img-fluid" src="https://ridewithgps.com/routes/{{ride.route.ride_with_gps_id}}/card.png" />
         <p>See <a href="{{ride.route.url}}">route in Ride With GPS</a></p>
         {% endfor %}
     </div>
