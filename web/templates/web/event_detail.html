@@ -3,6 +3,7 @@
 {% block title %}Calendar{% endblock %}
 {% block content %}
     <div class="container">
+        <p><a href="{% url 'event_list' %}">Back to event list</a></p>
     <h1>{{event.name}}</h1>
         <p>Part of the {{event.program}} program.</p>
 <p>Location is {{event.location}}.</p>

@@ -21,5 +21,6 @@ from web import views
 
 urlpatterns = [
     path('calendar', views.calendar, name='calendar'),
+    path('events', views.event_list, name='event_list'),
     path('events/<int:event_id>', views.event_detail, name='event_detail'),
 ]
