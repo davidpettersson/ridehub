@@ -1,0 +1,24 @@
+{% extends 'web/_base.html' %}
+{% block title %}Calendar{% endblock %}
+{% block content %}
+    <div class="container">
+        <table class="table">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">Starts</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Location</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for event in events %}
+            <tr>
+                <td>{{ event.starts_at|date:'M j, g:i a' }}</td>
+                <td><a href="{% url 'event_detail' event.id %}">{{ event.name }}</a></td>
+                <td>{{ event.location }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

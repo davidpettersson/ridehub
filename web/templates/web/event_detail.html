@@ -1,0 +1,34 @@
+
+{% extends 'web/_base.html' %}
+{% block title %}Calendar{% endblock %}
+{% block content %}
+    <div class="container">
+    <h1>{{event.name}}</h1>
+        <p>Part of the {{event.program}} program.</p>
+<p>Location is {{event.location}}.</p>
+<p>Start time {{event.starts_at}}.</p>
+        <p>Description:</p>
+        <p>{{event.description}}</p>
+        <a class="btn btn-primary disabled" href="TODO">Register for event</a>
+        {% if event.rides %}
+        <table class="table">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">Ride</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Route</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for ride in event.rides %}
+            <tr>
+                <td>{{ride.name}}</td>
+                <td>{{ride.description}}</td>
+                <td><a href="{{ride.route.url}}">Link to route</a></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+{% endblock %}
