@@ -11,25 +11,11 @@
         <p>Description:</p>
         <p>{{event.description}}</p>
         <a class="btn btn-primary disabled" href="TODO">Register for event</a>
-        {% if event.rides %}
-        <table class="table">
-            <thead class="table-light">
-                <tr>
-                    <th scope="col">Ride</th>
-                    <th scope="col">Description</th>
-                    <th scope="col">Route</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for ride in event.rides %}
-            <tr>
-                <td>{{ride.name}}</td>
-                <td>{{ride.description}}</td>
-                <td><a href="{{ride.route.url}}">Link to route</a></td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
+        {% for ride in event.ride_set.all %}
+        <h2>Ride: {{ride.name}}</h2>
+        <p>{{ride.description}}</p>
+        <img src="https://ridewithgps.com/routes/{{ride.route.ride_with_gps_id}}/card.png"/>
+        <p>See <a href="{{ride.route.url}}">route in Ride With GPS</a></p>
+        {% endfor %}
     </div>
 {% endblock %}

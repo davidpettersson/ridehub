@@ -39,6 +39,10 @@ class Route(models.Model):
     name = models.CharField(max_length=128)
     url = models.URLField(verbose_name="Ride With GPS URL", blank=True)
 
+    def ride_with_gps_id(self):
+        parts = self.url.split('/')
+        return parts[-1] if len(parts) > 0 else None
+
     def __str__(self):
         return self.name
 
