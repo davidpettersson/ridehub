@@ -7,6 +7,7 @@ from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
 
 from backoffice.models import Event, Registration
+from ridehub import settings
 from web.forms import RegistrationForm
 
 
@@ -76,7 +77,7 @@ def _create_or_update_user(form: RegistrationForm) -> User:
 
 def _send_confirmation_email(registration: Registration) -> None:
     send_mail(
-        from_email="Ottawa Bicycle Club <noreply@ottawabicycleclub.ca>",
+        from_email=f"Ottawa Bicycle Club <{settings.EMAIL_FROM}>",
         subject=f"[OBC] Confirmed for {registration.event.name}",
         message="You are confirmed for the event.",
         recipient_list=[registration.email],

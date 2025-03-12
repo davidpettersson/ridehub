@@ -66,8 +66,10 @@ if IS_HEROKU_APP:
     EMAIL_USE_TLS = True
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', None)
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', None)
+    EMAIL_FROM = os.environ.get('EMAIL_FROM', None)
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    EMAIL_FROM = 'noreply@noreply'
 
 ROOT_URLCONF = 'ridehub.urls'
 
