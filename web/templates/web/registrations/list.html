@@ -1,0 +1,12 @@
+{% extends 'web/_base.html' %}
+{% block title %}Registrations{% endblock %}
+{% block content %}
+    <div class="container">
+        <p>Your registrations:</p>
+        <ul>
+            {% for registration in registrations %}
+            <li>{{ registration.event.name }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

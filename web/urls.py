@@ -25,5 +25,7 @@ urlpatterns = [
     path('events/<int:event_id>', views.event_detail, name='event_detail'),
     path('events', views.event_list, name='event_list'),
     path('registrations/<int:registration_id>', views.registration_detail, name='registration_detail'),
+    path('registrations/confirmed', views.registration_confirmed, name='registration_confirmed'),
+    path('registrations/already_exists', views.registration_already_exists, name='registration_already_exists'),
     path('registrations', views.registration_list, name='registration_list'),
 ]

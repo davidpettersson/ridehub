@@ -1,5 +1,6 @@
 from secrets import token_urlsafe
 
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
@@ -43,7 +44,10 @@ def absurd(msg: str = "Absurd!"):
     raise RuntimeError(msg)
 
 
-def _create_or_update_user(name: str, email: str) -> User:
+def _create_or_update_user(form: RegistrationForm) -> User:
+    name = form.cleaned_data['name']
+    email = form.cleaned_data['email']
+
     users_with_email = User.objects.filter(email=email)
     assert users_with_email.count() <= 1
 
@@ -78,9 +82,10 @@ def _send_confirmation_email(registration: Registration) -> None:
         recipient_list=[registration.email],
     )
 
-def _populate_registration_record(event: Event, form: RegistrationForm) -> Registration:
+def _create_registration(event: Event, user: User, form: RegistrationForm) -> Registration:
     registration = Registration()
     registration.event = event
+    registration.user = user
 
     registration.name = form.cleaned_data['name']
     registration.email = form.cleaned_data['email']
@@ -100,19 +105,25 @@ def _populate_registration_record(event: Event, form: RegistrationForm) -> Regis
     return registration
 
 
+def registration_confirmed(request: HttpRequest) -> HttpResponse:
+    return render(request, 'web/registrations/confirmed.html', context={})
+
+def registration_already_exists(request: HttpRequest) -> HttpResponse:
+    return render(request, 'web/registrations/already_exists.html', context={})
+
 def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedirect | HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
     if request.method == 'POST':
         form = RegistrationForm(request.POST, event=event)
         if form.is_valid():
-            registration = _populate_registration_record(event, form)
-            _create_or_update_user(registration.name, registration.email)
-            _send_confirmation_email(registration)
-            return render(request, 'web/registrations/confirmed.html', {
-                'registration': registration,
-                'event': event,
-            })
+            user = _create_or_update_user(form)
+            if Registration.objects.filter(user=user, event=event).exists():
+                return redirect('registration_already_registered')
+            else:
+                registration = _create_registration(event, user, form)
+                _send_confirmation_email(registration)
+                return redirect('registration_confirmed')
     else:
         form = RegistrationForm(event=event)
 
@@ -122,13 +133,20 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     })
 
 
+@login_required
 def registration_detail(request: HttpRequest, registration_id: int) -> HttpResponse:
     registration = get_object_or_404(Registration, id=registration_id)
+
     context = {
         'registration': registration,
     }
     return render(request, 'web/registrations/detail.html', context=context)
 
 
+@login_required
 def registration_list(request: HttpRequest) -> HttpResponse:
+    context = {
+        #'registrations': Registration.objects.filter(user=request.user).order_by('event__starts_at'),
+        'registrations': Registration.objects.all().order_by('event__starts_at'),
+    }
     return render(request, 'web/registrations/list.html', context={})
