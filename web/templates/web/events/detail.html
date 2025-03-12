@@ -10,12 +10,12 @@
 <p>Start time {{event.starts_at}}.</p>
         <p>Description:</p>
         <p>{{event.description}}</p>
-        <a class="btn btn-primary disabled" href="TODO">Register for event</a>
+        <a class="btn btn-primary" href="{% url 'registration_create' event.id %}">Register for event</a>
         {% for ride in event.ride_set.all %}
         <h2>Ride: {{ride.name}}</h2>
         <p>{{ride.description}}</p>
         <p>See <a href="{{ride.route.url}}">route in Ride With GPS</a></p>
-        <img class="img-fluid" src="https://ridewithgps.com/routes/{{ride.route.ride_with_gps_id}}/card.png" />
+        <c-rwgps-map :route="ride.route"/>
         {% endfor %}
     </div>
 {% endblock %}
