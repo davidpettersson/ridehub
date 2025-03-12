@@ -1,6 +1,7 @@
 from secrets import token_urlsafe
 
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
 
@@ -69,6 +70,14 @@ def _create_or_update_user(name: str, email: str) -> User:
     return user
 
 
+def _send_confirmation_email(registration: Registration) -> None:
+    send_mail(
+        from_email="Ottawa Bicycle Club <noreply@ottawabicycleclub.ca>",
+        subject=f"[OBC] Confirmed for {registration.event.name}",
+        message="You are confirmed for the event.",
+        recipient_list=[registration.email],
+    )
+
 def _populate_registration_record(event: Event, form: RegistrationForm) -> Registration:
     registration = Registration()
     registration.event = event
@@ -99,7 +108,11 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         if form.is_valid():
             registration = _populate_registration_record(event, form)
             _create_or_update_user(registration.name, registration.email)
-            return redirect('registration_detail', registration_id=registration.id)
+            _send_confirmation_email(registration)
+            return render(request, 'web/registrations/confirmed.html', {
+                'registration': registration,
+                'event': event,
+            })
     else:
         form = RegistrationForm(event=event)
 
