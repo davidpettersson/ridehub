@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -93,7 +94,7 @@ class Registration(models.Model):
     name = models.CharField(max_length=128)
     email = models.EmailField()
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
-    user = models.ForeignKey(Member, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     ride = models.ForeignKey(Ride, on_delete=models.CASCADE, null=True, blank=True)
     speed_range_preference = models.ForeignKey(SpeedRange, on_delete=models.CASCADE, null=True, blank=True)
     ride_leader_preference = models.CharField(max_length=2, choices=RIDE_LEADER_CHOICES, default=RIDE_LEADER_NOT_APPLICABLE)
