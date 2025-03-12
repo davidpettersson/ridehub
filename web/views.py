@@ -1,7 +1,7 @@
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
 
-from backoffice.models import Event
+from backoffice.models import Event, Registration
 from web.forms import RegistrationForm
 
 def calendar(request: HttpRequest) -> HttpResponseRedirect:
@@ -25,6 +25,25 @@ def event_list(request: HttpRequest) -> HttpResponse:
     }
     return render(request, 'web/events/list.html', context)
 
+def _populate_registration_record(event: Event, form: RegistrationForm) -> Registration:
+    registration = Registration()
+    registration.event = event
+
+    registration.name = form.cleaned_data['name']
+    registration.email = form.cleaned_data['email']
+
+    if event.has_rides:
+        registration.ride = form.cleaned_data['ride']
+        registration.speed_range_preference = form.cleaned_data['speed_range_preference']
+
+    if event.ride_leaders_wanted:
+        registration.ride_leader_preference = form.cleaned_data['ride_leader_preference']
+
+    if event.requires_emergency_contact:
+        registration.emergency_contact_name = form.cleaned_data['emergency_contact_name']
+        registration.emergency_contact_phone = form.cleaned_data['emergency_contact_phone']
+
+    return registration
 
 def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedirect | HttpResponse:
     event = get_object_or_404(Event, id=event_id)
@@ -32,9 +51,9 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     if request.method == 'POST':
         form = RegistrationForm(request.POST, event=event)
         if form.is_valid():
-            registration = form.save()  # The save method now handles event assignment
-            messages.success(request, "You've successfully registered for this event!")
-            return redirect('event_detail', event_id=event.id)
+            registration = _populate_registration_record(event, form)
+            registration.save()
+            return redirect('registration_detail', registration_id=registration.id)
     else:
         form = RegistrationForm(event=event)
 
@@ -44,5 +63,8 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     })
 
 def registration_detail(request: HttpRequest, registration_id: int) -> HttpResponse:
-    context = {}
-    return render(request, 'web/registrations/detail.html')
+    registration = get_object_or_404(Registration, id=registration_id)
+    context = {
+        'registration': registration,
+    }
+    return render(request, 'web/registrations/detail.html', context=context)

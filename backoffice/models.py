@@ -28,6 +28,10 @@ class Event(models.Model):
     requires_emergency_contact = models.BooleanField(default=True)
 
     @property
+    def has_rides(self) -> bool:
+        return self.ride_set.all().exists()
+
+    @property
     def ride_count(self):
         return self.ride_set.count()
 
@@ -99,6 +103,10 @@ class Registration(models.Model):
         return f"{self.name} - {self.event} - {self.ride.name if self.ride else 'No ride'}"
 
     def clean(self):
+        if not self.event.ride_set.exists():
+            return
+
+
         if self.ride and self.speed_range_preference:
             if not self.ride.speed_ranges.filter(id=self.speed_range_preference.id).exists():
                 raise ValidationError({
@@ -113,9 +121,9 @@ class Registration(models.Model):
                 })
 
         if self.event.ride_leaders_wanted:
-            if not self.ride_leader_preference != self.RIDE_LEADER_NOT_APPLICABLE:
+            if self.ride_leader_preference == self.RIDE_LEADER_NOT_APPLICABLE:
                 raise ValidationError({
-                    'ride_leader_preference': "This field is required as the event requires a ride leader."
+                    'ride_leader_preference': "This field is required as the event requires a ride leader preference."
                 })
 
     def save(self, *args, **kwargs):
