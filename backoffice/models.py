@@ -40,6 +40,14 @@ class Event(models.Model):
     def __str__(self):
         return self.name
 
+    def clean(self):
+        super().clean()
+
+        if self.starts_at and self.registration_closes_at:
+            if self.registration_closes_at > self.starts_at:
+                raise ValidationError({
+                    'registration_closes_at': 'Registration cannot close after the event starts.'
+                })
 
 class Route(models.Model):
     name = models.CharField(max_length=128)
@@ -109,7 +117,6 @@ class Registration(models.Model):
         if not self.event.ride_set.exists():
             return
 
-
         if self.ride and self.speed_range_preference:
             if not self.ride.speed_ranges.filter(id=self.speed_range_preference.id).exists():
                 raise ValidationError({
@@ -128,7 +135,3 @@ class Registration(models.Model):
                 raise ValidationError({
                     'ride_leader_preference': "This field is required as the event requires a ride leader preference."
                 })
-
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
