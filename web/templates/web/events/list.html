@@ -6,7 +6,7 @@
         {% for date, events in events_by_date %}
         <p><strong>{{ date|date:"l F j" }}</strong></p>
         {% for event in events %}
-        <p><a href="{% url 'event_detail' event.id %}">{{ event.starts_at|date:"P" }} - {{event.name}}</a></p>
+        <p><i class="bi bi-clock"></i> {{ event.starts_at|date:"g:i A" }} <a href="{% url 'event_detail' event.id %}">{{event.name}}</a></p>
         {% endfor %}
         {% endfor %}
     </div>
