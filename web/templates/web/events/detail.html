@@ -30,7 +30,12 @@
                 </p>
                 -->
                 <p>{{ event.description }}</p>
+                {% if registration_closed %}
+                <p class="text-danger">Sorry, registration closed {{ event.registration_closes_at|timesince }} ago.</p>
+                {% else %}
+                <p class="text-muted">Registration closes in {{ event.registration_closes_at|timeuntil }}.</p>
                 <p><a class="btn btn-primary" href="{% url 'registration_create' event.id %}">Register</a></p>
+                {% endif %}
             </div>
         </div>
 

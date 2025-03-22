@@ -23,6 +23,7 @@ class Event(models.Model):
     name = models.CharField(max_length=128)
     location = models.CharField(max_length=128, blank=True)
     starts_at = models.DateTimeField()
+    registration_closes_at = models.DateTimeField()
     description = models.TextField()
     virtual = models.BooleanField(default=False)
     ride_leaders_wanted = models.BooleanField(default=True)
