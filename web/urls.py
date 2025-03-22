@@ -20,7 +20,7 @@ from django.urls import path, include
 from web import views
 
 urlpatterns = [
-    path('calendar', views.calendar, name='calendar'),
+    path('calendar', views.redirect_to_event_list, name='calendar'),
     path('events/<int:event_id>/register', views.registration_create, name='registration_create'),
     path('events/<int:event_id>', views.event_detail, name='event_detail'),
     path('events', views.event_list, name='event_list'),
@@ -28,4 +28,5 @@ urlpatterns = [
     path('registrations/confirmed', views.registration_confirmed, name='registration_confirmed'),
     path('registrations/already_exists', views.registration_already_exists, name='registration_already_exists'),
     path('registrations', views.registration_list, name='registration_list'),
+    path('', views.redirect_to_event_list, name='index'),
 ]

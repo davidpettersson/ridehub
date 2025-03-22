@@ -11,9 +11,8 @@ from ridehub import settings
 from web.forms import RegistrationForm
 
 
-def calendar(request: HttpRequest) -> HttpResponseRedirect:
+def redirect_to_event_list(request: HttpRequest) -> HttpResponseRedirect:
     return redirect('event_list')
-
 
 def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(
