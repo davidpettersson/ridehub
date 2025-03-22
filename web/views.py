@@ -123,11 +123,8 @@ def _create_registration(event: Event, user: User, form: RegistrationForm) -> Re
     return registration
 
 
-def registration_confirmed(request: HttpRequest) -> HttpResponse:
-    return render(request, 'web/registrations/confirmed.html', context={})
-
-def registration_already_exists(request: HttpRequest) -> HttpResponse:
-    return render(request, 'web/registrations/already_exists.html', context={})
+def registration_submitted(request: HttpRequest) -> HttpResponse:
+    return render(request, 'web/registrations/submitted.html', context={})
 
 def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedirect | HttpResponse:
     event = get_object_or_404(Event, id=event_id)
@@ -136,12 +133,10 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         form = RegistrationForm(request.POST, event=event)
         if form.is_valid():
             user = _create_or_update_user(form)
-            if Registration.objects.filter(user=user, event=event).exists():
-                return redirect('registration_already_exists')
-            else:
+            if not Registration.objects.filter(user=user, event=event).exists():
                 registration = _create_registration(event, user, form)
                 _send_confirmation_email(registration)
-                return redirect('registration_confirmed')
+            return redirect('registration_submitted')
     else:
         form = RegistrationForm(event=event)
 
@@ -153,7 +148,7 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         except (ValueError, TypeError):
             pass
 
-    return render(request, 'web/events/register.html', {
+    return render(request, 'web/events/registration.html', {
         'event': event,
         'form': form,
         'selected_ride_id': selected_ride_id,

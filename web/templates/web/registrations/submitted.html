@@ -1,0 +1,9 @@
+{% extends 'web/_base.html' %}
+{% block title %}Registered{% endblock %}
+{% block content %}
+    <div class="container py-4">
+        <p>✅ Your registration has been submitted!</p>
+        <p>Please expect a confirmation email within a couple of minutes.</p>
+        <p><a href="{% url 'event_list' %}">Return to the event list</a></p>
+    </div>
+{% endblock %}

@@ -7,39 +7,58 @@
         <div class="card">
             <div class="card-body">
                 <h1>{{ event.name }}</h1>
+                <p><em>Part of the {{ event.program }} program</em></p>
                 <p>
                     <span class="d-inline"><i class="bi bi-calendar-event"></i> {{ event.starts_at|date:"l, F j, Y" }}</span>
                     <span class="px-2"></span>
                     <i class="bi bi-clock"></i> {{ event.starts_at|date:"g:i A" }}
                     <span class="px-2"></span>
-                    <span class="d-inline"><i class="bi bi-geo-alt"></i> {{ event.location }}</span>
+                    {% if event.location %}<span class="d-inline"><i class="bi bi-geo-alt"></i> {{ event.location }}</span>{% endif %}
                 </p>
+                <!--
                 <p>
                     <span class="badge text-bg-primary">{{ event.program }}</span>
                     {% if event.ride_leaders_wanted %}<span class="badge" style="background-color: orange;">Ride leaders wanted</span>{% endif %}
                     {% if event.requires_emergency_contact %}<span class="badge" style="background-color: darkred;">Requires emergency contact</span>{% endif %}
                 </p>
-            </div>
-        </div>
-
-        <div class="card my-2">
-            <div class="card-body">
-                <h2>About this event</h2>
+                -->
                 <p>{{ event.description }}</p>
-                <a class="btn btn-primary" href="{% url 'registration_create' event.id %}">Register for event</a>
+                <p><a class="btn btn-primary" href="{% url 'registration_create' event.id %}">Register</a></p>
             </div>
         </div>
 
+        <!--
+        <div class="row row-cols-1 row-cols-md-4 p-0 my-2">
+
+        {% for ride in event.ride_set.all %}
+<div class="card mr-2">
+  <c-rwgps-map :route="ride.route"/>
+  <div class="card-body">
+    <h5 class="card-title">{{ ride.name }}</h5>
+    <p>
+        {% for speed_range in ride.speed_ranges.all %}
+        <span class="badge" style="background-color: lightgreen;">{{speed_range}}</span>
+        {% endfor %}
+    </p>
+    <p class="card-text">{{ ride.description }}</p>
+    <p><i class="bi bi-map"></i> <a href="{{ride.route.url}}">{{ride.route.name}}</a></p>
+  </div>
+
+</div>
+        {% endfor %}
+
+            </div>
+
+-->
         {% for ride in event.ride_set.all %}
         <div class="card my-2">
             <div class="card-body">
                 <h3>{{ ride.name }}</h3>
-                <p>
-                    {% for speed_range in ride.speed_ranges.all %}
-                    <span class="badge" style="background-color: lightgreen;">{{speed_range}}</span>
-                    {% endfor %}
-                </p>
                 <p>{{ ride.description }}</p>
+                <p>
+                    <i class="bi bi-speedometer2"></i>
+                    {{ ride.speed_ranges.all|join:", " }}
+                </p>
                 <p><i class="bi bi-map"></i> <a href="{{ride.route.url}}">{{ride.route.name}}</a></p>
                 <xxc-rwgps-map :route="ride.route"/>
             </div>

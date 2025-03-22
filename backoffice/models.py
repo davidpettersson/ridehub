@@ -60,7 +60,7 @@ class SpeedRange(models.Model):
         if self.upper_limit is None:
             return f"{self.lower_limit}+ km/h"
         else:
-            return f"{self.lower_limit} - {self.upper_limit} km/h"
+            return f"{self.lower_limit}-{self.upper_limit} km/h"
 
     def __str__(self) -> str:
         return self.range()
