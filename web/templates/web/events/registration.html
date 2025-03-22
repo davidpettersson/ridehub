@@ -4,16 +4,27 @@
 <div class="container py-4">
     <p><a href="{% url 'event_detail' event.id %}"><i class="bi bi-arrow-left"></i> Back to event detail</a></p>
 
-    <div class="card">
-        <div class="card-body">
-            <h1>{{ event.name }}</h1>
-            <span class="d-inline"><i class="bi bi-calendar-event"></i> {{ event.starts_at|date:"l, F j, Y" }}</span>
-            <span class="px-2"></span>
-            <i class="bi bi-clock"></i> {{ event.starts_at|date:"g:i A" }}
-            <span class="px-2"></span>
-            <span class="d-inline"><i class="bi bi-geo-alt"></i> {{ event.location }}</span>
+            <div class="card">
+            <div class="card-body">
+                <h1>{{ event.name }}</h1>
+                <p><em>Part of the {{ event.program }} program</em></p>
+                <p>
+                    <span class="d-inline"><i class="bi bi-calendar-event"></i> {{ event.starts_at|date:"l, F j, Y" }}</span>
+                    <span class="px-2"></span>
+                    <i class="bi bi-clock"></i> {{ event.starts_at|date:"g:i A" }}
+                    <span class="px-2"></span>
+                    {% if event.location %}<span class="d-inline"><i class="bi bi-geo-alt"></i> {{ event.location }}</span>{% endif %}
+                </p>
+                <!--
+                <p>
+                    <span class="badge text-bg-primary">{{ event.program }}</span>
+                    {% if event.ride_leaders_wanted %}<span class="badge" style="background-color: orange;">Ride leaders wanted</span>{% endif %}
+                    {% if event.requires_emergency_contact %}<span class="badge" style="background-color: darkred;">Requires emergency contact</span>{% endif %}
+                </p>
+                -->
+                <p>{{ event.description }}</p>
+            </div>
         </div>
-    </div>
 
     <form method="post">
         {% csrf_token %}
