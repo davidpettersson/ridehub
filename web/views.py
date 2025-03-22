@@ -1,3 +1,5 @@
+from itertools import groupby
+from pprint import pprint
 from secrets import token_urlsafe
 
 from django.contrib.auth.decorators import login_required
@@ -5,6 +7,7 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import timezone
 
 from backoffice.models import Event, Registration
 from ridehub import settings
@@ -27,11 +30,25 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 
 
 def event_list(request: HttpRequest) -> HttpResponse:
-    context = {
-        'events': Event.objects.all().order_by('starts_at')
-    }
-    return render(request, 'web/events/list.html', context)
+    events = Event.objects.all().order_by('starts_at')
 
+    now = timezone.now()
+    #current_and_future_events = events.filter(starts_at__gte=now)
+    current_and_future_events = events
+
+    def starts_at_date(event):
+        return event.starts_at.date()
+
+    events_by_date = []
+    for date, events_on_date in groupby(current_and_future_events, key=starts_at_date):
+        events_by_date.append((date, list(events_on_date)))
+
+    context = {
+        'events_by_date': events_by_date
+    }
+
+    pprint(context)
+    return render(request, 'web/events/list.html', context)
 
 def _split_full_name(name: str) -> tuple[str, str]:
     if ' ' in name:
