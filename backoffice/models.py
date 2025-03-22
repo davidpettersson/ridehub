@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 
 class Member(models.Model):
@@ -34,8 +35,16 @@ class Event(models.Model):
         return self.ride_set.all().exists()
 
     @property
-    def ride_count(self):
+    def ride_count(self) -> int:
         return self.ride_set.count()
+
+    @property
+    def registration_count(self) -> int:
+        return self.registration_set.count()
+
+    @property
+    def registration_open(self) -> bool:
+        return timezone.now() < self.registration_closes_at
 
     def __str__(self):
         return self.name

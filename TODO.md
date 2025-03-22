@@ -2,10 +2,14 @@
 
 ## Admin
 
+### General
+
+ - [x] Fix cascades/protection
+ 
 ### Event records
 
  - [ ] Remove 3 empty rides at the bottom
- - [ ] Add registration closes time
+ - [x] Add registration closes time
  - [ ] Allow description to be formatted
  - [ ] Add duplication feature
  - [ ] Prevent deletion if there are registration
@@ -13,14 +17,14 @@
  
 ### Registration record
 
- - [ ] List view should indicate event, ride (if any) and the individual
- - [ ] Add filter for the above
- - [ ] Prevent deletion of records
+ - [x] List view should indicate event, ride (if any) and the individual
+ - [x] Add filter for the above
+ - [x] Prevent deletion of records
  - [ ] Add states for registration:
    - Registered = they signed up on the web page
    - Confirmed = an email has been sent out
    - Withdrawn = individual has withdrawn the registration
- - [ ] Add registration time (maybe use states?)
+ - [x] Add registration time (maybe use states?)
  - [ ] Add source IP
 
 ### Route
