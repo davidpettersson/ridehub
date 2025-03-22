@@ -6,7 +6,7 @@ from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, R
 class RideInline(admin.TabularInline):
     model = Ride
     autocomplete_fields = ('route',)
-
+    extra = 0
 
 class EventAdmin(admin.ModelAdmin):
     list_display = ('name', 'starts_at', 'virtual', 'registration_count', 'registration_open')
@@ -22,7 +22,7 @@ class SpeedRangeAdmin(admin.ModelAdmin):
 
 
 class RouteAdmin(admin.ModelAdmin):
-    list_display = ('name', 'url', 'refreshed_at', )
+    list_display = ('name', 'url', 'updated_at', )
     search_fields = ('name',)
 
 class RegistrationAdmin(admin.ModelAdmin):

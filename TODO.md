@@ -8,11 +8,11 @@
  
 ### Event records
 
- - [ ] Remove 3 empty rides at the bottom
+ - [x] Remove 3 empty rides at the bottom
  - [x] Add registration closes time
  - [ ] Allow description to be formatted
  - [ ] Add duplication feature
- - [ ] Prevent deletion if there are registration
+ - [x] Prevent deletion if there are registration
  - [ ] Add state machine to indicate action
  
 ### Registration record
@@ -29,7 +29,7 @@
 
 ### Route
 
- - [ ] Add a last refreshed at timestamp
+ - [x] Add a last refreshed at timestamp
 
 ## App
 
