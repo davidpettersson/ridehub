@@ -25,10 +25,13 @@ class RouteAdmin(admin.ModelAdmin):
     list_display = ('name', 'url',)
     search_fields = ('name',)
 
+class RegistrationAdmin(admin.ModelAdmin):
+    list_display = ('email', 'event', 'registered_at', 'ride', 'speed_range_preference')
+    search_fields = ('email', )
 
 admin.site.register(Program)
 admin.site.register(Member)
 admin.site.register(Route, RouteAdmin)
 admin.site.register(SpeedRange, SpeedRangeAdmin)
 admin.site.register(Event, EventAdmin)
-admin.site.register(Registration)
+admin.site.register(Registration, RegistrationAdmin)

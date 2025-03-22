@@ -100,6 +100,7 @@ class Registration(models.Model):
         (RIDE_LEADER_NOT_APPLICABLE, 'N/A')
     ]
 
+    registered_at = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=128)
     email = models.EmailField()
     event = models.ForeignKey(Event, on_delete=models.PROTECT)
