@@ -19,7 +19,7 @@ class Program(models.Model):
 
 
 class Event(models.Model):
-    program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    program = models.ForeignKey(Program, on_delete=models.PROTECT)
     name = models.CharField(max_length=128)
     location = models.CharField(max_length=128, blank=True)
     starts_at = models.DateTimeField()
@@ -82,7 +82,7 @@ class Ride(models.Model):
     name = models.CharField(max_length=128)
     description = models.TextField(blank=True)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
-    route = models.ForeignKey(Route, on_delete=models.CASCADE)
+    route = models.ForeignKey(Route, on_delete=models.PROTECT)
     speed_ranges = models.ManyToManyField(SpeedRange, blank=True)
 
     def __str__(self):
@@ -102,10 +102,10 @@ class Registration(models.Model):
 
     name = models.CharField(max_length=128)
     email = models.EmailField()
-    event = models.ForeignKey(Event, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    ride = models.ForeignKey(Ride, on_delete=models.CASCADE, null=True, blank=True)
-    speed_range_preference = models.ForeignKey(SpeedRange, on_delete=models.CASCADE, null=True, blank=True)
+    event = models.ForeignKey(Event, on_delete=models.PROTECT)
+    user = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True)
+    ride = models.ForeignKey(Ride, on_delete=models.PROTECT, null=True, blank=True)
+    speed_range_preference = models.ForeignKey(SpeedRange, on_delete=models.PROTECT, null=True, blank=True)
     ride_leader_preference = models.CharField(max_length=2, choices=RIDE_LEADER_CHOICES, default=RIDE_LEADER_NOT_APPLICABLE)
     emergency_contact_name = models.CharField(max_length=128, blank=True)
     emergency_contact_phone = models.CharField(max_length=128, blank=True)
