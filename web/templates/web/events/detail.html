@@ -13,7 +13,14 @@
                     <span class="px-2"></span>
                     <i class="bi bi-clock"></i> {{ event.starts_at|date:"g:i A" }}
                     <span class="px-2"></span>
-                    {% if event.location %}<span class="d-inline"><i class="bi bi-geo-alt"></i> {{ event.location }}</span>{% endif %}
+                    {% if event.location %}
+                      <i class="bi bi-geo-alt"></i>
+                      {% if event.location_url %}
+                      <a href="{{ event.location_url }}">{{ event.location }}</a>
+                      {% else %}
+                      {{ event.location }}
+                      {% endif %}
+                    {% endif %}
                 </p>
                 <!--
                 <p>
