@@ -2,7 +2,6 @@
 {% block title %}Calendar{% endblock %}
 {% block content %}
     <div class="container py-4">
-
         {% for date, events in events_by_date %}
         <p><strong>{{ date|date:"l F j" }}</strong></p>
         {% for event in events %}

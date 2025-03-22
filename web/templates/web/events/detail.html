@@ -1,21 +1,49 @@
-
 {% extends 'web/_base.html' %}
 {% block title %}Calendar{% endblock %}
 {% block content %}
-    <div class="container">
-        <p><a href="{% url 'event_list' %}">Back to event list</a></p>
-    <h1>{{event.name}}</h1>
-        <p>Part of the {{event.program}} program.</p>
-<p>Location is {{event.location}}.</p>
-<p>Start time {{event.starts_at}}.</p>
-        <p>Description:</p>
-        <p>{{event.description}}</p>
-        <a class="btn btn-primary" href="{% url 'registration_create' event.id %}">Register for event</a>
+    <div class="container py-4">
+        <p><a href="{% url 'event_list' %}"><i class="bi bi-arrow-left"></i> Back to events</a></p>
+
+        <div class="card">
+            <div class="card-body">
+                <h1>{{ event.name }}</h1>
+                <p>
+                    <span class="d-inline"><i class="bi bi-calendar-event"></i> {{ event.starts_at|date:"l, F j, Y" }}</span>
+                    <span class="px-2"></span>
+                    <i class="bi bi-clock"></i> {{ event.starts_at|date:"g:i A" }}
+                    <span class="px-2"></span>
+                    <span class="d-inline"><i class="bi bi-geo-alt"></i> {{ event.location }}</span>
+                </p>
+                <p>
+                    <span class="badge text-bg-primary">{{ event.program }}</span>
+                    {% if event.ride_leaders_wanted %}<span class="badge" style="background-color: orange;">Ride leaders wanted</span>{% endif %}
+                    {% if event.requires_emergency_contact %}<span class="badge" style="background-color: darkred;">Requires emergency contact</span>{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="card my-2">
+            <div class="card-body">
+                <h2>About this event</h2>
+                <p>{{ event.description }}</p>
+                <a class="btn btn-primary" href="{% url 'registration_create' event.id %}">Register for event</a>
+            </div>
+        </div>
+
         {% for ride in event.ride_set.all %}
-        <h2>Ride: {{ride.name}}</h2>
-        <p>{{ride.description}}</p>
-        <p>See <a href="{{ride.route.url}}">route in Ride With GPS</a></p>
-        <c-rwgps-map :route="ride.route"/>
+        <div class="card my-2">
+            <div class="card-body">
+                <h3>{{ ride.name }}</h3>
+                <p>
+                    {% for speed_range in ride.speed_ranges.all %}
+                    <span class="badge" style="background-color: lightgreen;">{{speed_range}}</span>
+                    {% endfor %}
+                </p>
+                <p>{{ ride.description }}</p>
+                <p><i class="bi bi-map"></i> <a href="{{ride.route.url}}">{{ride.route.name}}</a></p>
+                <xxc-rwgps-map :route="ride.route"/>
+            </div>
+        </div>
         {% endfor %}
     </div>
 {% endblock %}
