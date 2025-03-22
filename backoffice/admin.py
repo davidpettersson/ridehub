@@ -22,7 +22,7 @@ class SpeedRangeAdmin(admin.ModelAdmin):
 
 
 class RouteAdmin(admin.ModelAdmin):
-    list_display = ('name', 'url',)
+    list_display = ('name', 'url', 'refreshed_at', )
     search_fields = ('name',)
 
 class RegistrationAdmin(admin.ModelAdmin):

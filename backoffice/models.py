@@ -61,6 +61,7 @@ class Event(models.Model):
 class Route(models.Model):
     name = models.CharField(max_length=128)
     url = models.URLField(verbose_name="Ride With GPS URL", blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def ride_with_gps_id(self):
         parts = self.url.split('/')
