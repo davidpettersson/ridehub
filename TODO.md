@@ -27,3 +27,17 @@
 
  - [ ] Add a last refreshed at timestamp
 
+## App
+
+### Event list
+
+ - [ ] Basic event list from Claude
+
+### Event detail
+
+ - [ ] Basic event detail from Claude
+
+### Event sigup
+
+ - [ ] Basic event signup from Claude
+ - [ ] Respect the speed limits
