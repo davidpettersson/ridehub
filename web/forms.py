@@ -7,7 +7,7 @@ class RegistrationForm(forms.Form):
     email = forms.EmailField(max_length=128, required=True)
 
     def __init__(self, *args, **kwargs):
-        event = kwargs.pop('event', None)
+        event: Event = kwargs.pop('event', None)
         super().__init__(*args, **kwargs)
 
         assert event

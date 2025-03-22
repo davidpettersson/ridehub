@@ -9,7 +9,7 @@ from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 
-from backoffice.models import Event, Registration
+from backoffice.models import Event, Registration, Ride, SpeedRange
 from ridehub import settings
 from web.forms import RegistrationForm
 
@@ -100,6 +100,7 @@ def _send_confirmation_email(registration: Registration) -> None:
     )
 
 def _create_registration(event: Event, user: User, form: RegistrationForm) -> Registration:
+    pprint(form.cleaned_data)
     registration = Registration()
     registration.event = event
     registration.user = user
@@ -144,9 +145,18 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     else:
         form = RegistrationForm(event=event)
 
+    # Determine the selected ride (if any) to pre-select speed ranges
+    selected_ride_id = None
+    if request.method == 'POST' and 'ride' in request.POST and request.POST['ride']:
+        try:
+            selected_ride_id = int(request.POST['ride'])
+        except (ValueError, TypeError):
+            pass
+
     return render(request, 'web/events/register.html', {
         'event': event,
         'form': form,
+        'selected_ride_id': selected_ride_id,
     })
 
 
@@ -167,3 +177,23 @@ def registration_list(request: HttpRequest) -> HttpResponse:
         'registrations': Registration.objects.all().order_by('event__starts_at'),
     }
     return render(request, 'web/registrations/list.html', context={})
+
+def get_speed_ranges(request: HttpRequest, ride_id: int) -> HttpResponse:
+    """HTMX endpoint to get speed ranges for a specific ride"""
+    # Handle the case when no ride is selected (ride_id=0)
+    if ride_id == 0:
+        html = f'<select name="speed_range_preference" id="id_speed_range_preference" class="form-select" required disabled>'
+        html += '<option value="">Please select a ride first</option>'
+        html += '</select>'
+        return HttpResponse(html)
+        
+    ride = get_object_or_404(Ride, id=ride_id)
+    speed_ranges = ride.speed_ranges.all()
+    
+    # Create a select element with the speed ranges
+    html = f'<select name="speed_range_preference" id="id_speed_range_preference" class="form-select" required>'
+    for speed_range in speed_ranges:
+        html += f'<option value="{speed_range.id}">{speed_range}</option>'
+    html += '</select>'
+    
+    return HttpResponse(html)
