@@ -7,15 +7,17 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
+from django.template.loader import render_to_string
 from django.utils import timezone
 
-from backoffice.models import Event, Registration, Ride, SpeedRange
+from backoffice.models import Event, Registration, Ride
 from ridehub import settings
 from web.forms import RegistrationForm
 
 
 def redirect_to_event_list(request: HttpRequest) -> HttpResponseRedirect:
     return redirect('event_list')
+
 
 def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(
@@ -33,7 +35,7 @@ def event_list(request: HttpRequest) -> HttpResponse:
     events = Event.objects.all().order_by('starts_at')
 
     now = timezone.now()
-    #current_and_future_events = events.filter(starts_at__gte=now)
+    # current_and_future_events = events.filter(starts_at__gte=now)
     current_and_future_events = events
 
     def starts_at_date(event):
@@ -49,6 +51,7 @@ def event_list(request: HttpRequest) -> HttpResponse:
 
     pprint(context)
     return render(request, 'web/events/list.html', context)
+
 
 def _split_full_name(name: str) -> tuple[str, str]:
     if ' ' in name:
@@ -91,13 +94,20 @@ def _create_or_update_user(form: RegistrationForm) -> User:
     return user
 
 
-def _send_confirmation_email(registration: Registration) -> None:
+def _send_confirmation_email(host: str, registration: Registration) -> None:
+    context = {
+        'base_url': f"https://{host}",
+        'registration': registration,
+    }
+    message = render_to_string('email/confirmation.txt', context)
+
     send_mail(
         from_email=f"Ottawa Bicycle Club <{settings.EMAIL_FROM}>",
         subject=f"[OBC] Confirmed for {registration.event.name}",
-        message="You are confirmed for the event.",
+        message=message,
         recipient_list=[registration.email],
     )
+
 
 def _create_registration(event: Event, user: User, form: RegistrationForm) -> Registration:
     pprint(form.cleaned_data)
@@ -126,6 +136,7 @@ def _create_registration(event: Event, user: User, form: RegistrationForm) -> Re
 def registration_submitted(request: HttpRequest) -> HttpResponse:
     return render(request, 'web/registrations/submitted.html', context={})
 
+
 def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedirect | HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
@@ -135,7 +146,7 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
             user = _create_or_update_user(form)
             if not Registration.objects.filter(user=user, event=event).exists():
                 registration = _create_registration(event, user, form)
-                _send_confirmation_email(registration)
+                _send_confirmation_email(request.get_host(), registration)
             return redirect('registration_submitted')
     else:
         form = RegistrationForm(event=event)
@@ -168,10 +179,11 @@ def registration_detail(request: HttpRequest, registration_id: int) -> HttpRespo
 @login_required
 def registration_list(request: HttpRequest) -> HttpResponse:
     context = {
-        #'registrations': Registration.objects.filter(user=request.user).order_by('event__starts_at'),
+        # 'registrations': Registration.objects.filter(user=request.user).order_by('event__starts_at'),
         'registrations': Registration.objects.all().order_by('event__starts_at'),
     }
     return render(request, 'web/registrations/list.html', context={})
+
 
 def get_speed_ranges(request: HttpRequest, ride_id: int) -> HttpResponse:
     """HTMX endpoint to get speed ranges for a specific ride"""
@@ -181,14 +193,14 @@ def get_speed_ranges(request: HttpRequest, ride_id: int) -> HttpResponse:
         html += '<option value="">Please select a ride first</option>'
         html += '</select>'
         return HttpResponse(html)
-        
+
     ride = get_object_or_404(Ride, id=ride_id)
     speed_ranges = ride.speed_ranges.all()
-    
+
     # Create a select element with the speed ranges
     html = f'<select name="speed_range_preference" id="id_speed_range_preference" class="form-select" required>'
     for speed_range in speed_ranges:
         html += f'<option value="{speed_range.id}">{speed_range}</option>'
     html += '</select>'
-    
+
     return HttpResponse(html)
