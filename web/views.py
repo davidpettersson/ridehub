@@ -99,6 +99,7 @@ def _send_confirmation_email(host: str, registration: Registration) -> None:
         'base_url': f"https://{host}",
         'registration': registration,
     }
+
     message = render_to_string('email/confirmation.txt', context)
 
     send_mail(
@@ -108,6 +109,8 @@ def _send_confirmation_email(host: str, registration: Registration) -> None:
         recipient_list=[registration.email],
     )
 
+    registration.confirm()
+    registration.save()
 
 def _create_registration(event: Event, user: User, form: RegistrationForm) -> Registration:
     pprint(form.cleaned_data)

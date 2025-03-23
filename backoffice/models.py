@@ -130,12 +130,10 @@ class Registration(models.Model):
     @transition(field=state, source='submitted', target='confirmed')
     def confirm(self):
         self.confirmed_at = timezone.now()
-        self.save()
 
     @transition(field=state, source='confirmed', target='cancelled')
     def cancel(self):
         self.cancelled_at = timezone.now()
-        self.save()
 
     def __str__(self):
         return f"{self.name} - {self.event} - {self.ride.name if self.ride else 'No ride'}"
