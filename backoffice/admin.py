@@ -1,6 +1,7 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 
 from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration
+from backoffice.actions import cancel_event
 
 
 class RideInline(admin.TabularInline):
@@ -15,6 +16,7 @@ class EventAdmin(admin.ModelAdmin):
     date_hierarchy = 'starts_at'
     list_filter = ('virtual', 'starts_at',)
     search_fields = ('name',)
+    actions = [cancel_event]
 
 
 class SpeedRangeAdmin(admin.ModelAdmin):
