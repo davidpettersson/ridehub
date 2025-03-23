@@ -1,113 +1,130 @@
 {% extends 'web/_base.html' %}
+{% load form_filters %}
 {% block title %}Register for {{ event.name }}{% endblock %}
 {% block content %}
-<div class="container py-4">
-    <p><a href="{% url 'event_detail' event.id %}"><i class="bi bi-arrow-left"></i> Back to event detail</a></p>
+<div class="space-y-6">
+    <div class="flex items-center mb-6">
+        <a href="{% url 'event_detail' event.id %}" class="inline-flex items-center text-sm text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400">
+            <i class="bi bi-arrow-left mr-2"></i> Back to event detail
+        </a>
+    </div>
 
-            <div class="card">
-            <div class="card-body">
-                <h1>{{ event.name }}</h1>
-                <p><em>Part of the {{ event.program }} program</em></p>
-                <p>
-                    <span class="d-inline"><i class="bi bi-calendar-event"></i> {{ event.starts_at|date:"l, F j, Y" }}</span>
-                    <span class="px-2"></span>
-                    <i class="bi bi-clock"></i> {{ event.starts_at|date:"g:i A" }}
-                    <span class="px-2"></span>
-                    {% if event.location %}<span class="d-inline"><i class="bi bi-geo-alt"></i> {{ event.location }}</span>{% endif %}
-                </p>
-                <!--
-                <p>
-                    <span class="badge text-bg-primary">{{ event.program }}</span>
-                    {% if event.ride_leaders_wanted %}<span class="badge" style="background-color: orange;">Ride leaders wanted</span>{% endif %}
-                    {% if event.requires_emergency_contact %}<span class="badge" style="background-color: darkred;">Requires emergency contact</span>{% endif %}
-                </p>
-                -->
+    <div class="card">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">{{ event.name }}</h1>
+            <p class="text-sm text-primary-600 dark:text-primary-400 mb-4">{{ event.program }}</p>
+            
+            <div class="flex flex-wrap items-center gap-4 mb-6 text-sm">
+                <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
+                    <i class="bi bi-calendar-event mr-2"></i>
+                    <span>{{ event.starts_at|date:"l, F j, Y" }}</span>
+                </div>
+                
+                <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
+                    <i class="bi bi-clock mr-2"></i>
+                    <span>{{ event.starts_at|date:"g:i A" }}</span>
+                </div>
+                
+                {% if event.location %}
+                <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
+                    <i class="bi bi-geo-alt mr-2"></i>
+                    <span>{{ event.location }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="prose prose-gray dark:prose-invert max-w-none">
                 <p>{{ event.description }}</p>
             </div>
         </div>
+    </div>
 
-    <form method="post">
+    <form method="post" class="space-y-6">
         {% csrf_token %}
 
-        <div class="card my-4">
-            <div class="card-body">
-                <h2>Details</h2>
+        <div class="card">
+            <div class="p-6">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Registration Details</h2>
 
-        {% if messages %}
-        <div class="alert alert-success">
-            {% for message in messages %}
-                {{ message }}
-            {% endfor %}
-        </div>
-        {% endif %}
+                {% if messages %}
+                <div class="mb-6 p-4 bg-green-50 dark:bg-green-900/30 rounded-md text-green-700 dark:text-green-400">
+                    {% for message in messages %}
+                        {{ message }}
+                    {% endfor %}
+                </div>
+                {% endif %}
 
-        {% for field in form %}
-            {% if field.name == 'event' %}
-                {{ field }} <!-- Hidden field, no need for label -->
-            {% elif field.name == 'ride_leader_preference' %}
-                <div class="mb-3">
-                    <label class="form-label">{{ field.label }}</label>
-                    <div>
-                        {% for radio in field %}
-                        <div class="form-check">
-                            {{ radio.tag }}
-                            <label class="form-check-label" for="{{ radio.id_for_label }}">
-                                {{ radio.choice_label }}
-                            </label>
+                <div class="space-y-4">
+                {% for field in form %}
+                    {% if field.name == 'event' %}
+                        {{ field }} <!-- Hidden field, no need for label -->
+                    {% elif field.name == 'ride_leader_preference' %}
+                        <div class="space-y-2">
+                            <label class="form-label">{{ field.label }}</label>
+                            <div class="space-y-2">
+                                {% for radio in field %}
+                                <div class="flex items-center">
+                                    {{ radio.tag }}
+                                    <label for="{{ radio.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                        {{ radio.choice_label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if field.errors %}
+                            <div class="text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                            {% endif %}
                         </div>
-                        {% endfor %}
-                    </div>
-                    {% if field.errors %}
-                    <div class="text-danger">{{ field.errors }}</div>
+                    {% elif field.name == 'ride' %}
+                        <div class="space-y-2">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            <select name="ride" id="id_ride" class="form-select">
+                                <option value="">Select a ride</option>
+                                {% for ride in field.field.queryset %}
+                                    <option value="{{ ride.id }}" 
+                                           {% if field.value == ride.id %}selected{% endif %}
+                                           >{{ ride }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if field.errors %}
+                            <div class="text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                            {% endif %}
+                            {% if field.help_text %}
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    {% elif field.name == 'speed_range_preference' %}
+                        <div class="space-y-2">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            <div id="speed-range-container">
+                                {{ field }}
+                            </div>
+                            {% if field.errors %}
+                            <div class="text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                            {% endif %}
+                            {% if field.help_text %}
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="space-y-2">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field|addclass:"form-input" }}
+                            {% if field.errors %}
+                            <div class="text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                            {% endif %}
+                            {% if field.help_text %}
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</div>
+                            {% endif %}
+                        </div>
                     {% endif %}
+                {% endfor %}
                 </div>
-            {% elif field.name == 'ride' %}
-                <div class="mb-3">
-                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                    <select name="ride" id="id_ride" class="form-select" required>
-                        {% for ride in field.field.queryset %}
-                            <option value="{{ ride.id }}" 
-                                    {% if field.value == ride.id %}selected{% endif %}
-                                    >{{ ride }}</option>
-                        {% endfor %}
-                    </select>
-                    {% if field.errors %}
-                    <div class="text-danger">{{ field.errors }}</div>
-                    {% endif %}
-                    {% if field.help_text %}
-                    <div class="form-text">{{ field.help_text }}</div>
-                    {% endif %}
-                </div>
-            {% elif field.name == 'speed_range_preference' %}
-                <div class="mb-3">
-                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                    <div id="speed-range-container">
-                        {{ field }}
-                    </div>
-                    {% if field.errors %}
-                    <div class="text-danger">{{ field.errors }}</div>
-                    {% endif %}
-                    {% if field.help_text %}
-                    <div class="form-text">{{ field.help_text }}</div>
-                    {% endif %}
-                </div>
-            {% else %}
-                <div class="mb-3">
-                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.errors %}
-                    <div class="text-danger">{{ field.errors }}</div>
-                    {% endif %}
-                    {% if field.help_text %}
-                    <div class="form-text">{{ field.help_text }}</div>
-                    {% endif %}
-                </div>
-            {% endif %}
-        {% endfor %}
-
             </div>
         </div>
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <div class="flex justify-end">
+            <button type="submit" class="btn-primary">Complete Registration</button>
+        </div>
     </form>
 </div>
 
