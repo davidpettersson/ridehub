@@ -111,21 +111,22 @@ class Registration(models.Model):
         (RIDE_LEADER_NOT_APPLICABLE, 'N/A')
     ]
 
+    name = models.CharField(max_length=128)
+    email = models.EmailField()
+    event = models.ForeignKey(Event, on_delete=models.PROTECT)
+    ride = models.ForeignKey(Ride, on_delete=models.PROTECT, null=True, blank=True)
+    speed_range_preference = models.ForeignKey(SpeedRange, on_delete=models.PROTECT, null=True, blank=True)
+    ride_leader_preference = models.CharField(max_length=2, choices=RIDE_LEADER_CHOICES, default=RIDE_LEADER_NOT_APPLICABLE)
+    emergency_contact_name = models.CharField(max_length=128, blank=True)
+    emergency_contact_phone = models.CharField(max_length=128, blank=True)
+
     state = FSMField(default='submitted', protected=True)
 
     registered_at = models.DateTimeField(auto_now_add=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
 
-    name = models.CharField(max_length=128)
-    email = models.EmailField()
-    event = models.ForeignKey(Event, on_delete=models.PROTECT)
     user = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True)
-    ride = models.ForeignKey(Ride, on_delete=models.PROTECT, null=True, blank=True)
-    speed_range_preference = models.ForeignKey(SpeedRange, on_delete=models.PROTECT, null=True, blank=True)
-    ride_leader_preference = models.CharField(max_length=2, choices=RIDE_LEADER_CHOICES, default=RIDE_LEADER_NOT_APPLICABLE)
-    emergency_contact_name = models.CharField(max_length=128, blank=True)
-    emergency_contact_phone = models.CharField(max_length=128, blank=True)
 
     @transition(field=state, source='submitted', target='confirmed')
     def confirm(self):
