@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from django_fsm import FSMField, transition
 
 
 class Member(models.Model):
@@ -110,7 +111,12 @@ class Registration(models.Model):
         (RIDE_LEADER_NOT_APPLICABLE, 'N/A')
     ]
 
+    state = FSMField(default='submitted', protected=True)
+
     registered_at = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
     name = models.CharField(max_length=128)
     email = models.EmailField()
     event = models.ForeignKey(Event, on_delete=models.PROTECT)
@@ -120,6 +126,16 @@ class Registration(models.Model):
     ride_leader_preference = models.CharField(max_length=2, choices=RIDE_LEADER_CHOICES, default=RIDE_LEADER_NOT_APPLICABLE)
     emergency_contact_name = models.CharField(max_length=128, blank=True)
     emergency_contact_phone = models.CharField(max_length=128, blank=True)
+
+    @transition(field=state, source='submitted', target='confirmed')
+    def confirm(self):
+        self.confirmed_at = timezone.now()
+        self.save()
+
+    @transition(field=state, source='confirmed', target='cancelled')
+    def cancel(self):
+        self.cancelled_at = timezone.now()
+        self.save()
 
     def __str__(self):
         return f"{self.name} - {self.event} - {self.ride.name if self.ride else 'No ride'}"
