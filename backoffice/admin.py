@@ -4,10 +4,11 @@ from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, R
 from backoffice.actions import cancel_event, duplicate_event
 
 
-class RideInline(admin.TabularInline):
+class RideInline(admin.StackedInline):
     model = Ride
     autocomplete_fields = ('route',)
     extra = 0
+
 
 class EventAdmin(admin.ModelAdmin):
     list_display = ('name', 'starts_at', 'virtual', 'registration_count', 'registration_open')
