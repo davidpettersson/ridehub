@@ -44,8 +44,8 @@ class Event(models.Model):
         return self.registration_set.count()
 
     @property
-    def registration_open(self) -> bool:
-        return timezone.now() < self.registration_closes_at
+    def registration_open(self) -> str:
+        return 'Yes' if timezone.now() < self.registration_closes_at else 'No'
 
     def __str__(self):
         return self.name
