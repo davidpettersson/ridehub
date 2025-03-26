@@ -10,9 +10,18 @@ class RideInline(admin.StackedInline):
     extra = 0
 
 
+class RegistrationInline(admin.TabularInline):
+    model = Registration
+    readonly_fields = ('state', 'name', 'email', 'ride')
+    fields = readonly_fields
+    can_delete = False
+    extra = 0
+    max_num = 0
+
+
 class EventAdmin(admin.ModelAdmin):
     list_display = ('name', 'starts_at', 'virtual', 'registration_count', 'registration_open')
-    inlines = [RideInline]
+    inlines = [RideInline, RegistrationInline]
     ordering = ('starts_at',)
     date_hierarchy = 'starts_at'
     list_filter = ('virtual', 'starts_at',)

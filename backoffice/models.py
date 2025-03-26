@@ -137,7 +137,7 @@ class Registration(models.Model):
         self.cancelled_at = timezone.now()
 
     def __str__(self):
-        return f"{self.name} - {self.event} - {self.ride.name if self.ride else 'No ride'}"
+        return f"{self.name} for {self.event}"
 
     def clean(self):
         if not self.event.ride_set.exists():
