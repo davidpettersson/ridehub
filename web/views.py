@@ -11,6 +11,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from backoffice.models import Event, Registration, Ride
+from backoffice.tasks import perform_task_in_job
 from ridehub import settings
 from web.forms import RegistrationForm
 
@@ -210,3 +211,9 @@ def get_speed_ranges(request: HttpRequest, ride_id: int) -> HttpResponse:
     html += '</select>'
 
     return HttpResponse(html)
+
+
+def trigger_task(request: HttpRequest) -> HttpResponse:
+    print('TRIGGER_TASK')
+    perform_task_in_job.delay()
+    return HttpResponse('OK')
