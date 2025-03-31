@@ -7,6 +7,10 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ridehub.settings')
 
 app = Celery('ridehub')
 
+# Basic Redis config
+app.conf.update(broker_url=os.environ.get('REDIS_URL', 'redis://'),
+                result_backend=os.environ.get('REDIS_URL', 'redis://'))
+
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.
 # - namespace='CELERY' means all celery-related configuration keys
