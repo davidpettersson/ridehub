@@ -17,7 +17,7 @@ if redis_url.startswith('rediss://'):
 
     # Only add ssl_cert_reqs if it's not already present
     if 'ssl_cert_reqs' not in query_params:
-        query_params['ssl_cert_reqs'] = ['CERT_REQUIRED']
+        query_params['ssl_cert_reqs'] = ['CERT_NONE']
 
         # Rebuild the URL with the added parameter
         new_query = urlencode(query_params, doseq=True)
