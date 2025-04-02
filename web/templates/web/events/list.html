@@ -1,0 +1,47 @@
+{% extends 'web/_base.html' %}
+{% block title %}Events Calendar{% endblock %}
+{% block content %}
+    <div class="space-y-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Upcoming Events</h1>
+        
+        {% for date, events in events_by_date %}
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                {{ date|date:"l, F j" }}
+            </h2>
+            <div class="space-y-3">
+                {% for event in events %}
+                <a href="{% url 'event_detail' event.id %}" class="block hover:no-underline">
+                    <div class="card hover:shadow-lg transition-shadow duration-300">
+                        <div class="p-4">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1 hover:text-primary-600 dark:hover:text-primary-400">
+                                        {{event.name}}
+                                    </h3>
+                                    <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                        <i class="bi bi-clock mr-1.5"></i>
+                                        <span>{{ event.starts_at|date:"g:i A" }}</span>
+                                        
+                                        {% if event.location %}
+                                        <span class="mx-2">•</span>
+                                        <i class="bi bi-geo-alt mr-1.5"></i>
+                                        <span>{{ event.location }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <span class="badge badge-primary">{{ event.program }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="py-12 text-center">
+            <p class="text-gray-500 dark:text-gray-400">No upcoming events scheduled. Check back soon!</p>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}
