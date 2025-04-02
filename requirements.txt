@@ -8,3 +8,4 @@ beartype~=0.20.0
 django-fsm-2~=4.0.0
 celery~=5.4.0
 redis~=5.2.1
+django-celery-beat~=2.7.0
