@@ -21,15 +21,58 @@ class Program(models.Model):
 
 
 class Event(models.Model):
-    program = models.ForeignKey(Program, on_delete=models.PROTECT)
-    name = models.CharField(max_length=128)
-    location = models.CharField(max_length=128, blank=True)
-    starts_at = models.DateTimeField()
-    registration_closes_at = models.DateTimeField()
-    description = models.TextField()
-    virtual = models.BooleanField(default=False)
-    ride_leaders_wanted = models.BooleanField(default=True)
-    requires_emergency_contact = models.BooleanField(default=True)
+    program = models.ForeignKey(
+        Program,
+        on_delete=models.PROTECT,
+    )
+
+    name = models.CharField(
+        max_length=128,
+    )
+
+    location = models.CharField(
+        max_length=128,
+        blank=True,
+        help_text='Physical (e.g. "Andrew Haydon Park") or virtual location ("Teams").'
+    )
+
+    location_url = models.URLField(
+        blank=True,
+        verbose_name='Location URL',
+        help_text='If provided, users will get a link to the location. Typically, you can place a Google Maps location here.',
+    )
+
+    starts_at = models.DateTimeField(
+        help_text='Start time of the event',
+    )
+
+    registration_closes_at = models.DateTimeField(
+        help_text='Closing time of the registration',
+    )
+
+    registration_link = models.URLField(
+        blank=True,
+        help_text='Enter the external registration link if any. If no link is provided, RideHub will manage registrations.'
+    )
+
+    description = models.TextField(
+        help_text='Description of the event to share with members.'
+    )
+
+    virtual = models.BooleanField(
+        default=False,
+        help_text='Mark virtual if it happens online, via Teams, Zwift or other electronic means.'
+    )
+
+    ride_leaders_wanted = models.BooleanField(
+        default=True,
+        help_text='Check if you want to allow members to sign up as ride leaders.'
+    )
+
+    requires_emergency_contact = models.BooleanField(
+        default=True,
+        help_text='Check if you require registrations to provide emergency contact details.'
+    )
 
     @property
     def has_rides(self) -> bool:
@@ -146,7 +189,7 @@ class Registration(models.Model):
         if self.ride and self.speed_range_preference:
             if not self.ride.speed_ranges.filter(id=self.speed_range_preference.id).exists():
                 raise ValidationError({
-                    'speed_range_preference': f"The speed range '{self.speed_range_preference}' is not available for this ride."
+                    'speed_range_preference': f"{self.id} The speed range '{self.speed_range_preference}' is not available for {self.ride}."
                 })
 
         if self.event.requires_emergency_contact:
