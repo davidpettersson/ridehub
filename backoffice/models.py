@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django_fsm import FSMField, transition
+from django_prose_editor.fields import ProseEditorField
 
 
 class Member(models.Model):
@@ -55,7 +56,7 @@ class Event(models.Model):
         help_text='Enter the external registration link if any. If no link is provided, RideHub will manage registrations.'
     )
 
-    description = models.TextField(
+    description = ProseEditorField(
         help_text='Description of the event to share with members.'
     )
 
@@ -133,11 +134,29 @@ class SpeedRange(models.Model):
 
 
 class Ride(models.Model):
-    name = models.CharField(max_length=128)
-    description = models.TextField(blank=True)
-    event = models.ForeignKey(Event, on_delete=models.CASCADE)
-    route = models.ForeignKey(Route, on_delete=models.PROTECT)
-    speed_ranges = models.ManyToManyField(SpeedRange, blank=True)
+    name = models.CharField(
+        max_length=128,
+        help_text='Ride name, for example "A Ride Long"'
+    )
+
+    description = ProseEditorField(
+        blank=True,
+    )
+
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+    )
+
+    route = models.ForeignKey(
+        Route,
+        on_delete=models.PROTECT,
+    )
+
+    speed_ranges = models.ManyToManyField(
+        SpeedRange,
+        blank=True,
+    )
 
     def __str__(self):
         return self.name
