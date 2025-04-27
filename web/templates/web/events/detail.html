@@ -15,9 +15,6 @@
                         <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">{{ event.name }}</h1>
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ event.program }}</p>
                     </div>
-                    {% if not registration_closed %}
-                    <a href="{% url 'registration_create' event.id %}" class="btn-primary">Register</a>
-                    {% endif %}
                 </div>
                 
                 <div class="flex flex-wrap items-center gap-4 mb-4 text-sm">
@@ -61,13 +58,21 @@
                     <p>{{ event.description }}</p>
                 </div>
                 
-                {% if registration_closed %}
-                <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/30 rounded-md">
-                    <p class="text-red-700 dark:text-red-400">Sorry, registration closed {{ event.registration_closes_at|timesince }} ago.</p>
+                {% if not registration_closed %}
+                <div class="mt-6 mb-4 flex items-center">
+                    {% if event.registration_link %}
+                    <a href="{{ event.registration_link }}" class="btn-primary py-3 px-6" target="_blank" rel="noopener noreferrer">
+                        Register <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'registration_create' event.id %}" class="btn-primary py-3 px-6">Register</a>
+                    {% endif %}
+                    
+                    <span class="ml-4 text-gray-600 dark:text-gray-400 text-sm">Registration closes in {{ event.registration_closes_at|timeuntil }}.</span>
                 </div>
                 {% else %}
-                <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-md">
-                    <p class="text-gray-600 dark:text-gray-400">Registration closes in {{ event.registration_closes_at|timeuntil }}.</p>
+                <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/30 rounded-md">
+                    <p class="text-red-700 dark:text-red-400">Sorry, registration closed {{ event.registration_closes_at|timesince }} ago.</p>
                 </div>
                 {% endif %}
             </div>
