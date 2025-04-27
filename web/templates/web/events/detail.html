@@ -13,11 +13,8 @@
                 <div class="flex justify-between items-start">
                     <div>
                         <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">{{ event.name }}</h1>
-                        <p class="text-sm text-primary-600 dark:text-primary-400 mb-4">{{ event.program }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ event.program }}</p>
                     </div>
-                    {% if not registration_closed %}
-                    <a href="{% url 'registration_create' event.id %}" class="btn-primary">Register</a>
-                    {% endif %}
                 </div>
                 
                 <div class="flex flex-wrap items-center gap-4 mb-4 text-sm">
@@ -31,11 +28,16 @@
                         <span>{{ event.starts_at|date:"g:i A" }}</span>
                     </div>
                     
-                    {% if event.location %}
+                    {% if event.location or event.location_url %}
                     <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
                         <i class="bi bi-geo-alt mr-2"></i>
                         {% if event.location_url %}
-                        <a href="{{ event.location_url }}" class="hover:text-primary-600 dark:hover:text-primary-400">{{ event.location }}</a>
+                        <a href="{{ event.location_url }}" 
+                           class="text-primary-600 underline hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center"
+                           target="_blank" rel="noopener noreferrer">
+                            {% if event.location %}{{ event.location }}{% else %}See location{% endif %}
+                            <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
+                        </a>
                         {% else %}
                         <span>{{ event.location }}</span>
                         {% endif %}
@@ -56,13 +58,21 @@
                     <p>{{ event.description }}</p>
                 </div>
                 
-                {% if registration_closed %}
-                <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/30 rounded-md">
-                    <p class="text-red-700 dark:text-red-400">Sorry, registration closed {{ event.registration_closes_at|timesince }} ago.</p>
+                {% if not registration_closed %}
+                <div class="mt-6 mb-4 flex items-center">
+                    {% if event.registration_link %}
+                    <a href="{{ event.registration_link }}" class="btn-primary" target="_blank" rel="noopener noreferrer">
+                        Register <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'registration_create' event.id %}" class="btn-primary">Register</a>
+                    {% endif %}
+                    
+                    <span class="ml-4 text-gray-600 dark:text-gray-400 text-sm">Registration closes in {{ event.registration_closes_at|timeuntil }}.</span>
                 </div>
                 {% else %}
-                <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-md">
-                    <p class="text-gray-600 dark:text-gray-400">Registration closes in {{ event.registration_closes_at|timeuntil }}.</p>
+                <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/30 rounded-md">
+                    <p class="text-red-700 dark:text-red-400">Sorry, registration closed {{ event.registration_closes_at|timesince }} ago.</p>
                 </div>
                 {% endif %}
             </div>
