@@ -51,9 +51,9 @@ class Event(models.Model):
         help_text='Closing time of the registration',
     )
 
-    registration_link = models.URLField(
+    external_registration_url = models.URLField(
         blank=True,
-        help_text='Enter the external registration link if any. If no link is provided, RideHub will manage registrations.'
+        help_text='When an external registration URL is provided, registration will be delegated to the external system',
     )
 
     description = ProseEditorField(
