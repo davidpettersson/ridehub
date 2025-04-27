@@ -61,11 +61,11 @@
                 {% if not registration_closed %}
                 <div class="mt-6 mb-4 flex items-center">
                     {% if event.registration_link %}
-                    <a href="{{ event.registration_link }}" class="btn-primary py-3 px-6" target="_blank" rel="noopener noreferrer">
+                    <a href="{{ event.registration_link }}" class="btn-primary" target="_blank" rel="noopener noreferrer">
                         Register <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
                     </a>
                     {% else %}
-                    <a href="{% url 'registration_create' event.id %}" class="btn-primary py-3 px-6">Register</a>
+                    <a href="{% url 'registration_create' event.id %}" class="btn-primary">Register</a>
                     {% endif %}
                     
                     <span class="ml-4 text-gray-600 dark:text-gray-400 text-sm">Registration closes in {{ event.registration_closes_at|timeuntil }}.</span>
