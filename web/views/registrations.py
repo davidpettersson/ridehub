@@ -72,6 +72,7 @@ def _send_confirmation_email(host: str, registration: Registration) -> None:
     registration.confirm()
     registration.save()
 
+
 def _create_registration(event: Event, user: User, form: RegistrationForm) -> Registration:
     pprint(form.cleaned_data)
     registration = Registration()
