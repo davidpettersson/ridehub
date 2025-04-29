@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,6 +42,15 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'sesame.backends.ModelBackend',
+]
+
+SESAME_MAX_AGE = 60 * 5
+LOGIN_REDIRECT_URL = "/hello/"
+LOGIN_URL = "/login/"
 
 if IS_HEROKU_APP:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

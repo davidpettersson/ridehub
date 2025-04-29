@@ -1,11 +1,15 @@
 from django.urls import path
+from sesame.views import LoginView
 
 from web.views.debug import trigger_task
 from web.views.events import redirect_to_event_list, event_detail, event_list
+from web.views.login import LoginFormView
 from web.views.registrations import registration_create, registration_detail, registration_submitted, registration_list, \
     get_speed_ranges
 
 urlpatterns = [
+    path("login/", LoginFormView.as_view(), name="login_form"),
+    path("login/auth/", LoginView.as_view(), name="login"),
     path('debug/trigger_task', trigger_task),
     path('calendar', redirect_to_event_list, name='calendar'),
     path('events/<int:event_id>/registration', registration_create, name='registration_create'),
