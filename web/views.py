@@ -61,7 +61,7 @@ def _split_full_name(name: str) -> tuple[str, str]:
         return name, ''
 
 
-def absurd(msg: str = "Absurd!"):
+def _absurd(msg: str = "Absurd!"):
     raise RuntimeError(msg)
 
 
@@ -90,7 +90,7 @@ def _create_or_update_user(form: RegistrationForm) -> User:
             user.last_name = last_name
             user.save()
         case _:
-            absurd()
+            _absurd()
 
     return user
 
