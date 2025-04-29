@@ -62,9 +62,9 @@ def _send_confirmation_email(host: str, registration: Registration) -> None:
     }
 
     EmailService.send_email(
-        template_name='confirmation.txt',
+        template_name='confirmation',
         context=context,
-        subject=f"[OBC] Confirmed for {registration.event.name}",
+        subject=f"Confirmed for {registration.event.name}",
         recipient_list=[registration.email],
     )
 

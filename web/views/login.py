@@ -35,9 +35,9 @@ class LoginFormView(FormView):
         }
         
         EmailService.send_email(
-            template_name='login_link.txt',
+            template_name='login_link',
             context=context,
-            subject="[OBC] Log in to our app",
+            subject="Log in to our app",
             recipient_list=[user.email],
         )
 

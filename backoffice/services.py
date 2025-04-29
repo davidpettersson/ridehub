@@ -26,22 +26,33 @@ class EmailService:
         Args:
             template_name: The name of the template to use (relative to templates/email/)
             context: The context to render the template with
-            subject: The subject of the email
+            subject: The subject of the email (will be prefixed with [OBC] if not already)
             recipient_list: List of recipient email addresses
             from_email: The from email address (defaults to settings.EMAIL_FROM)
             bcc: List of BCC email addresses
         """
-        # Render the template with the provided context
-        message = render_to_string(f'email/{template_name}', context)
+        # Get the template name without extension
+        template_base = template_name.rsplit('.', 1)[0]
+        
+        # Render the HTML template with the provided context
+        html_message = render_to_string(f'email/{template_base}.html', context)
+        
+        # Also render a plain text version as fallback
+        text_message = render_to_string(f'email/{template_base}.txt', context)
         
         # Use default from email if not provided
         if from_email is None:
             from_email = f"Ottawa Bicycle Club <{settings.EMAIL_FROM}>"
             
-        # Send the email
+        # Add [OBC] prefix to subject if not already present
+        if not subject.startswith("[OBC]"):
+            subject = f"[OBC] {subject}"
+            
+        # Send the email with HTML content
         send_mail(
             subject=subject,
-            message=message,
+            message=text_message,
+            html_message=html_message,
             from_email=from_email,
             recipient_list=recipient_list,
             bcc=bcc or [],
