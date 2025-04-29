@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import FormView
@@ -11,7 +12,7 @@ class LoginFormView(FormView):
     template_name = "web/login/login_form.html"
     form_class = EmailLoginForm
 
-    def get_user(self, email: str) -> object | None:
+    def get_user(self, email: str) -> User | None:
         """Find the user with this email address."""
         User = get_user_model()
         try:
@@ -19,14 +20,14 @@ class LoginFormView(FormView):
         except User.DoesNotExist:
             return None
 
-    def create_link(self, user: object) -> str:
+    def create_link(self, user: User) -> str:
         """Create a login link for this user."""
         link = reverse("login")
         link = self.request.build_absolute_uri(link)
         link += get_query_string(user)
         return link
 
-    def send_email(self, user: str, link: str) -> None:
+    def send_email(self, user: User, link: str) -> None:
         """Send an email with this login link to this user."""
         user.email_user(
             subject="[django-sesame] Log in to our app",
