@@ -153,4 +153,100 @@ Common icons:
 - Check: `bi-check-circle`
 - Info: `bi-info-circle`
 - Warning: `bi-exclamation-triangle`
-- Email: `bi-envelope` 
+- Email: `bi-envelope`
+
+## Email Styling
+
+All email templates should follow these styling guidelines for consistency and readability. Email templates must include both HTML (.html) and plain text (.txt) versions.
+
+### HTML Email Structure
+
+HTML emails should follow this basic structure:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ottawa Bicycle Club - Email Title</title>
+    <style>
+        /* Email styles here */
+    </style>
+</head>
+<body>
+    <h1>Greeting</h1>
+    <!-- Email content -->
+    <div class="footer">
+        <p>Closing message</p>
+        <p>Ottawa Bicycle Club</p>
+    </div>
+</body>
+</html>
+```
+
+### Email CSS Styles
+
+Include these standard styles in all email templates:
+
+```css
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+h1 {
+    color: #4A6DA7;
+}
+.button {
+    display: inline-block;
+    background-color: #4A6DA7;
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    margin: 15px 0;
+}
+.footer {
+    margin-top: 30px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    font-size: 0.9em;
+    color: #666;
+}
+```
+
+### Email Buttons
+
+For email action buttons, use this format:
+
+```html
+<p><a href="{{ action_url }}" class="button">Button Text</a></p>
+
+<p>Or copy and paste this URL into your browser:</p>
+<p style="background-color: #f5f5f5; padding: 10px; word-break: break-all;">{{ action_url }}</p>
+```
+
+### Email Lists
+
+For bullet point lists in emails:
+
+```html
+<div class="list-item" style="margin-bottom: 15px; padding-left: 20px; position: relative;">
+    <span style="position: absolute; left: 0; color: #4A6DA7;">•</span>
+    List item content here
+</div>
+```
+
+### Plain Text Emails
+
+Always accompany HTML emails with a plain text version using the same filename but with .txt extension. Format plain text emails with:
+
+- Keep lines under 80 characters
+- Use blank lines to separate paragraphs
+- Use indentation (4 spaces) for lists
+- Use ASCII characters for emphasis (e.g., *asterisks* or _underscores_)
+- Include URLs on their own line with extra spacing for visibility 
