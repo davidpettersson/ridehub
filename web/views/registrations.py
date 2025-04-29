@@ -9,6 +9,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.template.loader import render_to_string
 
 from backoffice.models import Event, Registration, Ride
+from backoffice.services import EmailService
 from ridehub import settings
 from web.forms import RegistrationForm
 
@@ -60,12 +61,10 @@ def _send_confirmation_email(host: str, registration: Registration) -> None:
         'registration': registration,
     }
 
-    message = render_to_string('email/confirmation.txt', context)
-
-    send_mail(
-        from_email=f"Ottawa Bicycle Club <{settings.EMAIL_FROM}>",
+    EmailService.send_email(
+        template_name='confirmation.txt',
+        context=context,
         subject=f"[OBC] Confirmed for {registration.event.name}",
-        message=message,
         recipient_list=[registration.email],
     )
 

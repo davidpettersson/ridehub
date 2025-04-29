@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.views.generic import FormView
 from sesame.utils import get_query_string
 
+from backoffice.services import EmailService
 from web.forms import EmailLoginForm
 
 
@@ -29,17 +30,15 @@ class LoginFormView(FormView):
 
     def send_email(self, user: User, link: str) -> None:
         """Send an email with this login link to this user."""
-        user.email_user(
-            subject="[django-sesame] Log in to our app",
-            message=f"""\
-    Hello,
-
-    You requested that we send you a link to log in to our app:
-
-        {link}
-
-    Thank you for using django-sesame!
-    """,
+        context = {
+            'login_link': link
+        }
+        
+        EmailService.send_email(
+            template_name='login_link.txt',
+            context=context,
+            subject="[OBC] Log in to our app",
+            recipient_list=[user.email],
         )
 
     def email_submitted(self, email: str) -> None:
