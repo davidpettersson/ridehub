@@ -70,7 +70,22 @@
               <img src="{% static 'web/obc-logo.png' %}" alt="Ottawa Bicycle Club" class="h-10">
             </a>
           </div>
-          <div class="flex items-center">
+          <div class="flex items-center space-x-4">
+            {% if user.is_authenticated %}
+            <a href="{% url 'profile' %}" class="text-white hover:text-gray-200 transition-colors duration-200 inline-flex items-center">
+              <i class="bi bi-person-circle mr-1"></i>
+              Profile
+            </a>
+            <a href="{% url 'logout' %}" class="text-white hover:text-gray-200 transition-colors duration-200 inline-flex items-center">
+              <i class="bi bi-box-arrow-right mr-1"></i>
+              Sign Out
+            </a>
+            {% else %}
+            <a href="{% url 'login_form' %}" class="text-white hover:text-gray-200 transition-colors duration-200 inline-flex items-center">
+              <i class="bi bi-box-arrow-in-right mr-1"></i>
+              Sign In
+            </a>
+            {% endif %}
             <a href="https://www.ottawabicycleclub.ca" target="_blank" class="text-white hover:text-gray-200 transition-colors duration-200 inline-flex items-center">
               OBC Website
               <i class="bi bi-box-arrow-up-right ml-1 text-sm"></i>

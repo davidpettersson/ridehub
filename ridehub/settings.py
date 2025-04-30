@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 
 import dj_database_url
+import sentry_sdk
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -51,7 +53,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SESAME_MAX_AGE = 60 * 5
-LOGIN_REDIRECT_URL = "/hello/"
+LOGIN_REDIRECT_URL = "/profile"
 LOGIN_URL = "/login/"
 
 if IS_HEROKU_APP:
@@ -130,3 +132,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+SENTRY_DSN = os.environ.get('SENTRY_DSN', None)
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=os.environ.get('SENTRY_DSN', SENTRY_DSN),
+        send_default_pii=True,
+    )

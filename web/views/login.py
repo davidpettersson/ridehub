@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth import logout
 from django.contrib.auth.models import User
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.generic import FormView
 from sesame.utils import get_query_string
@@ -54,3 +55,9 @@ class LoginFormView(FormView):
     def form_valid(self, form):
         self.email_submitted(form.cleaned_data["email"])
         return render(self.request, "web/login/login_email_sent.html")
+
+
+def logout_view(request):
+    """Simple logout view that accepts GET requests."""
+    logout(request)
+    return redirect('index')
