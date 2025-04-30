@@ -170,3 +170,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 /.idea/workspace.xml
+/.idea/dataSources.xml
+/.idea/dataSources.local.xml
+/.idea/dataSources/e922d922-944a-436f-9a69-b3172d7552a2.xml
+/.idea/dataSources/e922d922-944a-436f-9a69-b3172d7552a2/storage_v2/_src_/schema/main.uQUzAA.meta
