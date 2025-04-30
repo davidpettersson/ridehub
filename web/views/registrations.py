@@ -1,17 +1,17 @@
+import logging
 from pprint import pprint
 from secrets import token_urlsafe
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.mail import send_mail
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
-from django.template.loader import render_to_string
 
 from backoffice.models import Event, Registration, Ride
 from backoffice.services import EmailService
-from ridehub import settings
 from web.forms import RegistrationForm
+
+logger = logging.getLogger(__name__)
 
 
 def _split_full_name(name: str) -> tuple[str, str]:
@@ -112,10 +112,14 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
                 Registration.objects.filter(user=user, event=event, state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED]).exists()
 
             if already_submitted_or_confirmed:
-                # TODO: Do nothing for now, mostly because we don't want to reveal that they are registered already
-                pass
+                # Do nothing, mostly because we don't want to reveal that they are registered already.
+                # Log that a user attempted to register for an event they're already registered for.
+                logger.info(
+                    "User %s (%s) attempted to register for event %s (%s) but already has an active registration",
+                    user.id, user.email, event.id, event.name
+                )
             else:
-                # OK, so either no registration exists, or it is withdrawn. Create a new one
+                # OK, so either no registration exists, or it is withdrawn. Create a new one.
                 registration = _create_registration(event, user, form)
                 _send_confirmation_email(request.get_host(), registration)
             return redirect('registration_submitted')
