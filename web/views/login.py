@@ -46,7 +46,7 @@ class LoginFormView(FormView):
         if user is None:
             # Ignore the case when no user is registered with this address.
             # Possible improvement: send an email telling them to register.
-            print("user not found:", email)
+            logger.warning("User not found: %s", email)
             return
         link = self.create_link(user)
         self.send_email(user, link)
