@@ -107,9 +107,12 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         form = RegistrationForm(request.POST, event=event)
         if form.is_valid():
             user = _create_or_update_user(form)
-            if not Registration.objects.filter(user=user, event=event).exists():
+            registration = Registration.objects.filter(user=user, event=event).first()
+            if not registration:
                 registration = _create_registration(event, user, form)
-                _send_confirmation_email(request.get_host(), registration)
+            else:
+                registration.resubmit()
+            _send_confirmation_email(request.get_host(), registration)
             return redirect('registration_submitted')
     else:
         form = RegistrationForm(event=event)
