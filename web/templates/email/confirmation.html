@@ -58,6 +58,8 @@
     
     <p><a href="{{ base_url }}{% url 'event_detail' registration.event.id %}" class="button">View Event Details</a></p>
     
+    <p>Need to withdraw your registration? Visit your <a href="{{ base_url }}{% url 'profile' %}">profile page</a> to manage your registrations.</p>
+    
     {% if not registration.event.virtual %}
     <div class="event-details">
         <h2>Please remember:</h2>

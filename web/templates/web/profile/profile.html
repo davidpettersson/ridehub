@@ -1,0 +1,82 @@
+{% extends 'web/_base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Registrations</h1>
+    
+    {% if registrations %}
+        <div class="space-y-3">
+            {% for registration in registrations %}
+            <div class="card hover:shadow-lg transition-shadow duration-300">
+                <div class="p-4">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                                {{ registration.event.name }}
+                            </h3>
+                            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                <i class="bi bi-clock mr-1.5"></i>
+                                <span>{{ registration.event.starts_at|date:"l, F j - g:i A" }}</span>
+                                
+                                {% if registration.event.location %}
+                                <span class="mx-2">•</span>
+                                <i class="bi bi-geo-alt mr-1.5"></i>
+                                <span>{{ registration.event.location }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if registration.event.has_rides %}
+                            <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div class="flex items-center">
+                                    <span class="font-medium mr-2">Ride:</span>
+                                    <span>{{ registration.ride|default:"Not specified" }}</span>
+                                </div>
+                                <div class="flex items-center mt-1">
+                                    <span class="font-medium mr-2">Speed Range:</span>
+                                    <span>{{ registration.speed_range_preference|default:"Not specified" }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex flex-col items-end">
+                            {% if registration.state == 'cancelled' %}
+                                <span class="badge badge-danger">Withdrawn</span>
+                            {% elif registration.state == 'confirmed' %}
+                                <span class="badge badge-primary">Confirmed</span>
+                            {% else %}
+                                <span class="badge badge-warning">{{ registration.state|title }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex items-center justify-between">
+                        <a href="{% url 'event_detail' registration.event.id %}" class="btn-primary inline-flex items-center">
+                            <i class="bi bi-info-circle mr-1.5"></i>
+                            View Event Details
+                        </a>
+                        
+                        {% if registration.state == 'confirmed' %}
+                        <form method="post" action="{% url 'registration_withdraw' registration.id %}" class="inline" onsubmit="return confirm('Are you sure you want to withdraw your registration for this event?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-danger">
+                                <i class="bi bi-x-circle mr-1.5"></i>
+                                Withdraw Registration
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="py-12 text-center">
+            <p class="text-gray-500 dark:text-gray-400">You haven't registered for any events yet.</p>
+            <a href="{% url 'event_list' %}" class="btn-primary mt-4 inline-flex items-center">
+                <i class="bi bi-calendar-event mr-1.5"></i>
+                Browse Events
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 
