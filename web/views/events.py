@@ -41,5 +41,4 @@ def event_list(request: HttpRequest) -> HttpResponse:
         'events_by_date': events_by_date
     }
 
-    pprint(context)
     return render(request, 'web/events/list.html', context)
