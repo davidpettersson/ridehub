@@ -108,15 +108,16 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         if form.is_valid():
             user = _create_or_update_user(form)
 
-            # Bail if there already is a registration
+            already_submitted_or_confirmed =\
+                Registration.objects.filter(user=user, event=event, state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED]).exists()
 
-
-            registration = Registration.objects.filter(user=user, event=event, ).first()
-            if registration:
-                registration.resubmit()
+            if already_submitted_or_confirmed:
+                # TODO: Do nothing for now, mostly because we don't want to reveal that they are registered already
+                pass
             else:
+                # OK, so either no registration exists, or it is withdrawn. Create a new one
                 registration = _create_registration(event, user, form)
-            _send_confirmation_email(request.get_host(), registration)
+                _send_confirmation_email(request.get_host(), registration)
             return redirect('registration_submitted')
     else:
         form = RegistrationForm(event=event)
