@@ -182,26 +182,25 @@ class Registration(models.Model):
     emergency_contact_name = models.CharField(max_length=128, blank=True)
     emergency_contact_phone = models.CharField(max_length=128, blank=True)
 
-    state = FSMField(default='submitted', protected=True)
+    STATE_SUBMITTED = 'submitted'
+    STATE_CONFIRMED = 'confirmed'
+    STATE_WITHDRAWN = 'withdrawn'
+
+    state = FSMField(default=STATE_SUBMITTED, protected=True)
 
     submitted_at = models.DateTimeField(auto_now_add=True)
-    registered_at = models.DateTimeField(null=True, blank=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
     withdrawn_at = models.DateTimeField(null=True, blank=True)
 
     user = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True)
 
-    @transition(field=state, source='submitted', target='confirmed')
+    @transition(field=state, source=STATE_SUBMITTED, target=STATE_CONFIRMED)
     def confirm(self):
         self.confirmed_at = timezone.now()
 
-    @transition(field=state, source='confirmed', target='withdrawn')
+    @transition(field=state, source=STATE_CONFIRMED, target=STATE_WITHDRAWN)
     def withdraw(self):
         self.withdrawn_at = timezone.now()
-
-    @transition(field=state, source='withdrawn', target='submitted')
-    def resubmit(self):
-        self.submitted_at = timezone.now()
 
     def __str__(self):
         return f"{self.name} for {self.event}"
