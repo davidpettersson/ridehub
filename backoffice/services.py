@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from typing import List, Optional, Dict, Any
 
@@ -18,7 +18,6 @@ class EmailService:
         subject: str,
         recipient_list: List[str],
         from_email: Optional[str] = None,
-        bcc: Optional[List[str]] = None,
     ) -> None:
         """
         Send an email using a template.
@@ -29,7 +28,6 @@ class EmailService:
             subject: The subject of the email (will be prefixed with [OBC] if not already)
             recipient_list: List of recipient email addresses
             from_email: The from email address (defaults to settings.EMAIL_FROM)
-            bcc: List of BCC email addresses
         """
         # Get the template name without extension
         template_base = template_name.rsplit('.', 1)[0]
@@ -48,12 +46,13 @@ class EmailService:
         if not subject.startswith("[OBC]"):
             subject = f"[OBC] {subject}"
             
-        # Send the email with HTML content
-        send_mail(
+        # Always use EmailMultiAlternatives to send multipart MIME emails
+        email = EmailMultiAlternatives(
             subject=subject,
-            message=text_message,
-            html_message=html_message,
+            body=text_message,
             from_email=from_email,
-            recipient_list=recipient_list,
-            bcc=bcc or [],
-        ) 
+            to=recipient_list,
+        )
+        # Attach the HTML version as an alternative
+        email.attach_alternative(html_message, "text/html")
+        email.send() 
