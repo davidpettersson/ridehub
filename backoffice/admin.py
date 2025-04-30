@@ -38,7 +38,7 @@ class RouteAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 class RegistrationAdmin(admin.ModelAdmin):
-    list_display = ('email', 'event', 'registered_at', 'ride', 'speed_range_preference')
+    list_display = ('email', 'event', 'state', 'ride', 'speed_range_preference')
     search_fields = ('email', )
 
     def has_add_permission(self, request):

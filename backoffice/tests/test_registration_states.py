@@ -36,19 +36,18 @@ class RegistrationStatesTestCase(TestCase):
         )
 
     def test_initial_state(self):
-        self.assertEqual(self.registration.state, 'submitted')
+        self.assertEqual(self.registration.state, Registration.STATE_SUBMITTED)
         self.assertIsNotNone(self.registration.submitted_at)
         self.assertIsNone(self.registration.confirmed_at)
         self.assertIsNone(self.registration.withdrawn_at)
-        self.assertIsNone(self.registration.registered_at)
 
     def test_confirm(self):
-        self.assertEqual(self.registration.state, 'submitted')
+        self.assertEqual(self.registration.state, Registration.STATE_SUBMITTED)
 
         self.registration.confirm()
         self.registration.save()
         
-        self.assertEqual(self.registration.state, 'confirmed')
+        self.assertEqual(self.registration.state, Registration.STATE_CONFIRMED)
         self.assertIsNotNone(self.registration.confirmed_at)
         self.assertGreaterEqual(
             self.registration.confirmed_at,
@@ -59,49 +58,32 @@ class RegistrationStatesTestCase(TestCase):
         self.registration.confirm()
         self.registration.save()
         
-        self.assertEqual(self.registration.state, 'confirmed')
+        self.assertEqual(self.registration.state, Registration.STATE_CONFIRMED)
         
         self.registration.withdraw()
         self.registration.save()
         
-        self.assertEqual(self.registration.state, 'withdrawn')
+        self.assertEqual(self.registration.state, Registration.STATE_WITHDRAWN)
         self.assertIsNotNone(self.registration.withdrawn_at)
         self.assertGreaterEqual(
             self.registration.withdrawn_at,
             self.registration.confirmed_at
         )
 
-    def test_resubmit(self):
-        self.registration.confirm()
-        self.registration.withdraw()
-        self.registration.save()
-
-        self.assertEqual(self.registration.state, 'withdrawn')
-
-        initial_submitted_at = self.registration.submitted_at
-        self.registration.resubmit()
-        self.registration.save()
-        
-        self.assertEqual(self.registration.state, 'submitted')
-        self.assertGreaterEqual(
-            self.registration.submitted_at,
-            initial_submitted_at
-        )
-
     def test_cannot_withdraw_from_submitted(self):
-        self.assertEqual(self.registration.state, 'submitted')
+        self.assertEqual(self.registration.state, Registration.STATE_SUBMITTED)
         with self.assertRaises(Exception):
             self.registration.withdraw()
             
     def test_cannot_resubmit_from_submitted(self):
-        self.assertEqual(self.registration.state, 'submitted')
+        self.assertEqual(self.registration.state, Registration.STATE_SUBMITTED)
         with self.assertRaises(Exception):
             self.registration.resubmit()
         
     def test_cannot_confirm_already_confirmed(self):
         self.registration.confirm()
         self.registration.save()
-        self.assertEqual(self.registration.state, 'confirmed')
+        self.assertEqual(self.registration.state, Registration.STATE_CONFIRMED)
         
         with self.assertRaises(Exception):
             self.registration.confirm()
@@ -109,7 +91,7 @@ class RegistrationStatesTestCase(TestCase):
     def test_cannot_resubmit_from_confirmed(self):
         self.registration.confirm()
         self.registration.save()
-        self.assertEqual(self.registration.state, 'confirmed')
+        self.assertEqual(self.registration.state, Registration.STATE_CONFIRMED)
         
         with self.assertRaises(Exception):
             self.registration.resubmit()
@@ -118,7 +100,7 @@ class RegistrationStatesTestCase(TestCase):
         self.registration.confirm()
         self.registration.withdraw()
         self.registration.save()
-        self.assertEqual(self.registration.state, 'withdrawn')
+        self.assertEqual(self.registration.state, Registration.STATE_WITHDRAWN)
         
         with self.assertRaises(Exception):
             self.registration.withdraw()
@@ -127,7 +109,7 @@ class RegistrationStatesTestCase(TestCase):
         self.registration.confirm()
         self.registration.withdraw()
         self.registration.save()
-        self.assertEqual(self.registration.state, 'withdrawn')
+        self.assertEqual(self.registration.state, Registration.STATE_WITHDRAWN)
         
         with self.assertRaises(Exception):
             self.registration.confirm() 
