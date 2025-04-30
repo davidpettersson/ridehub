@@ -1,7 +1,7 @@
 Hello,
 
-You requested that we send you a link to log in to our app:
+You requested that we send you a link to log in:
 
     {{ login_link }}
 
-Thank you for using Ottawa Bicycle Club! 
+Thank you for riding with the Ottawa Bicycle Club!

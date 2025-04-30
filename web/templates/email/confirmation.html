@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ottawa Bicycle Club - Event Confirmation</title>
+    <title>Ottawa Bicycle Club - Event confirmation</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -56,7 +56,7 @@
     
     <p>You are confirmed for <strong>{{ registration.event.name }}</strong> on <strong>{{ registration.event.starts_at|date:"l, M j" }}</strong> at <strong>{{ registration.event.starts_at|date:"g:i A" }}</strong>.</p>
     
-    <p><a href="{{ base_url }}{% url 'event_detail' registration.event.id %}" class="button">View Event Details</a></p>
+    <p><a href="{{ base_url }}{% url 'event_detail' registration.event.id %}" class="button">View event details</a></p>
     
     <p>Need to withdraw your registration? Visit your <a href="{{ base_url }}{% url 'profile' %}">profile page</a> to manage your registrations.</p>
     

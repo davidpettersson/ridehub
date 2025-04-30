@@ -17,4 +17,5 @@ Please remember:
 {% endif %}
 
 See you soon!
+Ottawa Bicycle Club
 

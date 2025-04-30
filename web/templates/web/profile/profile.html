@@ -1,8 +1,8 @@
 {% extends 'web/_base.html' %}
-{% block title %}My Profile{% endblock %}
+{% block title %}My profile{% endblock %}
 {% block content %}
 <div class="space-y-6">
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Registrations</h1>
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My registrations</h1>
     
     {% if registrations %}
         <div class="space-y-3">
@@ -12,7 +12,9 @@
                     <div class="flex items-start justify-between">
                         <div>
                             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">
-                                {{ registration.event.name }}
+                                <a href="{% url 'event_detail' registration.event.id %}" class="hover:text-primary-600 dark:hover:text-primary-400">
+                                    {{ registration.event.name }}
+                                </a>
                             </h3>
                             <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
                                 <i class="bi bi-clock mr-1.5"></i>
@@ -39,21 +41,26 @@
                             {% endif %}
                         </div>
                         <div class="flex flex-col items-end">
-                            {% if registration.state == 'cancelled' %}
-                                <span class="badge badge-danger">Withdrawn</span>
-                            {% elif registration.state == 'confirmed' %}
+                            {% if registration.state == 'confirmed' %}
                                 <span class="badge badge-primary">Confirmed</span>
-                            {% else %}
+                            {% elif registration.state != 'cancelled' %}
                                 <span class="badge badge-warning">{{ registration.state|title }}</span>
                             {% endif %}
                         </div>
                     </div>
                     
                     <div class="mt-4 flex items-center justify-between">
-                        <a href="{% url 'event_detail' registration.event.id %}" class="btn-primary inline-flex items-center">
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
                             <i class="bi bi-info-circle mr-1.5"></i>
-                            View Event Details
-                        </a>
+                            Registration status: 
+                            {% if registration.state == 'confirmed' %}
+                                <span class="text-green-600 dark:text-green-400">Confirmed</span>
+                            {% elif registration.state == 'cancelled' %}
+                                <span class="text-red-600 dark:text-red-400">Withdrawn</span>
+                            {% else %}
+                                <span class="text-yellow-600 dark:text-yellow-400">{{ registration.state|title }}</span>
+                            {% endif %}
+                        </div>
                         
                         {% if registration.state == 'confirmed' %}
                         <form method="post" action="{% url 'registration_withdraw' registration.id %}" class="inline" onsubmit="return confirm('Are you sure you want to withdraw your registration for this event?');">

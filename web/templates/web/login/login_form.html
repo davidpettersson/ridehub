@@ -11,6 +11,11 @@
             <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded-md">
                 <p>You are already logged in as {{ request.user.email }}.</p>
             </div>
+            <div class="mt-6">
+                <a href="{% url 'profile' %}" class="btn-primary w-full">
+                    Go to profile page
+                </a>
+            </div>
             {% else %}
             <form action="{{ request.path }}" method="POST">
                 {% csrf_token %}
