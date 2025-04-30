@@ -4,6 +4,8 @@ You are confirmed for {{ registration.event.name }} on {{ registration.event.sta
 
 Here is a direct link to the event: {{ base_url }}{% url 'event_detail' registration.event.id %}
 
+Need to withdraw your registration? Visit your profile page to manage your registrations: {{ base_url }}{% url 'profile' %}
+
 {% if not registration.event.virtual %}
 Please remember:
 
@@ -15,4 +17,5 @@ Please remember:
 {% endif %}
 
 See you soon!
+Ottawa Bicycle Club
 

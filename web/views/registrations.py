@@ -1,4 +1,3 @@
-from itertools import groupby
 from pprint import pprint
 from secrets import token_urlsafe
 
@@ -8,50 +7,11 @@ from django.core.mail import send_mail
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
 from django.template.loader import render_to_string
-from django.utils import timezone
 
 from backoffice.models import Event, Registration, Ride
-from backoffice.tasks import perform_task_in_job
+from backoffice.services import EmailService
 from ridehub import settings
 from web.forms import RegistrationForm
-
-
-def redirect_to_event_list(request: HttpRequest) -> HttpResponseRedirect:
-    return redirect('event_list')
-
-
-def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
-    event = get_object_or_404(
-        Event,
-        id=event_id)
-
-    context = {
-        'event': event,
-        'registration_closed': timezone.now() > event.registration_closes_at,
-    }
-
-    return render(request, 'web/events/detail.html', context)
-
-
-def event_list(request: HttpRequest) -> HttpResponse:
-    events = Event.objects.all().order_by('starts_at')
-
-    now = timezone.now()
-    current_and_future_events = events.filter(starts_at__gte=now)
-
-    def starts_at_date(event):
-        return event.starts_at.date()
-
-    events_by_date = []
-    for date, events_on_date in groupby(current_and_future_events, key=starts_at_date):
-        events_by_date.append((date, list(events_on_date)))
-
-    context = {
-        'events_by_date': events_by_date
-    }
-
-    pprint(context)
-    return render(request, 'web/events/list.html', context)
 
 
 def _split_full_name(name: str) -> tuple[str, str]:
@@ -61,7 +21,7 @@ def _split_full_name(name: str) -> tuple[str, str]:
         return name, ''
 
 
-def absurd(msg: str = "Absurd!"):
+def _absurd(msg: str = "Absurd!"):
     raise RuntimeError(msg)
 
 
@@ -90,7 +50,7 @@ def _create_or_update_user(form: RegistrationForm) -> User:
             user.last_name = last_name
             user.save()
         case _:
-            absurd()
+            _absurd()
 
     return user
 
@@ -101,17 +61,16 @@ def _send_confirmation_email(host: str, registration: Registration) -> None:
         'registration': registration,
     }
 
-    message = render_to_string('email/confirmation.txt', context)
-
-    send_mail(
-        from_email=f"Ottawa Bicycle Club <{settings.EMAIL_FROM}>",
-        subject=f"[OBC] Confirmed for {registration.event.name}",
-        message=message,
+    EmailService.send_email(
+        template_name='confirmation',
+        context=context,
+        subject=f"Confirmed for {registration.event.name}",
         recipient_list=[registration.email],
     )
 
     registration.confirm()
     registration.save()
+
 
 def _create_registration(event: Event, user: User, form: RegistrationForm) -> Registration:
     pprint(form.cleaned_data)
@@ -148,9 +107,12 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         form = RegistrationForm(request.POST, event=event)
         if form.is_valid():
             user = _create_or_update_user(form)
-            if not Registration.objects.filter(user=user, event=event).exists():
+            registration = Registration.objects.filter(user=user, event=event).first()
+            if not registration:
                 registration = _create_registration(event, user, form)
-                _send_confirmation_email(request.get_host(), registration)
+            else:
+                registration.resubmit()
+            _send_confirmation_email(request.get_host(), registration)
             return redirect('registration_submitted')
     else:
         form = RegistrationForm(event=event)
@@ -211,9 +173,3 @@ def get_speed_ranges(request: HttpRequest, ride_id: int) -> HttpResponse:
     html += '</select>'
 
     return HttpResponse(html)
-
-
-def trigger_task(request: HttpRequest) -> HttpResponse:
-    print('TRIGGER_TASK')
-    perform_task_in_job.delay()
-    return HttpResponse('OK')

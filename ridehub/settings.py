@@ -1,10 +1,12 @@
 import os
 from pathlib import Path
+
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', None)
+SECRET_KEY_FOR_DEVELOPMENT = 'not-so-secret-default-for-development'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', SECRET_KEY_FOR_DEVELOPMENT)
 
 IS_HEROKU_APP = "DYNO" in os.environ and "CI" not in os.environ
 
@@ -12,6 +14,7 @@ if IS_HEROKU_APP:
     ALLOWED_HOSTS = ["*"]
     SECURE_SSL_REDIRECT = True
     DEBUG = False
+    assert SECRET_KEY != SECRET_KEY_FOR_DEVELOPMENT
 else:
     ALLOWED_HOSTS = [".localhost", "127.0.0.1", "[::1]", "0.0.0.0", "[::]"]
     DEBUG = True
@@ -41,6 +44,15 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'sesame.backends.ModelBackend',
+]
+
+SESAME_MAX_AGE = 60 * 5
+LOGIN_REDIRECT_URL = "/hello/"
+LOGIN_URL = "/login/"
 
 if IS_HEROKU_APP:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

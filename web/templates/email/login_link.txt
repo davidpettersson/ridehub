@@ -1,0 +1,7 @@
+Hello,
+
+You requested that we send you a link to log in:
+
+    {{ login_link }}
+
+Thank you for riding with the Ottawa Bicycle Club!

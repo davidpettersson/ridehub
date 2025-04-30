@@ -58,3 +58,7 @@ class RegistrationForm(forms.Form):
                 field.widget.attrs['class'] = 'form-select'
             elif not isinstance(field.widget, (forms.HiddenInput, forms.RadioSelect)):
                 field.widget.attrs['class'] = 'form-control'
+
+
+class EmailLoginForm(forms.Form):
+    email = forms.EmailField()
