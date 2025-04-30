@@ -27,7 +27,7 @@ def registration_withdraw(request: HttpRequest, registration_id: int) -> HttpRes
     registration = get_object_or_404(Registration, id=registration_id, user=request.user)
     
     if registration.state == 'confirmed' and request.method == 'POST':
-        registration.cancel()
+        registration.withdraw()
         registration.save()
         
     return redirect('profile') 
