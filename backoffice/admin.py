@@ -20,13 +20,32 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('name', 'starts_at', 'virtual', 'registration_count', 'registration_open')
+    list_display = ('name', 'starts_at', 'virtual', 'is_cancelled', 'registration_count', 'registration_open')
     inlines = [RideInline, RegistrationInline]
     ordering = ('starts_at',)
     date_hierarchy = 'starts_at'
-    list_filter = ('virtual', 'starts_at',)
+    list_filter = ('virtual', 'starts_at', 'is_cancelled')
     search_fields = ('name',)
     actions = [cancel_event, duplicate_event]
+    readonly_fields = ('is_cancelled', 'cancelled_at', 'cancellation_reason')
+    
+    fieldsets = [
+        (None, {
+            'fields': ('program', 'name', 'description', 'starts_at', 'location', 'location_url', 'virtual')
+        }),
+        ('Registration Options', {
+            'fields': ('registration_closes_at', 'external_registration_url'),
+            'description': 'Configure when registration closes and/or provide an external registration URL.'
+        }),
+        ('Registration Form Settings', {
+            'fields': ('ride_leaders_wanted', 'requires_emergency_contact'),
+            'description': 'Configure what information is collected during registration.'
+        }),
+        ('Cancellation Information', {
+            'fields': ('is_cancelled', 'cancelled_at', 'cancellation_reason'),
+            'description': 'These fields are read-only and can only be modified through the Cancel Event action.'
+        }),
+    ]
 
 
 class SpeedRangeAdmin(admin.ModelAdmin):
@@ -36,6 +55,7 @@ class SpeedRangeAdmin(admin.ModelAdmin):
 class RouteAdmin(admin.ModelAdmin):
     list_display = ('name', 'url', 'updated_at', )
     search_fields = ('name',)
+
 
 class RegistrationAdmin(admin.ModelAdmin):
     list_display = ('email', 'event', 'state', 'ride', 'speed_range_preference')
@@ -50,6 +70,7 @@ class RegistrationAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+
 class MemberAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
@@ -59,6 +80,7 @@ class MemberAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
 
 admin.site.register(Program)
 admin.site.register(Member, MemberAdmin)

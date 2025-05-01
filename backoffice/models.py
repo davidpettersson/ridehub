@@ -75,6 +75,22 @@ class Event(models.Model):
         help_text='Check if you require registrations to provide emergency contact details.'
     )
 
+    is_cancelled = models.BooleanField(
+        default=False,
+        help_text='Indicates if the event has been cancelled.'
+    )
+    
+    cancelled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the event was cancelled.'
+    )
+    
+    cancellation_reason = models.TextField(
+        blank=True,
+        help_text='Reason for cancellation.'
+    )
+
     @property
     def has_rides(self) -> bool:
         return self.ride_set.all().exists()
@@ -89,6 +105,8 @@ class Event(models.Model):
 
     @property
     def registration_open(self) -> str:
+        if self.is_cancelled:
+            return 'No (Cancelled)'
         return 'Yes' if timezone.now() < self.registration_closes_at else 'No'
 
     def __str__(self):

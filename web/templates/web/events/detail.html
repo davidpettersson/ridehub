@@ -16,6 +16,26 @@
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ event.program }}</p>
                     </div>
                 </div>
+
+                {% if event.is_cancelled %}
+                <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/30 rounded-md border-l-4 border-red-600">
+                    <div class="flex items-center">
+                        <i class="bi bi-x-circle text-red-600 dark:text-red-400 text-xl mr-3"></i>
+                        <div>
+                            <h3 class="text-lg font-medium text-red-800 dark:text-red-300">Event Cancelled</h3>
+                            <p class="text-red-700 dark:text-red-400">
+                                This event was cancelled on {{ event.cancelled_at|date:"F j, Y" }} at {{ event.cancelled_at|date:"g:i A" }}.
+                            </p>
+                            {% if event.cancellation_reason %}
+                            <div class="mt-2 text-red-700 dark:text-red-400">
+                                <p class="font-medium">Reason:</p>
+                                <p>{{ event.cancellation_reason }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
                 
                 <div class="flex flex-wrap items-center gap-4 mb-4 text-sm">
                     <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
@@ -58,11 +78,11 @@
                     <p>{{ event.description|safe }}</p>
                 </div>
                 
-                {% if not registration_closed %}
+                {% if not registration_closed and not event.is_cancelled %}
                 <div class="mt-6 mb-4 flex items-center">
-                    {% if event.registration_link %}
-                    <a href="{{ event.registration_link }}" class="btn-primary" target="_blank" rel="noopener noreferrer">
-                        Register <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
+                    {% if external_registration %}
+                    <a href="{{ event.external_registration_url }}" class="btn-primary" target="_blank" rel="noopener noreferrer">
+                        Register on External Site <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
                     </a>
                     {% else %}
                     <a href="{% url 'registration_create' event.id %}" class="btn-primary">Register</a>
@@ -70,7 +90,7 @@
                     
                     <span class="ml-4 text-gray-600 dark:text-gray-400 text-sm">Registration closes in {{ event.registration_closes_at|timeuntil }}.</span>
                 </div>
-                {% else %}
+                {% elif not event.is_cancelled %}
                 <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/30 rounded-md">
                     <p class="text-red-700 dark:text-red-400">Sorry, registration closed {{ event.registration_closes_at|timesince }} ago.</p>
                 </div>
