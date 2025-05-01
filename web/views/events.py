@@ -18,7 +18,7 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 
     context = {
         'event': event,
-        'registration_closed': timezone.now() > event.registration_closes_at,
+        'registration_closed': timezone.now() > event.registration_closes_at or event.is_cancelled,
     }
 
     return render(request, 'web/events/detail.html', context)
