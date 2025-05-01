@@ -5,6 +5,7 @@ from django.http import HttpRequest
 from django.utils import timezone
 from django.shortcuts import render, redirect
 from django.template.response import TemplateResponse
+from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 
 from backoffice.services import EmailService
 from backoffice.models import Registration
@@ -64,7 +65,7 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
         'title': 'Cancel selected events',
         'queryset': query_set,
         'opts': admin.model._meta,
-        'action_checkbox_name': admin.action_checkbox_name,
+        'action_checkbox_name': ACTION_CHECKBOX_NAME,
     }
     
     return TemplateResponse(request, 'admin/backoffice/event/cancel_selected_confirmation.html', context)
