@@ -1,0 +1,18 @@
+EVENT CANCELLED: {{ event.name }}
+
+We regret to inform you that the following event has been cancelled:
+
+Event: {{ event.name }}
+Date: {{ event.starts_at|date:"l, F j, Y" }}
+Time: {{ event.starts_at|date:"g:i A" }}
+{% if event.location %}Location: {{ event.location }}{% endif %}
+
+REASON FOR CANCELLATION:
+{{ cancellation_reason }}
+
+We apologize for any inconvenience this may cause.
+
+You can view other upcoming events at: {{ base_url }}{% url 'event_list' %}
+
+Thank you for your understanding.
+Ottawa Bicycle Club 

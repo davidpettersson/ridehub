@@ -4,8 +4,10 @@ from secrets import token_urlsafe
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.exceptions import BadRequest
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import timezone
 
 from backoffice.models import Event, Registration, Ride
 from backoffice.services import EmailService
@@ -102,9 +104,31 @@ def registration_submitted(request: HttpRequest) -> HttpResponse:
 
 def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedirect | HttpResponse:
     event = get_object_or_404(Event, id=event_id)
+    now = timezone.now()
+    
+    if event.is_cancelled:
+        raise BadRequest("Cannot register for a cancelled event.")
+    
+    registration_open = now < event.registration_closes_at
+    if not registration_open:
+        days_past = (now - event.registration_closes_at).days
+        raise BadRequest(f"Cannot register for an event that closed {days_past} days ago.")
+    
+    if event.external_registration_url:
+        raise BadRequest(f"Cannot register if an external system is being used.")
+        
+    user = request.user if request.user.is_authenticated else None
+
+    initial_data = {}
+    if user:
+        initial_data = {
+            'name': user.get_full_name(),
+            'email': user.email,
+        }
+
+    form = RegistrationForm(request.POST or None, event=event, initial=initial_data)
 
     if request.method == 'POST':
-        form = RegistrationForm(request.POST, event=event)
         if form.is_valid():
             user = _create_or_update_user(form)
 
@@ -123,8 +147,6 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
                 registration = _create_registration(event, user, form)
                 _send_confirmation_email(request.get_host(), registration)
             return redirect('registration_submitted')
-    else:
-        form = RegistrationForm(event=event)
 
     # Determine the selected ride (if any) to pre-select speed ranges
     selected_ride_id = None
