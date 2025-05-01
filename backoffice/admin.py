@@ -31,8 +31,15 @@ class EventAdmin(admin.ModelAdmin):
     
     fieldsets = [
         (None, {
-            'fields': ('program', 'name', 'description', 'starts_at', 'registration_closes_at', 'location', 'location_url', 
-                      'external_registration_url', 'virtual', 'ride_leaders_wanted', 'requires_emergency_contact')
+            'fields': ('program', 'name', 'description', 'starts_at', 'location', 'location_url', 'virtual')
+        }),
+        ('Registration Options', {
+            'fields': ('registration_closes_at', 'external_registration_url'),
+            'description': 'Configure when registration closes and/or provide an external registration URL.'
+        }),
+        ('Registration Form Settings', {
+            'fields': ('ride_leaders_wanted', 'requires_emergency_contact'),
+            'description': 'Configure what information is collected during registration.'
         }),
         ('Cancellation Information', {
             'fields': ('is_cancelled', 'cancelled_at', 'cancellation_reason'),
