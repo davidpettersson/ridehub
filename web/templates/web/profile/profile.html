@@ -2,7 +2,12 @@
 {% block title %}My profile{% endblock %}
 {% block content %}
 <div class="space-y-6">
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My registrations</h1>
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My profile</h1>
+    
+    <div>
+        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-3">My current registrations</h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">Please note that registrations for events that use external systems (such as WebScorer) will not be visible here.</p>
+    </div>
     
     {% if registrations %}
         <div class="space-y-3">
@@ -37,58 +42,64 @@
                                     <span class="font-medium mr-2">Speed Range:</span>
                                     <span>{{ registration.speed_range_preference|default:"Not specified" }}</span>
                                 </div>
-                                {% if registration.ride_leader_preference == 'y' and registration.state == 'confirmed' and registration.event.ride_leaders_wanted %}
-                                <div class="mt-2">
-                                    <a href="{% url 'riders_list' registration.event.id %}" class="btn-primary inline-flex items-center mt-2">
-                                        <i class="bi bi-people mr-1.5"></i>
-                                        View Registered Riders
-                                    </a>
+                                <div class="flex items-center mt-1">
+                                    <span class="font-medium mr-2">Registration Status:</span>
+                                    {% if registration.state == 'confirmed' %}
+                                        <span>Confirmed</span>
+                                    {% elif registration.state == 'cancelled' %}
+                                        <span>Withdrawn</span>
+                                    {% else %}
+                                        <span>{{ registration.state|title }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if registration.event.requires_emergency_contact and registration.emergency_contact_name and registration.emergency_contact_phone %}
+                                <div class="flex items-start mt-1">
+                                    <span class="font-medium mr-2">Emergency Contact:</span>
+                                    <span>
+                                        {{ registration.emergency_contact_name }} <br>
+                                        {{ registration.emergency_contact_phone }}
+                                    </span>
                                 </div>
                                 {% endif %}
+                                
+                                {% if registration.event.ride_leaders_wanted and registration.ride_leader_preference == 'y' %}
+                                <div class="flex items-center mt-1">
+                                    <span class="font-medium mr-2">Ride Leader:</span>
+                                    <span>Yes</span>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    {% if registration.state == 'confirmed' and not registration.event.is_cancelled %}
+                                    <form method="post" action="{% url 'registration_withdraw' registration.id %}" class="inline" onsubmit="return confirm('Are you sure you want to withdraw your registration for this event?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-danger">
+                                            Withdraw Registration
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    
+                                    {% if registration.ride_leader_preference == 'y' and registration.state == 'confirmed' and registration.event.ride_leaders_wanted %}
+                                    <a href="{% url 'riders_list' registration.event.id %}" class="btn-primary">
+                                        View Registered Riders
+                                    </a>
+                                    {% endif %}
+                                </div>
                             </div>
-                            {% endif %}
-                        </div>
-                        <div class="flex flex-col items-end">
-                            {% if registration.event.is_cancelled %}
-                                <span class="badge badge-danger">Event cancelled</span>
-                            {% elif registration.state == 'confirmed' %}
-                                <span class="badge badge-primary">Confirmed</span>
-                            {% elif registration.state != 'cancelled' %}
-                                <span class="badge badge-warning">{{ registration.state|title }}</span>
                             {% endif %}
                         </div>
                     </div>
                     
-                    <div class="mt-4 flex items-center justify-between">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            <i class="bi bi-info-circle mr-1.5"></i>
-                            {% if registration.event.is_cancelled %}
-                                <span class="text-red-600 dark:text-red-400">Event cancelled</span>
-                                {% if registration.event.cancellation_reason %}
-                                <span class="text-gray-500 dark:text-gray-400 ml-1">({{ registration.event.cancellation_reason }})</span>
-                                {% endif %}
-                            {% else %}
-                                Registration status: 
-                                {% if registration.state == 'confirmed' %}
-                                    <span class="text-green-600 dark:text-green-400">Confirmed</span>
-                                {% elif registration.state == 'cancelled' %}
-                                    <span class="text-red-600 dark:text-red-400">Withdrawn</span>
-                                {% else %}
-                                    <span class="text-yellow-600 dark:text-yellow-400">{{ registration.state|title }}</span>
-                                {% endif %}
-                            {% endif %}
-                        </div>
-                        
-                        {% if registration.state == 'confirmed' and not registration.event.is_cancelled %}
-                        <form method="post" action="{% url 'registration_withdraw' registration.id %}" class="inline" onsubmit="return confirm('Are you sure you want to withdraw your registration for this event?');">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-danger">
-                                <i class="bi bi-x-circle mr-1.5"></i>
-                                Withdraw Registration
-                            </button>
-                        </form>
+                    {% if registration.event.is_cancelled %}
+                    <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                        <i class="bi bi-info-circle mr-1.5"></i>
+                        <span class="text-red-600 dark:text-red-400">Event cancelled</span>
+                        {% if registration.event.cancellation_reason %}
+                        <span class="text-gray-500 dark:text-gray-400 ml-1">({{ registration.event.cancellation_reason }})</span>
                         {% endif %}
                     </div>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
