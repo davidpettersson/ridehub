@@ -1,0 +1,171 @@
+{% extends 'web/_base.html' %}
+{% block title %}Registered Riders - {{ event.name }}{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="mb-4">
+        <a href="{% url 'profile' %}" class="btn-secondary inline-flex items-center">
+            <i class="bi bi-arrow-left mr-1.5"></i>
+            Back to my profile
+        </a>
+    </div>
+
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Registered riders for {{ event.name }}</h1>
+    </div>
+    
+    <div class="card p-4 mb-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <i class="bi bi-calendar-event mr-1.5"></i>
+                <span>{{ event.starts_at|date:"l, F j - g:i A" }}</span>
+                
+                {% if event.location %}
+                <span class="mx-2">•</span>
+                <i class="bi bi-geo-alt mr-1.5"></i>
+                <span>{{ event.location }}</span>
+                {% endif %}
+            </div>
+            
+            <!-- Global emergency button -->
+            <button 
+                id="global-emergency-button"
+                class="mt-4 md:mt-0 px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-md flex items-center justify-center"
+                onclick="toggleAllEmergencyInfo()">
+                <i class="bi bi-exclamation-triangle-fill mr-2"></i>
+                <span>Show emergency contact details</span>
+            </button>
+        </div>
+    </div>
+    
+    {% if rides %}
+        {% for ride_info in rides %}
+            <div class="card hover:shadow-lg transition-shadow duration-300 mb-6">
+                <div class="p-4">
+                    <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                        {{ ride_info.ride.name }}
+                    </h2>
+                    
+                    {% if ride_info.speed_ranges %}
+                        {% for speed_range_id, speed_range_info in ride_info.speed_ranges.items %}
+                            <div class="mb-4">
+                                <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {% if speed_range_info.speed_range %}
+                                        Speed Range: {{ speed_range_info.speed_range.name }}
+                                    {% else %}
+                                        No Speed Range Specified
+                                    {% endif %}
+                                </h3>
+                                
+                                {% if speed_range_info.riders %}
+                                    <!-- Mobile view (card-based layout) -->
+                                    <div class="md:hidden space-y-4">
+                                        {% for rider in speed_range_info.riders %}
+                                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                                                <div class="flex justify-between items-start">
+                                                    <h4 class="font-medium text-gray-900 dark:text-white">{{ rider.name }}</h4>
+                                                    {% if rider.ride_leader_preference == 'y' %}
+                                                        <span class="badge badge-primary">Ride Leader</span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="mt-2 space-y-1 text-sm">
+                                                    <div class="flex">
+                                                        <span class="font-medium w-24">Email:</span>
+                                                        <span class="text-gray-600 dark:text-gray-300">{{ rider.email }}</span>
+                                                    </div>
+                                                    
+                                                    <!-- Emergency contact details (hidden by default) -->
+                                                    <div class="emergency-info hidden mt-2 space-y-1 border-t border-red-200 pt-2">
+                                                        <div class="flex">
+                                                            <span class="font-medium w-24">Emergency:</span>
+                                                            <span class="text-gray-600 dark:text-gray-300">{{ rider.emergency_contact_name }}</span>
+                                                        </div>
+                                                        <div class="flex">
+                                                            <span class="font-medium w-24">Phone:</span>
+                                                            <span class="text-gray-600 dark:text-gray-300">{{ rider.emergency_contact_phone }}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <!-- Desktop view (table-based layout) -->
+                                    <div class="hidden md:block overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                            <thead class="bg-gray-50 dark:bg-gray-800">
+                                                <tr>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ride Leader</th>
+                                                    <th scope="col" class="emergency-info hidden px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Emergency Contact</th>
+                                                    <th scope="col" class="emergency-info hidden px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Emergency Phone</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                                                {% for rider in speed_range_info.riders %}
+                                                    <tr>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ rider.name }}</td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ rider.email }}</td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                            {% if rider.ride_leader_preference == 'y' %}
+                                                                <span class="badge badge-primary">Yes</span>
+                                                            {% else %}
+                                                                <span class="badge badge-secondary">No</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td class="emergency-info hidden px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                            {{ rider.emergency_contact_name }}
+                                                        </td>
+                                                        <td class="emergency-info hidden px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                            {{ rider.emergency_contact_phone }}
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <p class="text-gray-500 dark:text-gray-400">No riders registered for this speed range.</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-gray-500 dark:text-gray-400">No riders registered for this ride.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="py-12 text-center">
+            <p class="text-gray-500 dark:text-gray-400">No registrations found for this event.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    function toggleAllEmergencyInfo() {
+        const emergencyElements = document.querySelectorAll('.emergency-info');
+        const button = document.getElementById('global-emergency-button');
+        const buttonText = button.querySelector('span');
+        
+        // Check if emergency info is currently hidden
+        const isHidden = emergencyElements[0].classList.contains('hidden');
+        
+        // Toggle visibility for all emergency elements
+        emergencyElements.forEach(element => {
+            if (isHidden) {
+                element.classList.remove('hidden');
+            } else {
+                element.classList.add('hidden');
+            }
+        });
+        
+        // Update button text
+        if (isHidden) {
+            buttonText.textContent = 'Hide emergency contact details';
+        } else {
+            buttonText.textContent = 'Show emergency contact details';
+        }
+    }
+</script>
+{% endblock %} 
