@@ -2,7 +2,7 @@
 {% block title %}Events Calendar{% endblock %}
 {% block content %}
     <div class="space-y-6">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Upcoming Events</h1>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Upcoming events</h1>
         
         {% for date, events in events_by_date %}
         <div class="mb-6">
@@ -20,8 +20,17 @@
                                         {% if event.is_cancelled %}<span class="line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
                                     </h3>
                                     <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-                                        <i class="bi bi-clock mr-1.5"></i>
-                                        <span>{{ event.starts_at|date:"g:i A" }}</span>
+                                        <div class="inline-flex items-center">
+                                            <i class="bi bi-calendar-event mr-1.5"></i>
+                                            <span>{{ event.starts_at|date:"l, F j, Y" }}</span>
+                                        </div>
+                                        
+                                        <span class="mx-2">•</span>
+                                        
+                                        <div class="inline-flex items-center">
+                                            <i class="bi bi-clock mr-1.5"></i>
+                                            <span>{{ event.starts_at|date:"g:i A" }}</span>
+                                        </div>
                                         
                                         {% if event.location %}
                                         <span class="mx-2">•</span>

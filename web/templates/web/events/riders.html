@@ -18,7 +18,11 @@
         <div class="flex flex-col md:flex-row md:items-center md:justify-between">
             <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
                 <i class="bi bi-calendar-event mr-1.5"></i>
-                <span>{{ event.starts_at|date:"l, F j - g:i A" }}</span>
+                <span>{{ event.starts_at|date:"l, F j, Y" }}</span>
+                
+                <span class="mx-2">•</span>
+                <i class="bi bi-clock mr-1.5"></i>
+                <span>{{ event.starts_at|date:"g:i A" }}</span>
                 
                 {% if event.location %}
                 <span class="mx-2">•</span>

@@ -15,7 +15,7 @@ alwaysApply: false
  - Event headers consist of two lines: the event name line, and the event key details line.
  - Event name lines should just have the event name in them unless there are any special conditions
  - Event key details consists of the date+time, plus an optional location.
- - Date and time should be rendered using a clock icon, and then the date and time in the format "Monday, May 5 at 3:00 pm"
+ - Date and time should be rendered like this: "<calendar icon> Monday, May 5, 2025 <clock icon> 5:00 pm"
  - Location should be rendered using a map icon. If a location URL exists, make the location text a hyperlink. Make sure there is affordability so the user understands it can be clicked
 
 ## Cancelled events
