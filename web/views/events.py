@@ -106,7 +106,7 @@ def group_required(group_name):
             if request.user.groups.filter(name=group_name).exists():
                 return view_func(request, *args, **kwargs)
             else:
-                raise PermissionDenied("You must be in the {} group to access this page.".format(group_name))
+                raise PermissionDenied(f"You must be in the {group_name} group to access this page.")
         return wrapper
     return decorator
 
