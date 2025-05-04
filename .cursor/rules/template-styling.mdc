@@ -1,8 +1,18 @@
-# RideHub Design Standards
+---
+description: How to style HTML in templates
+globs: **/*.html
+alwaysApply: false
+---
+
+# Template styling
 
 This document outlines the design standards for RideHub templates to maintain a consistent look and feel across the application.
 
-## Template Structure
+## Language
+
+We are writing Canadian English, not US english.
+
+## Template structure
 
 All templates should:
 
@@ -11,6 +21,10 @@ All templates should:
 3. Place content within the content block: `{% block content %}...{% endblock %}`
 
 ## Components
+
+### Headers
+
+Headers should not capitalize the first letter in each word.
 
 ### Cards
 
@@ -25,6 +39,8 @@ Use the `.card` class for content containers:
 ```
 
 ### Buttons
+
+Buttons should never have an icon on them.
 
 Use the `.btn-primary` class for primary actions:
 
@@ -120,7 +136,7 @@ For displaying lists of items:
 ```html
 <div class="space-y-6">
     <h1 class="text-3xl font-bold text-gray-900 dark:text-white">List Title</h1>
-    
+
     <div class="space-y-3">
         {% for item in items %}
         <a href="{% url 'item_detail' item.id %}" class="block hover:no-underline">
@@ -249,4 +265,4 @@ Always accompany HTML emails with a plain text version using the same filename b
 - Use blank lines to separate paragraphs
 - Use indentation (4 spaces) for lists
 - Use ASCII characters for emphasis (e.g., *asterisks* or _underscores_)
-- Include URLs on their own line with extra spacing for visibility 
+- Include URLs on their own line with extra spacing for visibility

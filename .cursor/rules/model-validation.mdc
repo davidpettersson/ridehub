@@ -1,0 +1,8 @@
+---
+description: Adding validations when creating and updating model files
+globs: **/*.py
+alwaysApply: true
+---
+
+ - Always create validations for any model updates.
+ - If it is not clear which validation to add, ask the user.

@@ -51,11 +51,11 @@
         .badge-primary {
           @apply bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200;
         }
-        .badge-warning {
-          @apply bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200;
+        .btn-danger {
+          @apply py-2 px-4 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-colors duration-200;
         }
-        .badge-danger {
-          @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+        .btn-secondary {
+          @apply py-2 px-4 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75 transition-colors duration-200;
         }
       }
     </style>
@@ -64,28 +64,19 @@
     <nav class="bg-[rgb(0,85,150)] shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
-          <div class="flex items-center">
+          <div class="flex items-center space-x-4">
             <a href="{% url 'event_list' %}" class="flex-shrink-0">
               {% load static %}
               <img src="{% static 'web/obc-logo.png' %}" alt="Ottawa Bicycle Club" class="h-10">
             </a>
+            <a href="{% url 'event_list' %}" class="text-white hover:text-gray-200 transition-colors duration-200">
+              Upcoming events
+            </a>
           </div>
-          <div class="flex items-center space-x-4">
-            {% if user.is_authenticated %}
+          <div class="flex items-center">
             <a href="{% url 'profile' %}" class="text-white hover:text-gray-200 transition-colors duration-200 inline-flex items-center">
-              <i class="bi bi-person-circle mr-1"></i>
-              Profile
+              <i class="bi bi-person-circle text-lg"></i>
             </a>
-            <a href="{% url 'logout' %}" class="text-white hover:text-gray-200 transition-colors duration-200 inline-flex items-center">
-              <i class="bi bi-box-arrow-right mr-1"></i>
-              Sign Out
-            </a>
-            {% else %}
-            <a href="{% url 'login_form' %}" class="text-white hover:text-gray-200 transition-colors duration-200 inline-flex items-center">
-              <i class="bi bi-box-arrow-in-right mr-1"></i>
-              Sign In
-            </a>
-            {% endif %}
           </div>
         </div>
       </div>

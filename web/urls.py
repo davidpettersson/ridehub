@@ -2,7 +2,7 @@ from django.urls import path
 from sesame.views import LoginView
 
 from web.views.debug import trigger_task
-from web.views.events import redirect_to_event_list, event_detail, event_list
+from web.views.events import redirect_to_event_list, event_detail, event_list, event_riders
 from web.views.login import LoginFormView, logout_view
 from web.views.registrations import registration_create, registration_detail, registration_submitted, registration_list, \
     get_speed_ranges
@@ -14,6 +14,7 @@ urlpatterns = [
     path("logout/", logout_view, name="logout"),
     path('debug/trigger_task', trigger_task),
     path('calendar', redirect_to_event_list, name='calendar'),
+    path('events/<int:event_id>/riders', event_riders, name='riders_list'),
     path('events/<int:event_id>/registration', registration_create, name='registration_create'),
     path('events/<int:event_id>', event_detail, name='event_detail'),
     path('events', event_list, name='event_list'),

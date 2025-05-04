@@ -1,0 +1,24 @@
+---
+description: Guidance for how to render and style events in templates
+globs: **/*.html
+alwaysApply: false
+---
+
+# Event styling
+
+## General event structure
+
+ - Each event is normally rendered in its own card
+
+## Event headers
+
+ - Event headers consist of two lines: the event name line, and the event key details line.
+ - Event name lines should just have the event name in them unless there are any special conditions
+ - Event key details consists of the date+time, plus an optional location.
+ - Date and time should be rendered like this: "<calendar icon> Monday, May 5, 2025 <clock icon> 5:00 pm"
+ - Location should be rendered using a map icon. If a location URL exists, make the location text a hyperlink. Make sure there is affordability so the user understands it can be clicked
+
+## Cancelled events
+
+ - Cancelled events should always have a strikethrough of the event name and be suffixed by "(cancelled)""
+ - When possible colors should be subdued

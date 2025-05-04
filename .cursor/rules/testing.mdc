@@ -1,0 +1,8 @@
+---
+description: Guidance on when to add test cases
+globs: **/*.py
+alwaysApply: true
+---
+
+ - Always add unit tests for models
+ - Place unit tests in a folder called tests in the application
