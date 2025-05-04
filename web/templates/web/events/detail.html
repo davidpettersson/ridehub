@@ -12,31 +12,13 @@
             <div class="p-6">
                 <div class="flex justify-between items-start">
                     <div>
-                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">{{ event.name }}</h1>
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                            {% if event.is_cancelled %}<span class="line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
+                        </h1>
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ event.program }}</p>
                     </div>
                 </div>
 
-                {% if event.is_cancelled %}
-                <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/30 rounded-md border-l-4 border-red-600">
-                    <div class="flex items-center">
-                        <i class="bi bi-x-circle text-red-600 dark:text-red-400 text-xl mr-3"></i>
-                        <div>
-                            <h3 class="text-lg font-medium text-red-800 dark:text-red-300">Event Cancelled</h3>
-                            <p class="text-red-700 dark:text-red-400">
-                                This event was cancelled on {{ event.cancelled_at|date:"F j, Y" }} at {{ event.cancelled_at|date:"g:i A" }}.
-                            </p>
-                            {% if event.cancellation_reason %}
-                            <div class="mt-2 text-red-700 dark:text-red-400">
-                                <p class="font-medium">Reason:</p>
-                                <p>{{ event.cancellation_reason }}</p>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                
                 <div class="flex flex-wrap items-center gap-4 mb-4 text-sm">
                     <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
                         <i class="bi bi-calendar-event mr-2"></i>
@@ -73,6 +55,23 @@
                     <span class="badge badge-danger">Requires emergency contact</span>
                     {% endif %}
                 </div>
+                
+                {% if event.is_cancelled %}
+                <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/30">
+                    <div>
+                        <h3 class="text-lg font-medium text-red-800 dark:text-red-300">Event Cancelled</h3>
+                        <p class="text-red-700 dark:text-red-400">
+                            This event was cancelled on {{ event.cancelled_at|date:"F j, Y" }} at {{ event.cancelled_at|date:"g:i A" }}.
+                        </p>
+                        {% if event.cancellation_reason %}
+                        <div class="mt-2 text-red-700 dark:text-red-400">
+                            <p class="font-medium">Reason:</p>
+                            <p>{{ event.cancellation_reason }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
                 
                 <div class="prose prose-gray dark:prose-invert max-w-none">
                     <p>{{ event.description|safe }}</p>

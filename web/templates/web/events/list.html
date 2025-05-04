@@ -12,17 +12,12 @@
             <div class="space-y-3">
                 {% for event in events %}
                 <a href="{% url 'event_detail' event.id %}" class="block hover:no-underline">
-                    <div class="card hover:shadow-lg transition-shadow duration-300 {% if event.is_cancelled %}border-red-300 dark:border-red-700 border{% endif %}">
+                    <div class="card hover:shadow-lg transition-shadow duration-300">
                         <div class="p-4">
                             <div class="flex items-start justify-between">
                                 <div>
-                                    <h3 class="text-lg font-medium {% if event.is_cancelled %}text-red-600 dark:text-red-400{% else %}text-gray-900 dark:text-white{% endif %} mb-1 hover:text-primary-600 dark:hover:text-primary-400">
-                                        {{event.name}}
-                                        {% if event.is_cancelled %}
-                                        <span class="ml-2 text-sm font-medium text-red-600 dark:text-red-400 whitespace-nowrap">
-                                            Cancelled
-                                        </span>
-                                        {% endif %}
+                                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1 hover:text-primary-600 dark:hover:text-primary-400">
+                                        {% if event.is_cancelled %}<span class="line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
                                     </h3>
                                     <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
                                         <i class="bi bi-clock mr-1.5"></i>

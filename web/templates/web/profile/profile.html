@@ -12,13 +12,13 @@
     {% if registrations %}
         <div class="space-y-3">
             {% for registration in registrations %}
-            <div class="card hover:shadow-lg transition-shadow duration-300">
+            <div class="card hover:shadow-lg transition-shadow duration-300 {% if registration.event.is_cancelled %}bg-gray-50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-700 border{% endif %}">
                 <div class="p-4">
                     <div class="flex items-start justify-between">
                         <div>
                             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">
                                 <a href="{% url 'event_detail' registration.event.id %}" class="hover:text-primary-600 dark:hover:text-primary-400">
-                                    {{ registration.event.name }}
+                                    {% if registration.event.is_cancelled %}<span class="line-through">{{ registration.event.name }}</span> (cancelled){% else %}{{ registration.event.name }}{% endif %}
                                 </a>
                             </h3>
                             <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
@@ -92,11 +92,11 @@
                     </div>
                     
                     {% if registration.event.is_cancelled %}
-                    <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                    <div class="mt-4 text-sm text-gray-500 dark:text-gray-500">
                         <i class="bi bi-info-circle mr-1.5"></i>
-                        <span class="text-red-600 dark:text-red-400">Event cancelled</span>
+                        <span class="text-gray-500 dark:text-gray-500">Event cancelled</span>
                         {% if registration.event.cancellation_reason %}
-                        <span class="text-gray-500 dark:text-gray-400 ml-1">({{ registration.event.cancellation_reason }})</span>
+                        <span class="text-gray-500 dark:text-gray-500 ml-1">({{ registration.event.cancellation_reason }})</span>
                         {% endif %}
                     </div>
                     {% endif %}
