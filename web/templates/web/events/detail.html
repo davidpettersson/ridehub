@@ -107,7 +107,7 @@
                     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{{ ride.name }}</h3>
                     
                     <div class="prose prose-gray dark:prose-invert max-w-none mb-4">
-                        <p>{{ ride.description }}</p>
+                        <p>{{ ride.description|safe }}</p>
                     </div>
                     
                     <div class="flex items-center mb-4">
