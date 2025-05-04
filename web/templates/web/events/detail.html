@@ -15,7 +15,6 @@
                         <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                             {% if event.is_cancelled %}<span class="line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
                         </h1>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ event.program }}</p>
                     </div>
                 </div>
 
@@ -48,11 +47,12 @@
                 </div>
                 
                 <div class="flex flex-wrap gap-2 mb-4">
+                    <span class="badge badge-primary">{{ event.program }}</span>
                     {% if event.ride_leaders_wanted %}
-                    <span class="badge badge-warning">Ride leaders wanted</span>
+                    <span class="badge badge-primary">Ride leaders wanted</span>
                     {% endif %}
                     {% if event.requires_emergency_contact %}
-                    <span class="badge badge-danger">Requires emergency contact</span>
+                    <span class="badge badge-primary">Requires emergency contact</span>
                     {% endif %}
                 </div>
                 
@@ -110,20 +110,20 @@
                         <p>{{ ride.description }}</p>
                     </div>
                     
-                    <div class="flex flex-wrap gap-2 mb-4">
-                        {% for speed_range in ride.speed_ranges.all %}
-                        <span class="badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                            <i class="bi bi-speedometer2 mr-1"></i>
-                            {{ speed_range }}
-                        </span>
-                        {% endfor %}
-                    </div>
-                    
-                    <div class="flex items-center">
+                    <div class="flex items-center mb-4">
                         <i class="bi bi-map text-gray-500 dark:text-gray-400 mr-2"></i>
                         <a href="{{ride.route.url}}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
                             {{ride.route.name}}
                         </a>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2">
+                        {% for speed_range in ride.speed_ranges.all %}
+                        <span class="badge badge-primary">
+                            <i class="bi bi-speedometer2 mr-1"></i>
+                            {{ speed_range }}
+                        </span>
+                        {% endfor %}
                     </div>
                 </div>
             </div>

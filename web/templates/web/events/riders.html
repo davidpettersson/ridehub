@@ -62,7 +62,7 @@
                                     <div class="md:hidden space-y-4">
                                         {% for rider in speed_range_info.riders %}
                                             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                                                <div class="flex justify-between items-start">
+                                                <div class="flex flex-col items-start">
                                                     <h4 class="font-medium text-gray-900 dark:text-white">{{ rider.name }}</h4>
                                                     {% if rider.ride_leader_preference == 'y' %}
                                                         <span class="badge badge-primary">Ride Leader</span>
@@ -111,7 +111,7 @@
                                                             {% if rider.ride_leader_preference == 'y' %}
                                                                 <span class="badge badge-primary">Yes</span>
                                                             {% else %}
-                                                                <span class="badge badge-secondary">No</span>
+                                                                <span class="badge badge-primary">No</span>
                                                             {% endif %}
                                                         </td>
                                                         <td class="emergency-info hidden px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
