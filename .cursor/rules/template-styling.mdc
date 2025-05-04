@@ -4,11 +4,15 @@ globs: **/*.html
 alwaysApply: false
 ---
 
-# RideHub Design Standards
+# Template styling
 
 This document outlines the design standards for RideHub templates to maintain a consistent look and feel across the application.
 
-## Template Structure
+## Language
+
+We are writing Canadian English, not US english.
+
+## Template structure
 
 All templates should:
 
@@ -17,6 +21,10 @@ All templates should:
 3. Place content within the content block: `{% block content %}...{% endblock %}`
 
 ## Components
+
+### Headers
+
+Headers should not capitalize the first letter in each word.
 
 ### Cards
 
@@ -31,6 +39,8 @@ Use the `.card` class for content containers:
 ```
 
 ### Buttons
+
+Buttons should never have an icon on them.
 
 Use the `.btn-primary` class for primary actions:
 
