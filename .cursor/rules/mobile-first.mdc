@@ -1,0 +1,9 @@
+---
+description: Considerations for mobile vs desktop views of templates
+globs: **/*.html
+alwaysApply: false
+---
+
+ - Users will default to using a mobile device when accessing the web pages
+ - Make all pages responsive
+ - Make designs for mobile first, desktop second
