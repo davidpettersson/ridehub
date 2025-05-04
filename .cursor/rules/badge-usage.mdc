@@ -1,0 +1,10 @@
+---
+description: When and how to use badges to convey information
+globs: **/*.html
+alwaysApply: true
+---
+
+ - Badges should be used to convey traits of an item, such as event.
+ - Badges must always be placed immediately below the header, never anywhere else.
+ - Badges go under the date and time subheader of an event.
+ - Badge colors must be light blue. Do not use other badge colors.
