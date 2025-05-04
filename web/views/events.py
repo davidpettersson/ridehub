@@ -1,9 +1,11 @@
 from itertools import groupby
+from functools import wraps
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
+from django.core.exceptions import PermissionDenied
 
 from backoffice.models import Event, Registration
 
@@ -91,3 +93,35 @@ def event_riders(request: HttpRequest, event_id: int) -> HttpResponse:
     }
 
     return render(request, 'web/events/riders.html', context=context)
+
+
+# More idiomatic Django group check
+def group_required(group_name):
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                return redirect('login_form')
+            
+            if request.user.groups.filter(name=group_name).exists():
+                return view_func(request, *args, **kwargs)
+            else:
+                raise PermissionDenied("You must be in the {} group to access this page.".format(group_name))
+        return wrapper
+    return decorator
+
+
+@login_required
+@group_required('Ride Administrators')
+def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
+    event = get_object_or_404(Event, id=event_id)
+    
+    # Get all registrations for this event
+    registrations = Registration.objects.filter(event_id=event_id).order_by('submitted_at')
+    
+    context = {
+        'event': event,
+        'registrations': registrations
+    }
+    
+    return render(request, 'web/events/registrations.html', context)
