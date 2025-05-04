@@ -1,4 +1,6 @@
 from django.contrib import admin, messages
+from django.utils.html import format_html
+from django.urls import reverse
 
 from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration
 from backoffice.actions import cancel_event, duplicate_event
@@ -20,7 +22,7 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('name', 'starts_at', 'virtual', 'is_cancelled', 'registration_count', 'registration_open')
+    list_display = ('name', 'starts_at', 'is_cancelled', 'registrations_link')
     inlines = [RideInline, RegistrationInline]
     ordering = ('starts_at',)
     date_hierarchy = 'starts_at'
@@ -28,6 +30,12 @@ class EventAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     actions = [cancel_event, duplicate_event]
     readonly_fields = ('is_cancelled', 'cancelled_at', 'cancellation_reason')
+    
+    def registrations_link(self, obj):
+        url = reverse('event_registrations', args=[obj.id])
+        return format_html('<a href="{}">Registrations</a>', url)
+    
+    registrations_link.short_description = 'Registrations'
     
     fieldsets = [
         (None, {
