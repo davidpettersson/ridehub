@@ -86,3 +86,23 @@ def duplicate_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet
 
 
 duplicate_event.short_description = "Duplicate selected events (does not work yet)"
+
+def archive_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
+    archive_count = 0
+    now = timezone.now()
+
+    for event in query_set:
+        event.archived = True
+        event.archived_at = now
+        event.save()
+
+        archive_count += 1
+
+    if archive_count == 1:
+        message = "1 event was successfully archived."
+    else:
+        message = f"{archive_count} events were successfully archived."
+
+    admin.message_user(request, message, messages.SUCCESS)
+
+archive_event.short_description = "Archive selected events"

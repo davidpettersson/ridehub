@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 
 from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration
-from backoffice.actions import cancel_event, duplicate_event
+from backoffice.actions import cancel_event, duplicate_event, archive_event
 
 
 class RideInline(admin.StackedInline):
@@ -28,7 +28,7 @@ class EventAdmin(admin.ModelAdmin):
     date_hierarchy = 'starts_at'
     list_filter = ('virtual', 'starts_at', 'is_cancelled', 'archived')
     search_fields = ('name',)
-    actions = [cancel_event, duplicate_event]
+    actions = [cancel_event, archive_event, duplicate_event]
     readonly_fields = ('is_cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
     
     def registrations_link(self, obj):
