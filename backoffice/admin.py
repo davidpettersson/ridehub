@@ -22,7 +22,7 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('name', 'starts_at', 'is_cancelled', 'registrations_link')
+    list_display = ('name', 'starts_at', 'is_cancelled', 'archived', 'registrations_link')
     inlines = [RideInline, RegistrationInline]
     ordering = ('starts_at',)
     date_hierarchy = 'starts_at'
