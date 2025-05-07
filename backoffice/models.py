@@ -75,7 +75,7 @@ class Event(models.Model):
         help_text='Check if you require registrations to provide emergency contact details.'
     )
 
-    is_cancelled = models.BooleanField(
+    cancelled = models.BooleanField(
         default=False,
         help_text='Indicates if the event has been cancelled.'
     )
@@ -116,7 +116,7 @@ class Event(models.Model):
 
     @property
     def registration_open(self) -> str:
-        if self.is_cancelled:
+        if self.cancelled:
             return 'No (Cancelled)'
         return 'Yes' if timezone.now() < self.registration_closes_at else 'No'
 

@@ -28,7 +28,7 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
         # Update each event
         cancel_count = 0
         for event in query_set:
-            event.is_cancelled = True
+            event.cancelled = True
             event.cancelled_at = now
             event.cancellation_reason = cancellation_reason
             event.save()
