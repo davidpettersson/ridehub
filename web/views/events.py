@@ -30,7 +30,7 @@ def event_list(request: HttpRequest) -> HttpResponse:
     events = Event.objects.all().order_by('starts_at')
 
     now = timezone.now()
-    current_and_future_events = events.filter(starts_at__gte=now)
+    current_and_future_events = events.filter(starts_at__gte=now, archived=False)
 
     def starts_at_date(event):
         return event.starts_at.date()
