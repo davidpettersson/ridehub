@@ -26,10 +26,10 @@ class EventAdmin(admin.ModelAdmin):
     inlines = [RideInline, RegistrationInline]
     ordering = ('starts_at',)
     date_hierarchy = 'starts_at'
-    list_filter = ('virtual', 'starts_at', 'is_cancelled')
+    list_filter = ('virtual', 'starts_at', 'is_cancelled', 'archived')
     search_fields = ('name',)
     actions = [cancel_event, duplicate_event]
-    readonly_fields = ('is_cancelled', 'cancelled_at', 'cancellation_reason')
+    readonly_fields = ('is_cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
     
     def registrations_link(self, obj):
         url = reverse('event_registrations', args=[obj.id])
@@ -53,6 +53,10 @@ class EventAdmin(admin.ModelAdmin):
             'fields': ('is_cancelled', 'cancelled_at', 'cancellation_reason'),
             'description': 'These fields are read-only and can only be modified through the Cancel Event action.'
         }),
+        ('Archiving Information', {
+            'fields': ('archived', 'archived_at'),
+            'description': 'These fields are read-only and are set through the Archive Event action.'
+        })
     ]
 
 

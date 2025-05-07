@@ -91,6 +91,17 @@ class Event(models.Model):
         help_text='Reason for cancellation.'
     )
 
+    archived = models.BooleanField(
+        default=False,
+        help_text='Indicates if the event has been archived. Archived events are not visible to members.'
+    )
+
+    archived_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the event was archived.'
+    )
+
     @property
     def has_rides(self) -> bool:
         return self.ride_set.all().exists()
