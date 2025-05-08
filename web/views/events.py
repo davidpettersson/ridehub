@@ -1,13 +1,12 @@
 from itertools import groupby
-from functools import wraps
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
-from django.utils import timezone
-from django.core.exceptions import PermissionDenied
 
 from backoffice.models import Event, Registration
+from backoffice.services.event_service import EventService
 
 
 def redirect_to_event_list(request: HttpRequest) -> HttpResponseRedirect:
@@ -27,17 +26,13 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 
 
 def event_list(request: HttpRequest) -> HttpResponse:
-    events = Event.objects.all().order_by('starts_at')
+    # TODO: Because events is a Django result set we can probably do something smarter here
+    events = EventService.fetch_upcoming_events()
+    starts_at_date = lambda event: event.starts_at.date()
 
-    now = timezone.now()
-    current_and_future_events = events.filter(starts_at__gte=now, archived=False)
-
-    def starts_at_date(event):
-        return event.starts_at.date()
-
-    events_by_date = []
-    for date, events_on_date in groupby(current_and_future_events, key=starts_at_date):
-        events_by_date.append((date, list(events_on_date)))
+    events_by_date = [
+        (date, list(events_on_date)) for date, events_on_date in groupby(events, key=starts_at_date)
+    ]
 
     context = {
         'events_by_date': events_by_date
