@@ -7,6 +7,7 @@ from web.views.login import LoginFormView, logout_view
 from web.views.registrations import registration_create, registration_detail, registration_submitted, registration_list, \
     get_speed_ranges
 from web.views.profile import profile, registration_withdraw
+from web.views.ical import generate_ical_feed
 
 urlpatterns = [
     path("login/", LoginFormView.as_view(), name="login_form"),
@@ -18,6 +19,7 @@ urlpatterns = [
     path('events/<int:event_id>/registrations', event_registrations, name='event_registrations'),
     path('events/<int:event_id>/registration', registration_create, name='registration_create'),
     path('events/<int:event_id>', event_detail, name='event_detail'),
+    path('events/ical', generate_ical_feed, name='ical_feed'),
     path('events', event_list, name='event_list'),
     path('registrations/<int:registration_id>/withdraw', registration_withdraw, name='registration_withdraw'),
     path('registrations/<int:registration_id>', registration_detail, name='registration_detail'),
