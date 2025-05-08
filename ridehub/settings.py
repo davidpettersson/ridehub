@@ -3,7 +3,7 @@ from pathlib import Path
 
 import dj_database_url
 import sentry_sdk
-
+from sentry_sdk.integrations.django import DjangoIntegration
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -139,4 +139,6 @@ if SENTRY_DSN:
     sentry_sdk.init(
         dsn=os.environ.get('SENTRY_DSN', SENTRY_DSN),
         send_default_pii=True,
+        traces_sample_rate=1.0,
+        integrations=[DjangoIntegration()],
     )
