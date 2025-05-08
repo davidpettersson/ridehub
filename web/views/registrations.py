@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from backoffice.models import Event, Registration, Ride
 from backoffice.services import EmailService
+from backoffice.utils import ensure
 from web.forms import RegistrationForm
 
 logger = logging.getLogger(__name__)
@@ -105,9 +106,9 @@ def registration_submitted(request: HttpRequest) -> HttpResponse:
 def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedirect | HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
-    assert not event.cancelled
-    assert event.registration_open
-    assert not event.external_registration_url
+    ensure(event.registration_open, 'registration must be open')
+    ensure(not event.cancelled, 'registration can only happen if non-cancelled events')
+    ensure(not event.external_registration_url, 'event not set up for external registration')
 
     user = request.user if request.user.is_authenticated else None
 
