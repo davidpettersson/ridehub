@@ -106,7 +106,7 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     event = get_object_or_404(Event, id=event_id)
     now = timezone.now()
     
-    if event.is_cancelled:
+    if event.cancelled:
         raise BadRequest("Cannot register for a cancelled event.")
     
     registration_open = now < event.registration_closes_at

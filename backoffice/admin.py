@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 
 from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration
-from backoffice.actions import cancel_event, duplicate_event
+from backoffice.actions import cancel_event, duplicate_event, archive_event
 
 
 class RideInline(admin.StackedInline):
@@ -22,14 +22,14 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('name', 'starts_at', 'is_cancelled', 'registrations_link')
+    list_display = ('name', 'starts_at', 'cancelled', 'archived', 'registrations_link')
     inlines = [RideInline, RegistrationInline]
     ordering = ('starts_at',)
     date_hierarchy = 'starts_at'
-    list_filter = ('virtual', 'starts_at', 'is_cancelled')
+    list_filter = ('virtual', 'starts_at', 'cancelled', 'archived')
     search_fields = ('name',)
-    actions = [cancel_event, duplicate_event]
-    readonly_fields = ('is_cancelled', 'cancelled_at', 'cancellation_reason')
+    actions = [cancel_event, archive_event, duplicate_event]
+    readonly_fields = ('cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
     
     def registrations_link(self, obj):
         url = reverse('event_registrations', args=[obj.id])
@@ -50,9 +50,13 @@ class EventAdmin(admin.ModelAdmin):
             'description': 'Configure what information is collected during registration.'
         }),
         ('Cancellation Information', {
-            'fields': ('is_cancelled', 'cancelled_at', 'cancellation_reason'),
+            'fields': ('cancelled', 'cancelled_at', 'cancellation_reason'),
             'description': 'These fields are read-only and can only be modified through the Cancel Event action.'
         }),
+        ('Archiving Information', {
+            'fields': ('archived', 'archived_at'),
+            'description': 'These fields are read-only and are set through the Archive Event action.'
+        })
     ]
 
 
