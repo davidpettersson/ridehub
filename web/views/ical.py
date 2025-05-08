@@ -18,18 +18,29 @@ def generate_ical_feed(request):
     ]
     
     for event in events:
-        # Format dates to iCalendar format
-        starts_at = event.starts_at.strftime("%Y%m%dT%H%M%SZ") if event.starts_at.tzinfo else event.starts_at.strftime("%Y%m%dT%H%M%S")
+        # Format dates to iCalendar format with proper timezone handling
+        # Make sure the datetime is timezone aware
+        starts_at = event.starts_at
+        if starts_at.tzinfo is None:
+            # If naive, assume it's in the current timezone
+            starts_at = timezone.make_aware(starts_at)
         
-        # Determine end time (using registration_closes_at as fallback or add 1 hour if not available)
-        if hasattr(event, 'registration_closes_at') and event.registration_closes_at:
-            ends_at = event.registration_closes_at.strftime("%Y%m%dT%H%M%SZ") if event.registration_closes_at.tzinfo else event.registration_closes_at.strftime("%Y%m%dT%H%M%S")
-        else:
-            # Default to 1 hour later if no end time is available
-            ends_at = (event.starts_at + timezone.timedelta(hours=1)).strftime("%Y%m%dT%H%M%SZ") if event.starts_at.tzinfo else (event.starts_at + timezone.timedelta(hours=1)).strftime("%Y%m%dT%H%M%S")
+        # Convert to UTC for iCalendar format
+        starts_at_utc = starts_at.astimezone(timezone.utc)
+        starts_at_str = starts_at_utc.strftime("%Y%m%dT%H%M%SZ")
+        
+        # Set all events to 1 hour duration
+        ends_at = starts_at + timezone.timedelta(hours=1)
+        
+        # Convert end time to UTC
+        ends_at_utc = ends_at.astimezone(timezone.utc)
+        ends_at_str = ends_at_utc.strftime("%Y%m%dT%H%M%SZ")
         
         # Create a unique identifier for the event
         uid = f"{event.id}@ridehub"
+        
+        # Properly escape event name
+        event_name = event.name.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
         
         # Build description
         description = event.description if hasattr(event, 'description') and event.description else ""
@@ -47,14 +58,17 @@ def generate_ical_feed(request):
             if event.location_url:
                 location += f" ({event.location_url})"
         
+        # Current timestamp in UTC for DTSTAMP
+        now_utc = timezone.now().astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        
         # Build the event
         ical_event = [
             "BEGIN:VEVENT",
             f"UID:{uid}",
-            f"SUMMARY:{event.name}",
-            f"DTSTART:{starts_at}",
-            f"DTEND:{ends_at}",
-            f"DTSTAMP:{timezone.now().strftime('%Y%m%dT%H%M%SZ')}",
+            f"SUMMARY:{event_name}",
+            f"DTSTART:{starts_at_str}",
+            f"DTEND:{ends_at_str}",
+            f"DTSTAMP:{now_utc}",
             f"STATUS:{status}",
         ]
         
