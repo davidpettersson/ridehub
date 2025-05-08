@@ -3,11 +3,11 @@ from django.contrib.admin import ModelAdmin
 from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.utils import timezone
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 
-from backoffice.services import EmailService
+from backoffice.services.email_service import EmailService
 from backoffice.models import Registration
 
 
