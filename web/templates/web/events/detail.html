@@ -13,7 +13,7 @@
                 <div class="flex justify-between items-start">
                     <div>
                         <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                            {% if event.is_cancelled %}<span class="line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
+                            {% if event.cancelled %}<span class="line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
                         </h1>
                     </div>
                 </div>
@@ -56,7 +56,7 @@
                     {% endif %}
                 </div>
                 
-                {% if event.is_cancelled %}
+                {% if event.cancelled %}
                 <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/30">
                     <div>
                         <h3 class="text-lg font-medium text-red-800 dark:text-red-300">Event Cancelled</h3>
@@ -77,11 +77,11 @@
                     <p>{{ event.description|safe }}</p>
                 </div>
                 
-                {% if not registration_closed and not event.is_cancelled %}
+                {% if event.registration_open %}
                 <div class="mt-6 mb-4 flex items-center">
-                    {% if external_registration %}
+                    {% if event.external_registration_url %}
                     <a href="{{ event.external_registration_url }}" class="btn-primary" target="_blank" rel="noopener noreferrer">
-                        Register on External Site <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
+                        Register <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
                     </a>
                     {% else %}
                     <a href="{% url 'registration_create' event.id %}" class="btn-primary">Register</a>
@@ -89,9 +89,9 @@
                     
                     <span class="ml-4 text-gray-600 dark:text-gray-400 text-sm">Registration closes in {{ event.registration_closes_at|timeuntil }}.</span>
                 </div>
-                {% elif not event.is_cancelled %}
+                {% else %}
                 <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/30 rounded-md">
-                    <p class="text-red-700 dark:text-red-400">Sorry, registration closed {{ event.registration_closes_at|timesince }} ago.</p>
+                    <p class="text-red-700 dark:text-red-400">Sorry, registration closed.</p>
                 </div>
                 {% endif %}
             </div>
