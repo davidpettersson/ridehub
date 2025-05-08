@@ -12,7 +12,7 @@
     <div class="card">
         <div class="p-6">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                {% if event.is_cancelled %}<span class="line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
+                {% if event.cancelled %}<span class="line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
             </h1>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ event.program }}</p>
             

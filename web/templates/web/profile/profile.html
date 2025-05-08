@@ -14,13 +14,13 @@
     {% if registrations %}
         <div class="space-y-3">
             {% for registration in registrations %}
-            <div class="card hover:shadow-lg transition-shadow duration-300 {% if registration.event.is_cancelled %}bg-gray-50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-700 border{% endif %}">
+            <div class="card hover:shadow-lg transition-shadow duration-300 {% if registration.event.cancelled %}bg-gray-50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-700 border{% endif %}">
                 <div class="p-4">
                     <div class="flex items-start justify-between">
                         <div>
                             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">
                                 <a href="{% url 'event_detail' registration.event.id %}" class="hover:text-primary-600 dark:hover:text-primary-400">
-                                    {% if registration.event.is_cancelled %}<span class="line-through">{{ registration.event.name }}</span> (cancelled){% else %}{{ registration.event.name }}{% endif %}
+                                    {% if registration.event.cancelled %}<span class="line-through">{{ registration.event.name }}</span> (cancelled){% else %}{{ registration.event.name }}{% endif %}
                                 </a>
                             </h3>
                             <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
@@ -73,7 +73,7 @@
                                 {% endif %}
                                 
                                 <div class="mt-2 flex flex-wrap gap-2">
-                                    {% if registration.state == 'confirmed' and not registration.event.is_cancelled %}
+                                    {% if registration.state == 'confirmed' and not registration.event.cancelled %}
                                     <form method="post" action="{% url 'registration_withdraw' registration.id %}" class="inline" onsubmit="return confirm('Are you sure you want to withdraw your registration for this event?');">
                                         {% csrf_token %}
                                         <button type="submit" class="btn-danger">
@@ -93,7 +93,7 @@
                         </div>
                     </div>
                     
-                    {% if registration.event.is_cancelled %}
+                    {% if registration.event.cancelled %}
                     <div class="mt-4 text-sm text-gray-500 dark:text-gray-500">
                         <i class="bi bi-info-circle mr-1.5"></i>
                         <span class="text-gray-500 dark:text-gray-500">Event cancelled</span>

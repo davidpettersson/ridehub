@@ -10,7 +10,7 @@
 
     <div>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-            Registered riders for {% if event.is_cancelled %}<span class="line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
+            Registered riders for {% if event.cancelled %}<span class="line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
         </h1>
     </div>
     
