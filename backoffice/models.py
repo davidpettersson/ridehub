@@ -47,6 +47,11 @@ class Event(models.Model):
         help_text='Start time of the event',
     )
 
+    duration = models.IntegerField(
+        default=1,
+        help_text='Duration of the event in hours.',
+    )
+
     registration_closes_at = models.DateTimeField(
         help_text='Closing time of the registration',
     )
@@ -101,6 +106,10 @@ class Event(models.Model):
         blank=True,
         help_text='When the event was archived.'
     )
+
+    @property
+    def ends_at(self) -> timezone.datetime:
+        return self.starts_at + timezone.timedelta(hours=self.duration)
 
     @property
     def has_rides(self) -> bool:
