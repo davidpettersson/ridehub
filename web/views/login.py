@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.views.generic import FormView
 from sesame.utils import get_query_string
 
-from backoffice.services import EmailService
+from backoffice.services.email_service import EmailService
 from web.forms import EmailLoginForm
 
 

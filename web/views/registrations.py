@@ -4,13 +4,11 @@ from secrets import token_urlsafe
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.exceptions import BadRequest
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
-from django.utils import timezone
 
 from backoffice.models import Event, Registration, Ride
-from backoffice.services import EmailService
+from backoffice.services.email_service import EmailService
 from backoffice.utils import ensure
 from web.forms import RegistrationForm
 
