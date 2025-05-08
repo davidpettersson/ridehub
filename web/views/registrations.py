@@ -104,19 +104,11 @@ def registration_submitted(request: HttpRequest) -> HttpResponse:
 
 def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedirect | HttpResponse:
     event = get_object_or_404(Event, id=event_id)
-    now = timezone.now()
-    
-    if event.cancelled:
-        raise BadRequest("Cannot register for a cancelled event.")
-    
-    registration_open = now < event.registration_closes_at
-    if not registration_open:
-        days_past = (now - event.registration_closes_at).days
-        raise BadRequest(f"Cannot register for an event that closed {days_past} days ago.")
-    
-    if event.external_registration_url:
-        raise BadRequest(f"Cannot register if an external system is being used.")
-        
+
+    assert not event.cancelled
+    assert event.registration_open
+    assert not event.external_registration_url
+
     user = request.user if request.user.is_authenticated else None
 
     initial_data = {}
