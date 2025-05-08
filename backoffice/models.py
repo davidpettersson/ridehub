@@ -47,7 +47,7 @@ class Event(models.Model):
         help_text='Start time of the event',
     )
 
-    duration = models.IntegerField(
+    duration = models.PositiveIntegerField(
         default=1,
         help_text='Duration of the event in hours.',
     )
