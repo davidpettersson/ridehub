@@ -1,12 +1,13 @@
-from django.contrib import admin, messages
-from django.utils.html import format_html
+from adminsortable2.admin import SortableAdminBase, SortableStackedInline
+from django.contrib import admin
 from django.urls import reverse
+from django.utils.html import format_html
 
-from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration
 from backoffice.actions import cancel_event, duplicate_event, archive_event
+from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration
 
 
-class RideInline(admin.StackedInline):
+class RideInline(SortableStackedInline):
     model = Ride
     autocomplete_fields = ('route',)
     extra = 0
@@ -21,7 +22,7 @@ class RegistrationInline(admin.TabularInline):
     max_num = 0
 
 
-class EventAdmin(admin.ModelAdmin):
+class EventAdmin(SortableAdminBase, admin.ModelAdmin):
     list_display = ('name', 'starts_at', 'cancelled', 'archived', 'registrations_link')
     inlines = [RideInline, RegistrationInline]
     ordering = ('starts_at',)

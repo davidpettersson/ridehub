@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'django_cotton',
     'django_celery_beat',
     'django_prose_editor',
+    'adminsortable2',
     'backoffice',
     'web',
 ]
