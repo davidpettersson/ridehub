@@ -61,3 +61,9 @@
   content: "\00a0"; /* Non-breaking space */
   display: inline-block;
 }
+
+.prose p:last-of-type:empty::after,
+.prose p:first-of-type:empty::after
+{
+  display: none;
+}
