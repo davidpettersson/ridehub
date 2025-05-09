@@ -200,9 +200,17 @@ class Ride(models.Model):
         blank=True,
     )
 
+    ordering = models.PositiveIntegerField(
+        default=0,
+        blank=False,
+        null=False,
+    )
+
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['ordering']
 
 class Registration(models.Model):
     RIDE_LEADER_YES = 'y'
