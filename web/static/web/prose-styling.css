@@ -5,13 +5,18 @@
 
 .prose h1 {
     margin: 5pt 0;
-    font-size: 14pt;
+    font-size: 16pt;
     font-weight: bold;
 }
 
 .prose h2 {
     margin-top: 3pt;
-    font-size: 12pt;
+    font-size: 14pt;
+    font-weight: bold;
+}
+
+.prose h3 {
+    margin-top: 3pt;
     font-weight: bold;
 }
 
@@ -33,4 +38,26 @@
 .prose ol li {
     margin: 2pt 2em;
     list-style: decimal;
+}
+
+/* Special to handle copy/paste */
+
+.prose h1:empty::after {
+  content: "\00a0"; /* Non-breaking space */
+  display: inline-block;
+}
+
+.prose h2:empty::after {
+  content: "\00a0"; /* Non-breaking space */
+  display: inline-block;
+}
+
+.prose h3:empty::after {
+  content: "\00a0"; /* Non-breaking space */
+  display: inline-block;
+}
+
+.prose p:empty::after {
+  content: "\00a0"; /* Non-breaking space */
+  display: inline-block;
 }
