@@ -61,6 +61,12 @@ class Event(models.Model):
         help_text='When an external registration URL is provided, registration will be delegated to the external system',
     )
 
+    registration_limit = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text='Maximum number of registrations allowed. Blank means no limit. Zero means no registration.'
+    )
+
     description = ProseEditorField(
         help_text='Description of the event to share with members.'
     )
