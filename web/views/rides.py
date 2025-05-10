@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404
 from backoffice.models import Ride
 
 
-def event_ride_speed_ranges(request: HttpRequest, ride_id: int) -> HttpResponse:
+def ride_speed_ranges(request: HttpRequest, ride_id: int) -> HttpResponse:
     """HTMX endpoint to get speed ranges for a specific ride"""
     # Handle the case when no ride is selected (ride_id=0)
     if ride_id == 0:
