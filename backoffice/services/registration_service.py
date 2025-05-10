@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RegistrationDetail:
-    ride: Ride
-    ride_leader_preference: bool
-    speed_range_preference: SpeedRange
-    emergency_contact_name: str
-    emergency_contact_phone: str
+    ride: Ride|None
+    ride_leader_preference: str
+    speed_range_preference: SpeedRange|None
+    emergency_contact_name: str|None
+    emergency_contact_phone: str|None
 
 
 class RegistrationService:
