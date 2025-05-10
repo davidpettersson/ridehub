@@ -51,13 +51,15 @@ class EventModelTestCase(TestCase):
         self.assertEqual(self.event.capacity_remaining, 5)
         self.assertTrue(self.event.has_capacity_available)
 
-        Registration.objects.create(
+        registration = Registration.objects.create(
             name=f"Test User",
             email=f"test@example.com",
             event=self.event,
             user=self.user
         )
-        
+        registration.confirm()
+        registration.save()
+
         self.assertEqual(self.event.registration_count, 1)
         self.assertEqual(self.event.capacity_remaining, 4)
         self.assertTrue(self.event.has_capacity_available)
