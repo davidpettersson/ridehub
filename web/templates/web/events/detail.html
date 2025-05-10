@@ -44,6 +44,13 @@
                         {% endif %}
                     </div>
                     {% endif %}
+                    
+                    <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
+                        <i class="bi bi-people mr-2"></i>
+                        <span>
+                            {{ event.registration_count }} registered{% if event.capacity_remaining is not None %}, {{ event.capacity_remaining }} remaining{% endif %}
+                        </span>
+                    </div>
                 </div>
                 
                 <div class="flex flex-wrap gap-2 mb-4">
@@ -78,16 +85,24 @@
                 </div>
                 
                 {% if event.registration_open %}
-                <div class="mt-6 mb-4 flex items-center">
-                    {% if event.external_registration_url %}
-                    <a href="{{ event.external_registration_url }}" class="btn-primary" target="_blank" rel="noopener noreferrer">
-                        Register <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
-                    </a>
-                    {% else %}
-                    <a href="{% url 'registration_create' event.id %}" class="btn-primary">Register</a>
-                    {% endif %}
-                    
-                    <span class="ml-4 text-gray-600 dark:text-gray-400 text-sm">Registration closes in {{ event.registration_closes_at|timeuntil }}.</span>
+                <div class="mt-6 mb-4">
+                    <div class="flex items-center">
+                        {% if event.external_registration_url %}
+                            <a href="{{ event.external_registration_url }}" class="btn-primary" target="_blank" rel="noopener noreferrer">
+                                Register <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
+                            </a>
+                        {% elif event.has_capacity_available %}
+                            <a href="{% url 'registration_create' event.id %}" class="btn-primary">Register</a>
+                        {% else %}
+                            <div class="p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-md">
+                                <p class="text-yellow-700 dark:text-yellow-400">Sorry, the event has reached maximum capacity.</p>
+                            </div>
+                        {% endif %}
+                        
+                        {% if event.has_capacity_available %}
+                            <span class="ml-4 text-gray-600 dark:text-gray-400 text-sm">Registration closes in {{ event.registration_closes_at|timeuntil }}.</span>
+                        {% endif %}
+                    </div>
                 </div>
                 {% else %}
                 <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/30 rounded-md">
