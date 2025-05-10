@@ -145,4 +145,5 @@ if SENTRY_DSN:
         send_default_pii=True,
         traces_sample_rate=1.0,
         integrations=[DjangoIntegration()],
+        release=os.environ.get('HEROKU_RELEASE_VERSION', 'unknown'),
     )
