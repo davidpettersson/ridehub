@@ -12,7 +12,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', SECRET_KEY_FOR_DEVELOPMENT)
 
 IS_HEROKU_APP = "DYNO" in os.environ and "CI" not in os.environ
 
-WEB_HOST = os.environ.get('WEB_HOST', None)
+WEB_HOST = os.environ.get('WEB_HOST', 'https://obcrides.ca/')
 
 if IS_HEROKU_APP:
     ALLOWED_HOSTS = ["*"]
