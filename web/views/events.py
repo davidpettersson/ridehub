@@ -26,8 +26,7 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 
 
 def event_list(request: HttpRequest) -> HttpResponse:
-    # TODO: Because events is a Django result set we can probably do something smarter here
-    events = EventService.fetch_upcoming_events()
+    events = EventService().fetch_upcoming_events()
     starts_at_date = lambda event: event.starts_at.date()
 
     events_by_date = [
@@ -95,15 +94,15 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
     # Check if user is staff
     if not request.user.is_staff:
         raise PermissionDenied("You must be a staff member to access this page.")
-        
+
     event = get_object_or_404(Event, id=event_id)
-    
+
     # Get all registrations for this event
     registrations = Registration.objects.filter(event_id=event_id).order_by('submitted_at')
-    
+
     context = {
         'event': event,
         'registrations': registrations
     }
-    
+
     return render(request, 'web/events/registrations.html', context)

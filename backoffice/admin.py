@@ -25,9 +25,9 @@ class RegistrationInline(admin.TabularInline):
 class EventAdmin(SortableAdminBase, admin.ModelAdmin):
     list_display = ('name', 'starts_at', 'cancelled', 'archived', 'registrations_link')
     inlines = [RideInline, RegistrationInline]
-    ordering = ('starts_at',)
+    ordering = ('-starts_at',)
     date_hierarchy = 'starts_at'
-    list_filter = ('virtual', 'starts_at', 'cancelled', 'archived')
+    list_filter = ('starts_at', 'program', 'cancelled', 'archived', )
     search_fields = ('name',)
     actions = [cancel_event, archive_event, duplicate_event]
     readonly_fields = ('cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
@@ -42,19 +42,19 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
         (None, {
             'fields': ('program', 'name', 'description', 'starts_at', 'location', 'location_url', 'virtual')
         }),
-        ('Registration Options', {
-            'fields': ('registration_closes_at', 'external_registration_url'),
+        ('Registration options', {
+            'fields': ('registration_closes_at', 'external_registration_url', 'registration_limit'),
             'description': 'Configure when registration closes and/or provide an external registration URL.'
         }),
-        ('Registration Form Settings', {
+        ('Registration form settings', {
             'fields': ('ride_leaders_wanted', 'requires_emergency_contact'),
             'description': 'Configure what information is collected during registration.'
         }),
-        ('Cancellation Information', {
+        ('Cancellation information', {
             'fields': ('cancelled', 'cancelled_at', 'cancellation_reason'),
             'description': 'These fields are read-only and can only be modified through the Cancel Event action.'
         }),
-        ('Archiving Information', {
+        ('Archiving information', {
             'fields': ('archived', 'archived_at'),
             'description': 'These fields are read-only and are set through the Archive Event action.'
         })

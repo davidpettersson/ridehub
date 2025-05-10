@@ -61,6 +61,12 @@ class Event(models.Model):
         help_text='When an external registration URL is provided, registration will be delegated to the external system',
     )
 
+    registration_limit = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text='Maximum number of registrations allowed. Blank means no limit. Zero means no registration.'
+    )
+
     description = ProseEditorField(
         help_text='Description of the event to share with members.'
     )
@@ -121,7 +127,17 @@ class Event(models.Model):
 
     @property
     def registration_count(self) -> int:
-        return self.registration_set.count()
+        return self.registration_set.filter(state=Registration.STATE_CONFIRMED).count()
+
+    @property
+    def capacity_remaining(self) -> int | None:
+        if self.registration_limit is None:
+            return None
+        return max(0, self.registration_limit - self.registration_count)
+    
+    @property
+    def has_capacity_available(self) -> bool:
+        return self.registration_limit is None or self.registration_count < self.registration_limit
 
     @property
     def registration_open(self) -> bool:

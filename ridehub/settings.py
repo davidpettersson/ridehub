@@ -12,6 +12,8 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', SECRET_KEY_FOR_DEVELOPMENT)
 
 IS_HEROKU_APP = "DYNO" in os.environ and "CI" not in os.environ
 
+WEB_HOST = os.environ.get('WEB_HOST', 'obcrides.ca')
+
 if IS_HEROKU_APP:
     ALLOWED_HOSTS = ["*"]
     SECURE_SSL_REDIRECT = True
@@ -31,6 +33,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_cotton',
     'django_celery_beat',
+    'behave_django',
     'django_prose_editor',
     'adminsortable2',
     'backoffice',
@@ -142,4 +145,5 @@ if SENTRY_DSN:
         send_default_pii=True,
         traces_sample_rate=1.0,
         integrations=[DjangoIntegration()],
+        release=os.environ.get('HEROKU_RELEASE_VERSION', 'unknown'),
     )
