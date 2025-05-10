@@ -36,7 +36,7 @@ class LoginFormView(FormView):
             'login_link': link
         }
 
-        EmailService.send_email(
+        EmailService().send_email(
             template_name='login_link',
             context=context,
             subject="Login link",
