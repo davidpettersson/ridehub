@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_cotton',
     'django_celery_beat',
+    'behave_django',
     'django_prose_editor',
     'adminsortable2',
     'backoffice',
