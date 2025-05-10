@@ -51,6 +51,7 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     ensure(event.registration_open, 'registration is open')
     ensure(not event.cancelled, 'event must not be cancelled')
     ensure(not event.external_registration_url, 'event does not use external registration')
+    ensure(event.has_capacity_available, 'event has capacity for more registrations')
 
     user = request.user if request.user.is_authenticated else None
 
