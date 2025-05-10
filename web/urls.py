@@ -6,8 +6,8 @@ from web.views.events import redirect_to_event_list, event_detail, event_list, e
 from web.views.events_ical import EventFeed
 from web.views.login import LoginFormView, logout_view
 from web.views.profile import profile, registration_withdraw
-from web.views.registrations import registration_create, registration_detail, registration_submitted, registration_list, \
-    get_speed_ranges
+from web.views.registrations import registration_create, registration_detail, registration_submitted, registration_list
+from web.views.rides import event_ride_speed_ranges
 
 urlpatterns = [
     path("login/", LoginFormView.as_view(), name="login_form"),
@@ -26,7 +26,7 @@ urlpatterns = [
     path('registrations/<int:registration_id>', registration_detail, name='registration_detail'),
     path('registrations/submitted', registration_submitted, name='registration_submitted'),
     path('registrations', registration_list, name='registration_list'),
-    path('rides/<int:ride_id>/speed-ranges', get_speed_ranges, name='get_speed_ranges'),
+    path('rides/<int:ride_id>/speed-ranges', event_ride_speed_ranges, name='get_speed_ranges'),
     path('profile', profile, name='profile'),
     path('', redirect_to_event_list, name='index'),
 ]
