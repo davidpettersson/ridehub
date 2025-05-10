@@ -49,7 +49,7 @@ class RegistrationService:
 
     def _send_confirmation_email(self, registration: Registration) -> None:
         context = {
-            'base_url': settings.PUBLIC_BASE_URL,
+            'base_url': f"https://{settings.WEB_HOST}",
             'registration': registration,
         }
 
