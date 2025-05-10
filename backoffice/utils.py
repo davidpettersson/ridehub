@@ -2,7 +2,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def ensure(condition, message):
-    if not condition:
-        logger.error(f"Condition not met: {message}")
-        raise Exception(message)
+
+def ensure(condition_met, condition):
+    if not condition_met:
+        logger.error(f"Could not ensure {condition}")
+        raise Exception(condition)
+
+
+def absurd(condition):
+    logger.error(f"Absurd that {condition}")
+    raise Exception(condition)
