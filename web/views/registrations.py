@@ -5,7 +5,8 @@ from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
 
 from backoffice.models import Event, Registration
-from backoffice.services.registration_service import UserDetail, RegistrationService, RegistrationDetail
+from backoffice.services.registration_service import RegistrationService, RegistrationDetail
+from backoffice.services.user_service import UserDetail
 from backoffice.utils import ensure
 from web.forms import RegistrationForm
 
