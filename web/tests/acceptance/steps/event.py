@@ -110,3 +110,11 @@ def step_impl(context):
 @step("the event shows it is fully registered")
 def step_impl(context):
     context.test.assertContains(context.scenario_objects['response'], "(full)")
+
+
+@then("the event shows when registration closes")
+def step_impl(context):
+    close_at = context.scenario_objects['event'].registration_closes_at
+    formatted_close_at = close_at.strftime("%B %d at %I:%M %p")
+    needle = f"Registration closes at {formatted_close_at}"
+    context.test.assertContains(context.scenario_objects['response'], needle)
