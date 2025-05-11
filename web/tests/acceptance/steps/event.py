@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from behave import *
 from django.utils import timezone
+from django.template.defaultfilters import date as date_filter
 
 from backoffice.models import Event, Program, Registration
 from backoffice.services.registration_service import RegistrationService, RegistrationDetail
@@ -110,3 +111,11 @@ def step_impl(context):
 @step("the event shows it is fully registered")
 def step_impl(context):
     context.test.assertContains(context.scenario_objects['response'], "(full)")
+
+
+@then("the event shows when registration closes")
+def step_impl(context):
+    close_at = context.scenario_objects['event'].registration_closes_at.astimezone(timezone.get_current_timezone())
+    formatted_close_at = date_filter(close_at, "F j, g:i A")
+    needle = f"Registration closes {formatted_close_at}"
+    context.test.assertContains(context.scenario_objects['response'], needle)
