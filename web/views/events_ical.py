@@ -12,7 +12,7 @@ class EventFeed(ICalFeed):
     title = 'OBC Events'
 
     def items(self):
-        return EventService.fetch_events()
+        return EventService().fetch_events()
 
     def item_title(self, item: Event):
         return item.name
