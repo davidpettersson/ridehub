@@ -19,23 +19,24 @@
                                     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1 hover:text-primary-600 dark:hover:text-primary-400">
                                         {% if event.cancelled %}<span class="line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
                                     </h3>
-                                    <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-                                        <div class="inline-flex items-center">
-                                            <i class="bi bi-calendar-event mr-1.5"></i>
-                                            <span>{{ event.starts_at|date:"l, F j, Y" }}</span>
-                                        </div>
-                                        
-                                        <span class="mx-2">•</span>
-                                        
+                                    <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-2">
                                         <div class="inline-flex items-center">
                                             <i class="bi bi-clock mr-1.5"></i>
                                             <span>{{ event.starts_at|date:"g:i A" }}</span>
                                         </div>
                                         
                                         {% if event.location %}
-                                        <span class="mx-2">•</span>
-                                        <i class="bi bi-geo-alt mr-1.5"></i>
-                                        <span>{{ event.location }}</span>
+                                        <div class="inline-flex items-center">
+                                            <i class="bi bi-geo-alt mr-1.5"></i>
+                                            <span>{{ event.location }}</span>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if not event.external_registration_url %}
+                                        <div class="inline-flex items-center">
+                                            <i class="bi bi-people mr-1.5"></i>
+                                            <span>{{ event.registration_count }} registered{% if not event.has_capacity_available %} (full){% endif %}</span>
+                                        </div>
                                         {% endif %}
                                     </div>
                                     <span class="badge badge-primary">{{ event.program }}</span>

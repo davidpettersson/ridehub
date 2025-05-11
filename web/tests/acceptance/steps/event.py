@@ -9,6 +9,8 @@ from backoffice.services.user_service import UserDetail
 
 use_step_matcher("parse")
 
+TEST_EVENT_NAME_TOKEN = 'a39c40cd-f33c-424f-af8c-23703d39c319'
+
 
 @given("an event")
 def given_an_event(context):
@@ -20,7 +22,7 @@ def given_an_event(context):
 
     event = Event.objects.create(
         program=program,
-        name='Test event',
+        name=f"Test event {TEST_EVENT_NAME_TOKEN}",
         description='Test description',
         starts_at=now + timedelta(days=3),
         registration_closes_at=now + timedelta(days=2),
@@ -28,6 +30,12 @@ def given_an_event(context):
 
     context.scenario_objects['program'] = program
     context.scenario_objects['event'] = event
+
+
+@step("the event has external registration")
+def step_impl(context):
+    context.scenario_objects['event'].external_registration_url = 'https://www.sunet.se'
+    context.scenario_objects['event'].save()
 
 
 @step("the event registration limit is {limit:w}")
@@ -49,6 +57,7 @@ def step_impl(context):
 @then('the event shows {count:d} registered')
 def step_impl(context, count):
     context.test.assertContains(context.scenario_objects['response'], f"{count} registered")
+
 
 @then('the event shows {count:d} registration remaining')
 @then('the event shows {count:d} registrations remaining')
@@ -76,6 +85,28 @@ def step_impl(context, count):
         rs.register(user_detail, registration_detail, context.scenario_objects['event'])
     context.test.assertEqual(count, context.scenario_objects['event'].registration_count)
 
+
 @then("the event does not show registrations remaining")
 def step_impl(context):
     context.test.assertNotContains(context.scenario_objects['response'], f"remaining")
+
+
+@step("the event does not show registrations")
+def step_impl(context):
+    context.test.assertNotContains(context.scenario_objects['response'], f"registered")
+
+
+@when("visiting the event ical feed")
+def step_impl(context):
+    context.scenario_objects['response'] = context.test.client.get(f"/events.ics")
+    context.test.assertEqual(200, context.scenario_objects['response'].status_code)
+
+
+@then("the event ical feed contains the event")
+def step_impl(context):
+    context.test.assertContains(context.scenario_objects['response'], TEST_EVENT_NAME_TOKEN)
+
+
+@step("the event shows it is fully registered")
+def step_impl(context):
+    context.test.assertContains(context.scenario_objects['response'], "(full)")
