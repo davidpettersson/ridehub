@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RegistrationDetail:
     ride: Ride|None
-    ride_leader_preference: str
+    ride_leader_preference: str|None
     speed_range_preference: SpeedRange|None
     emergency_contact_name: str|None
     emergency_contact_phone: str|None
