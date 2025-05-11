@@ -1,7 +1,7 @@
 from django.db.models import QuerySet
+from django.utils import timezone
 
 from backoffice.models import Event
-from django.utils import timezone
 
 
 class EventService:
@@ -9,7 +9,8 @@ class EventService:
         return Event.objects.filter(archived=include_archived).order_by('starts_at')
 
     def fetch_upcoming_events(self, include_archived: bool=False) -> QuerySet[Event]:
-        return self.fetch_events(include_archived).filter(starts_at__gte=timezone.now())
+        today = timezone.now().date()
+        return self.fetch_events(include_archived).filter(starts_at__date__gte=today)
 
 
 
