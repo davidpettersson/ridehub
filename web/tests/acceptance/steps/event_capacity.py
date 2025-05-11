@@ -29,6 +29,11 @@ def given_an_event(context):
     context.scenario_objects['program'] = program
     context.scenario_objects['event'] = event
 
+@step("the event has external registration")
+def step_impl(context):
+    context.scenario_objects['event'].external_registration_url = 'https://www.sunet.se'
+    context.scenario_objects['event'].save()
+
 
 @step("the event registration limit is {limit:w}")
 def set_registration_limit(context, limit: str):
@@ -79,3 +84,8 @@ def step_impl(context, count):
 @then("the event does not show registrations remaining")
 def step_impl(context):
     context.test.assertNotContains(context.scenario_objects['response'], f"remaining")
+
+
+@step("the event does not show registrations")
+def step_impl(context):
+    context.test.assertNotContains(context.scenario_objects['response'], f"registered")
