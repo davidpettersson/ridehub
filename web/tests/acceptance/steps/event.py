@@ -9,6 +9,7 @@ from backoffice.services.user_service import UserDetail
 
 use_step_matcher("parse")
 
+TEST_EVENT_NAME_TOKEN = 'a39c40cd-f33c-424f-af8c-23703d39c319'
 
 @given("an event")
 def given_an_event(context):
@@ -20,7 +21,7 @@ def given_an_event(context):
 
     event = Event.objects.create(
         program=program,
-        name='Test event',
+        name=f"Test event {TEST_EVENT_NAME_TOKEN}",
         description='Test description',
         starts_at=now + timedelta(days=3),
         registration_closes_at=now + timedelta(days=2),
@@ -89,3 +90,12 @@ def step_impl(context):
 @step("the event does not show registrations")
 def step_impl(context):
     context.test.assertNotContains(context.scenario_objects['response'], f"registered")
+
+@when("visiting the event ical feed")
+def step_impl(context):
+    context.scenario_objects['response'] = context.test.client.get(f"/events.ics")
+    context.test.assertEqual(200, context.scenario_objects['response'].status_code)
+
+@then("the event ical feed contains the event")
+def step_impl(context):
+    context.test.assertContains(context.scenario_objects['response'], TEST_EVENT_NAME_TOKEN)
