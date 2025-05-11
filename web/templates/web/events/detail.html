@@ -102,7 +102,7 @@
                         {% endif %}
                         
                         {% if event.has_capacity_available %}
-                            <span class="ml-4 text-gray-600 dark:text-gray-400 text-sm">Registration closes in {{ event.registration_closes_at|timeuntil }}.</span>
+                            <span class="ml-4 text-gray-600 dark:text-gray-400 text-sm">Registration closes {{ event.registration_closes_at|date:"F j, g:i A" }}.</span>
                         {% endif %}
                     </div>
                 </div>
