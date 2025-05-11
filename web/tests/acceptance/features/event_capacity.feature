@@ -28,7 +28,8 @@ Feature: Event Capacity
       And the event has 2 registration
     When visiting the event detail page
     Then the event shows 2 registered
-     And the event shows 0 registrations remaining
+     And the event does not show registrations remaining
+     And the event shows it is fully registered
 
   Scenario: Limit two, three registrations
     Given an event
@@ -36,7 +37,8 @@ Feature: Event Capacity
       And the event has 3 registration
     When visiting the event detail page
     Then the event shows 3 registered
-     And the event shows 0 registrations remaining
+     And the event does not show registrations remaining
+     And the event shows it is fully registered
 
   Scenario: External registration has no count
     Given an event
