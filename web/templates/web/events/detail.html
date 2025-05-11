@@ -49,7 +49,7 @@
                     <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
                         <i class="bi bi-people mr-2"></i>
                         <span>
-                            {{ event.registration_count }} registered{% if event.capacity_remaining is not None %}, {{ event.capacity_remaining }} remaining{% endif %}
+                            {{ event.registration_count }} registered{% if not event.has_capacity_available %} (full){% elif event.capacity_remaining is not None %}, {{ event.capacity_remaining }} remaining{% endif %}
                         </span>
                     </div>
                     {% endif %}
