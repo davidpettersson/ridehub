@@ -25,12 +25,13 @@ def registration_submitted(request: HttpRequest) -> HttpResponse:
 
 
 def _get_registration_detail(form: RegistrationForm) -> RegistrationDetail:
+
     return RegistrationDetail(
-        ride=form.cleaned_data['ride'],
-        speed_range_preference=form.cleaned_data['speed_range_preference'],
-        emergency_contact_name=form.cleaned_data['emergency_contact_name'],
-        emergency_contact_phone=form.cleaned_data['emergency_contact_phone'],
-        ride_leader_preference=form.cleaned_data['ride_leader_preference'],
+        ride=form.cleaned_data.get('ride'),
+        speed_range_preference=form.cleaned_data.get('speed_range_preference'),
+        emergency_contact_name=form.cleaned_data.get('emergency_contact_name'),
+        emergency_contact_phone=form.cleaned_data.get('emergency_contact_phone'),
+        ride_leader_preference=form.cleaned_data.get('ride_leader_preference'),
     )
 
 
