@@ -160,7 +160,7 @@
                             {% if ride_info.speed_ranges %}
                                 <div class="space-y-4">
                                     {% for speed_range_id, speed_range_info in ride_info.speed_ranges.items %}
-                                        <div>
+                                        <div x-data="{ open: false }">
                                             <div class="flex items-center mb-2">
                                                 <i class="bi bi-people text-gray-500 dark:text-gray-400 mr-2"></i>
                                                 <span class="text-gray-800 dark:text-gray-200">
@@ -170,14 +170,21 @@
                                                         {{ speed_range_info.riders|length }} registration{{ speed_range_info.riders|length|pluralize }} (No Speed Preference)
                                                     {% endif %}
                                                 </span>
+                                                <button @click="open = !open" class="ml-2 text-sm text-primary-600 hover:underline focus:outline-none dark:text-primary-400 dark:hover:text-primary-300">
+                                                    <span x-show="!open">(show)</span>
+                                                    <span x-show="open" x-cloak>(hide)</span>
+                                                </button>
                                             </div>
                                             
-                                            <div class="pl-6">
+                                            <div class="pl-6" x-show="open" x-cloak>
                                                 {% for rider in speed_range_info.riders %}
                                                     <div class="text-sm text-gray-600 dark:text-gray-400">
                                                         {{ rider.name }}{% if rider.is_ride_leader %} (ride leader){% endif %}
                                                     </div>
                                                 {% endfor %}
+                                                {% if not speed_range_info.riders %}
+                                                    <p class="text-sm text-gray-500 dark:text-gray-400">No riders in this group.</p>
+                                                {% endif %}
                                             </div>
                                         </div>
                                     {% endfor %}
