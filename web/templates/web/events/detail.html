@@ -1,4 +1,6 @@
 {% extends 'web/_base.html' %}
+{% load form_filters %}
+{% load dict_filters %}
 {% block title %}{{ event.name }} - Event Details{% endblock %}
 {% block content %}
     <div class="space-y-6">
@@ -143,13 +145,50 @@
                         <p>{{ ride.description|safe }}</p>
                     </div>
                     
-                    <div class="flex items-center">
+                    <div class="flex items-center mb-4">
                         <i class="bi bi-map text-gray-500 dark:text-gray-400 mr-2"></i>
                         <a href="{{ride.route.url}}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 underline flex items-center" target="_blank" rel="noopener noreferrer">
                             {{ride.route.name}}
                             <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
                         </a>
                     </div>
+                    
+                    {% with ride_id=ride.id|stringformat:"s" %}
+                    {% if rides_with_riders and ride_id in rides_with_riders %}
+                    <div class="mt-4">
+                        {% with ride_info=rides_with_riders|get_item:ride_id %}
+                            {% if ride_info.speed_ranges %}
+                                <div class="space-y-4">
+                                    {% for speed_range_id, speed_range_info in ride_info.speed_ranges.items %}
+                                        <div>
+                                            <div class="flex items-center mb-2">
+                                                <i class="bi bi-people text-gray-500 dark:text-gray-400 mr-2"></i>
+                                                <span class="text-gray-800 dark:text-gray-200">
+                                                    {% if speed_range_info.speed_range %}
+                                                        {{ speed_range_info.riders|length }} registrations for {{ speed_range_info.speed_range }}
+                                                    {% else %}
+                                                        {{ speed_range_info.riders|length }} registrations (No Speed Preference)
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                            
+                                            <div class="pl-6">
+                                                {% for rider in speed_range_info.riders %}
+                                                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                                                        {{ rider.name }}
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-gray-500 dark:text-gray-400">No riders registered for this ride yet.</p>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                    {% endif %}
+                    {% endwith %}
                 </div>
             </div>
             {% endfor %}

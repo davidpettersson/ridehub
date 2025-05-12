@@ -17,9 +17,48 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(
         Event,
         id=event_id)
+    
+    # Get all confirmed registrations for this event
+    registrations = Registration.objects.filter(
+        event_id=event_id,
+        state=Registration.STATE_CONFIRMED
+    ).select_related('ride', 'speed_range_preference')
+    
+    # Group registrations by ride and speed preference
+    rides_with_riders = {}
+    for reg in registrations:
+        if reg.ride:
+            ride_id = str(reg.ride.id)  # Convert to string to ensure consistent dictionary keys
+            if ride_id not in rides_with_riders:
+                rides_with_riders[ride_id] = {
+                    'ride': reg.ride,
+                    'speed_ranges': {}
+                }
+            
+            speed_range_id = str(reg.speed_range_preference.id) if reg.speed_range_preference else 'none'
+            if speed_range_id not in rides_with_riders[ride_id]['speed_ranges']:
+                rides_with_riders[ride_id]['speed_ranges'][speed_range_id] = {
+                    'speed_range': reg.speed_range_preference,
+                    'riders': [],
+                    'sort_key': reg.speed_range_preference.lower_limit if reg.speed_range_preference else 0
+                }
+            
+            rides_with_riders[ride_id]['speed_ranges'][speed_range_id]['riders'].append(reg)
+    
+    # Sort the speed ranges within each ride by their lower_limit in descending order
+    for ride_id, ride_data in rides_with_riders.items():
+        sorted_speed_ranges = {}
+        for speed_range_id, speed_range_data in sorted(
+            ride_data['speed_ranges'].items(),
+            key=lambda x: x[1]['sort_key'],
+            reverse=True
+        ):
+            sorted_speed_ranges[speed_range_id] = speed_range_data
+        rides_with_riders[ride_id]['speed_ranges'] = sorted_speed_ranges
 
     context = {
         'event': event,
+        'rides_with_riders': rides_with_riders,
     }
 
     return render(request, 'web/events/detail.html', context)
@@ -66,20 +105,21 @@ def event_riders(request: HttpRequest, event_id: int) -> HttpResponse:
     rides_dict = {}
     for reg in registrations:
         if reg.ride:
-            if reg.ride.id not in rides_dict:
-                rides_dict[reg.ride.id] = {
+            ride_id = str(reg.ride.id)  # Convert to string to ensure consistent dictionary keys
+            if ride_id not in rides_dict:
+                rides_dict[ride_id] = {
                     'ride': reg.ride,
                     'speed_ranges': {}
                 }
 
-            speed_range_id = reg.speed_range_preference.id if reg.speed_range_preference else 'none'
-            if speed_range_id not in rides_dict[reg.ride.id]['speed_ranges']:
-                rides_dict[reg.ride.id]['speed_ranges'][speed_range_id] = {
+            speed_range_id = str(reg.speed_range_preference.id) if reg.speed_range_preference else 'none'
+            if speed_range_id not in rides_dict[ride_id]['speed_ranges']:
+                rides_dict[ride_id]['speed_ranges'][speed_range_id] = {
                     'speed_range': reg.speed_range_preference,
                     'riders': []
                 }
 
-            rides_dict[reg.ride.id]['speed_ranges'][speed_range_id]['riders'].append(reg)
+            rides_dict[ride_id]['speed_ranges'][speed_range_id]['riders'].append(reg)
 
     context = {
         'event': event,
