@@ -12,6 +12,9 @@
             <div class="p-6">
                 <div class="flex justify-between items-start">
                     <div>
+                        <div class="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                            {{ event.program }}
+                        </div>
                         <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                             {% if event.cancelled %}<span class="line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
                         </h1>
@@ -52,16 +55,6 @@
                             {{ event.registration_count }} registered{% if not event.has_capacity_available %} (full){% elif event.capacity_remaining is not None %}, {{ event.capacity_remaining }} remaining{% endif %}
                         </span>
                     </div>
-                    {% endif %}
-                </div>
-                
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <span class="badge badge-primary">{{ event.program }}</span>
-                    {% if event.ride_leaders_wanted %}
-                    <span class="badge badge-primary">Ride leaders wanted</span>
-                    {% endif %}
-                    {% if event.requires_emergency_contact %}
-                    <span class="badge badge-primary">Requires emergency contact</span>
                     {% endif %}
                 </div>
                 
