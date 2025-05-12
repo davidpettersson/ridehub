@@ -53,6 +53,8 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
             key=lambda x: x[1]['sort_key'],
             reverse=True
         ):
+            # Sort riders by name within each speed range
+            speed_range_data['riders'].sort(key=lambda r: r.name)
             sorted_speed_ranges[speed_range_id] = speed_range_data
         rides_with_riders[ride_id]['speed_ranges'] = sorted_speed_ranges
 

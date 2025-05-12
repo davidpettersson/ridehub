@@ -294,6 +294,10 @@ class Registration(models.Model):
     def confirm(self):
         self.confirmed_at = timezone.now()
 
+    @property
+    def is_ride_leader(self):
+        return self.ride_leader_preference == self.RIDE_LEADER_YES
+
     @transition(field=state, source=STATE_CONFIRMED, target=STATE_WITHDRAWN)
     def withdraw(self):
         self.withdrawn_at = timezone.now()
