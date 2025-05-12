@@ -165,9 +165,9 @@
                                                 <i class="bi bi-people text-gray-500 dark:text-gray-400 mr-2"></i>
                                                 <span class="text-gray-800 dark:text-gray-200">
                                                     {% if speed_range_info.speed_range %}
-                                                        {{ speed_range_info.riders|length }} registrations for {{ speed_range_info.speed_range }}
+                                                        {{ speed_range_info.riders|length }} registration{{ speed_range_info.riders|length|pluralize }} for {{ speed_range_info.speed_range }}
                                                     {% else %}
-                                                        {{ speed_range_info.riders|length }} registrations (No Speed Preference)
+                                                        {{ speed_range_info.riders|length }} registration{{ speed_range_info.riders|length|pluralize }} (No Speed Preference)
                                                     {% endif %}
                                                 </span>
                                             </div>
@@ -175,7 +175,7 @@
                                             <div class="pl-6">
                                                 {% for rider in speed_range_info.riders %}
                                                     <div class="text-sm text-gray-600 dark:text-gray-400">
-                                                        {{ rider.name }}
+                                                        {{ rider.name }}{% if rider.is_ride_leader %} (ride leader){% endif %}
                                                     </div>
                                                 {% endfor %}
                                             </div>
