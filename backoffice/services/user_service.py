@@ -27,7 +27,6 @@ class UserService(object):
             case Some(user):
                 user.first_name = user_detail.first_name
                 user.last_name = user_detail.last_name
-                user.set_unusable_password()
                 user.save()
                 return user
             case _:
