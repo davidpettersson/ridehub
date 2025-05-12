@@ -162,9 +162,38 @@ class Event(models.Model):
                 })
 
 class Route(models.Model):
-    name = models.CharField(max_length=128)
-    url = models.URLField(verbose_name="Ride With GPS URL", blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    name = models.CharField(
+        max_length=128,
+        help_text='Ride name.'
+    )
+
+    url = models.URLField(
+        verbose_name="Ride With GPS URL",
+        blank=True,
+        help_text='Ride with GPS URL.'
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        help_text='When this route was last updated.'
+    )
+
+    distance = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Distance in kilometers.'
+    )
+
+    elevation_gain = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Elevation gain in meters.'
+    )
+
+    last_imported_at = models.DateTimeField(
+        default=timezone.now,
+        help_text='When this route was last imported into the backoffice.'
+    )
 
     def ride_with_gps_id(self):
         parts = self.url.split('/')
