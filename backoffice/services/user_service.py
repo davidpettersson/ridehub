@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from django.contrib.auth.models import User
 from returns.maybe import Maybe, Some, Nothing
 
-from backoffice.utils import ensure
+from backoffice.utils import ensure, lower_email
 
 
 @dataclass
@@ -14,11 +14,8 @@ class UserDetail:
 
 
 class UserService(object):
-    def _lower_email(self, email: str) -> str:
-        return email.lower()
-
     def find_by_email(self, email: str) -> Maybe[User]:
-        lowercase_email = self._lower_email(email)
+        lowercase_email = lower_email(email)
         users = User.objects.filter(email=lowercase_email)
         ensure(users.count() <= 1, "zero or one users for a given email")
 
@@ -28,7 +25,7 @@ class UserService(object):
             return Nothing
 
     def find_by_email_or_create(self, user_detail: UserDetail) -> User:
-        lowercase_email = self._lower_email(user_detail.email)
+        lowercase_email = lower_email(user_detail.email)
 
         match self.find_by_email(lowercase_email):
             case Some(user):
