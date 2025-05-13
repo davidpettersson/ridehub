@@ -10,6 +10,7 @@ from sesame.utils import get_query_string
 
 from backoffice.services.email_service import EmailService
 from web.forms import EmailLoginForm
+from backoffice.utils import lower_email
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,8 @@ class LoginFormView(FormView):
         self._send_email(user, link)
 
     def form_valid(self, form):
-        self._email_submitted(form.cleaned_data["email"])
+        lowercase_email = lower_email(form.cleaned_data['email'])
+        self._email_submitted(lowercase_email)
         return render(self.request, "web/login/login_email_sent.html")
 
 

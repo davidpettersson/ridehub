@@ -12,3 +12,10 @@ def ensure(condition_met, condition):
 def absurd(condition):
     logger.error(f"Absurd that {condition}")
     raise Exception(condition)
+
+
+def lower_email(email: str|None) -> str|None:
+    if email:
+        return email.lower()
+    else:
+        return None
