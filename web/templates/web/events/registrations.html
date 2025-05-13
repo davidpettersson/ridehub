@@ -32,7 +32,7 @@
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.confirmed_at %}{{ reg.confirmed_at|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.withdrawn_at %}{{ reg.withdrawn_at|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.ride %}{{ reg.ride.name }}{% else %}-{% endif %}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.speed_range_preference %}{{ reg.speed_range_preference.range }}{% else %}-{% endif %}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.speed_range_preference %}{{ reg.speed_range_preference }}{% else %}-{% endif %}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">
                 {% if reg.ride_leader_preference == 'y' %}
                     Yes
