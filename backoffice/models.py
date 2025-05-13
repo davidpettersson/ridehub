@@ -208,6 +208,7 @@ class SpeedRange(models.Model):
     lower_limit = models.IntegerField()
     upper_limit = models.IntegerField(blank=True, null=True)
 
+    @property
     def range(self) -> str:
         if self.upper_limit is None:
             return f"{self.lower_limit}+ km/h"
@@ -215,7 +216,7 @@ class SpeedRange(models.Model):
             return f"{self.lower_limit}-{self.upper_limit} km/h"
 
     def __str__(self) -> str:
-        return self.range()
+        return self.range
 
     class Meta:
         ordering = ['lower_limit']
