@@ -74,15 +74,6 @@ class RegistrationAdmin(admin.ModelAdmin):
     list_display = ('email', 'event', 'state', 'ride', 'speed_range_preference')
     search_fields = ('email', )
 
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
 
 class MemberAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
