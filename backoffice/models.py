@@ -162,9 +162,39 @@ class Event(models.Model):
                 })
 
 class Route(models.Model):
-    name = models.CharField(max_length=128)
-    url = models.URLField(verbose_name="Ride With GPS URL", blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    name = models.CharField(
+        max_length=128,
+        help_text='Ride name.'
+    )
+
+    url = models.URLField(
+        verbose_name="Ride With GPS URL",
+        blank=True,
+        help_text='Ride with GPS URL. If this is set, then whenever an import from Ride with GPS happens other fields will be overwritten for this route.'
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        help_text='When this route was last updated.'
+    )
+
+    distance = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Distance in kilometers.'
+    )
+
+    elevation_gain = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Elevation gain in meters.'
+    )
+
+    last_imported_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When this route was last imported into the backoffice.'
+    )
 
     def ride_with_gps_id(self):
         parts = self.url.split('/')
@@ -263,6 +293,10 @@ class Registration(models.Model):
     @transition(field=state, source=STATE_SUBMITTED, target=STATE_CONFIRMED)
     def confirm(self):
         self.confirmed_at = timezone.now()
+
+    @property
+    def is_ride_leader(self):
+        return self.ride_leader_preference == self.RIDE_LEADER_YES
 
     @transition(field=state, source=STATE_CONFIRMED, target=STATE_WITHDRAWN)
     def withdraw(self):
