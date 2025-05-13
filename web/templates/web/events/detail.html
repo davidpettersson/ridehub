@@ -162,13 +162,16 @@
                                     {% for speed_range_id, speed_range_info in ride_info.speed_ranges.items %}
                                         <div x-data="{ open: false }">
                                             <div class="flex items-center mb-2">
-                                                <i class="bi bi-people text-gray-500 dark:text-gray-400 mr-2"></i>
+                                                <i class="bi bi-speedometer2 text-gray-500 dark:text-gray-400 mr-2"></i>
                                                 <span class="text-gray-800 dark:text-gray-200">
-                                                    {% if speed_range_info.speed_range %}
-                                                        {{ speed_range_info.riders|length }} registration{{ speed_range_info.riders|length|pluralize }} for {{ speed_range_info.speed_range }}
-                                                    {% else %}
-                                                        {{ speed_range_info.riders|length }} registration{{ speed_range_info.riders|length|pluralize }} (No Speed Preference)
-                                                    {% endif %}
+                                                    {% with total_riders_count=speed_range_info.riders|length ride_leader_count_val=speed_range_info.ride_leader_count %}
+                                                        {% if speed_range_info.speed_range %}
+                                                            {{ speed_range_info.speed_range }}
+                                                        {% else %}
+                                                            No Speed Preference
+                                                        {% endif %}
+                                                        ({{ total_riders_count }} rider{{ total_riders_count|pluralize }}{% if ride_leader_count_val > 0 %}, {{ ride_leader_count_val }} ride leader{{ ride_leader_count_val|pluralize }}{% endif %})
+                                                    {% endwith %}
                                                 </span>
                                                 <button @click="open = !open" class="ml-2 text-sm text-primary-600 hover:underline focus:outline-none dark:text-primary-400 dark:hover:text-primary-300">
                                                     <span x-show="!open">(show)</span>

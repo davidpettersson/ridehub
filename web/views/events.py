@@ -51,10 +51,15 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
         for speed_range_id, speed_range_data in sorted(
             ride_data['speed_ranges'].items(),
             key=lambda x: x[1]['sort_key'],
-            reverse=True
+            reverse=False
         ):
             # Sort riders by name within each speed range
             speed_range_data['riders'].sort(key=lambda r: r.name)
+            
+            # Calculate ride leader count for this speed group
+            ride_leader_count = sum(1 for r in speed_range_data['riders'] if r.ride_leader_preference == Registration.RIDE_LEADER_YES)
+            speed_range_data['ride_leader_count'] = ride_leader_count
+            
             sorted_speed_ranges[speed_range_id] = speed_range_data
         rides_with_riders[ride_id]['speed_ranges'] = sorted_speed_ranges
 
