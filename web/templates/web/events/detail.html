@@ -154,9 +154,9 @@
                     </div>
                     
                     {% with ride_id=ride.id|stringformat:"s" %}
-                    {% if rides_with_riders and ride_id in rides_with_riders %}
+                    {% if rides and ride_id in rides %}
                     <div class="mt-4">
-                        {% with ride_info=rides_with_riders|get_item:ride_id %}
+                        {% with ride_info=rides|get_item:ride_id %}
                             {% if ride_info.speed_ranges %}
                                 <div class="space-y-4">
                                     {% for speed_range_id, speed_range_info in ride_info.speed_ranges.items %}
