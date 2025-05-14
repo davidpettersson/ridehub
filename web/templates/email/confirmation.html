@@ -60,6 +60,14 @@
 
     <p><a href="{{ base_url }}{% url 'profile' %}" class="button">Go to your Profile</a></p>
     
+    {% if registration.is_ride_leader %}
+    <div style="margin-top: 20px; padding: 15px; border: 1px solid #4A6DA7; border-radius: 4px; background-color: #e7f0fa;">
+        <h3 style="color: #4A6DA7; margin-top: 0;">Ride Leader Information:</h3>
+        <p>As the ride leader for this event, please remember that participant emergency contact details are crucial for safety. You can access these details directly via the <a href="{{ base_url }}{% url 'riders_list' registration.event.id %}">Emergency Contact List</a> on your profile page.</p>
+        <p><strong>If you anticipate being in an area with poor or no cellular service during the event, please ensure you have a downloaded or printed copy of this list.</strong></p>
+    </div>
+    {% endif %}
+    
     {% if not registration.event.virtual %}
     <div class="event-details">
         <h2>Please remember:</h2>
