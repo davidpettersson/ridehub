@@ -71,7 +71,10 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
                 user_detail=_get_user_details(form),
                 registration_detail=_get_registration_detail(form),
                 event=event)
-            return redirect('registration_submitted')
+            if request.user.is_authenticated:
+                return redirect('profile')
+            else:
+                return redirect('registration_submitted')
 
     # Determine the selected ride (if any) to pre-select speed ranges
     selected_ride_id = None

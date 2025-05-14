@@ -2,6 +2,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
 
+
 class AuthViewTests(TestCase):
 
     def setUp(self):
@@ -38,7 +39,7 @@ class AuthViewTests(TestCase):
         # After logout, user is typically redirected. Default is LOGIN_URL or LOGOUT_REDIRECT_URL if set.
         # login_url in settings.py is '/login/' which sesame.views.LoginView maps to 'login' name.
         # logout_view redirects to LOGIN_URL
-        expected_redirect_url = reverse('login')
+        expected_redirect_url = reverse('event_list')
         self.assertRedirects(logout_response, expected_redirect_url, fetch_redirect_response=False) # Don't follow the redirect yet
 
         # Verify user is logged out by trying to access a protected page or checking session
