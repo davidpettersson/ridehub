@@ -117,30 +117,14 @@
             {% for ride in event.ride_set.all %}
             <div class="card">
                 <div class="p-6">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{{ ride.name }}</h3>
-                    
-                    <div class="flex flex-wrap gap-2 mb-4">
-                        {% if ride.route.distance %}
-                        <span class="badge bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
-                            <i class="bi bi-bicycle mr-1"></i>
-                            {{ ride.route.distance }} km
-                        </span>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                        {{ ride.name }}
+                        {% if ride.route.distance or ride.route.elevation_gain %}
+                            <span class="text-gray-500 dark:text-gray-400 font-normal">
+                                ({% if ride.route.distance %}{{ ride.route.distance }} km{% endif %}{% if ride.route.distance and ride.route.elevation_gain %}, {% endif %}{% if ride.route.elevation_gain %}{{ ride.route.elevation_gain }} m elevation gain{% endif %})
+                            </span>
                         {% endif %}
-                        
-                        {% if ride.route.elevation_gain %}
-                        <span class="badge bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100">
-                            <i class="bi bi-graph-up-arrow mr-1"></i>
-                            {{ ride.route.elevation_gain }} m
-                        </span>
-                        {% endif %}
-                        
-                        {% for speed_range in ride.speed_ranges.all %}
-                        <span class="badge badge-primary">
-                            <i class="bi bi-speedometer2 mr-1"></i>
-                            {{ speed_range }}
-                        </span>
-                        {% endfor %}
-                    </div>
+                    </h3>
                     
                     <div class="prose prose-gray dark:prose-invert max-w-none mb-4">
                         <p>{{ ride.description|safe }}</p>
