@@ -56,9 +56,9 @@
     
     <p>You are confirmed for <strong>{{ registration.event.name }}</strong> on <strong>{{ registration.event.starts_at|date:"l, M j" }}</strong> at <strong>{{ registration.event.starts_at|date:"g:i A" }}</strong>.</p>
     
-    <p><a href="{{ base_url }}{% url 'event_detail' registration.event.id %}" class="button">View event details</a></p>
-    
-    <p>Need to withdraw your registration? Visit your <a href="{{ base_url }}{% url 'profile' %}">profile page</a> to manage your registrations.</p>
+    <p>Thinking of withdrawing? No worries at all! You can manage your registration by visiting your profile page.</p>
+
+    <p><a href="{{ base_url }}{% url 'profile' %}" class="button">Go to your Profile</a></p>
     
     {% if not registration.event.virtual %}
     <div class="event-details">
