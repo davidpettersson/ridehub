@@ -5,7 +5,11 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 from backoffice.models import Event, Registration, Program
-from backoffice.services.registration_service import RegistrationService
+from backoffice.services.registration_service import RegistrationService, UserDetail, RegistrationDetail
+
+from django.core import mail
+from django.urls import reverse
+from django.conf import settings
 
 
 class FetchCurrentRegistrationsTestCase(TestCase):
@@ -385,3 +389,91 @@ class FetchCurrentRegistrationsTestCase(TestCase):
         sorted_regs = sorted(list(current_registrations), key=lambda r: r.event.starts_at)
         self.assertEqual(sorted_regs[0], reg_newer_for_multi_event)
         self.assertEqual(sorted_regs[1], reg_other_single)
+
+
+class RegistrationServiceEmailTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testuser_email', email='test_email@example.com', password='password')
+        self.program = Program.objects.create(name="Email Test Program")
+        self.event = Event.objects.create(
+            program=self.program,
+            name="Email Test Event",
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            ride_leaders_wanted=True,
+            requires_emergency_contact=True # Assuming this is needed for RegistrationDetail
+        )
+        self.service = RegistrationService()
+        mail.outbox = []
+
+    def test_confirmation_email_links_for_regular_user(self):
+        # Arrange
+        user_detail = UserDetail(first_name="Test", last_name="User", email=self.user.email)
+        registration_detail = RegistrationDetail(
+            ride=None, 
+            ride_leader_preference=Registration.RIDE_LEADER_NO, 
+            speed_range_preference=None,
+            emergency_contact_name="EC Name", # Added dummy emergency contact
+            emergency_contact_phone="1234567890" # Added dummy emergency contact
+        )
+
+        # Act
+        self.service.register(user_detail, registration_detail, self.event)
+
+        # Assert
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+
+        expected_profile_url = f"https://{settings.WEB_HOST}{reverse('profile')}"
+        
+        # HTML part (if multipart)
+        if email.alternatives:
+            html_body = email.alternatives[0][0]
+            self.assertIn(f'href="{expected_profile_url}"', html_body)
+            unexpected_riders_url_path = reverse('riders_list', args=[self.event.id])
+            self.assertNotIn(unexpected_riders_url_path, html_body)
+        else:
+            self.fail("Email does not have an HTML alternative part.")
+
+        # Plain text part
+        text_body = email.body
+        self.assertIn(expected_profile_url, text_body)
+        unexpected_riders_url_path_text = reverse('riders_list', args=[self.event.id])
+        self.assertNotIn(unexpected_riders_url_path_text, text_body)
+
+    def test_confirmation_email_links_for_ride_leader(self):
+        # Arrange
+        # Create a new user for this test to ensure isolation if needed, or reuse self.user
+        ride_leader_user = User.objects.create_user(username='testleader_email', email='test_leader_email@example.com', password='password')
+        user_detail = UserDetail(first_name="Test", last_name="Leader", email=ride_leader_user.email)
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=Registration.RIDE_LEADER_YES, 
+            speed_range_preference=None,
+            emergency_contact_name="EC Leader Name", # Added dummy emergency contact
+            emergency_contact_phone="0987654321" # Added dummy emergency contact
+        )
+
+        # Act
+        self.service.register(user_detail, registration_detail, self.event)
+
+        # Assert
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+
+        expected_profile_url = f"https://{settings.WEB_HOST}{reverse('profile')}"
+        expected_riders_list_url = f"https://{settings.WEB_HOST}{reverse('riders_list', args=[self.event.id])}"
+
+        # HTML part
+        if email.alternatives:
+            html_body = email.alternatives[0][0]
+            self.assertIn(f'href="{expected_profile_url}"', html_body)
+            self.assertIn(f'href="{expected_riders_list_url}"', html_body)
+            self.assertIn(f'<a href="{expected_riders_list_url}">Emergency Contact List</a>', html_body)
+        else:
+            self.fail("Email does not have an HTML alternative part.")
+
+        # Plain text part
+        text_body = email.body
+        self.assertIn(expected_profile_url, text_body)
+        self.assertIn(expected_riders_list_url, text_body)
