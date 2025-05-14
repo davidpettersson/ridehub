@@ -1,0 +1,9 @@
+---
+description: 
+globs: **/*.html
+alwaysApply: false
+---
+ - The current styling is based on Tailwind CSS.
+ - New HTML and CSS should be based on Bootstrap and regular CSS classes. All CSS should be in a global CSS file called styling.css.
+
+ - As views are modified, carefully craft new Bootstrap-compatible code. Try to let things co-exist.

@@ -3,6 +3,5 @@ description: Adding validations when creating and updating model files
 globs: **/*.py
 alwaysApply: true
 ---
-
- - Always create validations for any model updates.
+ - Always create validations for models to ensure the integrity of the application.
  - If it is not clear which validation to add, ask the user.
