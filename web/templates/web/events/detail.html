@@ -82,7 +82,12 @@
                 </div>
                 
                 {% if event.registration_open %}
-                <div class="mt-6 mb-4">
+                <div class="mt-6 mb-4 space-y-2">
+                    <div class="flex items-center mb-5">
+                        {% if event.has_capacity_available %}
+                            <div class="text-gray-600 dark:text-gray-400">Registration closes {{ event.registration_closes_at|date:"F j, g:i A" }}.</div>
+                        {% endif %}
+                    </div>
                     <div class="flex items-center">
                         {% if event.external_registration_url %}
                             <a href="{{ event.external_registration_url }}" class="btn-primary" target="_blank" rel="noopener noreferrer">
@@ -94,10 +99,6 @@
                             <div class="p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-md">
                                 <p class="text-yellow-700 dark:text-yellow-400">Sorry, the event has reached maximum capacity.</p>
                             </div>
-                        {% endif %}
-                        
-                        {% if event.has_capacity_available %}
-                            <span class="ml-4 text-gray-600 dark:text-gray-400 text-sm">Registration closes {{ event.registration_closes_at|date:"F j, g:i A" }}.</span>
                         {% endif %}
                     </div>
                 </div>
@@ -116,30 +117,14 @@
             {% for ride in event.ride_set.all %}
             <div class="card">
                 <div class="p-6">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{{ ride.name }}</h3>
-                    
-                    <div class="flex flex-wrap gap-2 mb-4">
-                        {% if ride.route.distance %}
-                        <span class="badge bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
-                            <i class="bi bi-bicycle mr-1"></i>
-                            {{ ride.route.distance }} km
-                        </span>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                        {{ ride.name }}
+                        {% if ride.route.distance or ride.route.elevation_gain %}
+                            <span class="text-gray-500 dark:text-gray-400 font-normal">
+                                ({% if ride.route.distance %}{{ ride.route.distance }} km{% endif %}{% if ride.route.distance and ride.route.elevation_gain %}, {% endif %}{% if ride.route.elevation_gain %}{{ ride.route.elevation_gain }} m elevation gain{% endif %})
+                            </span>
                         {% endif %}
-                        
-                        {% if ride.route.elevation_gain %}
-                        <span class="badge bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100">
-                            <i class="bi bi-graph-up-arrow mr-1"></i>
-                            {{ ride.route.elevation_gain }} m
-                        </span>
-                        {% endif %}
-                        
-                        {% for speed_range in ride.speed_ranges.all %}
-                        <span class="badge badge-primary">
-                            <i class="bi bi-speedometer2 mr-1"></i>
-                            {{ speed_range }}
-                        </span>
-                        {% endfor %}
-                    </div>
+                    </h3>
                     
                     <div class="prose prose-gray dark:prose-invert max-w-none mb-4">
                         <p>{{ ride.description|safe }}</p>
@@ -170,7 +155,7 @@
                                                         {% else %}
                                                             No Speed Preference
                                                         {% endif %}
-                                                        ({{ total_riders_count }} rider{{ total_riders_count|pluralize }}{% if ride_leader_count_val > 0 %}, {{ ride_leader_count_val }} ride leader{{ ride_leader_count_val|pluralize }}{% endif %})
+                                                        ({{ total_riders_count }} rider{{ total_riders_count|pluralize }}{% if ride_leader_count_val > 0 %}, {{ ride_leader_count_val }} leader{{ ride_leader_count_val|pluralize }}{% endif %})
                                                     {% endwith %}
                                                 </span>
                                                 <button @click="open = !open" class="ml-2 text-sm text-primary-600 hover:underline focus:outline-none dark:text-primary-400 dark:hover:text-primary-300">

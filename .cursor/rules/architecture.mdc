@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- All models and business logic must be placed in the backoffice application
+- Avoid using fat models. Instead, place logic in services.
+- Create services for domains of logic, such as users, registrations, events and so on. Create methods in each service for key operations, such as fetching all events.
+

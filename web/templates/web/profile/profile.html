@@ -23,29 +23,48 @@
                                     {% if registration.event.cancelled %}<span class="line-through">{{ registration.event.name }}</span> (cancelled){% else %}{{ registration.event.name }}{% endif %}
                                 </a>
                             </h3>
-                            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                <i class="bi bi-clock mr-1.5"></i>
-                                <span>{{ registration.event.starts_at|date:"l, F j - g:i A" }}</span>
+                            <div class="flex flex-wrap items-center gap-4 mb-2 text-sm text-gray-600 dark:text-gray-400">
+                                <div class="inline-flex items-center">
+                                    <i class="bi bi-calendar-event mr-1.5"></i>
+                                    <span>{{ registration.event.starts_at|date:"l, F j, Y" }}</span>
+                                </div>
+                                
+                                <div class="inline-flex items-center">
+                                    <i class="bi bi-clock mr-1.5"></i>
+                                    <span>{{ registration.event.starts_at|date:"g:i A" }}</span>
+                                </div>
                                 
                                 {% if registration.event.location %}
-                                <span class="mx-2">•</span>
-                                <i class="bi bi-geo-alt mr-1.5"></i>
-                                <span>{{ registration.event.location }}</span>
+                                <div class="inline-flex items-center">
+                                    <i class="bi bi-geo-alt mr-1.5"></i>
+                                    {% if registration.event.location_url %}
+                                    <a href="{{ registration.event.location_url }}" 
+                                       class="text-primary-600 underline hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center"
+                                       target="_blank" rel="noopener noreferrer">
+                                        {{ registration.event.location }}
+                                        <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
+                                    </a>
+                                    {% else %}
+                                    <span>{{ registration.event.location }}</span>
+                                    {% endif %}
+                                </div>
                                 {% endif %}
+                                
+                                <div class="inline-flex items-center">
+                                    <i class="bi bi-people mr-1.5"></i>
+                                    <span>
+                                        {{ registration.event.registration_count }} registered
+                                        {% if not registration.event.has_capacity_available %} (full)
+                                        {% elif registration.event.capacity_remaining is not None %}, {{ registration.event.capacity_remaining }} remaining
+                                        {% endif %}
+                                    </span>
+                                </div>
                             </div>
                             
                             {% if registration.event.has_rides %}
-                            <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                            <div class="mt-2 text-gray-600 dark:text-gray-300">
                                 <div class="flex items-center">
-                                    <span class="font-medium mr-2">Ride:</span>
-                                    <span>{{ registration.ride|default:"Not specified" }}</span>
-                                </div>
-                                <div class="flex items-center mt-1">
-                                    <span class="font-medium mr-2">Speed Range:</span>
-                                    <span>{{ registration.speed_range_preference|default:"Not specified" }}</span>
-                                </div>
-                                <div class="flex items-center mt-1">
-                                    <span class="font-medium mr-2">Registration Status:</span>
+                                    <span class="font-medium mr-2">Registration status:</span>
                                     {% if registration.state == 'confirmed' %}
                                         <span>Confirmed</span>
                                     {% elif registration.state == 'cancelled' %}
@@ -54,27 +73,32 @@
                                         <span>{{ registration.state|title }}</span>
                                     {% endif %}
                                 </div>
+                                <div class="flex items-center mt-1">
+                                    <span class="font-medium mr-2">Ride:</span>
+                                    <span>{{ registration.ride|default:"Not specified" }}</span>
+                                </div>
+                                <div class="flex items-center mt-1">
+                                    <span class="font-medium mr-2">Speed range:</span>
+                                    <span>{{ registration.speed_range_preference|default:"Not specified" }}</span>
+                                </div>
                                 
                                 {% if registration.event.requires_emergency_contact and registration.emergency_contact_name and registration.emergency_contact_phone %}
-                                <div class="flex items-start mt-1">
-                                    <span class="font-medium mr-2">Emergency Contact:</span>
-                                    <span>
-                                        {{ registration.emergency_contact_name }} <br>
-                                        {{ registration.emergency_contact_phone }}
-                                    </span>
+                                <div class="flex items-center mt-1">
+                                    <span class="font-medium mr-2">Emergency contact:</span>
+                                    <span>{{ registration.emergency_contact_name }}, {{ registration.emergency_contact_phone }}</span>
                                 </div>
                                 {% endif %}
                                 
                                 {% if registration.event.ride_leaders_wanted and registration.ride_leader_preference == 'y' %}
                                 <div class="flex items-center mt-1">
-                                    <span class="font-medium mr-2">Ride Leader:</span>
+                                    <span class="font-medium mr-2">Ride leader:</span>
                                     <span>Yes</span>
                                 </div>
                                 {% endif %}
                                 
-                                <div class="mt-2 flex flex-wrap gap-2">
+                                <div class="mt-2 flex flex-col items-start space-y-2">
                                     {% if registration.state == 'confirmed' and not registration.event.cancelled %}
-                                    <form method="post" action="{% url 'registration_withdraw' registration.id %}" class="inline" onsubmit="return confirm('Are you sure you want to withdraw your registration for this event?');">
+                                    <form method="post" action="{% url 'registration_withdraw' registration.id %}" onsubmit="return confirm('Are you sure you want to withdraw your registration for this event?');">
                                         {% csrf_token %}
                                         <button type="submit" class="btn-danger">
                                             Withdraw registration
@@ -94,12 +118,15 @@
                     </div>
                     
                     {% if registration.event.cancelled %}
-                    <div class="mt-4 text-sm text-gray-500 dark:text-gray-500">
-                        <i class="bi bi-info-circle mr-1.5"></i>
-                        <span class="text-gray-500 dark:text-gray-500">Event cancelled</span>
-                        {% if registration.event.cancellation_reason %}
-                        <span class="text-gray-500 dark:text-gray-500 ml-1">({{ registration.event.cancellation_reason }})</span>
-                        {% endif %}
+                    <div class="mt-1 text-gray-600 dark:text-gray-300">
+                        <div class="flex items-center">
+                            <span class="font-medium mr-2">Event cancelled:</span>
+                            {% if registration.event.cancellation_reason %}
+                            <span>{{ registration.event.cancellation_reason }}</span>
+                            {% else %}
+                            <span>No reason provided</span>
+                            {% endif %}
+                        </div>
                     </div>
                     {% endif %}
                 </div>
