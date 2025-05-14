@@ -1,6 +1,9 @@
 import logging
 from dataclasses import dataclass
 
+from django.db.models import QuerySet
+from django.utils import timezone
+
 from django.contrib.auth.models import User
 
 from backoffice.models import Event, Registration, SpeedRange, Ride
@@ -79,3 +82,10 @@ class RegistrationService:
             self._send_confirmation_email(registration)
             registration.confirm()
             registration.save()
+
+    def fetch_current_registrations(self, user: User) -> QuerySet[Registration]:
+        today = timezone.now().date()
+        return Registration.objects.filter(
+            user=user,
+            event__starts_at__date__gte=today
+        ).order_by('event__starts_at')

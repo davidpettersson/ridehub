@@ -3,6 +3,7 @@ description: Guidance on when to add test cases
 globs: **/*.py
 alwaysApply: true
 ---
- - Always add unit tests for models in backoffice/models.py
- - Always add unit tests for services in backoffice/services
+ - Always add unit tests for models in backoffice/tests/models
+ - Always add unit tests for services in backoffice/tests/services
+ - Use the arrange-act-assert pattern for all tests
  
