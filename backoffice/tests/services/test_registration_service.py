@@ -284,3 +284,104 @@ class FetchCurrentRegistrationsTestCase(TestCase):
 
         for reg in current_registrations_for_self_user:
             self.assertEqual(reg.user, self.user)
+
+    def test_fetch_current_registrations_excludes_archived_events(self):
+        # Arrange
+        # Non-archived event and registration (should be included)
+        event_not_archived = Event.objects.create(
+            name="Current Event Not Archived",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            registration_closes_at=self.test_today_datetime_noon,
+            archived=False
+        )
+        reg_not_archived = Registration.objects.create(
+            user=self.user,
+            event=event_not_archived,
+            name=self.user.username,
+            email=self.user.email
+        )
+
+        # Archived event and registration (should be excluded)
+        event_archived = Event.objects.create(
+            name="Current Event Archived",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=2),
+            registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            archived=True
+        )
+        Registration.objects.create(
+            user=self.user,
+            event=event_archived,
+            name=self.user.username,
+            email=self.user.email
+        )
+
+        # Act
+        current_registrations = self.service.fetch_current_registrations(self.user)
+
+        # Assert
+        self.assertEqual(len(current_registrations), 1)
+        self.assertIn(reg_not_archived, current_registrations)
+        self.assertEqual(current_registrations[0], reg_not_archived)
+
+    def test_fetch_current_registrations_gets_latest_for_multiple_on_same_event(self):
+        # Arrange
+        # Event for which user will have multiple registrations
+        multi_reg_event = Event.objects.create(
+            name="Event with Multiple Registrations",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            registration_closes_at=self.test_today_datetime_noon,
+            archived=False
+        )
+
+        # Older registration for multi_reg_event (created first, lower pk)
+        Registration.objects.create(
+            user=self.user,
+            event=multi_reg_event,
+            name=self.user.username,
+            email=self.user.email
+        )
+
+        # Newer registration for multi_reg_event (created second, higher pk)
+        reg_newer_for_multi_event = Registration.objects.create(
+            user=self.user,
+            event=multi_reg_event,
+            name=self.user.username,
+            email=self.user.email # Using same email, but different registration pk
+        )
+
+        # Another distinct current event and registration, for control
+        other_current_event = Event.objects.create(
+            name="Another Single Current Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=2),
+            registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            archived=False
+        )
+        reg_other_single = Registration.objects.create(
+            user=self.user,
+            event=other_current_event,
+            name=self.user.username,
+            email=self.user.email
+        )
+
+        # Act
+        current_registrations = self.service.fetch_current_registrations(self.user)
+
+        # Assert
+        self.assertEqual(len(current_registrations), 2)
+        self.assertIn(reg_newer_for_multi_event, current_registrations)
+        self.assertIn(reg_other_single, current_registrations)
+        
+        # Ensure the older registration for multi_reg_event is not present
+        registrations_on_multi_event = [reg for reg in current_registrations if reg.event == multi_reg_event]
+        self.assertEqual(len(registrations_on_multi_event), 1)
+        self.assertEqual(registrations_on_multi_event[0], reg_newer_for_multi_event)
+
+        # Check overall order if desired (assuming event__starts_at ordering)
+        # multi_reg_event (days=1) should come before other_current_event (days=2)
+        sorted_regs = sorted(list(current_registrations), key=lambda r: r.event.starts_at)
+        self.assertEqual(sorted_regs[0], reg_newer_for_multi_event)
+        self.assertEqual(sorted_regs[1], reg_other_single)
