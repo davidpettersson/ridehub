@@ -3,4 +3,4 @@ description: When and how to use badges to convey information
 globs: **/*.html
 alwaysApply: true
 ---
- - There should be no badges in the application. If there are legacy badges, those should be removed and replaced with non-badge equivalents.
+ - There should be no badges in the application. 
