@@ -1,6 +1,9 @@
 import logging
 from dataclasses import dataclass
 
+from django.db.models import QuerySet, Subquery, OuterRef
+from django.utils import timezone
+
 from django.contrib.auth.models import User
 
 from backoffice.models import Event, Registration, SpeedRange, Ride
@@ -79,3 +82,20 @@ class RegistrationService:
             self._send_confirmation_email(registration)
             registration.confirm()
             registration.save()
+
+    def fetch_current_registrations(self, user: User) -> QuerySet[Registration]:
+        today = timezone.now().date()
+
+        # Subquery to find the PK of the most recent registration for each event
+        # for the given user. We assume 'pk' (auto-incrementing) indicates recency.
+        latest_pk_subquery = Registration.objects.filter(
+            user=user,
+            event_id=OuterRef('event_id') # Correlate with the outer query's event
+        ).order_by('-pk').values('pk')[:1]
+
+        return Registration.objects.filter(
+            user=user,
+            event__starts_at__date__gte=today,
+            event__archived=False,
+            pk=Subquery(latest_pk_subquery)
+        ).order_by('event__starts_at')

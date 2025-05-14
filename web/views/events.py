@@ -103,35 +103,24 @@ def event_riders(request: HttpRequest, event_id: int) -> HttpResponse:
     if not event.ride_leaders_wanted:
         return redirect('profile')
 
-    # Get all confirmed registrations for this event
-    registrations = Registration.objects.filter(
+    # Get all confirmed registrations for this event, ordered appropriately
+    all_riders = Registration.objects.filter(
         event_id=event_id,
         state=Registration.STATE_CONFIRMED
-    ).select_related('ride', 'speed_range_preference', 'user')
-
-    # Group registrations by ride and speed preference
-    rides_dict = {}
-    for reg in registrations:
-        if reg.ride:
-            ride_id = str(reg.ride.id)  # Convert to string to ensure consistent dictionary keys
-            if ride_id not in rides_dict:
-                rides_dict[ride_id] = {
-                    'ride': reg.ride,
-                    'speed_ranges': {}
-                }
-
-            speed_range_id = str(reg.speed_range_preference.id) if reg.speed_range_preference else 'none'
-            if speed_range_id not in rides_dict[ride_id]['speed_ranges']:
-                rides_dict[ride_id]['speed_ranges'][speed_range_id] = {
-                    'speed_range': reg.speed_range_preference,
-                    'riders': []
-                }
-
-            rides_dict[ride_id]['speed_ranges'][speed_range_id]['riders'].append(reg)
+    ).select_related(
+        'ride', 
+        'speed_range_preference', 
+        'user'
+    ).order_by(
+        'ride__ordering', 
+        'speed_range_preference__lower_limit', 
+        'user__first_name', # Assuming user.name is not a direct field, sort by first_name
+        'user__last_name'
+    )
 
     context = {
         'event': event,
-        'rides': rides_dict.values()
+        'all_riders': all_riders
     }
 
     return render(request, 'web/events/riders.html', context=context)

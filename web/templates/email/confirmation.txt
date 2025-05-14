@@ -2,9 +2,14 @@ Hello!
 
 You are confirmed for {{ registration.event.name }} on {{ registration.event.starts_at|date:"l, M j" }} at {{ registration.event.starts_at|date:"g:i A" }}.
 
-Here is a direct link to the event: {{ base_url }}{% url 'event_detail' registration.event.id %}
+Thinking of withdrawing? No worries at all! You can manage your registration by visiting your profile page: {{ base_url }}{% url 'profile' %}
 
-Need to withdraw your registration? Visit your profile page to manage your registrations: {{ base_url }}{% url 'profile' %}
+{% if registration.is_ride_leader %}
+IMPORTANT RIDE LEADER INFORMATION:
+As the ride leader for this event, participant emergency contact details are available on your profile page.
+Direct link to Emergency Contact List: {{ base_url }}{% url 'riders_list' registration.event.id %}
+If you anticipate being in an area with poor or no cellular service during the event, please ensure you have a downloaded or printed copy of this list.
+{% endif %}
 
 {% if not registration.event.virtual %}
 Please remember:

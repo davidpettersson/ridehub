@@ -100,15 +100,15 @@
                                     {% if registration.state == 'confirmed' and not registration.event.cancelled %}
                                     <form method="post" action="{% url 'registration_withdraw' registration.id %}" onsubmit="return confirm('Are you sure you want to withdraw your registration for this event?');">
                                         {% csrf_token %}
-                                        <button type="submit" class="btn-danger">
+                                        <button type="submit" class="btn-primary">
                                             Withdraw registration
                                         </button>
                                     </form>
                                     {% endif %}
                                     
                                     {% if registration.ride_leader_preference == 'y' and registration.state == 'confirmed' and registration.event.ride_leaders_wanted %}
-                                    <a href="{% url 'riders_list' registration.event.id %}" class="btn-primary">
-                                        View registered riders
+                                    <a href="{% url 'riders_list' registration.event.id %}" class="btn-danger">
+                                        View emergency contacts
                                     </a>
                                     {% endif %}
                                 </div>
