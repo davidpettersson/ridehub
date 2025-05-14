@@ -155,7 +155,7 @@
                                                         {% else %}
                                                             No Speed Preference
                                                         {% endif %}
-                                                        ({{ total_riders_count }} rider{{ total_riders_count|pluralize }}{% if ride_leader_count_val > 0 %}, {{ ride_leader_count_val }} ride leader{{ ride_leader_count_val|pluralize }}{% endif %})
+                                                        ({{ total_riders_count }} rider{{ total_riders_count|pluralize }}{% if ride_leader_count_val > 0 %}, {{ ride_leader_count_val }} leader{{ ride_leader_count_val|pluralize }}{% endif %})
                                                     {% endwith %}
                                                 </span>
                                                 <button @click="open = !open" class="ml-2 text-sm text-primary-600 hover:underline focus:outline-none dark:text-primary-400 dark:hover:text-primary-300">
