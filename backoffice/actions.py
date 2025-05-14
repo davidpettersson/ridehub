@@ -12,20 +12,10 @@ from backoffice.models import Registration
 
 
 def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
-    """
-    Admin action to cancel events and notify registered users.
-    
-    This action will:
-    1. Mark each event as cancelled
-    2. Record the cancellation time and reason
-    3. Send email notifications to registered users who haven't withdrawn
-    """
-    # Handle the cancellation form submission
     if request.method == 'POST' and 'post' in request.POST:
         cancellation_reason = request.POST.get('cancellation_reason', '')
         now = timezone.now()
         
-        # Update each event
         cancel_count = 0
         for event in query_set:
             event.cancelled = True
@@ -33,9 +23,7 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
             event.cancellation_reason = cancellation_reason
             event.save()
             
-            # Send notification emails to confirmed registrations
             for registration in event.registration_set.filter(state=Registration.STATE_CONFIRMED):
-                # Don't send notifications to withdrawn registrations
                 context = {
                     'event': event,
                     'registration': registration,
@@ -43,10 +31,10 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
                     'base_url': f"https://{request.get_host()}"
                 }
                 
-                EmailService.send_email(
+                EmailService().send_email(
                     template_name='event_cancelled',
                     context=context,
-                    subject=f"CANCELLED: {event.name}",
+                    subject=f"RIDE CANCELLED {event.name}",
                     recipient_list=[registration.email],
                 )
             
@@ -60,7 +48,6 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
         admin.message_user(request, message, messages.SUCCESS)
         return redirect('admin:backoffice_event_changelist')
         
-    # Display a confirmation form to enter the cancellation reason
     context = {
         'title': 'Cancel selected events',
         'queryset': query_set,
