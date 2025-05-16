@@ -390,6 +390,146 @@ class FetchCurrentRegistrationsTestCase(TestCase):
         self.assertEqual(sorted_regs[0], reg_newer_for_multi_event)
         self.assertEqual(sorted_regs[1], reg_other_single)
 
+    def test_fetch_current_registrations_only_confirmed_and_submitted(self):
+        # Arrange
+        # Create an event
+        event = Event.objects.create(
+            name="Event for Registration State Test",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            registration_closes_at=self.test_today_datetime_noon,
+            archived=False
+        )
+        
+        # Create a submitted registration
+        reg_submitted = Registration.objects.create(
+            user=self.user,
+            event=event,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        
+        # Create a confirmed registration for another event
+        event_confirmed = Event.objects.create(
+            name="Event for Confirmed Registration",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=2),
+            registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            archived=False
+        )
+        reg_confirmed = Registration.objects.create(
+            user=self.user,
+            event=event_confirmed,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg_confirmed.confirm()
+        reg_confirmed.save()
+        
+        # Create a withdrawn registration that should not be included
+        event_withdrawn = Event.objects.create(
+            name="Event for Withdrawn Registration",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=3),
+            registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=2),
+            archived=False
+        )
+        reg_withdrawn = Registration.objects.create(
+            user=self.user,
+            event=event_withdrawn,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg_withdrawn.confirm()
+        reg_withdrawn.withdraw()
+        reg_withdrawn.save()
+
+        # Act
+        current_registrations = self.service.fetch_current_registrations(self.user)
+
+        # Assert
+        self.assertEqual(len(current_registrations), 2)
+        self.assertIn(reg_submitted, current_registrations)
+        self.assertIn(reg_confirmed, current_registrations)
+        self.assertNotIn(reg_withdrawn, current_registrations)
+        
+        # Verify states - all should be either 'submitted' or 'confirmed'
+        for registration in current_registrations:
+            self.assertIn(registration.state, [Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED])
+
+    def test_fetch_current_registrations_multiple_for_same_event_filters_by_state(self):
+        # Arrange
+        # Create a single event
+        event = Event.objects.create(
+            name="Event with Multiple Registration States",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            registration_closes_at=self.test_today_datetime_noon,
+            archived=False
+        )
+        
+        # First registration - Submitted (oldest)
+        Registration.objects.create(
+            user=self.user,
+            event=event,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        
+        # Second registration - Confirmed (middle)
+        reg_confirmed = Registration.objects.create(
+            user=self.user,
+            event=event,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg_confirmed.confirm()
+        reg_confirmed.save()
+        
+        # Third registration - Withdrawn (newest, but should be excluded)
+        reg_withdrawn = Registration.objects.create(
+            user=self.user,
+            event=event,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg_withdrawn.confirm()
+        reg_withdrawn.withdraw()
+        reg_withdrawn.save()
+        
+        # Fourth registration - Confirmed (newest valid state)
+        reg_newest = Registration.objects.create(
+            user=self.user,
+            event=event,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg_newest.confirm()
+        reg_newest.save()
+
+        # Act
+        current_registrations = self.service.fetch_current_registrations(self.user)
+
+        # Assert
+        self.assertEqual(len(current_registrations), 1)
+        self.assertIn(reg_newest, current_registrations)
+        self.assertNotIn(reg_withdrawn, current_registrations)
+        
+        # Verify we got the newest valid registration
+        registrations_for_event = [reg for reg in current_registrations if reg.event == event]
+        self.assertEqual(len(registrations_for_event), 1)
+        self.assertEqual(registrations_for_event[0], reg_newest)
+        
+        # Verify state is valid
+        self.assertIn(registrations_for_event[0].state, [Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED])
+
 
 class RegistrationServiceEmailTests(TestCase):
     def setUp(self):

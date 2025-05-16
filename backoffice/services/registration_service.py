@@ -97,5 +97,6 @@ class RegistrationService:
             user=user,
             event__starts_at__date__gte=today,
             event__archived=False,
+            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED],
             pk=Subquery(latest_pk_subquery)
         ).order_by('event__starts_at')

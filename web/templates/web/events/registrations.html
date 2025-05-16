@@ -1,52 +1,312 @@
-<html>
-<head>
-    <title>Registrations for {{ event.name }}</title>
-</head>
-<body style="font-family: Arial, Helvetica, sans-serif;">
-<h1>Registrations for {{ event.name }}</h1>
-<table class="table" style="border-collapse: collapse;">
-    <thead style="background-color: #DDDDDD; color: black;">
-        <tr>
-            <th style="padding: 2pt; border: 1px solid #DDDDDD;">ID</th>
-            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Name</th>
-            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Email</th>
-            <th style="padding: 2pt; border: 1px solid #DDDDDD;">State</th>
-            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Submitted At</th>
-            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Confirmed At</th>
-            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Withdrawn At</th>
-            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Ride</th>
-            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Speed Range</th>
-            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Ride Leader</th>
-            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Emergency Contact</th>
-            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Emergency Phone</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for reg in registrations %}
-        <tr>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.id }}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.name }}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.email }}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.state }}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.submitted_at|date:"Y-m-d H:i:s" }}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.confirmed_at %}{{ reg.confirmed_at|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.withdrawn_at %}{{ reg.withdrawn_at|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.ride %}{{ reg.ride.name }}{% else %}-{% endif %}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.speed_range_preference %}{{ reg.speed_range_preference }}{% else %}-{% endif %}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">
-                {% if reg.ride_leader_preference == 'y' %}
-                    Yes
-                {% elif reg.ride_leader_preference == 'n' %}
-                    No
-                {% else %}
-                    N/A
+{% extends 'web/_base_bootstrap.html' %}
+{% block title %}Riders for {{ event.name }}{% endblock %}
+{% block content %}
+<style media="print">
+    /* Hide navbar and non-essential elements */
+    nav, .navbar, .navbar-obc {
+        display: none !important;
+    }
+    
+    /* Ensure the event details card is visible */
+    .mb-5 > .card.shadow-sm.p-4.mb-4 {
+        display: block !important;
+        border: 1px solid #ddd !important;
+        margin-bottom: 15px !important;
+    }
+    
+    /* Remove the card styling from table container only */
+    .d-none.d-md-block.card.shadow-sm {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Remove padding from table container */
+    .d-none.d-md-block.card > .p-4 {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Prevent page breaks within rows */
+    tr {
+        page-break-inside: avoid !important;
+    }
+    
+    /* Prevent content from creating extra pages */
+    html, body, main, .mb-5 {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+    }
+    
+    /* Remove all bottom margins/padding from all elements */
+    * {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Add page break control */
+    @page {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Force page break to avoid blank pages */
+    .mb-5::after {
+        content: "";
+        display: block;
+        page-break-after: always;
+        height: 0;
+    }
+    
+    /* Remove any footers */
+    footer, .footer {
+        display: none !important;
+    }
+    
+    /* Print-specific styles */
+    @page {
+        size: landscape;
+        margin: 0.5cm;
+    }
+    
+    body {
+        background-color: white !important;
+        color: black !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .container, .container-fluid, .container-lg, .container-md, 
+    .container-sm, .container-xl, .container-xxl {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    .text-muted {
+        color: #333 !important;
+    }
+    
+    .badge {
+        border: 1px solid #333 !important;
+        color: black !important;
+        background-color: white !important;
+    }
+    
+    a {
+        color: black !important;
+        text-decoration: none !important;
+    }
+    
+    .text-primary {
+        color: black !important;
+    }
+    
+    /* Hide non-essential elements */
+    .d-md-none {
+        display: none !important;
+    }
+    
+    .d-none.d-md-block {
+        display: block !important;
+    }
+    
+    /* Table specific adjustments */
+    .table {
+        width: 100% !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
+    }
+    
+    .table th, .table td {
+        border: 1px solid #ddd !important;
+        padding: 4px !important;
+        word-wrap: break-word !important;
+    }
+    
+    /* Column widths for better space utilization */
+    .table th:nth-child(1), .table td:nth-child(1) { width: 15% !important; } /* Name */
+    .table th:nth-child(2), .table td:nth-child(2) { width: 15% !important; } /* Ride */
+    .table th:nth-child(3), .table td:nth-child(3) { width: 10% !important; } /* Speed group */
+    .table th:nth-child(4), .table td:nth-child(4) { width: 8% !important; } /* Ride leader */
+    .table th:nth-child(5), .table td:nth-child(5) { width: 20% !important; } /* Email */
+    .table th:nth-child(6), .table td:nth-child(6) { width: 16% !important; } /* Emergency contact */
+    .table th:nth-child(7), .table td:nth-child(7) { width: 16% !important; } /* Emergency phone */
+    
+    /* Remove padding/margins */
+    .mb-4, .mb-5, .py-4, .py-5, .p-4 {
+        margin: 0 !important;
+        padding: 0.2rem !important;
+    }
+    
+    /* Adjust other layout elements */
+    .overflow-auto {
+        overflow: visible !important;
+    }
+</style>
+
+<div class="mb-4">
+    <div class="mb-3 d-print-none">
+        <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
+            <i class="bi bi-arrow-left me-2"></i> Back to event details
+        </a>
+    </div>
+
+    <div class="mb-3">
+        <h1 class="fs-2 fw-bold mb-0">
+            Riders for {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
+        </h1>
+    </div>
+    
+    <div class="card shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between">
+            <div class="d-flex flex-wrap gap-3 small">
+                <div class="d-inline-flex align-items-center text-muted">
+                    <i class="bi bi-calendar-event me-2"></i>
+                    <span>{{ event.starts_at|date:"l, F j, Y" }}</span>
+                </div>
+                
+                <div class="d-inline-flex align-items-center text-muted">
+                    <i class="bi bi-clock me-2"></i>
+                    <span>{{ event.starts_at|date:"g:i A" }}</span>
+                </div>
+                
+                {% if event.location %}
+                <div class="d-inline-flex align-items-center text-muted">
+                    <i class="bi bi-geo-alt me-2"></i>
+                    {% if event.location_url %}
+                    <a href="{{ event.location_url }}" 
+                       class="text-primary d-flex align-items-center"
+                       target="_blank" rel="noopener noreferrer">
+                        {{ event.location }}
+                        <i class="bi bi-box-arrow-up-right ms-1 small"></i>
+                    </a>
+                    {% else %}
+                    <span>{{ event.location }}</span>
+                    {% endif %}
+                </div>
                 {% endif %}
-            </td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.emergency_contact_name|default:"-" }}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.emergency_contact_phone|default:"-" }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-</body>
-</html>
+            </div>
+            
+            <!-- Global emergency button -->
+        </div>
+    </div>
+    
+    {% if all_riders %}
+        <!-- Mobile view (card-based layout) -->
+        <div class="d-md-none">
+            {% for rider_reg in all_riders %}
+                <div class="card mb-3 p-4">
+                    <div class="d-flex flex-column align-items-start mb-2">
+                        <div class="d-flex align-items-center">
+                            <h4 class="fw-medium fs-5 mb-0">{{ rider_reg.name }}</h4>
+                            {% if rider_reg.ride_leader_preference == 'y' %}
+                                <span class="badge bg-primary ms-2">Ride leader</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="small">
+                        <div class="row mb-1">
+                            <div class="col-5 fw-medium">Ride:</div>
+                            <div class="col-7 text-muted">{{ rider_reg.ride.name|default:"N/A" }}</div>
+                        </div>
+                        <div class="row mb-1">
+                            <div class="col-5 fw-medium">Speed group:</div>
+                            <div class="col-7 text-muted">{{ rider_reg.speed_range_preference.range|default:"N/A" }}</div>
+                        </div>
+                        
+                        {% if is_ride_leader %}
+                        <div class="mt-3 border-top border-danger-subtle pt-2 w-100">
+                            <div class="row mb-1">
+                                <div class="col-5 fw-medium">Email:</div>
+                                <div class="col-7 text-muted">
+                                    <a href="mailto:{{ rider_reg.email }}" class="text-primary">
+                                        {{ rider_reg.email }}
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="row mb-1">
+                                <div class="col-5 fw-medium">Emergency:</div>
+                                <div class="col-7 text-muted">{{ rider_reg.emergency_contact_name }}</div>
+                            </div>
+                            <div class="row mb-1">
+                                <div class="col-5 fw-medium">Phone:</div>
+                                <div class="col-7 text-muted">
+                                    <a href="tel:{{ rider_reg.emergency_contact_phone }}" class="text-primary">
+                                        {{ rider_reg.emergency_contact_phone }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Desktop view (table-based layout) -->
+        <div class="d-none d-md-block card shadow-sm overflow-auto">
+            <div class="p-4">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="small fw-medium">Name</th>
+                            <th scope="col" class="small fw-medium">Ride</th>
+                            <th scope="col" class="small fw-medium">Speed group</th>
+                            {% if is_ride_leader %}
+                            <th scope="col" class="small fw-medium">Email</th>
+                            <th scope="col" class="emergency-info small fw-medium">Emergency contact</th>
+                            <th scope="col" class="emergency-info small fw-medium">Emergency phone</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rider_reg in all_riders %}
+                            <tr>
+                                <td class="small fw-medium">
+                                    {{ rider_reg.name }}
+                                    {% if rider_reg.ride_leader_preference == 'y' %}
+                                        <span class="badge bg-primary ms-2">Ride leader</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small text-muted">{{ rider_reg.ride.name|default:"N/A" }}</td>
+                                <td class="small text-muted">{{ rider_reg.speed_range_preference.range|default:"N/A" }}</td>
+                                {% if is_ride_leader %}
+                                <td class="small text-muted">
+                                    <a href="mailto:{{ rider_reg.email }}" class="text-primary">
+                                        {{ rider_reg.email }}
+                                    </a>
+                                </td>
+                                <td class="emergency-info small text-muted">
+                                    {{ rider_reg.emergency_contact_name }}
+                                </td>
+                                <td class="emergency-info small text-muted">
+                                    <a href="tel:{{ rider_reg.emergency_contact_phone }}" class="text-primary">
+                                        {{ rider_reg.emergency_contact_phone }}
+                                    </a>
+                                </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="py-5 text-center card">
+            <p class="text-muted">No riders found for this event.</p>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %} 
