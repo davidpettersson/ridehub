@@ -87,23 +87,18 @@ def event_list(request: HttpRequest) -> HttpResponse:
     return render(request, 'web/events/list.html', context)
 
 
-@login_required
 def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
-    # Check if user is registered as a ride leader for this event
-    registration = get_object_or_404(
-        Registration,
-        event_id=event_id,
-        user=request.user,
-        state=Registration.STATE_CONFIRMED,
-        ride_leader_preference=Registration.RIDE_LEADER_YES
-    )
-
-    # Ensure the event requires ride leaders
-    event = registration.event
-    if not event.ride_leaders_wanted:
-        return redirect('profile')
-
-    # Get all confirmed registrations for this event, ordered appropriately
+    event = get_object_or_404(Event, id=event_id)
+    
+    is_ride_leader = False
+    if request.user.is_authenticated:
+        is_ride_leader = Registration.objects.filter(
+            event_id=event_id,
+            user=request.user,
+            state=Registration.STATE_CONFIRMED,
+            ride_leader_preference=Registration.RIDE_LEADER_YES
+        ).exists()
+    
     all_riders = Registration.objects.filter(
         event_id=event_id,
         state=Registration.STATE_CONFIRMED
@@ -114,13 +109,14 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
     ).order_by(
         'ride__ordering', 
         'speed_range_preference__lower_limit', 
-        'user__first_name', # Assuming user.name is not a direct field, sort by first_name
+        'user__first_name',
         'user__last_name'
     )
 
     context = {
         'event': event,
-        'all_riders': all_riders
+        'all_riders': all_riders,
+        'is_ride_leader': is_ride_leader
     }
 
     return render(request, 'web/events/registrations.html', context=context)
