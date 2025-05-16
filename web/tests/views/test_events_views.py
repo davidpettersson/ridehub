@@ -53,7 +53,7 @@ class EventViewsTests(TestCase):
         
         # Assert
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'web/events/registrations.html')
+        self.assertTemplateUsed(response, 'web/events/registrations_full.html')
 
     def test_event_registrations_full_view_non_staff_denied(self):
         # Arrange

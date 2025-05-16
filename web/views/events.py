@@ -123,7 +123,7 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
         'all_riders': all_riders
     }
 
-    return render(request, 'web/events/riders.html', context=context)
+    return render(request, 'web/events/registrations.html', context=context)
 
 
 @login_required
@@ -140,4 +140,4 @@ def event_registrations_full(request: HttpRequest, event_id: int) -> HttpRespons
         'registrations': registrations
     }
 
-    return render(request, 'web/events/registrations.html', context)
+    return render(request, 'web/events/registrations_full.html', context)

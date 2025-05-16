@@ -1,0 +1,52 @@
+<html>
+<head>
+    <title>Registrations for {{ event.name }}</title>
+</head>
+<body style="font-family: Arial, Helvetica, sans-serif;">
+<h1>Registrations for {{ event.name }}</h1>
+<table class="table" style="border-collapse: collapse;">
+    <thead style="background-color: #DDDDDD; color: black;">
+        <tr>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">ID</th>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Name</th>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Email</th>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">State</th>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Submitted At</th>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Confirmed At</th>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Withdrawn At</th>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Ride</th>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Speed Range</th>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Ride Leader</th>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Emergency Contact</th>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Emergency Phone</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for reg in registrations %}
+        <tr>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.id }}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.name }}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.email }}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.state }}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.submitted_at|date:"Y-m-d H:i:s" }}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.confirmed_at %}{{ reg.confirmed_at|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.withdrawn_at %}{{ reg.withdrawn_at|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.ride %}{{ reg.ride.name }}{% else %}-{% endif %}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.speed_range_preference %}{{ reg.speed_range_preference }}{% else %}-{% endif %}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">
+                {% if reg.ride_leader_preference == 'y' %}
+                    Yes
+                {% elif reg.ride_leader_preference == 'n' %}
+                    No
+                {% else %}
+                    N/A
+                {% endif %}
+            </td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.emergency_contact_name|default:"-" }}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.emergency_contact_phone|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</body>
+</html>
