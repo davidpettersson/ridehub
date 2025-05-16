@@ -1,12 +1,19 @@
 {% extends 'web/_base.html' %}
 {% block title %}Registrations{% endblock %}
 {% block content %}
-    <div class="container">
-        <p>Your registrations:</p>
-        <ul>
+<div class="container py-4">
+    <h1 class="mb-4">Your Registrations</h1>
+    {% if registrations %}
+        <div class="list-group">
             {% for registration in registrations %}
-            <li>{{ registration.event.name }}</li>
+            <a href="{% url 'event_detail' registration.event.id %}" class="list-group-item list-group-item-action">
+                {{ registration.event.name }}
+                <small class="text-muted d-block">{{ registration.event.starts_at|date:"l, F j, Y - g:i A" }}</small>
+            </a>
             {% endfor %}
-        </ul>
-    </div>
+        </div>
+    {% else %}
+        <p class="text-muted">You have no registrations.</p>
+    {% endif %}
+</div>
 {% endblock %}

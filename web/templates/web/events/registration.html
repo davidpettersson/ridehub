@@ -1,46 +1,33 @@
 {% extends 'web/_base.html' %}
-{% load form_filters %}
 {% block title %}Register for {{ event.name }}{% endblock %}
 {% block content %}
-<div class="space-y-6">
-    <div class="flex items-center mb-6">
-        <a href="{% url 'event_detail' event.id %}" class="inline-flex items-center text-sm text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400">
-            <i class="bi bi-arrow-left mr-2"></i> Back to event detail
+<div class="container py-4">
+    <div class="mb-4">
+        <a href="{% url 'event_detail' event.id %}" class="btn btn-link text-decoration-none">
+            <i class="bi bi-arrow-left me-2"></i> Back to event detail
         </a>
     </div>
 
-    <div class="card">
-        <div class="p-6">
-            <div class="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1 font-semibold">
-                {{ event.program }}
-            </div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                {% if event.cancelled %}<span class="line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
+    <div class="card mb-4">
+        <div class="card-body p-4">
+            <p class="text-muted text-uppercase small mb-1 fw-semibold">{{ event.program }}</p>
+            <h1 class="h3 mb-2">
+                {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
             </h1>
             
-            <div class="flex flex-wrap items-center gap-4 mb-6 text-sm">
-                <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
-                    <i class="bi bi-calendar-event mr-2"></i>
-                    <span>{{ event.starts_at|date:"l, F j, Y" }}</span>
-                </div>
-                
-                <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
-                    <i class="bi bi-clock mr-2"></i>
-                    <span>{{ event.starts_at|date:"g:i A" }}</span>
-                </div>
-                
+            <div class="d-flex flex-wrap align-items-center small text-muted">
+                <div class="me-3 mb-2"><i class="bi bi-calendar-event me-2"></i>{{ event.starts_at|date:"l, F j, Y" }}</div>
+                <div class="me-3 mb-2"><i class="bi bi-clock me-2"></i>{{ event.starts_at|date:"g:i A" }}</div>
                 {% if event.location or event.location_url %}
-                <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
-                    <i class="bi bi-geo-alt mr-2"></i>
+                <div class="me-3 mb-2">
+                    <i class="bi bi-geo-alt me-2"></i>
                     {% if event.location_url %}
-                    <a href="{{ event.location_url }}" 
-                       class="text-primary-600 underline hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center"
-                       target="_blank" rel="noopener noreferrer">
+                    <a href="{{ event.location_url }}" class="text-primary text-decoration-none" target="_blank" rel="noopener noreferrer">
                         {% if event.location %}{{ event.location }}{% else %}See location{% endif %}
-                        <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
+                        <i class="bi bi-box-arrow-up-right ms-1 small"></i>
                     </a>
                     {% else %}
-                    <span>{{ event.location }}</span>
+                    {{ event.location }}
                     {% endif %}
                 </div>
                 {% endif %}
@@ -48,127 +35,105 @@
         </div>
     </div>
 
-    <form method="post" class="space-y-6">
+    <form method="post">
         {% csrf_token %}
-
         <div class="card">
-            <div class="p-6">
-                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Registration Details</h2>
+            <div class="card-body p-4">
+                <h2 class="h4 mb-4">Registration Details</h2>
 
                 {% if messages %}
-                <div class="mb-6 p-4 bg-green-50 dark:bg-green-900/30 rounded-md text-green-700 dark:text-green-400">
+                <div class="alert alert-success mb-4">
                     {% for message in messages %}
                         {{ message }}
                     {% endfor %}
                 </div>
                 {% endif %}
 
-                <div class="space-y-4">
                 {% for field in form %}
                     {% if field.name == 'event' %}
-                        {{ field }} <!-- Hidden field, no need for label -->
-                    {% elif field.name == 'ride_leader_preference' %}
-                        <div class="space-y-2">
-                            <label class="form-label">{{ field.label }}</label>
-                            <div class="space-y-2">
+                        {{ field }} <!-- Hidden field -->
+                    {% else %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {% if field.name == 'ride_leader_preference' %}
                                 {% for radio in field %}
-                                <div class="flex items-center">
+                                <div class="form-check">
                                     {{ radio.tag }}
-                                    <label for="{{ radio.id_for_label }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <label for="{{ radio.id_for_label }}" class="form-check-label">
                                         {{ radio.choice_label }}
                                     </label>
                                 </div>
                                 {% endfor %}
-                            </div>
-                            {% if field.errors %}
-                            <div class="text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
-                            {% endif %}
-                        </div>
-                    {% elif field.name == 'ride' %}
-                        <div class="space-y-2">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                            <select name="ride" id="id_ride" class="form-select">
-                                <option value="">Select a ride</option>
-                                {% for ride in field.field.queryset %}
-                                    <option value="{{ ride.id }}" 
-                                           {% if field.value == ride.id %}selected{% endif %}
-                                           >{{ ride }}</option>
-                                {% endfor %}
-                            </select>
-                            {% if field.errors %}
-                            <div class="text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
-                            {% endif %}
-                            {% if field.help_text %}
-                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</div>
-                            {% endif %}
-                        </div>
-                    {% elif field.name == 'speed_range_preference' %}
-                        <div class="space-y-2">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                            <div id="speed-range-container">
+                            {% elif field.name == 'ride' %}
+                                <select name="{{ field.name }}" id="{{ field.id_for_label }}" class="form-select">
+                                    <option value="">Select a ride</option>
+                                    {% for ride_choice in field.field.queryset %}
+                                        <option value="{{ ride_choice.id }}" 
+                                               {% if field.value|stringformat:"s" == ride_choice.id|stringformat:"s" %}selected{% endif %}
+                                               >{{ ride_choice }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% elif field.name == 'speed_range_preference' %}
+                                <div id="speed-range-container">
+                                    {{ field }} {# Default to form-select, HTMX will replace #}
+                                </div>
+                            {% elif field.name == 'emergency_contact_phone' %}
+                                <input type="tel" name="{{ field.name }}" id="{{ field.id_for_label }}" value="{{ field.value|default:'' }}" class="form-control" {% if field.field.required %}required{% endif %}>
+                            {% else %}
                                 {{ field }}
-                            </div>
+                            {% endif %}
+
                             {% if field.errors %}
-                            <div class="text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                            <div class="invalid-feedback d-block">{{ field.errors|join:", " }}</div>
                             {% endif %}
                             {% if field.help_text %}
-                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</div>
-                            {% endif %}
-                        </div>
-                    {% elif field.name == 'emergency_contact_phone' %}
-                        <div class="space-y-2">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                            <input type="tel" name="{{ field.name }}" id="{{ field.id_for_label }}" value="{{ field.value|default:'' }}" class="form-input" required>
-                            {% if field.errors %}
-                            <div class="text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
-                            {% endif %}
-                            {% if field.help_text %}
-                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</div>
-                            {% endif %}
-                        </div>
-                    {% else %}
-                        <div class="space-y-2">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                            {{ field|addclass:"form-input" }}
-                            {% if field.errors %}
-                            <div class="text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
-                            {% endif %}
-                            {% if field.help_text %}
-                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</div>
+                            <div class="form-text">{{ field.help_text|safe }}</div>
                             {% endif %}
                         </div>
                     {% endif %}
                 {% endfor %}
-                </div>
             </div>
-            <div class="p-6 pt-0">
-                <button type="submit" class="btn-primary">Submit</button>
+            <div class="card-footer bg-light p-3">
+                <button type="submit" class="btn btn-primary">Submit</button>
             </div>
         </div>
     </form>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const rideSelect = document.getElementById('id_ride');
-        const speedRangeContainer = document.getElementById('speed-range-container');
-        
-        if (rideSelect && speedRangeContainer) {
-            // Function to load speed ranges based on selected ride
-            function loadSpeedRanges() {
-                const rideId = rideSelect.value || 0;
-                const url = '/rides/' + rideId + '/speed-ranges';
-                
-                // Use HTMX AJAX to update the speed ranges
-                htmx.ajax('GET', url, {target: speedRangeContainer});
+document.addEventListener('DOMContentLoaded', function() {
+    const rideSelect = document.getElementById('id_ride');
+    const speedRangeContainer = document.getElementById('speed-range-container');
+    
+    if (rideSelect && speedRangeContainer) {
+        function loadSpeedRanges() {
+            const rideId = rideSelect.value || 0;
+            // Ensure that htmx understands that the target is the speed-range-container div
+            // and not the select element within it, if one exists.
+            const currentSelect = speedRangeContainer.querySelector('select');
+            if (currentSelect && !rideId) { // If no ride is selected, clear the select
+                 speedRangeContainer.innerHTML = '<select name="speed_range_preference" id="id_speed_range_preference" class="form-select"><option value="">Select a ride first</option></select>';
+                 return;
             }
-            
-            // Load speed ranges when the ride selection changes
-            rideSelect.addEventListener('change', loadSpeedRanges);
-            
-            // Initial load of speed ranges
-            loadSpeedRanges();
+            if (!rideId) { // If no ride ID and no existing select, do nothing until a ride is picked
+                speedRangeContainer.innerHTML = '<select name="speed_range_preference" id="id_speed_range_preference" class="form-select" disabled><option value="">Select a ride first</option></select>';
+                return;
+            }
+
+            const url = `/rides/${rideId}/speed-ranges/`;
+            htmx.ajax('GET', url, {target: speedRangeContainer, swap: 'innerHTML'});
         }
-    });
+        
+        rideSelect.addEventListener('change', loadSpeedRanges);
+        
+        // Initial load if a ride is already selected (e.g. form redisplay with errors)
+        if (rideSelect.value) {
+             loadSpeedRanges();
+        } else {
+            // Set initial state for speed range if no ride selected
+            speedRangeContainer.innerHTML = '<select name="speed_range_preference" id="id_speed_range_preference" class="form-select" disabled><option value="">Select a ride first</option></select>';
+        }
+    }
+});
 </script>
 {% endblock %}

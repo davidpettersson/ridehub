@@ -1,193 +1,168 @@
 {% extends 'web/_base.html' %}
-{% load form_filters %}
 {% load dict_filters %}
 {% block title %}{{ event.name }} - Event Details{% endblock %}
 {% block content %}
-    <div class="space-y-6">
-        <div class="flex items-center mb-6">
-            <a href="{% url 'event_list' %}" class="inline-flex items-center text-sm text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400">
-                <i class="bi bi-arrow-left mr-2"></i> Back to events
-            </a>
-        </div>
+<div class="container py-4">
+    <div class="mb-4">
+        <a href="{% url 'event_list' %}" class="btn btn-link text-decoration-none">
+            <i class="bi bi-arrow-left me-2"></i> Back to events
+        </a>
+    </div>
 
-        <div class="card mb-6">
-            <div class="p-6">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <div class="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1 font-semibold">
-                            {{ event.program }}
-                        </div>
-                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                            {% if event.cancelled %}<span class="line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
-                        </h1>
-                    </div>
+    <div class="card mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <p class="text-muted text-uppercase small mb-1 fw-semibold">{{ event.program }}</p>
+                    <h1 class="h3 mb-2">
+                        {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
+                    </h1>
                 </div>
+            </div>
 
-                <div class="flex flex-wrap items-center gap-4 mb-4 text-sm">
-                    <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
-                        <i class="bi bi-calendar-event mr-2"></i>
-                        <span>{{ event.starts_at|date:"l, F j, Y" }}</span>
-                    </div>
-                    
-                    <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
-                        <i class="bi bi-clock mr-2"></i>
-                        <span>{{ event.starts_at|date:"g:i A" }}</span>
-                    </div>
-                    
-                    {% if event.location or event.location_url %}
-                    <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
-                        <i class="bi bi-geo-alt mr-2"></i>
-                        {% if event.location_url %}
-                        <a href="{{ event.location_url }}" 
-                           class="text-primary-600 underline hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center"
-                           target="_blank" rel="noopener noreferrer">
-                            {% if event.location %}{{ event.location }}{% else %}See location{% endif %}
-                            <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
-                        </a>
-                        {% else %}
-                        <span>{{ event.location }}</span>
-                        {% endif %}
-                    </div>
+            <div class="d-flex flex-wrap align-items-center small text-muted mb-3">
+                <div class="me-3 mb-2"><i class="bi bi-calendar-event me-2"></i>{{ event.starts_at|date:"l, F j, Y" }}</div>
+                <div class="me-3 mb-2"><i class="bi bi-clock me-2"></i>{{ event.starts_at|date:"g:i A" }}</div>
+                {% if event.location or event.location_url %}
+                <div class="me-3 mb-2">
+                    <i class="bi bi-geo-alt me-2"></i>
+                    {% if event.location_url %}
+                    <a href="{{ event.location_url }}" class="text-primary text-decoration-none" target="_blank" rel="noopener noreferrer">
+                        {% if event.location %}{{ event.location }}{% else %}See location{% endif %}
+                        <i class="bi bi-box-arrow-up-right ms-1 small"></i>
+                    </a>
+                    {% else %}
+                    {{ event.location }}
                     {% endif %}
-
-                    {% if not event.external_registration_url  %}
-                    <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
-                        <i class="bi bi-people mr-2"></i>
-                        <span>
-                            {{ event.registration_count }} registered{% if not event.has_capacity_available %} (full){% elif event.capacity_remaining is not None %}, {{ event.capacity_remaining }} remaining{% endif %}
-                        </span>
-                    </div>
-                    {% endif %}
-                </div>
-                
-                {% if event.cancelled %}
-                <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/30">
-                    <div>
-                        <h3 class="text-lg font-medium text-red-800 dark:text-red-300">Event Cancelled</h3>
-                        <p class="text-red-700 dark:text-red-400">
-                            This event was cancelled on {{ event.cancelled_at|date:"F j, Y" }} at {{ event.cancelled_at|date:"g:i A" }}.
-                        </p>
-                        {% if event.cancellation_reason %}
-                        <div class="mt-2 text-red-700 dark:text-red-400">
-                            <p class="font-medium">Reason:</p>
-                            <p>{{ event.cancellation_reason }}</p>
-                        </div>
-                        {% endif %}
-                    </div>
                 </div>
                 {% endif %}
-                
-                <div class="prose prose-gray dark:prose-invert max-w-none">
-                    <p>{{ event.description|safe }}</p>
-                </div>
-                
-                {% if event.registration_open %}
-                <div class="mt-6 mb-4 space-y-2">
-                    <div class="flex items-center mb-5">
-                        {% if event.has_capacity_available %}
-                            <div class="text-gray-600 dark:text-gray-400">Registration closes {{ event.registration_closes_at|date:"F j, g:i A" }}.</div>
-                        {% endif %}
-                    </div>
-                    <div class="flex items-center">
-                        {% if event.external_registration_url %}
-                            <a href="{{ event.external_registration_url }}" class="btn-primary" target="_blank" rel="noopener noreferrer">
-                                Register <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
-                            </a>
-                        {% elif event.has_capacity_available %}
-                            <a href="{% url 'registration_create' event.id %}" class="btn-primary">Register</a>
-                        {% else %}
-                            <div class="p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-md">
-                                <p class="text-yellow-700 dark:text-yellow-400">Sorry, the event has reached maximum capacity.</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% else %}
-                <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/30 rounded-md">
-                    <p class="text-red-700 dark:text-red-400">Sorry, registration closed.</p>
+                {% if not event.external_registration_url  %}
+                <div class="mb-2">
+                    <i class="bi bi-people me-2"></i>
+                    {{ event.registration_count }} registered{% if not event.has_capacity_available %} (full){% elif event.capacity_remaining is not None %}, {{ event.capacity_remaining }} remaining{% endif %}
                 </div>
                 {% endif %}
             </div>
-        </div>
-
-        {% if event.ride_set.all %}
-        <div class="space-y-4">
-            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Available Rides</h2>
             
-            {% for ride in event.ride_set.all %}
-            <div class="card">
-                <div class="p-6">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        {{ ride.name }}
-                        {% if ride.route.distance or ride.route.elevation_gain %}
-                            <span class="text-gray-500 dark:text-gray-400 font-normal">
-                                ({% if ride.route.distance %}{{ ride.route.distance }} km{% endif %}{% if ride.route.distance and ride.route.elevation_gain %}, {% endif %}{% if ride.route.elevation_gain %}{{ ride.route.elevation_gain }} m elevation gain{% endif %})
-                            </span>
-                        {% endif %}
-                    </h3>
-                    
-                    <div class="prose prose-gray dark:prose-invert max-w-none mb-4">
-                        <p>{{ ride.description|safe }}</p>
-                    </div>
-                    
-                    <div class="flex items-center mb-4">
-                        <i class="bi bi-map text-gray-500 dark:text-gray-400 mr-2"></i>
-                        <a href="{{ride.route.url}}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 underline flex items-center" target="_blank" rel="noopener noreferrer">
-                            {{ride.route.name}}
-                            <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
+            {% if event.cancelled %}
+            <div class="alert alert-danger mb-4 p-3">
+                <h4 class="alert-heading h5">Event Cancelled</h4>
+                <p class="mb-1">This event was cancelled on {{ event.cancelled_at|date:"F j, Y" }} at {{ event.cancelled_at|date:"g:i A" }}.</p>
+                {% if event.cancellation_reason %}
+                <hr>
+                <p class="mb-0"><strong>Reason:</strong> {{ event.cancellation_reason }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <div class="prose prose-gray dark:prose-invert max-w-none mb-4">
+                <p>{{ event.description|safe }}</p>
+            </div>
+            
+            {% if event.registration_open %}
+            <div class="mt-4 mb-3">
+                {% if event.has_capacity_available %}
+                    <p class="text-muted small mb-3">Registration closes {{ event.registration_closes_at|date:"F j, g:i A" }}.</p>
+                {% endif %}
+                <div>
+                    {% if event.external_registration_url %}
+                        <a href="{{ event.external_registration_url }}" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+                            Register <i class="bi bi-box-arrow-up-right ms-1 small"></i>
                         </a>
-                    </div>
-                    
-                    {% with ride_id=ride.id|stringformat:"s" %}
-                    {% if rides and ride_id in rides %}
-                    <div class="mt-4">
-                        {% with ride_info=rides|get_item:ride_id %}
-                            {% if ride_info.speed_ranges %}
-                                <div class="space-y-4">
-                                    {% for speed_range_id, speed_range_info in ride_info.speed_ranges.items %}
-                                        <div x-data="{ open: false }">
-                                            <div class="flex items-center mb-2">
-                                                <i class="bi bi-speedometer2 text-gray-500 dark:text-gray-400 mr-2"></i>
-                                                <span class="text-gray-800 dark:text-gray-200">
-                                                    {% with total_riders_count=speed_range_info.riders|length ride_leader_count_val=speed_range_info.ride_leader_count %}
-                                                        {% if speed_range_info.speed_range %}
-                                                            {{ speed_range_info.speed_range }}
-                                                        {% else %}
-                                                            No Speed Preference
-                                                        {% endif %}
-                                                        ({{ total_riders_count }} rider{{ total_riders_count|pluralize }}{% if ride_leader_count_val > 0 %}, {{ ride_leader_count_val }} leader{{ ride_leader_count_val|pluralize }}{% endif %})
-                                                    {% endwith %}
-                                                </span>
-                                                <button @click="open = !open" class="ml-2 text-sm text-primary-600 hover:underline focus:outline-none dark:text-primary-400 dark:hover:text-primary-300">
-                                                    <span x-show="!open">(show)</span>
-                                                    <span x-show="open" x-cloak>(hide)</span>
-                                                </button>
-                                            </div>
-                                            
-                                            <div class="pl-6" x-show="open" x-cloak>
-                                                {% for rider in speed_range_info.riders %}
-                                                    <div class="text-sm text-gray-600 dark:text-gray-400">
-                                                        {{ rider.name }}{% if rider.is_ride_leader %} (ride leader){% endif %}
-                                                    </div>
-                                                {% endfor %}
-                                                {% if not speed_range_info.riders %}
-                                                    <p class="text-sm text-gray-500 dark:text-gray-400">No riders in this group.</p>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <p class="text-gray-500 dark:text-gray-400">No riders registered for this ride yet.</p>
-                            {% endif %}
-                        {% endwith %}
-                    </div>
+                    {% elif event.has_capacity_available %}
+                        <a href="{% url 'registration_create' event.id %}" class="btn btn-primary">Register</a>
+                    {% else %}
+                        <div class="alert alert-warning p-3">
+                            <p class="mb-0">Sorry, the event has reached maximum capacity.</p>
+                        </div>
                     {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-danger mt-3 p-3">
+                <p class="mb-0">Sorry, registration closed.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if event.ride_set.all %}
+    <div class="mb-4">
+        <h2 class="h4 mb-3">Available Rides</h2>
+        {% for ride in event.ride_set.all %}
+        <div class="card mb-3">
+            <div class="card-body p-3">
+                <h3 class="h5 mb-2">
+                    {{ ride.name }}
+                    {% if ride.route.distance or ride.route.elevation_gain %}
+                        <span class="text-muted fw-normal small">
+                            ({% if ride.route.distance %}{{ ride.route.distance }} km{% endif %}{% if ride.route.distance and ride.route.elevation_gain %}, {% endif %}{% if ride.route.elevation_gain %}{{ ride.route.elevation_gain }} m elevation gain{% endif %})
+                        </span>
+                    {% endif %}
+                </h3>
+                
+                <div class="prose prose-gray dark:prose-invert max-w-none mb-3 small">
+                    <p>{{ ride.description|safe }}</p>
+                </div>
+                
+                <div class="d-flex align-items-center mb-3 small">
+                    <i class="bi bi-map text-muted me-2"></i>
+                    <a href="{{ride.route.url}}" class="text-primary text-decoration-none" target="_blank" rel="noopener noreferrer">
+                        {{ride.route.name}}
+                        <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+                
+                {% with ride_id=ride.id|stringformat:"s" %}
+                {% if rides and ride_id in rides %}
+                <div class="mt-3 small">
+                    {% with ride_info=rides|get_item:ride_id %}
+                        {% if ride_info.speed_ranges %}
+                            <div>
+                                {% for speed_range_id, speed_range_info in ride_info.speed_ranges.items %}
+                                    <div x-data="{ open: false }" class="mb-2">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <i class="bi bi-speedometer2 text-muted me-2"></i>
+                                            <span class="text-body">
+                                                {% with total_riders_count=speed_range_info.riders|length ride_leader_count_val=speed_range_info.ride_leader_count %}
+                                                    {% if speed_range_info.speed_range %}
+                                                        {{ speed_range_info.speed_range }}
+                                                    {% else %}
+                                                        No Speed Preference
+                                                    {% endif %}
+                                                    ({{ total_riders_count }} rider{{ total_riders_count|pluralize }}{% if ride_leader_count_val > 0 %}, {{ ride_leader_count_val }} leader{{ ride_leader_count_val|pluralize }}{% endif %})
+                                                {% endwith %}
+                                            </span>
+                                            <button @click="open = !open" class="btn btn-link btn-sm text-decoration-none p-0 ms-2">
+                                                <span x-show="!open">(show)</span>
+                                                <span x-show="open" x-cloak>(hide)</span>
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="ps-4" x-show="open" x-cloak>
+                                            {% for rider in speed_range_info.riders %}
+                                                <div class="text-muted">
+                                                    {{ rider.name }}{% if rider.is_ride_leader %} (ride leader){% endif %}
+                                                </div>
+                                            {% endfor %}
+                                            {% if not speed_range_info.riders %}
+                                                <p class="text-muted fst-italic">No riders in this group.</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted fst-italic">No riders registered for this ride yet.</p>
+                        {% endif %}
                     {% endwith %}
                 </div>
+                {% endif %}
+                {% endwith %}
             </div>
-            {% endfor %}
         </div>
-        {% endif %}
+        {% endfor %}
     </div>
+    {% endif %}
+</div>
 {% endblock %}

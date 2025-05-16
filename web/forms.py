@@ -11,8 +11,6 @@ class RegistrationForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         assert event
-        import pprint
-        pprint.pprint(f"e={event}")
         # Only add ride and speed fields if this event has rides
         if Ride.objects.filter(event=event).exists():
             self.fields['ride'] = forms.ModelChoiceField(
@@ -54,11 +52,23 @@ class RegistrationForm(forms.Form):
 
         # Add Bootstrap classes to all fields
         for field_name, field in self.fields.items():
-            if isinstance(field.widget, forms.Select) and not isinstance(field.widget, forms.RadioSelect):
+            if isinstance(field.widget, forms.RadioSelect):
+                field.widget.attrs['class'] = 'form-check-input'
+            elif isinstance(field.widget, forms.Select):
                 field.widget.attrs['class'] = 'form-select'
-            elif not isinstance(field.widget, (forms.HiddenInput, forms.RadioSelect)):
+            elif not isinstance(field.widget, forms.HiddenInput):
                 field.widget.attrs['class'] = 'form-control'
 
 
 class EmailLoginForm(forms.Form):
     email = forms.EmailField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.RadioSelect):
+                field.widget.attrs['class'] = 'form-check-input'
+            elif isinstance(field.widget, forms.Select):
+                field.widget.attrs['class'] = 'form-select'
+            elif not isinstance(field.widget, forms.HiddenInput):
+                field.widget.attrs['class'] = 'form-control'

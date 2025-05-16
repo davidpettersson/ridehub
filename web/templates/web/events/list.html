@@ -1,59 +1,45 @@
 {% extends 'web/_base.html' %}
 {% block title %}Events Calendar{% endblock %}
 {% block content %}
-    <div class="space-y-6">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Upcoming events</h1>
-        
-        {% for date, events in events_by_date %}
-        <div class="mb-6">
-            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                {{ date|date:"l, F j" }}
-            </h2>
-            <div class="space-y-3">
-                {% for event in events %}
-                <a href="{% url 'event_detail' event.id %}" class="block hover:no-underline">
-                    <div class="card hover:shadow-lg transition-shadow duration-300">
-                        <div class="p-4">
-                            <div class="flex items-start justify-between">
-                                <div>
-                                    <div class="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1 font-semibold">
-                                        {{ event.program }}
-                                    </div>
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1 hover:text-primary-600 dark:hover:text-primary-400">
-                                        {% if event.cancelled %}<span class="line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
-                                    </h3>
-                                    <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-2">
-                                        <div class="inline-flex items-center">
-                                            <i class="bi bi-clock mr-1.5"></i>
-                                            <span>{{ event.starts_at|date:"g:i A" }}</span>
-                                        </div>
-                                        
-                                        {% if event.location %}
-                                        <div class="inline-flex items-center">
-                                            <i class="bi bi-geo-alt mr-1.5"></i>
-                                            <span>{{ event.location }}</span>
-                                        </div>
-                                        {% endif %}
-                                        
-                                        {% if not event.external_registration_url %}
-                                        <div class="inline-flex items-center">
-                                            <i class="bi bi-people mr-1.5"></i>
-                                            <span>{{ event.registration_count }} registered{% if not event.has_capacity_available %} (full){% endif %}</span>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+<div class="container py-4">
+    <h1 class="mb-4">Upcoming events</h1>
+    
+    {% for date, events_on_date in events_by_date.items %}
+    <div class="mb-5">
+        <h2 class="h4 mb-3">
+            {{ date|date:"l, F j" }}
+        </h2>
+        <div class="list-group">
+            {% for event in events_on_date %}
+            <a href="{% url 'event_detail' event.id %}" class="list-group-item list-group-item-action flex-column align-items-start">
+                <div class="d-flex w-100 justify-content-between">
+                    <div>
+                        <small class="text-muted text-uppercase">{{ event.program }}</small>
+                        <h3 class="h5 mb-1">
+                            {% if event.cancelled %}<span class="text-decoration-line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
+                        </h3>
                     </div>
-                </a>
-                {% endfor %}
-            </div>
+                </div>
+                <div class="mb-1">
+                    <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ event.starts_at|date:"g:i A" }}</small>
+                    {% if event.location %}
+                    <small class="text-muted ms-3"><i class="bi bi-geo-alt me-1"></i>{{ event.location }}</small>
+                    {% endif %}
+                    {% if not event.external_registration_url %}
+                    <small class="text-muted ms-3">
+                        <i class="bi bi-people me-1"></i>
+                        {{ event.registration_count }} registered{% if not event.has_capacity_available %} (full){% endif %}
+                    </small>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
         </div>
-        {% empty %}
-        <div class="py-12 text-center">
-            <p class="text-gray-500 dark:text-gray-400">No upcoming events scheduled. Check back soon!</p>
-        </div>
-        {% endfor %}
     </div>
+    {% empty %}
+    <div class="text-center py-5">
+        <p class="text-muted">No upcoming events scheduled. Check back soon!</p>
+    </div>
+    {% endfor %}
+</div>
 {% endblock %}

@@ -1,1 +1,17 @@
 /* Global styling */
+
+body {
+    background-color: #f8f9fa; /* Light gray background */
+}
+
+.navbar-custom-blue {
+    background-color: rgb(0, 85, 150) !important; /* OBC Blue for navbar */
+}
+
+.card {
+    background-color: #ffffff !important; /* White background for cards */
+}
+
+.list-group-item {
+    background-color: #ffffff !important; /* White background for list group items */
+}
