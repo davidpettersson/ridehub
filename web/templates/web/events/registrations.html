@@ -1,10 +1,164 @@
 {% extends 'web/_base_bootstrap.html' %}
 {% block title %}Riders for {{ event.name }}{% endblock %}
 {% block content %}
+<style media="print">
+    /* Hide navbar and non-essential elements */
+    nav, .navbar, .navbar-obc {
+        display: none !important;
+    }
+    
+    /* Ensure the event details card is visible */
+    .mb-5 > .card.shadow-sm.p-4.mb-4 {
+        display: block !important;
+        border: 1px solid #ddd !important;
+        margin-bottom: 15px !important;
+    }
+    
+    /* Remove the card styling from table container only */
+    .d-none.d-md-block.card.shadow-sm {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Remove padding from table container */
+    .d-none.d-md-block.card > .p-4 {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Prevent page breaks within rows */
+    tr {
+        page-break-inside: avoid !important;
+    }
+    
+    /* Prevent content from creating extra pages */
+    html, body, main, .mb-5 {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+    }
+    
+    /* Remove all bottom margins/padding from all elements */
+    * {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Add page break control */
+    @page {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Force page break to avoid blank pages */
+    .mb-5::after {
+        content: "";
+        display: block;
+        page-break-after: always;
+        height: 0;
+    }
+    
+    /* Remove any footers */
+    footer, .footer {
+        display: none !important;
+    }
+    
+    /* Print-specific styles */
+    @page {
+        size: landscape;
+        margin: 0.5cm;
+    }
+    
+    body {
+        background-color: white !important;
+        color: black !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .container, .container-fluid, .container-lg, .container-md, 
+    .container-sm, .container-xl, .container-xxl {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    .text-muted {
+        color: #333 !important;
+    }
+    
+    .badge {
+        border: 1px solid #333 !important;
+        color: black !important;
+        background-color: white !important;
+    }
+    
+    a {
+        color: black !important;
+        text-decoration: none !important;
+    }
+    
+    .text-primary {
+        color: black !important;
+    }
+    
+    /* Hide non-essential elements */
+    .d-md-none {
+        display: none !important;
+    }
+    
+    .d-none.d-md-block {
+        display: block !important;
+    }
+    
+    /* Table specific adjustments */
+    .table {
+        width: 100% !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
+    }
+    
+    .table th, .table td {
+        border: 1px solid #ddd !important;
+        padding: 4px !important;
+        word-wrap: break-word !important;
+    }
+    
+    /* Column widths for better space utilization */
+    .table th:nth-child(1), .table td:nth-child(1) { width: 15% !important; } /* Name */
+    .table th:nth-child(2), .table td:nth-child(2) { width: 15% !important; } /* Ride */
+    .table th:nth-child(3), .table td:nth-child(3) { width: 10% !important; } /* Speed group */
+    .table th:nth-child(4), .table td:nth-child(4) { width: 8% !important; } /* Ride leader */
+    .table th:nth-child(5), .table td:nth-child(5) { width: 20% !important; } /* Email */
+    .table th:nth-child(6), .table td:nth-child(6) { width: 16% !important; } /* Emergency contact */
+    .table th:nth-child(7), .table td:nth-child(7) { width: 16% !important; } /* Emergency phone */
+    
+    /* Remove padding/margins */
+    .mb-4, .mb-5, .py-4, .py-5, .p-4 {
+        margin: 0 !important;
+        padding: 0.2rem !important;
+    }
+    
+    /* Adjust other layout elements */
+    .overflow-auto {
+        overflow: visible !important;
+    }
+</style>
+
 <div class="mb-5">
-    <div class="mb-4">
-        <a href="{% url 'profile' %}" class="d-inline-flex align-items-center text-muted small">
-            <i class="bi bi-arrow-left me-2"></i> Back to my profile
+    <div class="mb-4 d-print-none">
+        <a href="{% url 'event_detail' event.id %}" class="d-inline-flex align-items-center text-muted small">
+            <i class="bi bi-arrow-left me-2"></i> Back to event details
         </a>
     </div>
 
