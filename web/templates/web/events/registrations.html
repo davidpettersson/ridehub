@@ -155,15 +155,15 @@
     }
 </style>
 
-<div class="mb-5">
-    <div class="mb-4 d-print-none">
-        <a href="{% url 'event_detail' event.id %}" class="d-inline-flex align-items-center text-muted small">
+<div class="mb-4">
+    <div class="mb-3 d-print-none">
+        <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
             <i class="bi bi-arrow-left me-2"></i> Back to event details
         </a>
     </div>
 
-    <div>
-        <h1 class="fs-2 fw-bold">
+    <div class="mb-3">
+        <h1 class="fs-2 fw-bold mb-0">
             Riders for {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
         </h1>
     </div>
