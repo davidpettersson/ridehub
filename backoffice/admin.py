@@ -23,7 +23,7 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(SortableAdminBase, admin.ModelAdmin):
-    list_display = ('name', 'starts_at', 'cancelled', 'archived', 'registrations_link')
+    list_display = ('name', 'starts_at', 'registration_count', 'links', 'cancelled', 'archived', )
     inlines = [RideInline, RegistrationInline]
     ordering = ('-starts_at',)
     date_hierarchy = 'starts_at'
@@ -31,12 +31,13 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
     search_fields = ('name',)
     actions = [cancel_event, archive_event, duplicate_event]
     readonly_fields = ('cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
+
+    def links(self, obj):
+        public_url = reverse('event_detail', args=[obj.id])
+        full_url = reverse('event_registrations_full', args=[obj.id])
+        return format_html('<a href="{}">Public event page</a>, <a href="{}">Full registration details</a>', public_url, full_url)
     
-    def registrations_link(self, obj):
-        url = reverse('event_registrations', args=[obj.id])
-        return format_html('<a href="{}">Registrations</a>', url)
-    
-    registrations_link.short_description = 'Registrations'
+    links.short_description = 'Links'
     
     fieldsets = [
         (None, {
