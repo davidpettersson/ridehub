@@ -1,1 +1,67 @@
 /* Global styling */
+
+:root {
+  --obc-blue: rgb(0, 85, 150);
+  --bs-primary: #2563eb;
+  --bs-primary-hover: #1d4ed8;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  min-height: 100vh;
+  background-color: #f9fafb;
+  color: #4b5563;
+}
+
+.dark-mode {
+  background-color: #111827;
+  color: #9ca3af;
+}
+
+.btn-primary {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: var(--bs-primary-hover);
+  border-color: var(--bs-primary-hover);
+}
+
+.btn-danger {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+.btn-danger:hover, .btn-danger:focus {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.btn-secondary {
+  background-color: #4b5563;
+  border-color: #4b5563;
+}
+
+.btn-secondary:hover, .btn-secondary:focus {
+  background-color: #374151;
+  border-color: #374151;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+
+.navbar-obc {
+  background-color: var(--obc-blue);
+}
+
+.navbar-obc a {
+  color: white;
+  text-decoration: none;
+}
+
+.navbar-obc a:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
