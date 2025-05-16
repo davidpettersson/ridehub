@@ -88,7 +88,7 @@ def event_list(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
-def event_riders(request: HttpRequest, event_id: int) -> HttpResponse:
+def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
     # Check if user is registered as a ride leader for this event
     registration = get_object_or_404(
         Registration,
@@ -127,14 +127,12 @@ def event_riders(request: HttpRequest, event_id: int) -> HttpResponse:
 
 
 @login_required
-def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
-    # Check if user is staff
+def event_registrations_full(request: HttpRequest, event_id: int) -> HttpResponse:
     if not request.user.is_staff:
         raise PermissionDenied("You must be a staff member to access this page.")
 
     event = get_object_or_404(Event, id=event_id)
 
-    # Get all registrations for this event
     registrations = Registration.objects.filter(event_id=event_id).order_by('submitted_at')
 
     context = {
