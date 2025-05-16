@@ -53,9 +53,9 @@
                     {% if not event.external_registration_url  %}
                     <div class="inline-flex items-center text-gray-600 dark:text-gray-400">
                         <i class="bi bi-people mr-2"></i>
-                        <span>
+                        <a href="{% url 'riders_list' event.id %}" class="text-primary-600 underline hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
                             {{ event.registration_count }} registered{% if not event.has_capacity_available %} (full){% elif event.capacity_remaining is not None %}, {{ event.capacity_remaining }} remaining{% endif %}
-                        </span>
+                        </a>
                     </div>
                     {% endif %}
                 </div>

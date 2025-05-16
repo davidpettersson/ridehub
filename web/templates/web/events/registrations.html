@@ -211,7 +211,7 @@
                         <div class="d-flex align-items-center">
                             <h4 class="fw-medium fs-5 mb-0">{{ rider_reg.name }}</h4>
                             {% if rider_reg.ride_leader_preference == 'y' %}
-                                <span class="text-primary ms-2"><i class="bi bi-person-check-fill"></i></span>
+                                <span class="badge bg-primary ms-2">Ride leader</span>
                             {% endif %}
                         </div>
                     </div>
@@ -263,7 +263,6 @@
                             <th scope="col" class="small fw-medium">Name</th>
                             <th scope="col" class="small fw-medium">Ride</th>
                             <th scope="col" class="small fw-medium">Speed group</th>
-                            <th scope="col" class="small fw-medium">Ride leader</th>
                             {% if is_ride_leader %}
                             <th scope="col" class="small fw-medium">Email</th>
                             <th scope="col" class="emergency-info small fw-medium">Emergency contact</th>
@@ -274,14 +273,14 @@
                     <tbody>
                         {% for rider_reg in all_riders %}
                             <tr>
-                                <td class="small fw-medium">{{ rider_reg.name }}</td>
-                                <td class="small text-muted">{{ rider_reg.ride.name|default:"N/A" }}</td>
-                                <td class="small text-muted">{{ rider_reg.speed_range_preference.range|default:"N/A" }}</td>
-                                <td class="small text-muted">
+                                <td class="small fw-medium">
+                                    {{ rider_reg.name }}
                                     {% if rider_reg.ride_leader_preference == 'y' %}
-                                        <span class="text-primary"><i class="bi bi-person-check-fill"></i></span>
+                                        <span class="badge bg-primary ms-2">Ride leader</span>
                                     {% endif %}
                                 </td>
+                                <td class="small text-muted">{{ rider_reg.ride.name|default:"N/A" }}</td>
+                                <td class="small text-muted">{{ rider_reg.speed_range_preference.range|default:"N/A" }}</td>
                                 {% if is_ride_leader %}
                                 <td class="small text-muted">
                                     <a href="mailto:{{ rider_reg.email }}" class="text-primary">
