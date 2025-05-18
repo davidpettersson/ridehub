@@ -101,7 +101,7 @@
                         {% if user_is_registered %}
                             <div class="p-4 bg-green-50 dark:bg-green-900/30 rounded-md">
                                 <p class="text-green-700 dark:text-green-400">
-                                    You are already registered. Visit your <a href="{% url 'profile' %}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 underline">profile page</a>.
+                                    You are registered for this event. You can cancel your registration on your <a href="{% url 'profile' %}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 underline">profile page</a>.
                                 </p>
                             </div>
                         {% elif event.external_registration_url %}
