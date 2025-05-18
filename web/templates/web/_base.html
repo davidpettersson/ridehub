@@ -83,11 +83,16 @@
               <img src="{% static 'web/obc-logo.png' %}" alt="Ottawa Bicycle Club" class="h-10">
             </a>
             <a href="{% url 'event_list' %}" class="text-white hover:text-gray-200 transition-colors duration-200">
-              Upcoming events
+              Events
             </a>
           </div>
           <div class="flex items-center">
             {% if user.is_authenticated %}
+            {% if user.is_staff %}
+            <a href="{% url 'admin:index' %}" class="text-white hover:text-gray-200 transition-colors duration-200 inline-flex items-center mr-4">
+              Admin
+            </a>
+            {% endif %}
             <a href="{% url 'profile' %}" class="text-white hover:text-gray-200 transition-colors duration-200 inline-flex items-center">
               <span class="mr-2">{{ user.first_name }}</span>
               <i class="bi bi-person-circle text-lg"></i>
