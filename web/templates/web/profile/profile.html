@@ -52,27 +52,17 @@
                                 
                                 <div class="inline-flex items-center">
                                     <i class="bi bi-people mr-1.5"></i>
-                                    <span>
+                                    <a href="{% url 'riders_list' registration.event.id %}" class="text-primary-600 underline hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
                                         {{ registration.event.registration_count }} registered
                                         {% if not registration.event.has_capacity_available %} (full)
                                         {% elif registration.event.capacity_remaining is not None %}, {{ registration.event.capacity_remaining }} remaining
                                         {% endif %}
-                                    </span>
+                                    </a>
                                 </div>
                             </div>
                             
                             {% if registration.event.has_rides %}
                             <div class="mt-2 text-gray-600 dark:text-gray-300">
-                                <div class="flex items-center">
-                                    <span class="font-medium mr-2">Registration status:</span>
-                                    {% if registration.state == 'confirmed' %}
-                                        <span>Confirmed</span>
-                                    {% elif registration.state == 'cancelled' %}
-                                        <span>Withdrawn</span>
-                                    {% else %}
-                                        <span>{{ registration.state|title }}</span>
-                                    {% endif %}
-                                </div>
                                 <div class="flex items-center mt-1">
                                     <span class="font-medium mr-2">Ride:</span>
                                     <span>{{ registration.ride|default:"Not specified" }}</span>

@@ -12,6 +12,15 @@
 
         <div class="card mb-6">
             <div class="p-6">
+                {% if user.is_staff %}
+                <div class="mb-4 p-3 bg-pink-50/80 dark:bg-pink-900/10 rounded-md">
+                    <span class="text-gray-800 dark:text-gray-200">Admin tools:</span>
+                    <a href="{% url 'admin:backoffice_event_change' event.id %}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 underline ml-1">
+                        Edit in admin
+                    </a>
+                </div>
+                {% endif %}
+                
                 <div class="flex justify-between items-start">
                     <div>
                         <div class="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1 font-semibold">
@@ -89,7 +98,13 @@
                         {% endif %}
                     </div>
                     <div class="flex items-center">
-                        {% if event.external_registration_url %}
+                        {% if user_is_registered %}
+                            <div class="p-4 bg-green-50 dark:bg-green-900/30 rounded-md">
+                                <p class="text-green-700 dark:text-green-400">
+                                    You are registered for this event. You can cancel your registration on your <a href="{% url 'profile' %}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 underline">profile page</a>.
+                                </p>
+                            </div>
+                        {% elif event.external_registration_url %}
                             <a href="{{ event.external_registration_url }}" class="btn-primary" target="_blank" rel="noopener noreferrer">
                                 Register <i class="bi bi-box-arrow-up-right ml-1 text-xs"></i>
                             </a>

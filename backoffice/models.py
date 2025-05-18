@@ -20,6 +20,9 @@ class Program(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name']
+
 
 class Event(models.Model):
     program = models.ForeignKey(
@@ -90,13 +93,13 @@ class Event(models.Model):
         default=False,
         help_text='Indicates if the event has been cancelled.'
     )
-    
+
     cancelled_at = models.DateTimeField(
         null=True,
         blank=True,
         help_text='When the event was cancelled.'
     )
-    
+
     cancellation_reason = models.TextField(
         blank=True,
         help_text='Reason for cancellation.'
@@ -134,7 +137,7 @@ class Event(models.Model):
         if self.registration_limit is None:
             return None
         return max(0, self.registration_limit - self.registration_count)
-    
+
     @property
     def has_capacity_available(self) -> bool:
         return self.registration_limit is None or self.registration_count < self.registration_limit
@@ -160,6 +163,7 @@ class Event(models.Model):
                 raise ValidationError({
                     'registration_closes_at': 'Registration cannot close after the event starts.'
                 })
+
 
 class Route(models.Model):
     name = models.CharField(
@@ -259,6 +263,7 @@ class Ride(models.Model):
     class Meta:
         ordering = ['ordering']
 
+
 class Registration(models.Model):
     RIDE_LEADER_YES = 'y'
     RIDE_LEADER_NO = 'n'
@@ -275,7 +280,8 @@ class Registration(models.Model):
     event = models.ForeignKey(Event, on_delete=models.PROTECT)
     ride = models.ForeignKey(Ride, on_delete=models.PROTECT, null=True, blank=True)
     speed_range_preference = models.ForeignKey(SpeedRange, on_delete=models.PROTECT, null=True, blank=True)
-    ride_leader_preference = models.CharField(max_length=2, choices=RIDE_LEADER_CHOICES, default=RIDE_LEADER_NOT_APPLICABLE)
+    ride_leader_preference = models.CharField(max_length=2, choices=RIDE_LEADER_CHOICES,
+                                              default=RIDE_LEADER_NOT_APPLICABLE)
     emergency_contact_name = models.CharField(max_length=128, blank=True)
     emergency_contact_phone = models.CharField(max_length=128, blank=True)
 

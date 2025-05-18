@@ -14,7 +14,12 @@
                     Your registration has been submitted successfully! Please expect a confirmation email within a couple of minutes.
                 </p>
                 
-                <div class="mt-8">
+                <div class="mt-8 flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3 justify-center">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'profile' %}" class="btn-primary">
+                        View Your Profile
+                    </a>
+                    {% endif %}
                     <a href="{% url 'event_list' %}" class="btn-primary">
                         Return to Event List
                     </a>

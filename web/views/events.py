@@ -63,10 +63,19 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
         id=event_id)
 
     rides = _get_rides_with_riders_for_event(event_id)
+    
+    user_is_registered = False
+    if request.user.is_authenticated:
+        user_is_registered = Registration.objects.filter(
+            event_id=event_id,
+            user=request.user,
+            state=Registration.STATE_CONFIRMED
+        ).exists()
 
     context = {
         'event': event,
         'rides': rides, # Renamed from 'rides_with_riders'
+        'user_is_registered': user_is_registered,
     }
 
     return render(request, 'web/events/detail.html', context)

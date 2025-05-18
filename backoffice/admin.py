@@ -23,11 +23,11 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(SortableAdminBase, admin.ModelAdmin):
-    list_display = ('name', 'starts_at', 'registration_count', 'links', 'cancelled', 'archived', )
-    inlines = [RideInline, RegistrationInline]
+    list_display = ('name', 'starts_at', 'registration_count', 'links', 'cancelled', 'archived',)
+    inlines = [RideInline, ]
     ordering = ('-starts_at',)
     date_hierarchy = 'starts_at'
-    list_filter = ('starts_at', 'program', 'cancelled', 'archived', )
+    list_filter = ('starts_at', 'program', 'cancelled', 'archived',)
     search_fields = ('name',)
     actions = [cancel_event, archive_event, duplicate_event]
     readonly_fields = ('cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
@@ -35,10 +35,11 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
     def links(self, obj):
         public_url = reverse('event_detail', args=[obj.id])
         full_url = reverse('event_registrations_full', args=[obj.id])
-        return format_html('<a href="{}">Public event page</a>, <a href="{}">Full registration details</a>', public_url, full_url)
-    
+        return format_html('<a href="{}">Public event page</a>, <a href="{}">Full registration details</a>', public_url,
+                           full_url)
+
     links.short_description = 'Links'
-    
+
     fieldsets = [
         (None, {
             'fields': ('program', 'name', 'description', 'starts_at', 'location', 'location_url', 'virtual')
@@ -67,13 +68,16 @@ class SpeedRangeAdmin(admin.ModelAdmin):
 
 
 class RouteAdmin(admin.ModelAdmin):
-    list_display = ('name', 'url', 'updated_at', )
+    list_display = ('name', 'url', 'updated_at',)
     search_fields = ('name',)
 
 
 class RegistrationAdmin(admin.ModelAdmin):
-    list_display = ('email', 'event', 'state', 'ride', 'speed_range_preference')
-    search_fields = ('email', )
+    list_display = ('id', 'user', 'event', 'state', 'ride', 'speed_range_preference')
+    search_fields = ('user__email', 'user__first_name', 'user__last_name', 'event__name',)
+    readonly_fields = ('state', 'emergency_contact_name', 'emergency_contact_phone', 'submitted_at', 'confirmed_at',
+                       'withdrawn_at')
+    fields = ('user', 'event', 'ride', 'speed_range_preference', 'ride_leader_preference') + readonly_fields
 
 
 class MemberAdmin(admin.ModelAdmin):
