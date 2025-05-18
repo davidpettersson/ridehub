@@ -21,7 +21,7 @@ def _split_full_name(name: str) -> tuple[str, str]:
 
 
 def registration_submitted(request: HttpRequest) -> HttpResponse:
-    return render(request, 'web/registrations/submitted.html', context={})
+    return render(request, 'web/registrations/submitted.html')
 
 
 def _get_registration_detail(form: RegistrationForm) -> RegistrationDetail:
@@ -71,10 +71,7 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
                 user_detail=_get_user_details(form),
                 registration_detail=_get_registration_detail(form),
                 event=event)
-            if request.user.is_authenticated:
-                return redirect('profile')
-            else:
-                return redirect('registration_submitted')
+            return redirect('registration_submitted')
 
     # Determine the selected ride (if any) to pre-select speed ranges
     selected_ride_id = None
