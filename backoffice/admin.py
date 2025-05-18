@@ -72,8 +72,8 @@ class RouteAdmin(admin.ModelAdmin):
 
 
 class RegistrationAdmin(admin.ModelAdmin):
-    list_display = ('email', 'event', 'state', 'ride', 'speed_range_preference')
-    search_fields = ('email', )
+    list_display = ('id', 'user', 'event', 'state', 'ride', 'speed_range_preference')
+    search_fields = ('user__email', 'user__first_name', 'user__last_name', 'event__name',)
 
 
 class MemberAdmin(admin.ModelAdmin):
