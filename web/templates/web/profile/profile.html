@@ -63,16 +63,6 @@
                             
                             {% if registration.event.has_rides %}
                             <div class="mt-2 text-gray-600 dark:text-gray-300">
-                                <div class="flex items-center">
-                                    <span class="font-medium mr-2">Registration status:</span>
-                                    {% if registration.state == 'confirmed' %}
-                                        <span>Confirmed</span>
-                                    {% elif registration.state == 'cancelled' %}
-                                        <span>Withdrawn</span>
-                                    {% else %}
-                                        <span>{{ registration.state|title }}</span>
-                                    {% endif %}
-                                </div>
                                 <div class="flex items-center mt-1">
                                     <span class="font-medium mr-2">Ride:</span>
                                     <span>{{ registration.ride|default:"Not specified" }}</span>
