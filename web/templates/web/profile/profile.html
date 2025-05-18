@@ -52,12 +52,12 @@
                                 
                                 <div class="inline-flex items-center">
                                     <i class="bi bi-people mr-1.5"></i>
-                                    <span>
+                                    <a href="{% url 'riders_list' registration.event.id %}" class="text-primary-600 underline hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
                                         {{ registration.event.registration_count }} registered
                                         {% if not registration.event.has_capacity_available %} (full)
                                         {% elif registration.event.capacity_remaining is not None %}, {{ registration.event.capacity_remaining }} remaining
                                         {% endif %}
-                                    </span>
+                                    </a>
                                 </div>
                             </div>
                             
