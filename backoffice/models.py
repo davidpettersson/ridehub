@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -34,6 +36,11 @@ class Event(models.Model):
         max_length=128,
     )
 
+    visible = models.BooleanField(
+        default=True,
+        help_text='Check if the event is visible to members.'
+    )
+
     location = models.CharField(
         max_length=128,
         blank=True,
@@ -50,9 +57,10 @@ class Event(models.Model):
         help_text='Start time of the event',
     )
 
-    duration = models.PositiveIntegerField(
-        default=1,
-        help_text='Duration of the event in hours.',
+    ends_at = models.DateTimeField(
+        help_text='End time of the event',
+        blank=True,
+        null=True,
     )
 
     registration_closes_at = models.DateTimeField(
@@ -116,9 +124,17 @@ class Event(models.Model):
         help_text='When the event was archived.'
     )
 
+    organizer_email = models.EmailField(
+        blank=True,
+        help_text='When set, members will be able to reach out to the organizer at this email.'
+    )
+
     @property
-    def ends_at(self) -> timezone.datetime:
-        return self.starts_at + timezone.timedelta(hours=self.duration)
+    def duration(self) -> timedelta:
+        if self.ends_at:
+            return self.ends_at - self.starts_at
+        else:
+            return timedelta(hours=1)
 
     @property
     def has_rides(self) -> bool:
