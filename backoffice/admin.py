@@ -44,7 +44,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
 
     fieldsets = [
         (None, {
-            'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url', 'virtual')
+            'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url', 'virtual', 'visible')
         }),
         ('Registration options', {
             'fields': ('registration_closes_at', 'external_registration_url', 'registration_limit'),
