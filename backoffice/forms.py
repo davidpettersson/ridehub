@@ -1,6 +1,6 @@
 from django import forms
 from .models import Event
-from .widgets import EndsAtWidget
+from .widgets import EndsAtWidget, RegistrationClosesAtWidget
 
 class EventAdminForm(forms.ModelForm):
     class Meta:
@@ -8,6 +8,7 @@ class EventAdminForm(forms.ModelForm):
         fields = '__all__' # Or list specific fields if you don't want all of them
         widgets = {
             'ends_at': EndsAtWidget(),
+            'registration_closes_at': RegistrationClosesAtWidget(),
         }
 
     def __init__(self, *args, **kwargs):

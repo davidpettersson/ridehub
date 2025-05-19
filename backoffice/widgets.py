@@ -23,4 +23,28 @@ class EndsAtWidget(AdminSplitDateTime):
         custom_js = forms.Media(js=(
             'backoffice/js/ends_at_widget.js',
         ))
+        return base_media + custom_js
+
+
+class RegistrationClosesAtWidget(AdminSplitDateTime):
+    def render(self, name, value, attrs=None, renderer=None):
+        widget_html = super().render(name, value, attrs, renderer)
+        
+        links_html = f'''
+        <p style="margin-left: 2em; line-height: 20px; margin-top: 6px; padding-top: 4px;">
+            Quick set: Close registration 
+            <a href="#" onclick="setRegistrationClosesAt('before_2hours', 'id_starts_at', 'id_{name}'); return false;">2 hours before</a>, 
+            <a href="#" onclick="setRegistrationClosesAt('day_before_5pm', 'id_starts_at', 'id_{name}'); return false;">day before at 5 pm</a>, or 
+            <a href="#" onclick="setRegistrationClosesAt('day_before_noon', 'id_starts_at', 'id_{name}'); return false;">day before at noon</a>.
+        </p>
+        '''
+        
+        return mark_safe(widget_html + links_html)
+    
+    @property
+    def media(self):
+        base_media = super().media
+        custom_js = forms.Media(js=(
+            'backoffice/js/registration_closes_widget.js',
+        ))
         return base_media + custom_js 
