@@ -44,7 +44,8 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
 
     fieldsets = [
         (None, {
-            'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url', 'virtual', 'visible')
+            'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url', 'virtual',
+                       'visible')
         }),
         ('Registration options', {
             'fields': ('registration_closes_at', 'external_registration_url', 'registration_limit'),
@@ -71,11 +72,16 @@ class RouteAdmin(admin.ModelAdmin):
 
 
 class RegistrationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'event', 'state', 'ride', 'speed_range_preference')
+    list_display = ('id', 'state', 'submitted_at', 'username', 'event', 'ride', 'speed_range_preference')
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'event__name',)
     readonly_fields = ('state', 'emergency_contact_name', 'emergency_contact_phone', 'submitted_at', 'confirmed_at',
                        'withdrawn_at')
     fields = ('user', 'event', 'ride', 'speed_range_preference', 'ride_leader_preference') + readonly_fields
+    list_filter = ('submitted_at', 'state',)
+
+    @admin.display(ordering='user__username')
+    def username(self, obj):
+        return obj.user
 
 
 class MemberAdmin(admin.ModelAdmin):
