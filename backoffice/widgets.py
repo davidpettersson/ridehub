@@ -48,8 +48,11 @@ class RegistrationClosesAtWidget(AdminSplitDateTime):
         <div style="margin-left: 2em; margin-top: 6px; padding-top: 4px;">
             <select id="{dropdown_id}" style="min-width: 220px; padding: 4px;" 
                     onchange="if(this.value) {{ 
-                        var option = this.value.split(':')[0];
-                        var value = this.value.split(':')[1];
+                        var parts = this.value.split(':');
+                        var option = parts[0];
+                        // Join the remaining parts back together in case the time value contains a colon
+                        var value = parts.slice(1).join(':');
+                        console.log('Selected option:', option, 'value:', value);
                         setRegistrationClosesTime(option, value, 'id_starts_at', 'id_{name}'); 
                         this.selectedIndex = 0; 
                     }}">

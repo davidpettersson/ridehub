@@ -52,6 +52,8 @@ function subtract_duration(referenceTime, hours) {
  * @returns {Date} - A new Date object with the calculated time
  */
 function set_specific_time(referenceTime, relativeDate, timeString) {
+    console.log('Setting specific time:', relativeDate, timeString, 'reference:', referenceTime);
+    
     if (!(referenceTime instanceof Date) || isNaN(referenceTime.getTime())) {
         console.error('Invalid reference time provided', referenceTime);
         return null;
@@ -79,16 +81,30 @@ function set_specific_time(referenceTime, relativeDate, timeString) {
     
     // Parse and set the absolute time
     if (timeString && typeof timeString === 'string') {
-        const [hours, minutes] = timeString.split(':').map(Number);
+        // Handle different time formats (12:00, 12:00:00, etc.)
+        let hours = 0;
+        let minutes = 0;
         
-        if (isNaN(hours) || isNaN(minutes)) {
+        // Try standard HH:MM format
+        const timeParts = timeString.split(':');
+        if (timeParts.length >= 2) {
+            hours = parseInt(timeParts[0], 10);
+            minutes = parseInt(timeParts[1], 10);
+        } else {
             console.error('Invalid time format, expected HH:MM:', timeString);
             return null;
         }
         
+        if (isNaN(hours) || isNaN(minutes)) {
+            console.error('Invalid time values in:', timeString, 'hours:', hours, 'minutes:', minutes);
+            return null;
+        }
+        
+        console.log('Setting time to:', hours, 'hours,', minutes, 'minutes');
         resultTime.setHours(hours, minutes, 0, 0);
     }
     
+    console.log('Result time:', resultTime);
     return resultTime;
 }
 
@@ -237,6 +253,8 @@ function setEndsAtTime(hours, startsAtFieldId, endsAtFieldId) {
  * @param {string} registrationClosesFieldId - ID of the registration_closes_at field
  */
 function setRegistrationClosesTime(option, value, startsAtFieldId, registrationClosesFieldId) {
+    console.log('Setting registration close time with option:', option, 'value:', value);
+    
     // For MultiWidget, the inputs are indexed by 0 and 1
     const startsAtDateInput = document.getElementById(startsAtFieldId + '_0'); // Date input
     const startsAtTimeInput = document.getElementById(startsAtFieldId + '_1'); // Time input
@@ -275,6 +293,7 @@ function setRegistrationClosesTime(option, value, startsAtFieldId, registrationC
             console.error('Invalid hours value:', value);
             return;
         }
+        console.log('Subtracting', hours, 'hours from', startsAtDateTime);
         registrationClosesDateTime = subtract_duration(startsAtDateTime, hours);
     } else if (option === 'day_of' || option === 'day_before') {
         // Specific time on day of or day before
@@ -289,6 +308,43 @@ function setRegistrationClosesTime(option, value, startsAtFieldId, registrationC
         return;
     }
 
+    console.log('Calculated registration close time:', registrationClosesDateTime);
+    
     // Update the registration closes form fields
     updateDateTimeFields(registrationClosesDateInput.id, registrationClosesTimeInput.id, registrationClosesDateTime);
-} 
+}
+
+// Debug functions that can be called from the browser console
+function debugTimeCalculator() {
+    console.log('Time Calculator Debug Functions:');
+    
+    // Test parsing dates
+    const testDate = new Date('2023-01-01T12:00:00');
+    console.log('Test Date:', testDate);
+    
+    // Test add_duration
+    console.log('add_duration(testDate, 2):', add_duration(testDate, 2));
+    
+    // Test subtract_duration
+    console.log('subtract_duration(testDate, 2):', subtract_duration(testDate, 2));
+    
+    // Test set_specific_time
+    console.log('set_specific_time(testDate, "day_before", "12:00"):', set_specific_time(testDate, 'day_before', '12:00'));
+    console.log('set_specific_time(testDate, "day_of", "12:00"):', set_specific_time(testDate, 'day_of', '12:00'));
+    
+    console.log('Debug complete. Check results above.');
+}
+
+// Create a global debug object for console access
+window.timeCalculatorDebug = {
+    add_duration: add_duration,
+    subtract_duration: subtract_duration,
+    set_specific_time: set_specific_time,
+    parseDateTime: parseDateTime,
+    formatDate: formatDate,
+    formatTime: formatTime,
+    updateDateTimeFields: updateDateTimeFields,
+    setEndsAtTime: setEndsAtTime,
+    setRegistrationClosesTime: setRegistrationClosesTime,
+    runTests: debugTimeCalculator
+}; 
