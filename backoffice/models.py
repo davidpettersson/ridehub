@@ -58,7 +58,7 @@ class Event(models.Model):
     )
 
     ends_at = models.DateTimeField(
-        help_text='End time of the event',
+        help_text='End time of the event. If left blank, event duration is assumed to be one hour.',
         blank=True,
         null=True,
     )

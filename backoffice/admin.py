@@ -5,6 +5,7 @@ from django.utils.html import format_html
 
 from backoffice.actions import cancel_event, duplicate_event, archive_event
 from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration
+from .forms import EventAdminForm
 
 
 class RideInline(SortableStackedInline):
@@ -31,6 +32,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
     search_fields = ('name',)
     actions = [cancel_event, archive_event, duplicate_event]
     readonly_fields = ('cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
+    form = EventAdminForm
 
     def links(self, obj):
         public_url = reverse('event_detail', args=[obj.id])
@@ -42,7 +44,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
 
     fieldsets = [
         (None, {
-            'fields': ('program', 'name', 'description', 'starts_at', 'location', 'location_url', 'virtual')
+            'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url', 'virtual')
         }),
         ('Registration options', {
             'fields': ('registration_closes_at', 'external_registration_url', 'registration_limit'),
