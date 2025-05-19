@@ -58,10 +58,6 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
             'fields': ('cancelled', 'cancelled_at', 'cancellation_reason'),
             'description': 'These fields are read-only and can only be modified through the Cancel Event action.'
         }),
-        ('Archiving information', {
-            'fields': ('archived', 'archived_at'),
-            'description': 'These fields are read-only and are set through the Archive Event action.'
-        })
     ]
 
 
