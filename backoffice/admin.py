@@ -5,6 +5,7 @@ from django.utils.html import format_html
 
 from backoffice.actions import cancel_event, duplicate_event, archive_event
 from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration
+from .forms import EventAdminForm
 
 
 class RideInline(SortableStackedInline):
@@ -23,7 +24,7 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(SortableAdminBase, admin.ModelAdmin):
-    list_display = ('name', 'starts_at', 'registration_count', 'links', 'cancelled', 'archived',)
+    list_display = ('name', 'starts_at', 'registration_count', 'organizer_email', 'links', 'cancelled', 'archived',)
     inlines = [RideInline, ]
     ordering = ('-starts_at',)
     date_hierarchy = 'starts_at'
@@ -31,6 +32,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
     search_fields = ('name',)
     actions = [cancel_event, archive_event, duplicate_event]
     readonly_fields = ('cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
+    form = EventAdminForm
 
     def links(self, obj):
         public_url = reverse('event_detail', args=[obj.id])
@@ -42,7 +44,8 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
 
     fieldsets = [
         (None, {
-            'fields': ('program', 'name', 'description', 'starts_at', 'location', 'location_url', 'virtual')
+            'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url', 'organizer_email', 'virtual',
+                       'visible')
         }),
         ('Registration options', {
             'fields': ('registration_closes_at', 'external_registration_url', 'registration_limit'),
@@ -56,10 +59,6 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
             'fields': ('cancelled', 'cancelled_at', 'cancellation_reason'),
             'description': 'These fields are read-only and can only be modified through the Cancel Event action.'
         }),
-        ('Archiving information', {
-            'fields': ('archived', 'archived_at'),
-            'description': 'These fields are read-only and are set through the Archive Event action.'
-        })
     ]
 
 
@@ -73,11 +72,16 @@ class RouteAdmin(admin.ModelAdmin):
 
 
 class RegistrationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'event', 'state', 'ride', 'speed_range_preference')
+    list_display = ('id', 'state', 'submitted_at', 'username', 'event', 'ride', 'speed_range_preference')
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'event__name',)
     readonly_fields = ('state', 'emergency_contact_name', 'emergency_contact_phone', 'submitted_at', 'confirmed_at',
                        'withdrawn_at')
     fields = ('user', 'event', 'ride', 'speed_range_preference', 'ride_leader_preference') + readonly_fields
+    list_filter = ('submitted_at', 'state',)
+
+    @admin.display(ordering='user__username')
+    def username(self, obj):
+        return obj.user
 
 
 class MemberAdmin(admin.ModelAdmin):
