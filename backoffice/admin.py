@@ -24,7 +24,7 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(SortableAdminBase, admin.ModelAdmin):
-    list_display = ('name', 'starts_at', 'registration_count', 'links', 'cancelled', 'archived',)
+    list_display = ('name', 'starts_at', 'registration_count', 'organizer_email', 'links', 'cancelled', 'archived',)
     inlines = [RideInline, ]
     ordering = ('-starts_at',)
     date_hierarchy = 'starts_at'
@@ -44,7 +44,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
 
     fieldsets = [
         (None, {
-            'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url', 'virtual',
+            'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url', 'organizer_email', 'virtual',
                        'visible')
         }),
         ('Registration options', {
