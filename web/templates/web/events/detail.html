@@ -85,13 +85,25 @@
                     </div>
                 </div>
                 {% endif %}
-                
+
+                <hr>
+
                 <div class="prose prose-gray dark:prose-invert max-w-none">
                     <p>{{ event.description|safe }}</p>
                 </div>
-                
+
+                <hr>
+
+                {% if event.organizer_email %}
+                <div class="mt-4">
+                    Please
+                    <a href="mailto:{{ event.organizer_email }}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 underline">contact the organizer</a>
+                    if you have questions.
+                </div>
+                {% endif %}
+
                 {% if event.registration_open %}
-                <div class="mt-6 mb-4 space-y-2">
+                <div class="mt-4 mb-4 space-y-2">
                     <div class="flex items-center mb-5">
                         {% if event.has_capacity_available %}
                             <div class="text-gray-600 dark:text-gray-400">Registration closes {{ event.registration_closes_at|date:"F j, g:i A" }}.</div>
