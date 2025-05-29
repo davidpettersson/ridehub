@@ -175,3 +175,87 @@ class EventRegistrationsFullViewTests(BaseEventViewTestCase):
         
         # Assert
         self.assertEqual(response.status_code, 403)  # Permission denied status code 
+
+
+class EventDetailViewTests(BaseEventViewTestCase):
+    """Tests for the event_detail view."""
+    
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('event_detail', kwargs={'event_id': self.event.id})
+        
+        # Add multiple speed ranges to the ride
+        self.speed_range_slow = SpeedRange.objects.create(
+            lower_limit=20,
+            upper_limit=25
+        )
+        self.speed_range_fast = SpeedRange.objects.create(
+            lower_limit=30,
+            upper_limit=35
+        )
+        
+        # Add all speed ranges to the ride
+        self.ride.speed_ranges.add(self.speed_range, self.speed_range_slow, self.speed_range_fast)
+    
+    def test_all_speed_ranges_displayed(self):
+        # Arrange
+        # We already have registrations for self.speed_range (25-30 km/h)
+        # but no registrations for slow (20-25) or fast (30-35) ranges
+        
+        # Act
+        response = self.client.get(self.url)
+        
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/events/detail.html')
+        
+        # Check that all speed ranges are displayed
+        self.assertContains(response, '20-25 km/h')
+        self.assertContains(response, '25-30 km/h')
+        self.assertContains(response, '30-35 km/h')
+        
+        # Check rider counts
+        self.assertContains(response, '20-25 km/h') 
+        self.assertContains(response, '(0 riders)')  # No riders in 20-25
+        self.assertContains(response, '25-30 km/h')
+        self.assertContains(response, '(2 riders, 1 leader)')  # 2 riders in 25-30
+        self.assertContains(response, '30-35 km/h')
+        self.assertContains(response, '(0 riders)')  # No riders in 30-35
+    
+    def test_ride_without_speed_ranges(self):
+        # Arrange
+        # Create a new ride without speed ranges
+        ride_no_ranges = Ride.objects.create(
+            name='Ride Without Speed Ranges',
+            event=self.event,
+            route=self.route
+        )
+        
+        # Act
+        response = self.client.get(self.url)
+        
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Ride Without Speed Ranges')
+        self.assertContains(response, 'No speed ranges configured for this ride')
+    
+    def test_authenticated_user_sees_registration_status(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+        
+        # Act
+        response = self.client.get(self.url)
+        
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['user_is_registered'])
+        self.assertContains(response, 'You are registered for this event')
+    
+    def test_unauthenticated_user_does_not_see_registration_status(self):
+        # Act
+        response = self.client.get(self.url)
+        
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['user_is_registered'])
+        self.assertNotContains(response, 'You are registered for this event') 
