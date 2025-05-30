@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 from django.contrib.auth.models import User
 from django.template.loader import render_to_string
 from django.test import TestCase
+from django.urls import reverse
 
 from backoffice.models import Event, Registration, Program
 
@@ -110,7 +111,8 @@ class TestConfirmationEmail(BaseEmailTestCase):
         self.assertIn('emergency', html_content.lower())
 
         # Verify emergency contact link exists and is absolute
-        self.assertRegex(html_content, rf'href="http[s]?://[^"]*events/{self.event.id}/registrations[^"]*"')
+        emergency_url = f"{self.base_url}{reverse('riders_list', kwargs={'event_id': self.event.id})}"
+        self.assertRegex(html_content, rf'href="{re.escape(emergency_url)}"')
 
     def test_ride_leader_text_includes_emergency_contact_link(self):
         self.registration.ride_leader_preference = Registration.RIDE_LEADER_YES
@@ -122,7 +124,8 @@ class TestConfirmationEmail(BaseEmailTestCase):
         self.assertIn('ride leader', text_content.lower())
 
         # Verify emergency contact URL is present
-        self.assertIn(f'{self.base_url}/events/{self.event.id}/registrations', text_content)
+        emergency_url = f"{self.base_url}{reverse('riders_list', kwargs={'event_id': self.event.id})}"
+        self.assertIn(emergency_url, text_content)
 
 
 class TestLoginLinkEmail(BaseEmailTestCase):
@@ -200,10 +203,12 @@ class TestEventCancelledEmail(BaseEmailTestCase):
         self.assert_all_links_absolute(html_content)
 
         # Verify events link exists and is absolute
-        self.assertRegex(html_content, r'href="http[s]?://[^"]*events[^"]*"')
+        events_url = f"{self.base_url}{reverse('event_list')}"
+        self.assertRegex(html_content, rf'href="{re.escape(events_url)}"')
 
     def test_text_version_has_absolute_urls(self):
         text_content = render_to_string('email/event_cancelled.txt', self.context)
 
         # Verify events URL is present
-        self.assertIn(f'{self.base_url}/events', text_content)
+        events_url = f"{self.base_url}{reverse('event_list')}"
+        self.assertIn(events_url, text_content)
