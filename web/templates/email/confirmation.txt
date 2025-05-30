@@ -2,7 +2,7 @@ Hello!
 
 You are confirmed for {{ registration.event.name }} on {{ registration.event.starts_at|date:"l, M j" }} at {{ registration.event.starts_at|date:"g:i A" }}.
 
-Thinking of withdrawing? No worries at all! You can manage your registration by visiting your profile page: {{ base_url }}{% url 'profile' %}
+Need to cancel? No worries at all! You can manage your registration by visiting your profile page: {{ base_url }}{% url 'profile' %}
 
 {% if registration.is_ride_leader %}
 IMPORTANT RIDE LEADER INFORMATION:
@@ -14,7 +14,7 @@ If you anticipate being in an area with poor or no cellular service during the e
 {% if not registration.event.virtual %}
 Please remember:
 
- - Arrive approximately 30 minutes or more before the start time. This will give you enough time to set up your bike, find the right group, and participate in the briefing before you depart.
+ - Arrive at least 15 minutes before the start time. This will give you enough time to set up your bike, find the right group, and participate in the briefing before you depart.
 
  - Bring enough food and drink to keep you going, especially if it is a long ride or the forecast indicates it is particularly warm.
 
