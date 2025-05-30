@@ -224,7 +224,7 @@ class EventDetailViewTests(BaseEventViewTestCase):
         self.assertContains(response, '20-25 km/h')
         self.assertContains(response, '(0 riders)')  # No riders in 20-25
         self.assertContains(response, '25-30 km/h')
-        self.assertContains(response, '(2 riders, 1 leader)')  # 2 riders in 25-30
+        self.assertContains(response, '(1 rider + 1 leader)')  # 1 regular rider + 1 leader in 25-30
         self.assertContains(response, '30-35 km/h')
         self.assertContains(response, '(0 riders)')  # No riders in 30-35
 
@@ -244,6 +244,71 @@ class EventDetailViewTests(BaseEventViewTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Ride Without Speed Ranges')
         self.assertContains(response, 'No speed ranges configured for this ride')
+
+    def test_rider_count_display_variations(self):
+        # Arrange
+        # Create additional users and registrations to test different scenarios
+        user3 = User.objects.create_user(username='user3', password='password123')
+        user4 = User.objects.create_user(username='user4', password='password123')
+        user5 = User.objects.create_user(username='user5', password='password123')
+        
+        # Scenario 1: All riders are leaders in speed_range_fast
+        Registration.objects.create(
+            name='Leader 1',
+            email='leader1@example.com',
+            event=self.event,
+            ride=self.ride,
+            speed_range_preference=self.speed_range_fast,
+            ride_leader_preference=Registration.RIDE_LEADER_YES,
+            emergency_contact_name='Emergency',
+            emergency_contact_phone='123-456-7890',
+            user=user3,
+            state=Registration.STATE_CONFIRMED
+        )
+        Registration.objects.create(
+            name='Leader 2',
+            email='leader2@example.com',
+            event=self.event,
+            ride=self.ride,
+            speed_range_preference=self.speed_range_fast,
+            ride_leader_preference=Registration.RIDE_LEADER_YES,
+            emergency_contact_name='Emergency',
+            emergency_contact_phone='123-456-7890',
+            user=user4,
+            state=Registration.STATE_CONFIRMED
+        )
+        
+        # Scenario 2: Only regular riders in speed_range_slow
+        Registration.objects.create(
+            name='Regular 1',
+            email='regular1@example.com',
+            event=self.event,
+            ride=self.ride,
+            speed_range_preference=self.speed_range_slow,
+            ride_leader_preference=Registration.RIDE_LEADER_NO,
+            emergency_contact_name='Emergency',
+            emergency_contact_phone='123-456-7890',
+            user=user5,
+            state=Registration.STATE_CONFIRMED
+        )
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        
+        # Check scenario 1: All leaders (30-35 km/h)
+        self.assertContains(response, '30-35 km/h')
+        self.assertContains(response, '(2 leaders)')
+        
+        # Check scenario 2: No leaders (20-25 km/h)
+        self.assertContains(response, '20-25 km/h')
+        self.assertContains(response, '(1 rider)')
+        
+        # Check existing scenario: Mixed (25-30 km/h)
+        self.assertContains(response, '25-30 km/h')
+        self.assertContains(response, '(1 rider + 1 leader)')
 
     def test_authenticated_user_sees_registration_status(self):
         # Arrange
