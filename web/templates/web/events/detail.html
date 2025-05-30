@@ -182,33 +182,36 @@
                                                         {% else %}
                                                             No Speed Preference
                                                         {% endif %}
-                                                        ({{ total_riders_count }} rider{{ total_riders_count|pluralize }}{% if ride_leader_count_val > 0 %}, {{ ride_leader_count_val }} leader{{ ride_leader_count_val|pluralize }}{% endif %})
+                                                        ({% if ride_leader_count_val == 0 %}{{ total_riders_count }} rider{{ total_riders_count|pluralize }}{% elif ride_leader_count_val == total_riders_count %}{{ ride_leader_count_val }} leader{{ ride_leader_count_val|pluralize }}{% else %}{{ speed_range_info.non_leader_count }} rider{{ speed_range_info.non_leader_count|pluralize }} + {{ ride_leader_count_val }} leader{{ ride_leader_count_val|pluralize }}{% endif %})
                                                     {% endwith %}
                                                 </span>
+                                                {% if speed_range_info.riders %}
                                                 <button @click="open = !open" class="ml-2 text-sm text-primary-600 hover:underline focus:outline-none dark:text-primary-400 dark:hover:text-primary-300">
                                                     <span x-show="!open">(show)</span>
                                                     <span x-show="open" x-cloak>(hide)</span>
                                                 </button>
+                                                {% endif %}
                                             </div>
                                             
+                                            {% if speed_range_info.riders %}
                                             <div class="pl-6" x-show="open" x-cloak>
                                                 {% for rider in speed_range_info.riders %}
                                                     <div class="text-sm text-gray-600 dark:text-gray-400">
                                                         {{ rider.name }}{% if rider.is_ride_leader %} (ride leader){% endif %}
                                                     </div>
                                                 {% endfor %}
-                                                {% if not speed_range_info.riders %}
-                                                    <p class="text-sm text-gray-500 dark:text-gray-400">No riders in this group.</p>
-                                                {% endif %}
                                             </div>
+                                            {% endif %}
                                         </div>
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <p class="text-gray-500 dark:text-gray-400">No riders registered for this ride yet.</p>
+                                <p class="text-gray-500 dark:text-gray-400">No speed ranges configured for this ride.</p>
                             {% endif %}
                         {% endwith %}
                     </div>
+                    {% else %}
+                        <p class="text-gray-500 dark:text-gray-400">No speed ranges configured for this ride.</p>
                     {% endif %}
                     {% endwith %}
                 </div>
