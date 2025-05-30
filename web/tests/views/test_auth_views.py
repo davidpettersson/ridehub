@@ -1,6 +1,9 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
+from django.core import mail
+from sesame.utils import get_query_string
+from web.utils import get_sesame_max_age_minutes, is_sesame_one_time
 
 
 class AuthViewTests(TestCase):
@@ -69,6 +72,69 @@ class AuthViewTests(TestCase):
         self.assertContains(response, f'<span class="mr-2">{self.user.first_name}</span>')
         self.assertContains(response, f'<a href="{self.profile_url}"')
         self.assertNotContains(response, f'<a href="{self.login_form_url}" class="text-white hover:text-gray-200 transition-colors duration-200 inline-flex items-center">\n                Log in\n            </a>', html=True)
+
+    def test_login_email_sent_page_shows_validity_info(self):
+        # Arrange / Act
+        response = self.client.post(self.login_form_url, {'email': self.user.email})
+        
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/login/login_email_sent.html')
+        
+        # Check for dynamic values rendered by template tags
+        max_age_minutes = get_sesame_max_age_minutes()
+        if max_age_minutes:
+            self.assertContains(response, f'The link is valid for <strong>{max_age_minutes} minute')
+        
+        if is_sesame_one_time():
+            self.assertContains(response, 'The link can be used <strong>only once</strong>')
+        
+        self.assertContains(response, "After clicking the link, you'll be logged in automatically")
+
+    def test_login_email_contains_validity_info(self):
+        # Arrange / Act
+        response = self.client.post(self.login_form_url, {'email': self.user.email})
+        
+        # Assert
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        
+        max_age_minutes = get_sesame_max_age_minutes()
+        is_one_time = is_sesame_one_time()
+        
+        # Check HTML version
+        html_body = email.alternatives[0][0] if email.alternatives else None
+        if html_body:
+            if max_age_minutes:
+                self.assertIn(f'This link is valid for <strong>{max_age_minutes} minute', html_body)
+            if is_one_time:
+                self.assertIn('This link can be used <strong>only once</strong>', html_body)
+            # Check for profile URL (might be http in test environment)
+            self.assertIn('obcrides.ca/profile', html_body)
+        
+        # Check text version
+        if max_age_minutes:
+            self.assertIn(f'This link is valid for {max_age_minutes} minute', email.body)
+        if is_one_time:
+            self.assertIn('This link can be used only once', email.body)
+        # Check for profile URL (might be http in test environment)
+        self.assertIn('obcrides.ca/profile', email.body)
+
+    def test_expired_link_shows_friendly_error(self):
+        # Arrange
+        # Create an invalid token URL
+        login_url = reverse('login')
+        invalid_token_url = login_url + '?sesame=invalid_token_here'
+        
+        # Act
+        response = self.client.get(invalid_token_url)
+        
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/login/login_expired.html')
+        self.assertContains(response, 'This login link has expired')
+        self.assertContains(response, 'Request new login link')
+        self.assertContains(response, f'href="{self.login_form_url}"')
 
     # We are not testing the full sesame login flow (sending email, clicking link) here,
     # as that is more complex and better suited for acceptance tests or integration tests

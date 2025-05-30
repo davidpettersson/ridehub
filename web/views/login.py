@@ -7,10 +7,12 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.generic import FormView
 from sesame.utils import get_query_string
+from sesame.views import LoginView as SesameLoginView
 
 from backoffice.services.email_service import EmailService
 from web.forms import EmailLoginForm
 from backoffice.utils import lower_email
+from web.utils import get_sesame_max_age_minutes, is_sesame_one_time, get_absolute_url
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ class LoginFormView(FormView):
 
     def _send_email(self, user: User, link: str) -> None:
         context = {
-            'login_link': link
+            'login_link': link,
         }
 
         EmailService().send_email(
@@ -58,6 +60,19 @@ class LoginFormView(FormView):
         lowercase_email = lower_email(form.cleaned_data['email'])
         self._email_submitted(lowercase_email)
         return render(self.request, "web/login/login_email_sent.html")
+
+
+class CustomLoginView(SesameLoginView):
+    """Custom login view that handles expired/invalid tokens gracefully."""
+    
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            return super().dispatch(request, *args, **kwargs)
+        except Exception as e:
+            # If we get any error (including 403 from invalid/expired token),
+            # show a friendly error page
+            logger.info(f"Login failed with sesame token: {e}")
+            return render(request, "web/login/login_expired.html")
 
 
 def logout_view(request):

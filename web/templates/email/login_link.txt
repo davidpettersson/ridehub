@@ -1,7 +1,16 @@
-Hello,
+{% load sesame_tags %}Hello,
 
 You requested that we send you a link to log in:
 
     {{ login_link }}
+
+Important:
+- After clicking the link, you'll be logged in automatically
+{% sesame_max_age_minutes as max_age_minutes %}{% if max_age_minutes %}- This link is valid for {{ max_age_minutes }} minute{{ max_age_minutes|pluralize }} only{% endif %}
+{% sesame_is_one_time as is_one_time %}{% if is_one_time %}- This link can be used only once{% endif %}
+
+If the link has expired, please request a new one using the login form: {% url 'login_form' %}
+
+Once logged in, you can access your profile at: {% url 'profile' %}
 
 Thank you for riding with the Ottawa Bicycle Club!

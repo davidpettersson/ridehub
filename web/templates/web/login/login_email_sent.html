@@ -1,4 +1,5 @@
 {% extends 'web/_base.html' %}
+{% load sesame_tags %}
 {% block title %}Login link sent{% endblock %}
 {% block content %}
 <div class="max-w-md mx-auto">
@@ -10,6 +11,23 @@
                     <i class="bi bi-envelope-check mr-2 text-lg"></i>
                     We sent a link. Please check your email.
                 </p>
+            </div>
+            <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded-md">
+                <p class="flex items-center mb-2">
+                    <i class="bi bi-info-circle mr-2 text-lg"></i>
+                    <strong>Important:</strong>
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1">
+                    {% sesame_max_age_minutes as max_age_minutes %}
+                    {% if max_age_minutes %}
+                    <li>The link is valid for <strong>{{ max_age_minutes }} minute{{ max_age_minutes|pluralize }}</strong> only</li>
+                    {% endif %}
+                    {% sesame_is_one_time as is_one_time %}
+                    {% if is_one_time %}
+                    <li>The link can be used <strong>only once</strong></li>
+                    {% endif %}
+                    <li>After clicking the link, you'll be logged in automatically</li>
+                </ul>
             </div>
             <div class="mt-6 text-center text-gray-500 dark:text-gray-400">
                 <p>If you don't receive the email within a few minutes, please check your spam folder.</p>

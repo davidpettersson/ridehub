@@ -1,3 +1,4 @@
+{% load sesame_tags %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -22,6 +23,21 @@
             border-radius: 4px;
             margin: 15px 0;
         }
+        .important-notice {
+            background-color: #f0f8ff;
+            border: 1px solid #4A6DA7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .important-notice h3 {
+            margin-top: 0;
+            color: #4A6DA7;
+        }
+        .important-notice ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
         .footer {
             margin-top: 30px;
             padding-top: 15px;
@@ -40,6 +56,24 @@
     
     <p>...or copy and paste this URL into your browser:</p>
     <p style="background-color: #f5f5f5; padding: 10px; word-break: break-all;">{{ login_link }}</p>
+
+    <div class="important-notice">
+        <h3>Important:</h3>
+        <ul>
+            {% sesame_max_age_minutes as max_age_minutes %}
+            {% if max_age_minutes %}
+            <li>This link is valid for <strong>{{ max_age_minutes }} minute{{ max_age_minutes|pluralize }}</strong> only</li>
+            {% endif %}
+            {% sesame_is_one_time as is_one_time %}
+            {% if is_one_time %}
+            <li>This link can be used <strong>only once</strong></li>
+            {% endif %}
+            <li>After clicking the link, you'll be logged in automatically</li>
+        </ul>
+        <p>If the link has expired, please request a new one using the <a href="{% url 'login_form' %}">login form</a>.</p>
+    </div>
+
+    <p>You can access <a href="{% url 'profile' %}">your profile</a> once logged in.</p>
 
     <div class="footer">
         <p>Thank you for riding with the Ottawa Bicycle Club!</p>

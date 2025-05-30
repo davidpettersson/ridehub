@@ -1,18 +1,17 @@
 from django.urls import path
-from sesame.views import LoginView
 
 from web.views.debug import trigger_task, trigger_error
 from web.views.events import redirect_to_event_list, event_detail, event_list, event_registrations, \
     event_registrations_full
 from web.views.events_ical import EventFeed
-from web.views.login import LoginFormView, logout_view
+from web.views.login import LoginFormView, logout_view, CustomLoginView
 from web.views.profile import profile, registration_withdraw
 from web.views.registrations import registration_create, registration_detail, registration_submitted, registration_list
 from web.views.rides import ride_speed_ranges
 
 urlpatterns = [
     path("login/", LoginFormView.as_view(), name="login_form"),
-    path("login/auth/", LoginView.as_view(), name="login"),
+    path("login/auth/", CustomLoginView.as_view(), name="login"),
     path("logout/", logout_view, name="logout"),
     path('debug/trigger_task', trigger_task),
     path('debug/trigger_error', trigger_error),
