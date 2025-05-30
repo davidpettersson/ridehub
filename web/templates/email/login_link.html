@@ -70,11 +70,10 @@
             {% endif %}
             <li>After clicking the link, you'll be logged in automatically</li>
         </ul>
-        <p>If the link has expired, please request a new one.</p>
+        <p>If the link has expired, please request a new one using the <a href="{% url 'login_form' %}">login form</a>.</p>
     </div>
 
-    {% absolute_url 'profile' as profile_url %}
-    <p>Once logged in, you can access your profile at: <a href="{{ profile_url }}">{{ profile_url }}</a></p>
+    <p>You can access <a href="{% url 'profile' %}">your profile</a> once logged in.</p>
 
     <div class="footer">
         <p>Thank you for riding with the Ottawa Bicycle Club!</p>
