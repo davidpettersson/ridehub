@@ -17,7 +17,8 @@ def _create_ride_structure(ride):
                 'speed_range': sr,
                 'riders': [],
                 'sort_key': sr.lower_limit,
-                'ride_leader_count': 0
+                'ride_leader_count': 0,
+                'non_leader_count': 0
             }
             for sr in ride.speed_ranges.all()
         }
@@ -42,7 +43,8 @@ def _add_rider_to_speed_range(rides_data, ride_id, speed_range_key, registration
                 'speed_range': None,
                 'riders': [],
                 'sort_key': float('inf'),
-                'ride_leader_count': 0
+                'ride_leader_count': 0,
+                'non_leader_count': 0
             }
     
     rides_data[ride_id]['speed_ranges'][speed_range_key]['riders'].append(registration)
@@ -74,6 +76,7 @@ def _sort_speed_range_data(speed_ranges):
     for speed_range_id, speed_range_data in sorted_items:
         speed_range_data['riders'].sort(key=lambda r: r.name)
         speed_range_data['ride_leader_count'] = _count_ride_leaders(speed_range_data['riders'])
+        speed_range_data['non_leader_count'] = len(speed_range_data['riders']) - speed_range_data['ride_leader_count']
         sorted_speed_ranges[speed_range_id] = speed_range_data
     
     return sorted_speed_ranges

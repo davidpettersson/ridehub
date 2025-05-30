@@ -182,7 +182,7 @@
                                                         {% else %}
                                                             No Speed Preference
                                                         {% endif %}
-                                                        ({{ total_riders_count }} rider{{ total_riders_count|pluralize }}{% if ride_leader_count_val > 0 %}, {{ ride_leader_count_val }} leader{{ ride_leader_count_val|pluralize }}{% endif %})
+                                                        ({% if ride_leader_count_val == 0 %}{{ total_riders_count }} rider{{ total_riders_count|pluralize }}{% elif ride_leader_count_val == total_riders_count %}{{ ride_leader_count_val }} leader{{ ride_leader_count_val|pluralize }}{% else %}{{ speed_range_info.non_leader_count }} rider{{ speed_range_info.non_leader_count|pluralize }} + {{ ride_leader_count_val }} leader{{ ride_leader_count_val|pluralize }}{% endif %})
                                                     {% endwith %}
                                                 </span>
                                                 {% if speed_range_info.riders %}
