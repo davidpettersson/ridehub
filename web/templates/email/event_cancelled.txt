@@ -14,5 +14,4 @@ We apologize for any inconvenience this may cause.
 
 You can view other upcoming events at: {{ base_url }}{% url 'event_list' %}
 
-Thank you for your understanding.
-Ottawa Bicycle Club 
+Ottawa Bicycle Club

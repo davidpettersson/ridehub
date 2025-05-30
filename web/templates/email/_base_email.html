@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ottawa Bicycle Club{% endblock %}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #4A6DA7;
+        }
+        h2 {
+            color: #4A6DA7;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 10px;
+            word-break: break-all;
+            display: block;
+        }
+        .event-details {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .reminder-item {
+            margin-bottom: 15px;
+            padding-left: 20px;
+            position: relative;
+        }
+        .reminder-item:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #4A6DA7;
+        }
+        .button {
+            display: inline-block;
+            background-color: #0d6dfb;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .important-notice {
+            background-color: #f0f8ff;
+            border: 1px solid #4A6DA7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .important-notice h3 {
+            margin-top: 0;
+            color: #4A6DA7;
+        }
+        .important-notice ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .cancellation-notice {
+            background-color: #fae3e3;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            border-left: 4px solid #d62828;
+        }
+        .ride-leader-info {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #4A6DA7;
+            border-radius: 4px;
+            background-color: #e7f0fa;
+        }
+        .ride-leader-info h3 {
+            color: #4A6DA7;
+            margin-top: 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #666;
+        }
+        {% block extra_css %}{% endblock %}
+    </style>
+</head>
+<body>
+    {% block content %}{% endblock %}
+    
+    <div class="footer">
+        {% block footer %}
+        {% endblock %}
+        <p>Ottawa Bicycle Club</p>
+    </div>
+</body>
+</html> 
