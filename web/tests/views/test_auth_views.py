@@ -1,8 +1,8 @@
-from django.test import TestCase, Client
-from django.urls import reverse
 from django.contrib.auth.models import User
 from django.core import mail
-from sesame.utils import get_query_string
+from django.test import TestCase, Client
+from django.urls import reverse
+
 from web.utils import get_sesame_max_age_minutes, is_sesame_one_time
 
 
@@ -13,7 +13,7 @@ class AuthViewTests(TestCase):
         self.user = User.objects.create_user(username='testuser', email='test@example.com', password='password123', first_name='Test')
         self.login_form_url = reverse('login_form')
         self.logout_url = reverse('logout')
-        self.profile_url = reverse('profile') # LOGIN_REDIRECT_URL is '/profile'
+        self.profile_url = reverse('profile')
 
     def test_login_form_view_get(self):
         # Arrange / Act
@@ -109,16 +109,16 @@ class AuthViewTests(TestCase):
                 self.assertIn(f'This link is valid for <strong>{max_age_minutes} minute', html_body)
             if is_one_time:
                 self.assertIn('This link can be used <strong>only once</strong>', html_body)
-            # Check for profile URL (might be http in test environment)
-            self.assertIn('obcrides.ca/profile', html_body)
+            # Check for profile URL - should be an absolute URL ending with /profile
+            self.assertRegex(html_body, r'https?://[^/]+/profile')
         
         # Check text version
         if max_age_minutes:
             self.assertIn(f'This link is valid for {max_age_minutes} minute', email.body)
         if is_one_time:
             self.assertIn('This link can be used only once', email.body)
-        # Check for profile URL (might be http in test environment)
-        self.assertIn('obcrides.ca/profile', email.body)
+        # Check for profile URL - should be an absolute URL ending with /profile
+        self.assertRegex(email.body, r'https?://[^/]+/profile')
 
     def test_expired_link_shows_friendly_error(self):
         # Arrange
@@ -135,8 +135,3 @@ class AuthViewTests(TestCase):
         self.assertContains(response, 'This login link has expired')
         self.assertContains(response, 'Request new login link')
         self.assertContains(response, f'href="{self.login_form_url}"')
-
-    # We are not testing the full sesame login flow (sending email, clicking link) here,
-    # as that is more complex and better suited for acceptance tests or integration tests
-    # that can mock email sending and handle external interactions.
-    # These tests focus on the view behavior given an authentication state. 

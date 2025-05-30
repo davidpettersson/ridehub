@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.template.loader import render_to_string
 from django.contrib.auth.models import User
 from backoffice.models import Event, Registration, Program
+import re
 
 
 class TestEmailTemplates(TestCase):
@@ -34,6 +35,29 @@ class TestEmailTemplates(TestCase):
             ride_leader_preference=Registration.RIDE_LEADER_NO
         )
 
+    def assert_all_links_absolute(self, html_content):
+        """Assert that all href links in the HTML are absolute URLs."""
+        # Find all href attributes
+        href_pattern = re.compile(r'href="([^"]+)"')
+        links = href_pattern.findall(html_content)
+        
+        for link in links:
+            # Skip mailto links
+            if link.startswith('mailto:'):
+                continue
+            
+            # Assert that the link is absolute (starts with http:// or https://)
+            self.assertTrue(
+                link.startswith('http://') or link.startswith('https://'),
+                f"Link '{link}' is not an absolute URL"
+            )
+            
+            # Assert that the link doesn't start with just /
+            self.assertFalse(
+                link.startswith('/') and not link.startswith('//'),
+                f"Link '{link}' appears to be a relative URL"
+            )
+
     def test_confirmation_email_renders_correctly(self):
         context = {
             'registration': self.registration,
@@ -50,9 +74,17 @@ class TestEmailTemplates(TestCase):
         self.assertIn('See you soon!', html_content)
         self.assertIn('Ottawa Bicycle Club', html_content)
         
+        # Check that all links are absolute
+        self.assert_all_links_absolute(html_content)
+        
+        # Check specific links
+        self.assertIn('href="http://example.com/profile"', html_content)
+        
         text_content = render_to_string('email/confirmation.txt', context)
         self.assertIn('Hello!', text_content)
         self.assertIn(self.event.name, text_content)
+        # Check that text version also has absolute URLs
+        self.assertIn('http://example.com/profile', text_content)
 
     def test_confirmation_email_with_ride_leader(self):
         self.registration.ride_leader_preference = Registration.RIDE_LEADER_YES
@@ -67,8 +99,16 @@ class TestEmailTemplates(TestCase):
         self.assertIn('Ride Leader Information:', html_content)
         self.assertIn('Emergency Contact List', html_content)
         
+        # Check that all links are absolute
+        self.assert_all_links_absolute(html_content)
+        
+        # Check specific ride leader link
+        self.assertIn(f'href="http://example.com/events/{self.event.id}/registrations"', html_content)
+        
         text_content = render_to_string('email/confirmation.txt', context)
         self.assertIn('IMPORTANT RIDE LEADER INFORMATION:', text_content)
+        # Check that text version also has absolute URL for emergency contact list
+        self.assertIn(f'http://example.com/events/{self.event.id}/registrations', text_content)
 
     def test_login_link_email_renders_correctly(self):
         context = {
@@ -86,6 +126,15 @@ class TestEmailTemplates(TestCase):
         # Code block should be rendered with styles from base template
         self.assertIn('<code>', html_content)
         self.assertIn('http://example.com/login/abc123</code>', html_content)
+        
+        # Check that all links are absolute
+        self.assert_all_links_absolute(html_content)
+        
+        # Check specific links
+        self.assertIn('href="http://example.com/login/abc123"', html_content)
+        # Check that other links use base_url
+        self.assertIn('href="http://example.com/login/"', html_content)
+        self.assertIn('href="http://example.com/profile"', html_content)
         
         text_content = render_to_string('email/login_link.txt', context)
         self.assertIn('Hello,', text_content)
@@ -109,9 +158,17 @@ class TestEmailTemplates(TestCase):
         self.assertIn('Thank you for your understanding.', html_content)
         self.assertIn('Ottawa Bicycle Club', html_content)
         
+        # Check that all links are absolute
+        self.assert_all_links_absolute(html_content)
+        
+        # Check specific link
+        self.assertIn('href="http://example.com/events"', html_content)
+        
         text_content = render_to_string('email/event_cancelled.txt', context)
         self.assertIn('EVENT CANCELLED:', text_content)
         self.assertIn(self.event.name, text_content)
+        # Check that text version also has absolute URL
+        self.assertIn('http://example.com/events', text_content)
 
     def test_base_email_template_structure(self):
         context = {}

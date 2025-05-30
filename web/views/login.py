@@ -35,8 +35,12 @@ class LoginFormView(FormView):
         return link
 
     def _send_email(self, user: User, link: str) -> None:
+        # Build base URL from the request
+        base_url = self.request.build_absolute_uri('/').rstrip('/')
+        
         context = {
             'login_link': link,
+            'base_url': base_url,
         }
 
         EmailService().send_email(

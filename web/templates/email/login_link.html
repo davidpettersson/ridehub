@@ -26,8 +26,8 @@
             {% endif %}
             <li>After clicking the link, you'll be logged in automatically</li>
         </ul>
-        <p>If the link has expired, please request a new one using the <a href="{% url 'login_form' %}">login form</a>.</p>
+        <p>If the link has expired, please request a new one using the <a href="{{ base_url }}{% url 'login_form' %}">login form</a>.</p>
     </div>
 
-    <p>You can access <a href="{% url 'profile' %}">your profile</a> once logged in.</p>
+    <p>You can access <a href="{{ base_url }}{% url 'profile' %}">your profile</a> once logged in.</p>
 {% endblock %}
