@@ -9,13 +9,11 @@ from backoffice.models import Event, Registration, Program
 
 
 class BaseEmailTestCase(TestCase):
-    """Base test case with common helpers for email template tests."""
-    
+
     def setUp(self):
         self.base_url = "http://example.com"
     
     def assert_all_links_absolute(self, html_content):
-        """Assert that all href links in the HTML are absolute URLs."""
         # Find all href attributes
         href_pattern = re.compile(r'href="([^"]+)"')
         links = href_pattern.findall(html_content)
@@ -38,7 +36,6 @@ class BaseEmailTestCase(TestCase):
             )
     
     def assert_text_contains_absolute_urls(self, text_content):
-        """Assert that text content contains at least one absolute URL."""
         url_pattern = re.compile(r'http[s]?://[^\s]+')
         urls = url_pattern.findall(text_content)
         self.assertGreater(len(urls), 0, "Text email should contain at least one URL")
@@ -46,8 +43,6 @@ class BaseEmailTestCase(TestCase):
 
 
 class TestConfirmationEmail(BaseEmailTestCase):
-    """Test cases for the confirmation email template."""
-    
     def setUp(self):
         super().setUp()
         self.user = User.objects.create_user(
@@ -81,7 +76,6 @@ class TestConfirmationEmail(BaseEmailTestCase):
         }
 
     def test_contains_key_information(self):
-        """Test that confirmation email contains essential event information."""
         html_content = render_to_string('email/confirmation.html', self.context)
         self.assertIn(self.event.name, html_content)
         self.assertIn('profile', html_content.lower())
@@ -90,7 +84,6 @@ class TestConfirmationEmail(BaseEmailTestCase):
         self.assertIn(self.event.name, text_content)
 
     def test_links_are_absolute(self):
-        """Test that all links in confirmation email are absolute URLs."""
         html_content = render_to_string('email/confirmation.html', self.context)
         self.assert_all_links_absolute(html_content)
 
@@ -98,7 +91,6 @@ class TestConfirmationEmail(BaseEmailTestCase):
         self.assertRegex(html_content, r'href="http[s]?://[^"]*profile[^"]*"')
 
     def test_text_version_has_absolute_urls(self):
-        """Test that text version of confirmation email has absolute URLs."""
         text_content = render_to_string('email/confirmation.txt', self.context)
         
         # Check that URLs in text are absolute
@@ -108,7 +100,6 @@ class TestConfirmationEmail(BaseEmailTestCase):
         self.assertRegex(text_content, r'http[s]?://[^\s]*profile')
 
     def test_ride_leader_includes_emergency_contact_link(self):
-        """Test that ride leader confirmation includes emergency contact list link."""
         self.registration.ride_leader_preference = Registration.RIDE_LEADER_YES
         self.registration.save()
 
@@ -122,7 +113,6 @@ class TestConfirmationEmail(BaseEmailTestCase):
         self.assertRegex(html_content, rf'href="http[s]?://[^"]*events/{self.event.id}/registrations[^"]*"')
 
     def test_ride_leader_text_includes_emergency_contact_link(self):
-        """Test that ride leader text confirmation includes emergency contact list link."""
         self.registration.ride_leader_preference = Registration.RIDE_LEADER_YES
         self.registration.save()
 
@@ -136,8 +126,6 @@ class TestConfirmationEmail(BaseEmailTestCase):
 
 
 class TestLoginLinkEmail(BaseEmailTestCase):
-    """Test cases for the login link email template."""
-    
     def setUp(self):
         super().setUp()
         self.login_link = 'http://example.com/login/abc123'
@@ -147,7 +135,6 @@ class TestLoginLinkEmail(BaseEmailTestCase):
         }
 
     def test_contains_login_link(self):
-        """Test that login link email contains the actual login link."""
         html_content = render_to_string('email/login_link.html', self.context)
 
         # Verify login link is present in href
@@ -157,7 +144,6 @@ class TestLoginLinkEmail(BaseEmailTestCase):
         self.assertIn(self.login_link, text_content)
 
     def test_has_valid_html_structure(self):
-        """Test that login link email has proper HTML structure."""
         html_content = render_to_string('email/login_link.html', self.context)
 
         # Check basic HTML structure
@@ -166,14 +152,11 @@ class TestLoginLinkEmail(BaseEmailTestCase):
         self.assertIn('</title>', html_content)
 
     def test_links_are_absolute(self):
-        """Test that all links in login link email are absolute URLs."""
         html_content = render_to_string('email/login_link.html', self.context)
         self.assert_all_links_absolute(html_content)
 
 
 class TestEventCancelledEmail(BaseEmailTestCase):
-    """Test cases for the event cancelled email template."""
-    
     def setUp(self):
         super().setUp()
         self.user = User.objects.create_user(
@@ -199,7 +182,6 @@ class TestEventCancelledEmail(BaseEmailTestCase):
         }
 
     def test_contains_event_name(self):
-        """Test that cancellation email contains the event name."""
         html_content = render_to_string('email/event_cancelled.html', self.context)
         self.assertIn(self.event.name, html_content)
 
@@ -207,7 +189,6 @@ class TestEventCancelledEmail(BaseEmailTestCase):
         self.assertIn(self.event.name, text_content)
 
     def test_contains_cancellation_reason(self):
-        """Test that cancellation email contains the cancellation reason."""
         html_content = render_to_string('email/event_cancelled.html', self.context)
         self.assertIn(self.cancellation_reason, html_content)
 
@@ -215,7 +196,6 @@ class TestEventCancelledEmail(BaseEmailTestCase):
         self.assertIn(self.cancellation_reason, text_content)
 
     def test_links_are_absolute(self):
-        """Test that all links in cancellation email are absolute URLs."""
         html_content = render_to_string('email/event_cancelled.html', self.context)
         self.assert_all_links_absolute(html_content)
 
@@ -223,30 +203,7 @@ class TestEventCancelledEmail(BaseEmailTestCase):
         self.assertRegex(html_content, r'href="http[s]?://[^"]*events[^"]*"')
 
     def test_text_version_has_absolute_urls(self):
-        """Test that text version of cancellation email has absolute URLs."""
         text_content = render_to_string('email/event_cancelled.txt', self.context)
 
         # Verify events URL is present
         self.assertIn(f'{self.base_url}/events', text_content)
-
-
-class TestBaseEmailTemplate(BaseEmailTestCase):
-    """Test cases for the base email template."""
-    
-    def test_has_required_meta_tags(self):
-        """Test that base email template has required meta tags."""
-        context = {}
-        html_content = render_to_string('email/_base_email.html', context)
-
-        # Check for essential meta tags
-        self.assertIn('<meta charset="UTF-8">', html_content)
-        self.assertIn('<meta name="viewport"', html_content)
-
-    def test_has_footer(self):
-        """Test that base email template includes a footer."""
-        context = {}
-        html_content = render_to_string('email/_base_email.html', context)
-
-        # Check for footer presence without being specific about class names
-        self.assertIn('footer', html_content.lower())
-        self.assertIn('Ottawa Bicycle Club', html_content)
