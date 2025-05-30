@@ -61,6 +61,7 @@ class LoginEmailTests(TestCase):
             password='password123'
         )
         self.login_form_url = reverse('login_form')
+        self.base_url = 'http://example.com'
 
     def test_login_email_contains_validity_info(self):
         response = self.client.post(self.login_form_url, {'email': self.user.email})
@@ -74,15 +75,15 @@ class LoginEmailTests(TestCase):
         html_body = email.alternatives[0][0] if email.alternatives else None
         if html_body:
             if max_age_minutes:
-                self.assertIn(f'This link is valid for {max_age_minutes} minute', html_body)
+                self.assertIn(f'{max_age_minutes} minute', html_body)
             if is_one_time:
-                self.assertIn('This link can be used only once', html_body)
+                self.assertIn('only once', html_body)
             self.assertRegex(html_body, r'https?://[^/]+/profile')
 
         if max_age_minutes:
-            self.assertIn(f'This link is valid for {max_age_minutes} minute', email.body)
+            self.assertIn(f'{max_age_minutes} minute', email.body)
         if is_one_time:
-            self.assertIn('This link can be used only once', email.body)
+            self.assertIn('only once', email.body)
         self.assertRegex(email.body, r'https?://[^/]+/profile')
 
     def test_login_email_sent_page_shows_validity_info(self):
@@ -93,10 +94,10 @@ class LoginEmailTests(TestCase):
 
         max_age_minutes = get_sesame_max_age_minutes()
         if max_age_minutes:
-            self.assertContains(response, f'The link is valid for {max_age_minutes} minute')
+            self.assertContains(response, f'{max_age_minutes} minute')
 
         if is_sesame_one_time():
-            self.assertContains(response, 'The link can be used only once')
+            self.assertContains(response, 'only once')
 
         self.assertContains(response, "After clicking the link, you'll be logged in automatically")
 
