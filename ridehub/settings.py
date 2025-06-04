@@ -57,7 +57,8 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SESAME_MAX_AGE = 60 * 5
-SESAME_ONE_TIME = True
+SESAME_ONE_TIME = not os.environ.get('SESAME_ONE_TIME', None) is None
+
 LOGIN_REDIRECT_URL = "/profile"
 LOGIN_URL = "/login/"
 
