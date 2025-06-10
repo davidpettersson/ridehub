@@ -350,3 +350,21 @@ class Registration(models.Model):
                 raise ValidationError({
                     'ride_leader_preference': "This field is required as the event requires a ride leader preference."
                 })
+
+
+class Announcement(models.Model):
+    begin_at = models.DateTimeField(
+        help_text='Time when the announcement should begin.',
+    )
+
+    end_at = models.DateTimeField(
+        help_text='Time when the announcement should end.',
+    )
+
+    title = models.CharField(
+        max_length=128,
+        help_text='Name of the announcement. Will not be shown on the public pages.', )
+
+    text = ProseEditorField(
+        help_text='Announcement text. Keep formatting to a minimum.'
+    )
