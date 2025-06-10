@@ -1,0 +1,12 @@
+{% if announcements %}
+{% for announcement in announcements %}
+<div class="{% if announcement.type == 'w' %}bg-yellow-50 border-l-4 border-yellow-400{% else %}bg-blue-50 border-l-4 border-blue-400{% endif %} p-4 mb-6">
+  <div class="w-full">
+    <h4 class="{% if announcement.type == 'w' %}text-yellow-900{% else %}text-blue-900{% endif %} font-semibold text-sm mb-2">{{ announcement.title }}</h4>
+    <div class="prose prose-sm max-w-none {% if announcement.type == 'w' %}text-yellow-800{% else %}text-blue-800{% endif %}">
+      {{ announcement.text|safe }}
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endif %} 
