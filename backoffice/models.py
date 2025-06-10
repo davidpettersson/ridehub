@@ -383,3 +383,6 @@ class Announcement(models.Model):
     text = ProseEditorField(
         help_text='Body of the announcement. Keep formatting to a minimum as there is limited space on the page.'
     )
+
+    def __str__(self):
+        return self.title
