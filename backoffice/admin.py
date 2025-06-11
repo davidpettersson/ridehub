@@ -97,9 +97,10 @@ class MemberAdmin(admin.ModelAdmin):
 
 
 class AnnouncementAdmin(admin.ModelAdmin):
-    list_display = ('begin_at', 'end_at', 'title', 'type')
+    list_display = ('title', 'type', 'begin_at', 'end_at',)
     search_fields = ('title', 'text',)
     list_filter = ('type',)
+    ordering = ('-end_at',)
 
 
 
