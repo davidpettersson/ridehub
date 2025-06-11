@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from backoffice.actions import cancel_event, duplicate_event, archive_event
-from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration
+from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration, Announcement
 from .forms import EventAdminForm
 
 
@@ -44,7 +44,8 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
 
     fieldsets = [
         (None, {
-            'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url', 'organizer_email', 'virtual',
+            'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url',
+                       'organizer_email', 'virtual',
                        'visible')
         }),
         ('Registration options', {
@@ -95,9 +96,18 @@ class MemberAdmin(admin.ModelAdmin):
         return False
 
 
+class AnnouncementAdmin(admin.ModelAdmin):
+    list_display = ('title', 'type', 'begin_at', 'end_at',)
+    search_fields = ('title', 'text',)
+    list_filter = ('type',)
+    ordering = ('-end_at',)
+
+
+
 admin.site.register(Program)
 admin.site.register(Member, MemberAdmin)
 admin.site.register(Route, RouteAdmin)
 admin.site.register(SpeedRange, SpeedRangeAdmin)
 admin.site.register(Event, EventAdmin)
 admin.site.register(Registration, RegistrationAdmin)
+admin.site.register(Announcement, AnnouncementAdmin)

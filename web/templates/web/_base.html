@@ -107,7 +107,12 @@
       </div>
     </nav>
     
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {% load announcement_tags %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      {% active_announcements %}
+    </div>
+    
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
       {% block content %}CONTENT{% endblock %}
     </main>
   </body>
