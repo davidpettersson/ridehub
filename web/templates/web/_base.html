@@ -115,5 +115,18 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
       {% block content %}CONTENT{% endblock %}
     </main>
+    
+    <!-- Version Footer -->
+    <footer class="text-center py-4">
+      <div class="text-xs text-gray-400 dark:text-gray-500">
+        {% if version_string != 'Development' %}
+          <span title="Release: {{ heroku_release }}{% if git_commit_full %} | Commit: {{ git_commit_full }}{% endif %}{% if release_created_at %} | Deployed {{ release_created_at|timesince }} ago{% endif %}">
+            {{ version_string }}
+          </span>
+        {% else %}
+          <span>{{ version_string }}</span>
+        {% endif %}
+      </div>
+    </footer>
   </body>
 </html>
