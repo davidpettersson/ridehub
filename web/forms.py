@@ -4,8 +4,12 @@ from backoffice.models import Registration, Event, Ride, SpeedRange
 
 
 class RegistrationForm(forms.Form):
-    name = forms.CharField(max_length=128, required=True, min_length=2)
-    email = forms.EmailField(max_length=128, required=True)
+    name = forms.CharField(max_length=128, required=True, min_length=2, widget=forms.TextInput(attrs={
+        'autocomplete': 'name'
+    }))
+    email = forms.EmailField(max_length=128, required=True, widget=forms.EmailInput(attrs={
+        'autocomplete': 'email'
+    }))
 
     def __init__(self, *args, **kwargs):
         event: Event = kwargs.pop('event', None)
@@ -32,13 +36,20 @@ class RegistrationForm(forms.Form):
                 max_length=128,
                 min_length=2,
                 label="Emergency contact name",
-                required=True
+                required=True,
+                widget=forms.TextInput(attrs={
+                    'autocomplete': 'off'
+                })
             )
             self.fields['emergency_contact_phone'] = forms.CharField(
                 max_length=128,
                 min_length=2,
                 label="Emergency contact phone",
-                required=True
+                required=True,
+                widget=forms.TextInput(attrs={
+                    'type': 'tel',
+                    'autocomplete': 'off'
+                })
             )
 
         if event.ride_leaders_wanted:
@@ -70,4 +81,6 @@ class RegistrationForm(forms.Form):
 
 
 class EmailLoginForm(forms.Form):
-    email = forms.EmailField()
+    email = forms.EmailField(widget=forms.EmailInput(attrs={
+        'autocomplete': 'email'
+    }))
