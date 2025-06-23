@@ -67,6 +67,8 @@ class TestConfirmationEmail(BaseEmailTestCase):
         self.registration = Registration.objects.create(
             event=self.event,
             user=self.user,
+            first_name=self.user.first_name,
+            last_name=self.user.last_name,
             name=f"{self.user.first_name} {self.user.last_name}",
             email=self.user.email,
             ride_leader_preference=Registration.RideLeaderPreference.NO

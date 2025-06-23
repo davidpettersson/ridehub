@@ -25,7 +25,7 @@
         {% for reg in registrations %}
         <tr>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.id }}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.name }}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.first_name }} {{ reg.last_name }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.email }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.state }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.submitted_at|date:"Y-m-d H:i:s" }}</td>

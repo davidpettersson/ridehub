@@ -13,13 +13,6 @@ from web.forms import RegistrationForm
 logger = logging.getLogger(__name__)
 
 
-def _split_full_name(name: str) -> tuple[str, str]:
-    if ' ' in name:
-        return tuple(name.split(' ', 1))
-    else:
-        return name, ''
-
-
 def registration_submitted(request: HttpRequest) -> HttpResponse:
     return render(request, 'web/registrations/submitted.html')
 
@@ -35,12 +28,10 @@ def _get_registration_detail(form: RegistrationForm) -> RegistrationDetail:
 
 
 def _get_user_details(form: RegistrationForm) -> UserDetail:
-    first_name, last_name = _split_full_name(form.cleaned_data['name'])
-    email = form.cleaned_data['email']
     return UserDetail(
-        first_name=first_name,
-        last_name=last_name,
-        email=email,
+        first_name=form.cleaned_data['first_name'],
+        last_name=form.cleaned_data['last_name'],
+        email=form.cleaned_data['email'],
         phone='',
     )
 
@@ -70,7 +61,8 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     initial_data = {}
     if user:
         initial_data = {
-            'name': user.get_full_name(),
+            'first_name': user.first_name,
+            'last_name': user.last_name,
             'email': user.email,
         }
 

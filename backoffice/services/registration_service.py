@@ -34,6 +34,8 @@ class RegistrationService:
         registration.user = user
 
         registration.name = user.get_full_name()
+        registration.first_name = user.first_name
+        registration.last_name = user.last_name
         registration.email = user.email
 
         if event.has_rides:
