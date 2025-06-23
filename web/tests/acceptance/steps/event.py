@@ -75,10 +75,11 @@ def step_impl(context, count):
             first_name=f'John {k}',
             last_name='Doe',
             email=email,
+            phone='',
         )
         registration_detail = RegistrationDetail(
             ride=None,
-            ride_leader_preference=Registration.RIDE_LEADER_NOT_APPLICABLE,
+            ride_leader_preference=Registration.RideLeaderPreference.NOT_APPLICABLE,
             speed_range_preference=None,
             emergency_contact_name='',
             emergency_contact_phone=''
