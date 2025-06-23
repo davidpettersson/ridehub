@@ -17,3 +17,4 @@ django-admin-sortable2~=2.2.6
 returns~=0.25.0
 behave-django~=1.5.0
 django-waffle~=5.0.0
+django-phonenumber-field[phonenumberslite]~=8.1.0

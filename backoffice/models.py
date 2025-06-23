@@ -6,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 from django_fsm import FSMField, transition
 from django_prose_editor.fields import ProseEditorField
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 class Member(models.Model):
@@ -281,25 +282,61 @@ class Ride(models.Model):
 
 
 class Registration(models.Model):
-    RIDE_LEADER_YES = 'y'
-    RIDE_LEADER_NO = 'n'
-    RIDE_LEADER_NOT_APPLICABLE = 'na'
+    class RideLeaderPreference(models.TextChoices):
+        YES = 'y', 'Yes'
+        NO = 'n', 'No'
+        NOT_APPLICABLE = 'na', 'N/A'
 
-    RIDE_LEADER_CHOICES = [
-        (RIDE_LEADER_YES, 'Yes'),
-        (RIDE_LEADER_NO, 'No'),
-        (RIDE_LEADER_NOT_APPLICABLE, 'N/A')
-    ]
+    name = models.CharField(
+        max_length=128
+    )
 
-    name = models.CharField(max_length=128)
+    first_name = models.CharField(
+        max_length=128
+    )
+
+    last_name = models.CharField(
+        max_length=128
+    )
+
     email = models.EmailField()
-    event = models.ForeignKey(Event, on_delete=models.PROTECT)
-    ride = models.ForeignKey(Ride, on_delete=models.PROTECT, null=True, blank=True)
-    speed_range_preference = models.ForeignKey(SpeedRange, on_delete=models.PROTECT, null=True, blank=True)
-    ride_leader_preference = models.CharField(max_length=2, choices=RIDE_LEADER_CHOICES,
-                                              default=RIDE_LEADER_NOT_APPLICABLE)
-    emergency_contact_name = models.CharField(max_length=128, blank=True)
-    emergency_contact_phone = models.CharField(max_length=128, blank=True)
+
+    phone = PhoneNumberField(blank=True)
+
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.PROTECT
+    )
+
+    ride = models.ForeignKey(
+        Ride,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+
+    speed_range_preference = models.ForeignKey(
+        SpeedRange,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+
+    ride_leader_preference = models.CharField(
+        max_length=2,
+        choices=RideLeaderPreference,
+        default=RideLeaderPreference.NOT_APPLICABLE
+    )
+
+    emergency_contact_name = models.CharField(
+        max_length=128,
+        blank=True
+    )
+
+    emergency_contact_phone = models.CharField(
+        max_length=128,
+        blank=True
+    )
 
     STATE_SUBMITTED = 'submitted'
     STATE_CONFIRMED = 'confirmed'
@@ -311,7 +348,12 @@ class Registration(models.Model):
     confirmed_at = models.DateTimeField(null=True, blank=True)
     withdrawn_at = models.DateTimeField(null=True, blank=True)
 
-    user = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
 
     @transition(field=state, source=STATE_SUBMITTED, target=STATE_CONFIRMED)
     def confirm(self):
@@ -319,7 +361,7 @@ class Registration(models.Model):
 
     @property
     def is_ride_leader(self):
-        return self.ride_leader_preference == self.RIDE_LEADER_YES
+        return self.ride_leader_preference == Registration.RideLeaderPreference.YES
 
     @transition(field=state, source=STATE_CONFIRMED, target=STATE_WITHDRAWN)
     def withdraw(self):
@@ -346,7 +388,7 @@ class Registration(models.Model):
                 })
 
         if self.event.ride_leaders_wanted:
-            if self.ride_leader_preference == self.RIDE_LEADER_NOT_APPLICABLE:
+            if self.ride_leader_preference == Registration.RideLeaderPreference.NOT_APPLICABLE:
                 raise ValidationError({
                     'ride_leader_preference': "This field is required as the event requires a ride leader preference."
                 })
