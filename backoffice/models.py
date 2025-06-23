@@ -98,6 +98,11 @@ class Event(models.Model):
         help_text='Check if you require registrations to provide emergency contact details.'
     )
 
+    requires_membership = models.BooleanField(
+        default=True,
+        help_text='Check if you want to require users to confirm that they are members.'
+    )
+
     cancelled = models.BooleanField(
         default=False,
         help_text='Indicates if the event has been cancelled.'
