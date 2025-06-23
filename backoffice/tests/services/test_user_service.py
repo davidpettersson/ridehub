@@ -73,12 +73,15 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         
         # User for non-staff update test
         self.non_staff_email = "nonstaffupdate@example.com"
-        User.objects.create_user(
+        non_staff_user = User.objects.create_user(
             username=self.non_staff_email,
             email=self.non_staff_email,
             first_name="Old",
             last_name="Name"
-        ).set_unusable_password()
+        )
+        non_staff_user.set_unusable_password()
+        non_staff_user.save()
+        UserProfile.objects.create(user=non_staff_user, phone="+16139998888")
         
         # User for staff no-update test
         self.staff_email = "staffnoupdate@example.com"
@@ -94,12 +97,14 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         
         # Users for casing test
         self.non_staff_casing_email = "nonstaffcasing@example.com"
-        User.objects.create_user(
+        non_staff_casing_user = User.objects.create_user(
             username=self.non_staff_casing_email,
             email=self.non_staff_casing_email,
             first_name="OldNon",
             last_name="Staff"
         )
+        UserProfile.objects.create(user=non_staff_casing_user, phone="+16139997777")
+
         self.staff_casing_email = "staffcasing@example.com"
         staff_casing_user = User.objects.create_user(
             username=self.staff_casing_email,
@@ -120,7 +125,8 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         self.assertEqual(user.last_name, "User")
         self.assertFalse(user.has_usable_password())
         self.assertFalse(user.is_staff)
-        self.assertTrue(UserProfile.objects.filter(user=user).exists())
+        profile = UserProfile.objects.get(user=user)
+        self.assertEqual(profile.phone, self.test_phone)
         # Check it was actually created
         self.assertTrue(User.objects.filter(email=self.test_email).exists())
 
@@ -142,9 +148,13 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         self.assertEqual(user.last_name, "User")   # Should be updated
         self.assertFalse(user.has_usable_password())
         self.assertFalse(user.is_staff)
+        profile = UserProfile.objects.get(user=user)
+        self.assertEqual(profile.phone, "+16131112222")
 
     def test_find_by_email_or_create_when_staff_user_exists(self):
         # Arrange
+        user = User.objects.get(email=self.staff_email)
+        UserProfile.objects.create(user=user, phone="+16139999999")
         user_detail_mixed = UserDetail(
             first_name="Test",
             last_name="User",
@@ -157,10 +167,12 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
 
         # Assert
         self.assertEqual(user.email, self.staff_email) # Original email
-        self.assertEqual(user.first_name, "Old")  # Should not be updated
-        self.assertEqual(user.last_name, "Name")  # Should not be updated
+        self.assertEqual(user.first_name, "Test")  # Should be updated
+        self.assertEqual(user.last_name, "User")  # Should be updated
         self.assertFalse(user.has_usable_password())
         self.assertTrue(user.is_staff)
+        profile = UserProfile.objects.get(user=user)
+        self.assertEqual(profile.phone, "+16131112222")
 
     def test_find_by_email_or_create_with_different_casing_updates_non_staff(self):
         # Arrange
@@ -174,9 +186,13 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         self.assertEqual(updated_non_staff.first_name, "NewNon") # Updated
         self.assertEqual(updated_non_staff.last_name, "Staff") # Updated
         self.assertFalse(updated_non_staff.is_staff)
+        profile = UserProfile.objects.get(user=updated_non_staff)
+        self.assertEqual(profile.phone, "+16131112222")
 
-    def test_find_by_email_or_create_with_different_casing_does_not_update_staff(self):
+    def test_find_by_email_or_create_with_different_casing_updates_staff(self):
         # Arrange
+        user = User.objects.get(email=self.staff_casing_email)
+        UserProfile.objects.create(user=user, phone="+16139999999")
         staff_detail_mixed = UserDetail("New", "Staff", "StaffCasing@Example.com", "+16131112222")
         
         # Act
@@ -184,6 +200,8 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         
         # Assert
         self.assertEqual(found_staff.email, self.staff_casing_email)
-        self.assertEqual(found_staff.first_name, "Old") # Not updated
-        self.assertEqual(found_staff.last_name, "Staff") # Not updated
-        self.assertTrue(found_staff.is_staff) 
+        self.assertEqual(found_staff.first_name, "New") # Should be updated
+        self.assertEqual(found_staff.last_name, "Staff") # Should be updated
+        self.assertTrue(found_staff.is_staff)
+        profile = UserProfile.objects.get(user=found_staff)
+        self.assertEqual(profile.phone, "+16131112222") 
