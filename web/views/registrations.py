@@ -42,6 +42,7 @@ def _get_user_details(form: RegistrationForm) -> UserDetail:
         first_name=first_name,
         last_name=last_name,
         email=email,
+        phone='',
     )
 
 
