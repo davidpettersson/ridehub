@@ -152,4 +152,7 @@ if SENTRY_DSN:
         traces_sample_rate=1.0,
         integrations=[DjangoIntegration()],
         release=os.environ.get('HEROKU_RELEASE_VERSION', 'unknown'),
+        _experiments={
+            'enable_logs': True,
+        }
     )
