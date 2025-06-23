@@ -58,6 +58,33 @@ class TestUserServiceFindByEmail(TestCase):
         self.assertIsInstance(result_mixed, Some)
         self.assertEqual(result_mixed.unwrap().email, self.lower_case_email_casing)
 
+    def test_find_by_email_creates_profile_if_none_exists(self):
+        # Arrange
+        self.assertEqual(UserProfile.objects.count(), 0)
+
+        # Act
+        result = self.service.find_by_email(self.test_email)
+
+        # Assert
+        self.assertIsInstance(result, Some)
+        user = result.unwrap()
+        self.assertTrue(UserProfile.objects.filter(user=user).exists())
+
+    def test_find_by_email_does_not_affect_existing_profile(self):
+        # Arrange
+        user = User.objects.get(email=self.test_email)
+        UserProfile.objects.create(user=user, phone="+16131112222")
+        self.assertEqual(UserProfile.objects.count(), 1)
+
+        # Act
+        result = self.service.find_by_email(self.test_email)
+
+        # Assert
+        self.assertIsInstance(result, Some)
+        self.assertEqual(UserProfile.objects.count(), 1)
+        profile = UserProfile.objects.get(user=user)
+        self.assertEqual(profile.phone, "+16131112222")
+
 
 class TestUserServiceFindByEmailOrCreate(TestCase):
     def setUp(self):
