@@ -16,13 +16,21 @@ class UserDetail:
 
 
 class UserService(object):
+    def _find_or_create_profile(self, user: User) -> UserProfile:
+        profile, created = UserProfile.objects.get_or_create(user=user)
+        if created:
+            profile.save()
+        return profile
+
     def find_by_email(self, email: str) -> Maybe[User]:
         lowercase_email = lower_email(email)
         users = User.objects.filter(email=lowercase_email)
         ensure(users.count() <= 1, "zero or one users for a given email")
 
         if users.count() == 1:
-            return Some(users.first())
+            user = users.first()
+            self._find_or_create_profile(user)
+            return Some(user)
         else:
             return Nothing
 
@@ -38,7 +46,7 @@ class UserService(object):
                 user.last_name = user_detail.last_name
                 user.save()
 
-                profile, _ = UserProfile.objects.get_or_create(user=user)
+                profile = self._find_or_create_profile(user)
                 profile.phone = user_detail.phone
                 profile.save()
 
