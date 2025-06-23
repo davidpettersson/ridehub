@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from backoffice.actions import cancel_event, duplicate_event, archive_event
-from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration, Announcement
+from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration, Announcement, UserProfile
 from .forms import EventAdminForm
 
 
@@ -127,6 +127,7 @@ class AnnouncementAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Program)
+admin.site.register(UserProfile)
 admin.site.register(Member, MemberAdmin)
 admin.site.register(Route, RouteAdmin)
 admin.site.register(SpeedRange, SpeedRangeAdmin)

@@ -281,6 +281,17 @@ class Ride(models.Model):
         ordering = ['ordering']
 
 
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE
+    )
+
+    phone = PhoneNumberField(
+        blank=True
+    )
+
+
 class Registration(models.Model):
     class RideLeaderPreference(models.TextChoices):
         YES = 'y', 'Yes'
