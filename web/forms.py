@@ -44,8 +44,8 @@ class RegistrationForm(forms.Form):
         if event.ride_leaders_wanted:
             self.fields['ride_leader_preference'] = forms.ChoiceField(
                 choices=[
-                    (Registration.RIDE_LEADER_YES, 'Yes'),
-                    (Registration.RIDE_LEADER_NO, 'No')
+                    (Registration.RideLeaderPreference.YES, 'Yes'),
+                    (Registration.RideLeaderPreference.NO, 'No')
                 ],
                 label="Would you like to be a ride leader?",
                 widget=forms.RadioSelect(),
