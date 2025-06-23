@@ -301,7 +301,9 @@ class Registration(models.Model):
 
     email = models.EmailField()
 
-    phone = PhoneNumberField(blank=True)
+    phone = PhoneNumberField(
+        blank=True
+    )
 
     event = models.ForeignKey(
         Event,
