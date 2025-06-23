@@ -63,7 +63,7 @@ def _populate_riders(rides_data, registrations):
 
 
 def _count_ride_leaders(riders):
-    return sum(1 for r in riders if r.ride_leader_preference == Registration.RIDE_LEADER_YES)
+    return sum(1 for r in riders if r.ride_leader_preference == Registration.RideLeaderPreference.YES)
 
 
 def _sort_speed_range_data(speed_ranges):
@@ -158,7 +158,7 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
             event_id=event_id,
             user=request.user,
             state=Registration.STATE_CONFIRMED,
-            ride_leader_preference=Registration.RIDE_LEADER_YES
+            ride_leader_preference=Registration.RideLeaderPreference.YES
         ).exists()
 
     all_riders = Registration.objects.filter(

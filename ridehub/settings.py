@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_cotton',
     'django_celery_beat',
+    'phonenumber_field',
     'waffle',
     'behave_django',
     'django_prose_editor',

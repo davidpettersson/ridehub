@@ -66,11 +66,11 @@ class RegistrationService:
     def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event) -> None:
         user = self.user_service.find_by_email_or_create(user_detail)
 
-        already_submitted_or_confirmed = \
+        registrations_submitted_or_confirmed = \
             Registration.objects.filter(user=user, event=event,
-                                        state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED]).exists()
+                                        state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED])
 
-        if already_submitted_or_confirmed:
+        if registrations_submitted_or_confirmed.exists():
             # Do nothing, mostly because we don't want to reveal that they are registered already.
             # Log that a user attempted to register for an event they're already registered for.
             logger.info(

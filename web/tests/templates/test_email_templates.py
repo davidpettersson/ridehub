@@ -69,7 +69,7 @@ class TestConfirmationEmail(BaseEmailTestCase):
             user=self.user,
             name=f"{self.user.first_name} {self.user.last_name}",
             email=self.user.email,
-            ride_leader_preference=Registration.RIDE_LEADER_NO
+            ride_leader_preference=Registration.RideLeaderPreference.NO
         )
         self.context = {
             'registration': self.registration,
@@ -101,7 +101,7 @@ class TestConfirmationEmail(BaseEmailTestCase):
         self.assertRegex(text_content, r'http[s]?://[^\s]*profile')
 
     def test_ride_leader_includes_emergency_contact_link(self):
-        self.registration.ride_leader_preference = Registration.RIDE_LEADER_YES
+        self.registration.ride_leader_preference = Registration.RideLeaderPreference.YES
         self.registration.save()
 
         html_content = render_to_string('email/confirmation.html', self.context)
@@ -115,7 +115,7 @@ class TestConfirmationEmail(BaseEmailTestCase):
         self.assertRegex(html_content, rf'href="{re.escape(emergency_url)}"')
 
     def test_ride_leader_text_includes_emergency_contact_link(self):
-        self.registration.ride_leader_preference = Registration.RIDE_LEADER_YES
+        self.registration.ride_leader_preference = Registration.RideLeaderPreference.YES
         self.registration.save()
 
         text_content = render_to_string('email/confirmation.txt', self.context)

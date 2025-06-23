@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from backoffice.actions import cancel_event, duplicate_event, archive_event
-from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration, Announcement
+from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration, Announcement, UserProfile
 from .forms import EventAdminForm
 
 
@@ -75,9 +75,32 @@ class RouteAdmin(admin.ModelAdmin):
 class RegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'state', 'submitted_at', 'username', 'event', 'ride', 'speed_range_preference')
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'event__name',)
-    readonly_fields = ('state', 'emergency_contact_name', 'emergency_contact_phone', 'submitted_at', 'confirmed_at',
-                       'withdrawn_at')
-    fields = ('user', 'event', 'ride', 'speed_range_preference', 'ride_leader_preference') + readonly_fields
+
+    fields = (
+        'user',
+        'event',
+        'state',
+        'ride',
+        'speed_range_preference',
+        'ride_leader_preference',
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'submitted_at',
+        'confirmed_at',
+        'withdrawn_at',
+    )
+
+    readonly_fields = (
+        'state',
+        'submitted_at',
+        'confirmed_at',
+        'withdrawn_at',
+    )
+
     list_filter = ('submitted_at', 'state',)
 
     @admin.display(ordering='user__username')
@@ -103,8 +126,8 @@ class AnnouncementAdmin(admin.ModelAdmin):
     ordering = ('-end_at',)
 
 
-
 admin.site.register(Program)
+admin.site.register(UserProfile)
 admin.site.register(Member, MemberAdmin)
 admin.site.register(Route, RouteAdmin)
 admin.site.register(SpeedRange, SpeedRangeAdmin)
