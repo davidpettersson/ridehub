@@ -75,9 +75,32 @@ class RouteAdmin(admin.ModelAdmin):
 class RegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'state', 'submitted_at', 'username', 'event', 'ride', 'speed_range_preference')
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'event__name',)
-    readonly_fields = ('state', 'emergency_contact_name', 'emergency_contact_phone', 'submitted_at', 'confirmed_at',
-                       'withdrawn_at')
-    fields = ('user', 'event', 'ride', 'speed_range_preference', 'ride_leader_preference') + readonly_fields
+
+    fields = (
+        'user',
+        'event',
+        'state',
+        'ride',
+        'speed_range_preference',
+        'ride_leader_preference',
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'submitted_at',
+        'confirmed_at',
+        'withdrawn_at',
+    )
+
+    readonly_fields = (
+        'state',
+        'submitted_at',
+        'confirmed_at',
+        'withdrawn_at',
+    )
+
     list_filter = ('submitted_at', 'state',)
 
     @admin.display(ordering='user__username')
@@ -101,7 +124,6 @@ class AnnouncementAdmin(admin.ModelAdmin):
     search_fields = ('title', 'text',)
     list_filter = ('type',)
     ordering = ('-end_at',)
-
 
 
 admin.site.register(Program)
