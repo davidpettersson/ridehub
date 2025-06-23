@@ -292,6 +292,9 @@ class UserProfile(models.Model):
         blank=True
     )
 
+    def __str__(self):
+        return str(self.user)
+
 
 class Registration(models.Model):
     class RideLeaderPreference(models.TextChoices):
