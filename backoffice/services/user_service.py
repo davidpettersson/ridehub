@@ -17,9 +17,7 @@ class UserDetail:
 
 class UserService(object):
     def _find_or_create_profile(self, user: User) -> UserProfile:
-        profile, created = UserProfile.objects.get_or_create(user=user)
-        if created:
-            profile.save()
+        profile, _ = UserProfile.objects.get_or_create(user=user)
         return profile
 
     def find_by_email(self, email: str) -> Maybe[User]:
