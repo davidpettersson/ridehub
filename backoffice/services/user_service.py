@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from django.contrib.auth.models import User
 from returns.maybe import Maybe, Some, Nothing
 
+from backoffice.models import UserProfile
 from backoffice.utils import ensure, lower_email
 
 
@@ -11,6 +12,7 @@ class UserDetail:
     first_name: str
     last_name: str
     email: str
+    phone: str
 
 
 class UserService(object):
@@ -42,6 +44,15 @@ class UserService(object):
                     first_name=user_detail.first_name,
                     last_name=user_detail.last_name,
                 )
+
                 user.set_unusable_password()
                 user.save()
+
+                profile = UserProfile.objects.create(
+                    user=user,
+                    phone=user_detail.phone
+                )
+
+                profile.save()
+
                 return user

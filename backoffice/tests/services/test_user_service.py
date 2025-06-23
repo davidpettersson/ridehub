@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from returns.maybe import Some, Nothing
 
+from backoffice.models import UserProfile
 from backoffice.services.user_service import UserService, UserDetail
 
 
@@ -62,10 +63,12 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
     def setUp(self):
         self.service = UserService()
         self.test_email = "test@example.com"
+        self.test_phone = "+16131231234"
         self.test_user_detail = UserDetail(
             first_name="Test",
             last_name="User",
-            email=self.test_email
+            email=self.test_email,
+            phone=self.test_phone,
         )
         
         # User for non-staff update test
@@ -117,6 +120,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         self.assertEqual(user.last_name, "User")
         self.assertFalse(user.has_usable_password())
         self.assertFalse(user.is_staff)
+        self.assertTrue(UserProfile.objects.filter(user=user).exists())
         # Check it was actually created
         self.assertTrue(User.objects.filter(email=self.test_email).exists())
 
@@ -125,7 +129,8 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         user_detail_upper = UserDetail(
             first_name="Test",
             last_name="User",
-            email="NONSTAFFUPDATE@EXAMPLE.COM" # Upper case email
+            email="NONSTAFFUPDATE@EXAMPLE.COM", # Upper case email
+            phone="+16131112222"
         )
 
         # Act
@@ -143,7 +148,8 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         user_detail_mixed = UserDetail(
             first_name="Test",
             last_name="User",
-            email="StaffNoUpdate@Example.com" # Mixed case email
+            email="StaffNoUpdate@Example.com", # Mixed case email
+            phone="+16131112222"
         )
         
         # Act
@@ -158,7 +164,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
 
     def test_find_by_email_or_create_with_different_casing_updates_non_staff(self):
         # Arrange
-        non_staff_detail_upper = UserDetail("NewNon", "Staff", "NONSTAFFCASING@EXAMPLE.COM")
+        non_staff_detail_upper = UserDetail("NewNon", "Staff", "NONSTAFFCASING@EXAMPLE.COM", "+16131112222")
         
         # Act
         updated_non_staff = self.service.find_by_email_or_create(non_staff_detail_upper)
@@ -171,7 +177,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
 
     def test_find_by_email_or_create_with_different_casing_does_not_update_staff(self):
         # Arrange
-        staff_detail_mixed = UserDetail("New", "Staff", "StaffCasing@Example.com")
+        staff_detail_mixed = UserDetail("New", "Staff", "StaffCasing@Example.com", "+16131112222")
         
         # Act
         found_staff = self.service.find_by_email_or_create(staff_detail_mixed)

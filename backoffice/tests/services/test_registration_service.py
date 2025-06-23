@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from backoffice.models import Event, Registration, Program
+from backoffice.models import Event, Registration, Program, UserProfile
 from backoffice.services.registration_service import RegistrationService, UserDetail, RegistrationDetail
 
 from django.core import mail
@@ -534,6 +534,7 @@ class FetchCurrentRegistrationsTestCase(TestCase):
 class RegistrationServiceEmailTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser_email', email='test_email@example.com', password='password')
+        UserProfile.objects.create(user=self.user, phone="+16131112222")
         self.program = Program.objects.create(name="Email Test Program")
         self.event = Event.objects.create(
             program=self.program,
@@ -548,7 +549,7 @@ class RegistrationServiceEmailTests(TestCase):
 
     def test_confirmation_email_links_for_regular_user(self):
         # Arrange
-        user_detail = UserDetail(first_name="Test", last_name="User", email=self.user.email)
+        user_detail = UserDetail(first_name="Test", last_name="User", email=self.user.email, phone="+16131112222")
         registration_detail = RegistrationDetail(
             ride=None, 
             ride_leader_preference=Registration.RideLeaderPreference.NO,
@@ -585,7 +586,7 @@ class RegistrationServiceEmailTests(TestCase):
         # Arrange
         # Create a new user for this test to ensure isolation if needed, or reuse self.user
         ride_leader_user = User.objects.create_user(username='testleader_email', email='test_leader_email@example.com', password='password')
-        user_detail = UserDetail(first_name="Test", last_name="Leader", email=ride_leader_user.email)
+        user_detail = UserDetail(first_name="Test", last_name="Leader", email=ride_leader_user.email, phone="+16131112222")
         registration_detail = RegistrationDetail(
             ride=None,
             ride_leader_preference=Registration.RideLeaderPreference.YES,
