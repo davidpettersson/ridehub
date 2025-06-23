@@ -551,7 +551,7 @@ class RegistrationServiceEmailTests(TestCase):
         user_detail = UserDetail(first_name="Test", last_name="User", email=self.user.email)
         registration_detail = RegistrationDetail(
             ride=None, 
-            ride_leader_preference=Registration.RIDE_LEADER_NO, 
+            ride_leader_preference=Registration.RideLeaderPreference.NO,
             speed_range_preference=None,
             emergency_contact_name="EC Name", # Added dummy emergency contact
             emergency_contact_phone="1234567890" # Added dummy emergency contact
@@ -588,7 +588,7 @@ class RegistrationServiceEmailTests(TestCase):
         user_detail = UserDetail(first_name="Test", last_name="Leader", email=ride_leader_user.email)
         registration_detail = RegistrationDetail(
             ride=None,
-            ride_leader_preference=Registration.RIDE_LEADER_YES, 
+            ride_leader_preference=Registration.RideLeaderPreference.YES,
             speed_range_preference=None,
             emergency_contact_name="EC Leader Name", # Added dummy emergency contact
             emergency_contact_phone="0987654321" # Added dummy emergency contact
