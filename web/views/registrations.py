@@ -1,7 +1,7 @@
 import logging
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpRequest, HttpResponseRedirect
+from django.http import HttpResponse, HttpRequest, HttpResponseRedirect, HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404, redirect
 
 from backoffice.models import Event, Registration
@@ -25,7 +25,6 @@ def registration_submitted(request: HttpRequest) -> HttpResponse:
 
 
 def _get_registration_detail(form: RegistrationForm) -> RegistrationDetail:
-
     return RegistrationDetail(
         ride=form.cleaned_data.get('ride'),
         speed_range_preference=form.cleaned_data.get('speed_range_preference'),
@@ -50,24 +49,21 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     event = get_object_or_404(Event, id=event_id)
 
     # Adding these here to avoid bots making mistakes
-
     if not event.registration_open:
-        logger.error(f"Attempt register for closed event", extra={'event': event, 'request': request})
-        return HttpResponse('Registration closed')
+        logger.warning("Attempt register for closed event", extra={'event': event})
+        return HttpResponseBadRequest('Registration closed')
 
     if event.cancelled:
-        logger.error(f"Attempt register for cancelled event", extra={'event': event, 'request': request})
-        return HttpResponse('Event cancelled')
+        logger.warning("Attempt register for cancelled event", extra={'event': event})
+        return HttpResponseBadRequest('Event cancelled')
 
     # Safe guards
-
     ensure(event.registration_open, 'registration is open')
     ensure(not event.cancelled, 'event must not be cancelled')
     ensure(not event.external_registration_url, 'event does not use external registration')
     ensure(event.has_capacity_available, 'event has capacity for more registrations')
 
     # OK, proceed
-
     service = RegistrationService()
     user = request.user if request.user.is_authenticated else None
 
