@@ -199,7 +199,7 @@
                 <div class="card mb-3 p-4">
                     <div class="d-flex flex-column align-items-start mb-2">
                         <div class="d-flex align-items-center">
-                            <h4 class="fw-medium fs-5 mb-0">{{ rider_reg.name }}</h4>
+                            <h4 class="fw-medium fs-5 mb-0">{{ rider_reg.first_name }} {{ rider_reg.last_name }}</h4>
                             {% if rider_reg.ride_leader_preference == 'y' %}
                                 <span class="badge bg-primary ms-2">Ride leader</span>
                             {% endif %}
@@ -264,7 +264,7 @@
                         {% for rider_reg in all_riders %}
                             <tr>
                                 <td class="small fw-medium">
-                                    {{ rider_reg.name }}
+                                    {{ rider_reg.first_name }} {{ rider_reg.last_name }}
                                     {% if rider_reg.ride_leader_preference == 'y' %}
                                         <span class="badge bg-primary ms-2">Ride leader</span>
                                     {% endif %}

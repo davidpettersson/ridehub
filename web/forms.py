@@ -4,12 +4,31 @@ from backoffice.models import Registration, Event, Ride, SpeedRange
 
 
 class RegistrationForm(forms.Form):
-    name = forms.CharField(max_length=128, required=True, min_length=2, widget=forms.TextInput(attrs={
-        'autocomplete': 'name'
-    }))
-    email = forms.EmailField(max_length=128, required=True, widget=forms.EmailInput(attrs={
-        'autocomplete': 'email'
-    }))
+    first_name = forms.CharField(
+        max_length=128,
+        required=True,
+        min_length=2,
+        widget=forms.TextInput(attrs={
+            'autocomplete': 'given-name'
+        })
+    )
+
+    last_name = forms.CharField(
+        max_length=128,
+        required=True,
+        min_length=2,
+        widget=forms.TextInput(attrs={
+            'autocomplete': 'family-name'
+        })
+    )
+
+    email = forms.EmailField(
+        max_length=128,
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'autocomplete': 'email'
+        })
+    )
 
     def __init__(self, *args, **kwargs):
         event: Event = kwargs.pop('event', None)

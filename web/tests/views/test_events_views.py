@@ -70,6 +70,8 @@ class BaseEventViewTestCase(TestCase):
 
         # Create registrations
         self.regular_registration = Registration.objects.create(
+            first_name='Regular',
+            last_name='User',
             name='Regular User',
             email='regular@example.com',
             event=self.event,
@@ -83,6 +85,8 @@ class BaseEventViewTestCase(TestCase):
         )
 
         self.leader_registration = Registration.objects.create(
+            first_name='Leader',
+            last_name='User',
             name='Leader User',
             email='leader@example.com',
             event=self.event,
