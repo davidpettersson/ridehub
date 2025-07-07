@@ -174,3 +174,6 @@ cython_debug/
 /.idea/dataSources.local.xml
 /.idea/dataSources/e922d922-944a-436f-9a69-b3172d7552a2.xml
 /.idea/dataSources/e922d922-944a-436f-9a69-b3172d7552a2/storage_v2/_src_/schema/main.uQUzAA.meta
+/web/tests/reports/TESTS-features.event_capacity.xml
+/web/tests/reports/TESTS-features.event_ical.xml
+/web/tests/reports/TESTS-features.event_registration_close.xml
