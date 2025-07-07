@@ -10,6 +10,7 @@
             <th style="padding: 2pt; border: 1px solid #DDDDDD;">ID</th>
             <th style="padding: 2pt; border: 1px solid #DDDDDD;">Name</th>
             <th style="padding: 2pt; border: 1px solid #DDDDDD;">Email</th>
+            <th style="padding: 2pt; border: 1px solid #DDDDDD;">Phone</th>
             <th style="padding: 2pt; border: 1px solid #DDDDDD;">State</th>
             <th style="padding: 2pt; border: 1px solid #DDDDDD;">Submitted At</th>
             <th style="padding: 2pt; border: 1px solid #DDDDDD;">Confirmed At</th>
@@ -27,6 +28,7 @@
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.id }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.first_name }} {{ reg.last_name }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.email }}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.phone }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.state }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.submitted_at|date:"Y-m-d H:i:s" }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.confirmed_at %}{{ reg.confirmed_at|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</td>
