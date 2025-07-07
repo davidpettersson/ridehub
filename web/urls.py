@@ -16,7 +16,7 @@ urlpatterns = [
     path("logout/", logout_view, name="logout"),
     path('debug/trigger_task', trigger_task),
     path('debug/trigger_error', trigger_error),
-    path('helpers/changes_email_addresses', changes_email_addresses()),
+    path('helpers/changes_email_addresses', changes_email_addresses),
     path('calendar', redirect_to_event_list, name='calendar'),
     path('events/<int:event_id>/registrations/full', event_registrations_full, name='event_registrations_full'),
     path('events/<int:event_id>/registrations', event_registrations, name='riders_list'),
