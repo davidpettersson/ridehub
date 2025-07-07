@@ -7,6 +7,7 @@ alwaysApply: false
  - Edits to email templates must primarily be made to the HTML version.
  - Always make sure to make a text-based version by updating the adjacent .txt file.
  - If an email has a hyperlink in it, always create a unit test to ensure it is correct
+ - Ensure that any hyperlinks use a base URL so that we don't have relative URLs.
 
 
  

@@ -1,0 +1,7 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Majority of development is on Windows. Always run commands using PowerShell first and assume Windows filepaths.
+
