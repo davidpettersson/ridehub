@@ -1,6 +1,7 @@
 import logging
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpRequest
 
 from backoffice.models import Registration
@@ -8,25 +9,19 @@ from backoffice.models import Registration
 logger = logging.getLogger(__name__)
 
 
-@login_required
-def populate_first_last_names(request: HttpRequest) -> HttpResponse:
-    k = 0
+@staff_member_required
+def changes_email_addresses(request: HttpRequest) -> HttpResponse:
+    # Get all users with staff status
+    staff_users = User.objects.filter(is_staff=True).values_list('email', flat=True)
 
-    for r in Registration.objects.all():
-        if r.first_name or r.last_name:
-            logger.warning(f"{r.id} already has first or last name")
-            continue
+    # Get all users that have at least once signed up to be a ride leader
+    ride_leader_users = User.objects.filter(
+        registration__ride_leader_preference=Registration.RideLeaderPreference.YES
+    ).distinct().values_list('email', flat=True)
 
-        old_first = r.first_name
-        old_last = r.last_name
+    # Combine and deduplicate email addresses
+    all_emails = set(staff_users) | set(ride_leader_users)
 
-        r.first_name = r.user.first_name
-        r.last_name = r.user.last_name
-        r.save()
-        k += 1
-
-        logger.info(f"Updating r.id={r.id}: ({old_first}, {old_last}) => ({r.first_name}, {r.last_name})")
-
-    return HttpResponse(f"Updated {k} records")
-
-
+    # Return comma-separated email addresses
+    email_list = ', '.join(sorted(all_emails))
+    return HttpResponse(email_list, content_type='text/plain')
