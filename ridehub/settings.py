@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'waffle',
     'behave_django',
+    'django_gravatar',
     'django_prose_editor',
     'adminsortable2',
     'backoffice',
