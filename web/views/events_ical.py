@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.urls import reverse
 from django_ical.views import ICalFeed
 
@@ -24,7 +26,10 @@ class EventFeed(ICalFeed):
         return item.starts_at
 
     def item_end_datetime(self, item: Event):
-        return item.ends_at
+        if item.ends_at:
+            return item.ends_at
+        else:
+            return item.starts_at + timedelta(hours=1)
 
     def item_link(self, item: Event):
         return reverse('event_detail', args=[item.id])
