@@ -65,3 +65,14 @@ body {
 .navbar-obc a:hover {
   color: rgba(255, 255, 255, 0.8);
 }
+
+/* Fix dropdown menu readability */
+.navbar-obc .dropdown-menu .dropdown-item {
+  color: #212529 !important;
+}
+
+.navbar-obc .dropdown-menu .dropdown-item:hover,
+.navbar-obc .dropdown-menu .dropdown-item:focus {
+  color: #1e2125 !important;
+  background-color: #e9ecef;
+}
