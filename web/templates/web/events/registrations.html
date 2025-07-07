@@ -226,11 +226,19 @@
                                 </div>
                             </div>
                             <div class="row mb-1">
+                                <div class="col-5 fw-medium">Phone:</div>
+                                <div class="col-7 text-muted">
+                                    <a href="tel:{{ rider_reg.phone }}" class="text-primary">
+                                        {{ rider_reg.phone }}
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="row mb-1">
                                 <div class="col-5 fw-medium">Emergency:</div>
                                 <div class="col-7 text-muted">{{ rider_reg.emergency_contact_name }}</div>
                             </div>
                             <div class="row mb-1">
-                                <div class="col-5 fw-medium">Phone:</div>
+                                <div class="col-5 fw-medium">Emergency phone:</div>
                                 <div class="col-7 text-muted">
                                     <a href="tel:{{ rider_reg.emergency_contact_phone }}" class="text-primary">
                                         {{ rider_reg.emergency_contact_phone }}
@@ -255,6 +263,7 @@
                             <th scope="col" class="small fw-medium">Speed group</th>
                             {% if is_ride_leader %}
                             <th scope="col" class="small fw-medium">Email</th>
+                            <th scope="col" class="small fw-medium">Phone</th>
                             <th scope="col" class="emergency-info small fw-medium">Emergency contact</th>
                             <th scope="col" class="emergency-info small fw-medium">Emergency phone</th>
                             {% endif %}
@@ -275,6 +284,11 @@
                                 <td class="small text-muted">
                                     <a href="mailto:{{ rider_reg.email }}" class="text-primary">
                                         {{ rider_reg.email }}
+                                    </a>
+                                </td>
+                                <td class="small text-muted">
+                                    <a href="tel:{{ rider_reg.phone }}" class="text-primary">
+                                        {{ rider_reg.phone }}
                                     </a>
                                 </td>
                                 <td class="emergency-info small text-muted">

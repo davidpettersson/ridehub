@@ -37,6 +37,7 @@ class RegistrationService:
         registration.first_name = user.first_name
         registration.last_name = user.last_name
         registration.email = user.email
+        registration.phone = user.profile.phone
 
         if event.has_rides:
             registration.ride = registration_detail.ride

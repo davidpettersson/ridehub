@@ -157,6 +157,7 @@ class RegistrationFormTest(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
+            'phone': '+1234567890',
             'ride': ride.id,
             'speed_range_preference': speed_range.id,
             # membership_confirmation intentionally omitted
@@ -183,11 +184,47 @@ class RegistrationFormTest(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
+            'phone': '+1234567890',
             'ride': ride.id,
             'speed_range_preference': speed_range.id,
             'membership_confirmation': True
         }
         form = RegistrationForm(data=form_data, event=self.event_with_membership_required)
+
+        # Act & Assert
+        self.assertTrue(form.is_valid())
+
+    def test_form_has_phone_field(self):
+        # Arrange
+        form = RegistrationForm(event=self.event_without_rides)
+
+        # Assert
+        self.assertIn("phone", form.fields)
+        self.assertTrue(form.fields["phone"].required)
+
+    def test_form_validation_fails_without_phone(self):
+        # Arrange
+        form_data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com',
+            # phone intentionally omitted
+        }
+        form = RegistrationForm(data=form_data, event=self.event_without_rides)
+
+        # Act & Assert
+        self.assertFalse(form.is_valid())
+        self.assertIn('phone', form.errors)
+
+    def test_form_validation_succeeds_with_phone(self):
+        # Arrange
+        form_data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com',
+            'phone': '+1234567890',
+        }
+        form = RegistrationForm(data=form_data, event=self.event_without_rides)
 
         # Act & Assert
         self.assertTrue(form.is_valid())

@@ -59,8 +59,8 @@ class TestUserServiceFindByEmail(TestCase):
         self.assertEqual(result_mixed.unwrap().email, self.lower_case_email_casing)
 
     def test_find_by_email_creates_profile_if_none_exists(self):
-        # Arrange
-        self.assertEqual(UserProfile.objects.count(), 0)
+        # Arrange - profiles are automatically created by signals
+        initial_count = UserProfile.objects.count()
 
         # Act
         result = self.service.find_by_email(self.test_email)
@@ -73,15 +73,17 @@ class TestUserServiceFindByEmail(TestCase):
     def test_find_by_email_does_not_affect_existing_profile(self):
         # Arrange
         user = User.objects.get(email=self.test_email)
-        UserProfile.objects.create(user=user, phone="+16131112222")
-        self.assertEqual(UserProfile.objects.count(), 1)
+        # Profile is automatically created by signals, just update the phone
+        user.profile.phone = "+16131112222"
+        user.profile.save()
+        initial_count = UserProfile.objects.count()
 
         # Act
         result = self.service.find_by_email(self.test_email)
 
         # Assert
         self.assertIsInstance(result, Some)
-        self.assertEqual(UserProfile.objects.count(), 1)
+        self.assertEqual(UserProfile.objects.count(), initial_count)
         profile = UserProfile.objects.get(user=user)
         self.assertEqual(profile.phone, "+16131112222")
 
@@ -108,7 +110,9 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         )
         non_staff_user.set_unusable_password()
         non_staff_user.save()
-        UserProfile.objects.create(user=non_staff_user, phone="+16139998888")
+        # Profile is automatically created by signals, just update the phone
+        non_staff_user.profile.phone = "+16139998888"
+        non_staff_user.profile.save()
         
         # User for staff no-update test
         self.staff_email = "staffnoupdate@example.com"
@@ -130,7 +134,9 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
             first_name="OldNon",
             last_name="Staff"
         )
-        UserProfile.objects.create(user=non_staff_casing_user, phone="+16139997777")
+        # Profile is automatically created by signals, just update the phone
+        non_staff_casing_user.profile.phone = "+16139997777"
+        non_staff_casing_user.profile.save()
 
         self.staff_casing_email = "staffcasing@example.com"
         staff_casing_user = User.objects.create_user(
@@ -181,7 +187,10 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
     def test_find_by_email_or_create_when_staff_user_exists(self):
         # Arrange
         user = User.objects.get(email=self.staff_email)
-        UserProfile.objects.create(user=user, phone="+16139999999")
+        # Profile is automatically created by signals, just update the phone
+        user.profile.phone = "+16139999999"
+        user.profile.save()
+        
         user_detail_mixed = UserDetail(
             first_name="Test",
             last_name="User",
@@ -219,7 +228,10 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
     def test_find_by_email_or_create_with_different_casing_updates_staff(self):
         # Arrange
         user = User.objects.get(email=self.staff_casing_email)
-        UserProfile.objects.create(user=user, phone="+16139999999")
+        # Profile is automatically created by signals, just update the phone
+        user.profile.phone = "+16139999999"
+        user.profile.save()
+        
         staff_detail_mixed = UserDetail("New", "Staff", "StaffCasing@Example.com", "+16131112222")
         
         # Act

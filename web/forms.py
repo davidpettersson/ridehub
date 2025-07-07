@@ -30,6 +30,17 @@ class RegistrationForm(forms.Form):
         })
     )
 
+    phone = forms.CharField(
+        max_length=128,
+        required=True,
+        min_length=2,
+        label="Phone number",
+        widget=forms.TextInput(attrs={
+            'type': 'tel',
+            'autocomplete': 'tel'
+        })
+    )
+
     def __init__(self, *args, **kwargs):
         event: Event = kwargs.pop('event', None)
         super().__init__(*args, **kwargs)

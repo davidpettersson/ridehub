@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from django.contrib.auth.models import User
 from returns.maybe import Maybe, Some, Nothing
 
-from backoffice.models import UserProfile
 from backoffice.utils import ensure, lower_email
 
 
@@ -16,10 +15,6 @@ class UserDetail:
 
 
 class UserService(object):
-    def _find_or_create_profile(self, user: User) -> UserProfile:
-        profile, _ = UserProfile.objects.get_or_create(user=user)
-        return profile
-
     def find_by_email(self, email: str) -> Maybe[User]:
         lowercase_email = lower_email(email)
         users = User.objects.filter(email=lowercase_email)
@@ -27,7 +22,6 @@ class UserService(object):
 
         if users.count() == 1:
             user = users.first()
-            self._find_or_create_profile(user)
             return Some(user)
         else:
             return Nothing
@@ -44,9 +38,8 @@ class UserService(object):
                 user.last_name = user_detail.last_name
                 user.save()
 
-                profile = self._find_or_create_profile(user)
-                profile.phone = user_detail.phone
-                profile.save()
+                user.profile.phone = user_detail.phone
+                user.profile.save()
 
                 return user
             case _:
@@ -60,11 +53,7 @@ class UserService(object):
                 user.set_unusable_password()
                 user.save()
 
-                profile = UserProfile.objects.create(
-                    user=user,
-                    phone=user_detail.phone
-                )
-
-                profile.save()
+                user.profile.phone = user_detail.phone
+                user.profile.save()
 
                 return user

@@ -534,7 +534,8 @@ class FetchCurrentRegistrationsTestCase(TestCase):
 class RegistrationServiceEmailTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser_email', email='test_email@example.com', password='password')
-        UserProfile.objects.create(user=self.user, phone="+16131112222")
+        self.user.profile.phone = "+16131112222"
+        self.user.profile.save()
         self.program = Program.objects.create(name="Email Test Program")
         self.event = Event.objects.create(
             program=self.program,
