@@ -136,4 +136,72 @@ class RegistrationViewPhoneTests(TestCase):
         # Check that the profile was updated with the new phone number
         user.refresh_from_db()
         self.assertTrue(hasattr(user, 'profile'))
-        self.assertEqual(str(user.profile.phone), '+1987654321') 
+        self.assertEqual(str(user.profile.phone), '+1987654321')
+
+    def test_registration_form_stores_phone_in_registration_record(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='phonetest@example.com',
+            email='phonetest@example.com',
+            first_name='Phone',
+            last_name='Test'
+        )
+        
+        self.client.force_login(user)
+
+        form_data = {
+            'first_name': 'Phone',
+            'last_name': 'Test', 
+            'email': 'phonetest@example.com',
+            'phone': '+1555123456',
+        }
+
+        # Act
+        response = self.client.post(reverse('registration_create', args=[self.event.id]), form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)  # Redirect to success page
+        
+        # Check that a registration was created
+        from backoffice.models import Registration
+        registrations = Registration.objects.filter(user=user, event=self.event)
+        self.assertEqual(registrations.count(), 1)
+        
+        # Check that the registration record has the phone number
+        registration = registrations.first()
+        self.assertEqual(str(registration.phone), '+1555123456')
+        
+        # Also verify the user profile was updated
+        user.refresh_from_db()
+        self.assertEqual(str(user.profile.phone), '+1555123456')
+
+    def test_registration_form_stores_phone_for_anonymous_user(self):
+        # Arrange - no user login (anonymous registration)
+        form_data = {
+            'first_name': 'Anonymous',
+            'last_name': 'User',
+            'email': 'anonymous@example.com',
+            'phone': '+1555987654',
+        }
+
+        # Act
+        response = self.client.post(reverse('registration_create', args=[self.event.id]), form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)  # Redirect to success page
+        
+        # Check that a registration was created
+        from backoffice.models import Registration
+        registrations = Registration.objects.filter(email='anonymous@example.com', event=self.event)
+        self.assertEqual(registrations.count(), 1)
+        
+        # Check that the registration record has the phone number
+        registration = registrations.first()
+        self.assertEqual(str(registration.phone), '+1555987654')
+        
+        # Verify user was created and profile has phone
+        from django.contrib.auth.models import User
+        users = User.objects.filter(email='anonymous@example.com')
+        self.assertEqual(users.count(), 1)
+        user = users.first()
+        self.assertEqual(str(user.profile.phone), '+1555987654') 
