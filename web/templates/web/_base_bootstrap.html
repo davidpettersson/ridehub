@@ -44,7 +44,7 @@
             <div class="dropdown">
               <a class="d-inline-flex align-items-center text-white text-decoration-none dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 <span class="me-2">{{ user.first_name }}</span>
-                <img src="{% gravatar_url user.email 150 %}" alt="{{ user.first_name }}" class="rounded-circle" width="32" height="32">
+                <img src="{% gravatar_url user.email 150 %}" alt="{{ user.first_name }}'s avatar" class="rounded-circle" width="32" height="32">
               </a>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                 <li><a class="dropdown-item" href="{% url 'profile' %}">
