@@ -23,5 +23,5 @@ def changes_email_addresses(request: HttpRequest) -> HttpResponse:
     all_emails = set(staff_users) | set(ride_leader_users)
 
     # Return comma-separated email addresses
-    email_list = ', '.join(sorted(all_emails))
+    email_list = ','.join(sorted(all_emails))
     return HttpResponse(email_list, content_type='text/plain')
