@@ -75,7 +75,7 @@ def step_impl(context, count):
             first_name=f'John {k}',
             last_name='Doe',
             email=email,
-            phone='',
+            phone=f'+123456789{k}',
         )
         registration_detail = RegistrationDetail(
             ride=None,
