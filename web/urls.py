@@ -4,7 +4,7 @@ from web.views.debug import trigger_task, trigger_error
 from web.views.events import redirect_to_event_list, event_detail, event_list, event_registrations, \
     event_registrations_full
 from web.views.events_ical import EventFeed
-from web.views.helpers import populate_first_last_names
+from web.views.helpers import changes_email_addresses
 from web.views.login import LoginFormView, logout_view, CustomLoginView
 from web.views.profile import profile, registration_withdraw
 from web.views.registrations import registration_create, registration_detail, registration_submitted, registration_list
@@ -16,7 +16,7 @@ urlpatterns = [
     path("logout/", logout_view, name="logout"),
     path('debug/trigger_task', trigger_task),
     path('debug/trigger_error', trigger_error),
-    path('helpers/populate_first_last_names', populate_first_last_names),
+    path('helpers/changes_email_addresses', changes_email_addresses),
     path('calendar', redirect_to_event_list, name='calendar'),
     path('events/<int:event_id>/registrations/full', event_registrations_full, name='event_registrations_full'),
     path('events/<int:event_id>/registrations', event_registrations, name='riders_list'),
