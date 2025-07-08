@@ -58,7 +58,7 @@ class RegistrationForm(forms.Form):
             self.fields['speed_range_preference'] = forms.ModelChoiceField(
                 queryset=SpeedRange.objects.all(),
                 label="Speed range preference",
-                required=True
+                required=False
             )
 
         if event.requires_emergency_contact:
@@ -108,6 +108,22 @@ class RegistrationForm(forms.Form):
                 field.widget.attrs['class'] = 'form-select'
             elif not isinstance(field.widget, (forms.HiddenInput, forms.RadioSelect, forms.CheckboxInput)):
                 field.widget.attrs['class'] = 'form-control'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        ride = cleaned_data.get('ride')
+        speed_range_preference = cleaned_data.get('speed_range_preference')
+        
+        # If speed range is selected, ensure it belongs to the selected ride
+        if speed_range_preference and ride:
+            if not ride.speed_ranges.filter(id=speed_range_preference.id).exists():
+                self.add_error('speed_range_preference', 'Selected speed range is not available for this ride.')
+        
+        # If a ride is selected and it has speed ranges, require speed range selection
+        if ride and ride.speed_ranges.exists() and not speed_range_preference:
+            self.add_error('speed_range_preference', 'Please select a speed range for this ride.')
+        
+        return cleaned_data
 
 
 class EmailLoginForm(forms.Form):
