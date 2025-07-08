@@ -173,20 +173,127 @@
             const speedRangeContainer = document.getElementById('speed-range-container');
 
             if (rideSelect && speedRangeContainer) {
+                let loadingTimeout;
+                let currentRequest;
+
+                // Function to show loading state
+                function showLoading() {
+                    speedRangeContainer.innerHTML = '<select name="speed_range_preference" id="id_speed_range_preference" class="form-select" disabled><option value="">Loading speed ranges...</option></select>';
+                }
+
+                // Function to show error state
+                function showError() {
+                    speedRangeContainer.innerHTML = '<select name="speed_range_preference" id="id_speed_range_preference" class="form-select" disabled><option value="">Error loading speed ranges. Please try again.</option></select>';
+                }
+
                 // Function to load speed ranges based on selected ride
                 function loadSpeedRanges() {
                     const rideId = rideSelect.value || 0;
                     const url = '/rides/' + rideId + '/speed-ranges';
 
-                    // Use HTMX AJAX to update the speed ranges
-                    htmx.ajax('GET', url, {target: speedRangeContainer});
+                    // Clear any existing timeout
+                    if (loadingTimeout) {
+                        clearTimeout(loadingTimeout);
+                    }
+
+                    // Abort any existing request
+                    if (currentRequest) {
+                        currentRequest.abort();
+                    }
+
+                    console.log('Loading speed ranges for ride:', rideId);
+
+                    // Show loading state immediately for ride selections (but not initial load)
+                    if (rideId > 0) {
+                        showLoading();
+                    }
+
+                    // Set a timeout to show loading state if request takes too long
+                    loadingTimeout = setTimeout(() => {
+                        if (rideId > 0) {
+                            showLoading();
+                        }
+                    }, 100);
+
+                    try {
+                        // Use HTMX AJAX to update the speed ranges
+                        if (typeof htmx !== 'undefined') {
+                            currentRequest = htmx.ajax('GET', url, {
+                                target: speedRangeContainer,
+                                swap: 'innerHTML'
+                            });
+                        } else {
+                            // Fallback to fetch if HTMX is not available
+                            currentRequest = fetch(url)
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('Network response was not ok');
+                                    }
+                                    return response.text();
+                                })
+                                .then(html => {
+                                    speedRangeContainer.innerHTML = html;
+                                    console.log('Speed ranges loaded successfully');
+                                })
+                                .catch(error => {
+                                    console.error('Error loading speed ranges:', error);
+                                    showError();
+                                });
+                        }
+                    } catch (error) {
+                        console.error('Error initiating speed range request:', error);
+                        showError();
+                    }
+
+                    // Clear loading timeout
+                    setTimeout(() => {
+                        if (loadingTimeout) {
+                            clearTimeout(loadingTimeout);
+                        }
+                    }, 5000); // Clear after 5 seconds max
+                }
+
+                // Debounce function to prevent rapid fire requests
+                let debounceTimeout;
+                function debouncedLoadSpeedRanges() {
+                    if (debounceTimeout) {
+                        clearTimeout(debounceTimeout);
+                    }
+                    debounceTimeout = setTimeout(loadSpeedRanges, 300);
                 }
 
                 // Load speed ranges when the ride selection changes
-                rideSelect.addEventListener('change', loadSpeedRanges);
+                rideSelect.addEventListener('change', debouncedLoadSpeedRanges);
 
                 // Initial load of speed ranges
                 loadSpeedRanges();
+
+                // Add HTMX event listeners for better feedback
+                if (typeof htmx !== 'undefined') {
+                    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+                        if (evt.detail.requestConfig.path.includes('/speed-ranges')) {
+                            console.log('HTMX: Starting speed range request');
+                        }
+                    });
+
+                    document.body.addEventListener('htmx:afterRequest', function(evt) {
+                        if (evt.detail.requestConfig.path.includes('/speed-ranges')) {
+                            if (evt.detail.successful) {
+                                console.log('HTMX: Speed ranges loaded successfully');
+                            } else {
+                                console.error('HTMX: Speed range request failed');
+                                showError();
+                            }
+                        }
+                    });
+
+                    document.body.addEventListener('htmx:responseError', function(evt) {
+                        if (evt.detail.requestConfig.path.includes('/speed-ranges')) {
+                            console.error('HTMX: Response error for speed ranges');
+                            showError();
+                        }
+                    });
+                }
             }
         });
     </script>
