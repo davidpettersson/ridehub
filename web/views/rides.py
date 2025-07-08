@@ -21,6 +21,7 @@ def ride_speed_ranges(request: HttpRequest, ride_id: int) -> HttpResponse:
     if not speed_ranges:
         html += '<option value="">No speed ranges available</option>'
     else:
+        html += '<option value="">Select a speed range</option>'
         for speed_range in speed_ranges:
             html += f'<option value="{speed_range.id}">{speed_range}</option>'
     html += '</select>'
