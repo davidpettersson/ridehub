@@ -153,6 +153,7 @@ class RegistrationFormTest(TestCase):
             route=self.route
         )
         speed_range = SpeedRange.objects.first()
+        ride.speed_ranges.add(speed_range)  # Add speed range to ride
         form_data = {
             'first_name': 'Test',
             'last_name': 'User',
@@ -180,6 +181,7 @@ class RegistrationFormTest(TestCase):
             route=self.route
         )
         speed_range = SpeedRange.objects.first()
+        ride.speed_ranges.add(speed_range)  # Add speed range to ride
         form_data = {
             'first_name': 'Test',
             'last_name': 'User',
@@ -228,6 +230,191 @@ class RegistrationFormTest(TestCase):
 
         # Act & Assert
         self.assertTrue(form.is_valid())
+
+    def test_form_validation_succeeds_with_ride_without_speed_ranges(self):
+        # Arrange
+        # Create a ride without speed ranges
+        ride = Ride.objects.create(
+            event=self.event_with_rides,
+            name="Test Ride No Speed",
+            route=self.route
+        )
+        
+        form_data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com',
+            'phone': '+1234567890',
+            'ride': ride.id,
+            # No speed range preference - should be valid
+        }
+        form = RegistrationForm(data=form_data, event=self.event_with_rides)
+
+        # Act & Assert
+        self.assertTrue(form.is_valid())
+
+    def test_form_validation_succeeds_with_ride_with_speed_ranges_and_valid_selection(self):
+        # Arrange
+        # Create a ride with speed ranges
+        ride = Ride.objects.create(
+            event=self.event_with_rides,
+            name="Test Ride With Speed",
+            route=self.route
+        )
+        speed_range = SpeedRange.objects.create(lower_limit=15, upper_limit=18)
+        ride.speed_ranges.add(speed_range)
+        
+        form_data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com',
+            'phone': '+1234567890',
+            'ride': ride.id,
+            'speed_range_preference': speed_range.id,
+        }
+        form = RegistrationForm(data=form_data, event=self.event_with_rides)
+
+        # Act & Assert
+        self.assertTrue(form.is_valid())
+
+    def test_form_validation_fails_with_ride_with_speed_ranges_and_no_selection(self):
+        # Arrange
+        # Create a ride with speed ranges
+        ride = Ride.objects.create(
+            event=self.event_with_rides,
+            name="Test Ride With Speed",
+            route=self.route
+        )
+        speed_range = SpeedRange.objects.create(lower_limit=15, upper_limit=18)
+        ride.speed_ranges.add(speed_range)
+        
+        form_data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com',
+            'phone': '+1234567890',
+            'ride': ride.id,
+            # No speed range preference - should be invalid since ride has speed ranges
+        }
+        form = RegistrationForm(data=form_data, event=self.event_with_rides)
+
+        # Act & Assert
+        self.assertFalse(form.is_valid())
+        self.assertIn('speed_range_preference', form.errors)
+        self.assertEqual(
+            form.errors['speed_range_preference'][0],
+            'Please select a speed range for this ride.'
+        )
+
+    def test_form_validation_fails_with_speed_range_not_for_selected_ride(self):
+        # Arrange
+        # Create two rides with different speed ranges
+        ride1 = Ride.objects.create(
+            event=self.event_with_rides,
+            name="Test Ride 1",
+            route=self.route
+        )
+        ride2 = Ride.objects.create(
+            event=self.event_with_rides,
+            name="Test Ride 2",
+            route=self.route
+        )
+        
+        speed_range1 = SpeedRange.objects.create(lower_limit=15, upper_limit=18)
+        speed_range2 = SpeedRange.objects.create(lower_limit=20, upper_limit=23)
+        
+        ride1.speed_ranges.add(speed_range1)
+        ride2.speed_ranges.add(speed_range2)
+        
+        form_data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com',
+            'phone': '+1234567890',
+            'ride': ride1.id,
+            'speed_range_preference': speed_range2.id,  # Speed range belongs to ride2, not ride1
+        }
+        form = RegistrationForm(data=form_data, event=self.event_with_rides)
+
+        # Act & Assert
+        self.assertFalse(form.is_valid())
+        self.assertIn('speed_range_preference', form.errors)
+        self.assertEqual(
+            form.errors['speed_range_preference'][0],
+            'Selected speed range is not available for this ride.'
+        )
+
+    def test_form_validation_succeeds_with_multiple_speed_ranges_available(self):
+        # Arrange
+        # Create a ride with multiple speed ranges
+        ride = Ride.objects.create(
+            event=self.event_with_rides,
+            name="Test Ride Multiple Speed",
+            route=self.route
+        )
+        speed_range1 = SpeedRange.objects.create(lower_limit=15, upper_limit=18)
+        speed_range2 = SpeedRange.objects.create(lower_limit=20, upper_limit=23)
+        ride.speed_ranges.add(speed_range1, speed_range2)
+        
+        form_data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com',
+            'phone': '+1234567890',
+            'ride': ride.id,
+            'speed_range_preference': speed_range2.id,  # Select the second speed range
+        }
+        form = RegistrationForm(data=form_data, event=self.event_with_rides)
+
+        # Act & Assert
+        self.assertTrue(form.is_valid())
+
+    def test_form_validation_with_empty_string_speed_range_preference(self):
+        # Arrange
+        # Create a ride with speed ranges
+        ride = Ride.objects.create(
+            event=self.event_with_rides,
+            name="Test Ride With Speed",
+            route=self.route
+        )
+        speed_range = SpeedRange.objects.create(lower_limit=15, upper_limit=18)
+        ride.speed_ranges.add(speed_range)
+        
+        form_data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com',
+            'phone': '+1234567890',
+            'ride': ride.id,
+            'speed_range_preference': '',  # Empty string should be treated as no selection
+        }
+        form = RegistrationForm(data=form_data, event=self.event_with_rides)
+
+        # Act & Assert
+        self.assertFalse(form.is_valid())
+        self.assertIn('speed_range_preference', form.errors)
+        self.assertEqual(
+            form.errors['speed_range_preference'][0],
+            'Please select a speed range for this ride.'
+        )
+
+    def test_form_validation_without_ride_selected(self):
+        # Arrange
+        # Test the case where no ride is selected - speed range should not be required
+        form_data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com',
+            'phone': '+1234567890',
+            # No ride selected
+        }
+        form = RegistrationForm(data=form_data, event=self.event_with_rides)
+
+        # Act & Assert
+        self.assertFalse(form.is_valid())  # Should fail because ride is required
+        self.assertIn('ride', form.errors)
+        # But speed_range_preference should not have errors since no ride is selected
+        self.assertNotIn('speed_range_preference', form.errors)
 
 
 class EmailLoginFormTest(TestCase):
