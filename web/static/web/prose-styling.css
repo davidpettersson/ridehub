@@ -1,25 +1,32 @@
 .prose p {
     margin: 2pt 0;
     padding: 2pt 0;
+    font-size: 12pt;
 }
 
 .prose h1 {
-    margin: 5pt 0;
-    font-size: 16pt;
+    margin-top: 0.5em;
+    font-size: 18pt;
     font-weight: bold;
 }
 
 .prose h2 {
-    margin-top: 3pt;
-    font-size: 14pt;
+    margin-top: 0.5em;
+    font-size: 16pt;
     font-weight: bold;
 }
 
 .prose h3 {
-    margin-top: 3pt;
+    margin-top: 0.5em;
+    font-size: 14pt;
     font-weight: bold;
 }
 
+.prose h4 {
+    margin-top: 0.5em;
+    font-size: 12pt;
+    font-weight: bold;
+}
 .prose a {
     color: #4A6DA7;
     text-decoration: underline;
