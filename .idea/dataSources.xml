@@ -2,7 +2,7 @@
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
     <data-source source="LOCAL" name="db" uuid="e922d922-944a-436f-9a69-b3172d7552a2">
-      <driver-ref>sqlite.xerial</driver-ref>
+      <driver-ref>de41e8c8-60c9-4f24-a114-95232d8c4f24</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:C:\Users\DavidPettersson\GitHub\davidpettersson\ridehub\db.sqlite3</jdbc-url>
