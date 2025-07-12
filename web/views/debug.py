@@ -1,6 +1,6 @@
 from django.http import HttpRequest, HttpResponse
 
-from backoffice.tasks import perform_task_in_job
+from backoffice.tasks.debug_tasks import perform_task_in_job
 
 
 def trigger_error(request: HttpRequest) -> HttpResponse:
