@@ -62,9 +62,15 @@
                                                     {% for event in events %}
                                                     <div class="mb-1">
                                                         <a href="{% url 'event_detail' event.id %}" class="text-decoration-none">
+                                                            {% if event.starts_at.date < today %}
+                                                            <div class="p-1 bg-secondary bg-opacity-10 border border-secondary border-opacity-25 rounded text-secondary text-truncate" style="font-size: 0.75rem;" title="{{ event.name }} - {{ event.starts_at|date:'g:i A' }}">
+                                                                <span class="fw-medium">{{ event.starts_at|date:"g:i A" }}</span> {{ event.name }}
+                                                            </div>
+                                                            {% else %}
                                                             <div class="p-1 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded text-primary text-truncate" style="font-size: 0.75rem;" title="{{ event.name }} - {{ event.starts_at|date:'g:i A' }}">
                                                                 <span class="fw-medium">{{ event.starts_at|date:"g:i A" }}</span> {{ event.name }}
                                                             </div>
+                                                            {% endif %}
                                                         </a>
                                                     </div>
                                                     {% endfor %}
