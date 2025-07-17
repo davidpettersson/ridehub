@@ -1,4 +1,6 @@
 from itertools import groupby
+import calendar
+from datetime import datetime, date
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -135,6 +137,9 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 
 
 def event_list(request: HttpRequest) -> HttpResponse:
+    # Set preferred view in session
+    request.session['preferred_events_view'] = 'list'
+    
     events = EventService().fetch_upcoming_events()
     starts_at_date = lambda event: event.starts_at.date()
 
@@ -199,3 +204,63 @@ def event_registrations_full(request: HttpRequest, event_id: int) -> HttpRespons
     }
 
     return render(request, 'web/events/registrations_full.html', context)
+
+
+def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> HttpResponse:
+    # Set preferred view in session
+    request.session['preferred_events_view'] = 'calendar'
+    
+    # Redirect to current year/month if not specified
+    if year is None or month is None:
+        current_date = datetime.now()
+        return redirect('calendar_month', year=current_date.year, month=current_date.month)
+    
+    # Validate year and month parameters
+    current_year = datetime.now().year
+    if not (1900 <= year <= current_year + 10):  # Allow 10 years in the future
+        return redirect('calendar_month', year=current_year, month=datetime.now().month)
+    
+    if not (1 <= month <= 12):
+        return redirect('calendar_month', year=current_year, month=datetime.now().month)
+    
+    # Get events for this month using EventService
+    events = EventService().fetch_events_for_month(year, month)
+    
+    # Group events by date
+    events_by_date = {}
+    for event in events:
+        event_date = event.starts_at.date()
+        if event_date not in events_by_date:
+            events_by_date[event_date] = []
+        events_by_date[event_date].append(event)
+    
+    # Generate calendar data
+    cal = calendar.Calendar(firstweekday=calendar.SUNDAY)
+    month_days = cal.monthdayscalendar(year, month)
+    
+    # Calculate previous and next month
+    if month == 1:
+        prev_month, prev_year = 12, year - 1
+    else:
+        prev_month, prev_year = month - 1, year
+        
+    if month == 12:
+        next_month, next_year = 1, year + 1
+    else:
+        next_month, next_year = month + 1, year
+    
+    context = {
+        'current_date': date(year, month, 1),
+        'month_name': calendar.month_name[month],
+        'year': year,
+        'month': month,
+        'month_days': month_days,
+        'events_by_date': events_by_date,
+        'prev_month': prev_month,
+        'prev_year': prev_year,
+        'next_month': next_month,
+        'next_year': next_year,
+        'today': date.today(),
+    }
+    
+    return render(request, 'web/events/calendar.html', context)

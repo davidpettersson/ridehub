@@ -1,0 +1,91 @@
+{% extends 'web/_base_bootstrap.html' %}
+{% load waffle_tags %}
+{% block title %}{{ month_name }} {{ year }}{% endblock %}
+{% block content %}
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="fs-2 fw-bold mb-0">{{ month_name }} {{ year }}</h1>
+            <div class="d-flex gap-2">
+                <div class="d-flex align-items-center gap-1">
+                    <a href="{% url 'calendar_month' prev_year prev_month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Previous month">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                    <a href="{% url 'calendar_month' next_year next_month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Next month">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+                {% flag "calendar_view" %}
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle d-flex align-items-center" type="button" id="viewDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
+                        <i class="bi bi-calendar3 me-2"></i>Calendar
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="viewDropdown">
+                        <li><a class="dropdown-item" href="{% url 'event_list' %}">
+                            <i class="bi bi-list-ul me-2"></i>List
+                        </a></li>
+                        <li><a class="dropdown-item active" href="{% url 'calendar' %}">
+                            <i class="bi bi-calendar3 me-2"></i>Calendar
+                        </a></li>
+                    </ul>
+                </div>
+                {% endflag %}
+            </div>
+        </div>
+        
+        <div class="calendar-grid">
+            <div class="card">
+                <div class="card-body p-0">
+                    <table class="table table-bordered mb-0" style="table-layout: fixed;">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center py-2" style="width: 14.28%;">Sun</th>
+                                <th class="text-center py-2" style="width: 14.28%;">Mon</th>
+                                <th class="text-center py-2" style="width: 14.28%;">Tue</th>
+                                <th class="text-center py-2" style="width: 14.28%;">Wed</th>
+                                <th class="text-center py-2" style="width: 14.28%;">Thu</th>
+                                <th class="text-center py-2" style="width: 14.28%;">Fri</th>
+                                <th class="text-center py-2" style="width: 14.28%;">Sat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for week in month_days %}
+                            <tr>
+                                {% for day in week %}
+                                <td class="p-0 calendar-day" style="height: 120px; vertical-align: top;">
+                                    {% if day != 0 %}
+                                        <div class="p-2 h-100">
+                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                <span class="fw-medium{% if day == today.day and month == today.month and year == today.year %} text-primary{% endif %}">{{ day }}</span>
+                                            </div>
+                                            {% for event_date, events in events_by_date.items %}
+                                                {% if event_date.day == day %}
+                                                    {% for event in events %}
+                                                    <div class="mb-1">
+                                                        <a href="{% url 'event_detail' event.id %}" class="text-decoration-none">
+                                                            {% if event.starts_at.date < today %}
+                                                            <div class="p-1 bg-secondary bg-opacity-10 border border-secondary border-opacity-25 rounded text-secondary text-truncate" style="font-size: 0.75rem;" title="{{ event.name }} - {{ event.starts_at|date:'g:i A' }}">
+                                                                <span class="fw-medium">{{ event.starts_at|date:"g:i A" }}</span> {{ event.name }}
+                                                            </div>
+                                                            {% else %}
+                                                            <div class="p-1 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded text-primary text-truncate" style="font-size: 0.75rem;" title="{{ event.name }} - {{ event.starts_at|date:'g:i A' }}">
+                                                                <span class="fw-medium">{{ event.starts_at|date:"g:i A" }}</span> {{ event.name }}
+                                                            </div>
+                                                            {% endif %}
+                                                        </a>
+                                                    </div>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -2,7 +2,7 @@ from django.urls import path
 
 from web.views.debug import trigger_task, trigger_error
 from web.views.events import redirect_to_event_list, event_detail, event_list, event_registrations, \
-    event_registrations_full
+    event_registrations_full, calendar_view
 from web.views.events_ical import EventFeed
 from web.views.helpers import changes_email_addresses
 from web.views.login import LoginFormView, logout_view, CustomLoginView
@@ -17,7 +17,8 @@ urlpatterns = [
     path('debug/trigger_task', trigger_task),
     path('debug/trigger_error', trigger_error),
     path('helpers/changes_email_addresses', changes_email_addresses),
-    path('calendar', redirect_to_event_list, name='calendar'),
+    path('calendar', calendar_view, name='calendar'),
+    path('calendar/<int:year>/<int:month>', calendar_view, name='calendar_month'),
     path('events/<int:event_id>/registrations/full', event_registrations_full, name='event_registrations_full'),
     path('events/<int:event_id>/registrations', event_registrations, name='riders_list'),
     path('events/<int:event_id>/registration', registration_create, name='registration_create'),

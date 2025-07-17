@@ -19,3 +19,18 @@ class EventService:
                               current_date: date | None = None) -> QuerySet[Event]:
         current_date = current_date or timezone.now().date()
         return self.fetch_events(include_archived, only_visible).filter(starts_at__date__gte=current_date)
+
+    def fetch_events_for_month(self, year: int, month: int, include_archived: bool = False, 
+                               only_visible: bool = True) -> QuerySet[Event]:
+        from datetime import date
+        import calendar
+        
+        # Get the first and last day of the month using calendar.monthrange
+        first_day = date(year, month, 1)
+        _, last_day_of_month = calendar.monthrange(year, month)
+        last_day = date(year, month, last_day_of_month)
+        
+        return self.fetch_events(include_archived, only_visible).filter(
+            starts_at__date__gte=first_day,
+            starts_at__date__lte=last_day
+        )
