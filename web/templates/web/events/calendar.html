@@ -1,0 +1,74 @@
+{% extends 'web/_base_bootstrap.html' %}
+{% block title %}Events Calendar{% endblock %}
+{% block content %}
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="fs-2 fw-bold mb-0">{{ month_name }} {{ year }}</h1>
+            <div class="d-flex gap-2">
+                <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-outline-primary">
+                    <i class="bi bi-chevron-left"></i> Previous
+                </a>
+                <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-outline-primary">
+                    Next <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+        
+        <div class="calendar-grid">
+            <div class="card">
+                <div class="card-body p-0">
+                    <table class="table table-bordered mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center py-2">Sun</th>
+                                <th class="text-center py-2">Mon</th>
+                                <th class="text-center py-2">Tue</th>
+                                <th class="text-center py-2">Wed</th>
+                                <th class="text-center py-2">Thu</th>
+                                <th class="text-center py-2">Fri</th>
+                                <th class="text-center py-2">Sat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for week in month_days %}
+                            <tr>
+                                {% for day in week %}
+                                <td class="p-0 calendar-day" style="height: 120px; width: 14.28%; vertical-align: top;">
+                                    {% if day != 0 %}
+                                        <div class="p-2 h-100">
+                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                <span class="fw-medium{% if day == today.day and month == today.month and year == today.year %} text-primary{% endif %}">{{ day }}</span>
+                                            </div>
+                                            {% for event_date, events in events_by_date.items %}
+                                                {% if event_date.day == day %}
+                                                    {% for event in events %}
+                                                    <div class="mb-1">
+                                                        <a href="{% url 'event_detail' event.id %}" class="text-decoration-none">
+                                                            <div class="small p-1 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded text-primary text-truncate" title="{{ event.name }} - {{ event.starts_at|date:'g:i A' }}">
+                                                                <div class="fw-medium">{{ event.starts_at|date:"g:i A" }}</div>
+                                                                <div class="text-truncate">{{ event.name }}</div>
+                                                            </div>
+                                                        </a>
+                                                    </div>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        {% if not events_by_date %}
+        <div class="py-5 text-center">
+            <p class="text-muted">No events scheduled for {{ month_name }} {{ year }}. Check back soon!</p>
+        </div>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,4 +1,6 @@
 from itertools import groupby
+import calendar
+from datetime import datetime, date
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -199,3 +201,61 @@ def event_registrations_full(request: HttpRequest, event_id: int) -> HttpRespons
     }
 
     return render(request, 'web/events/registrations_full.html', context)
+
+
+def calendar_view(request: HttpRequest) -> HttpResponse:
+    year = int(request.GET.get('year', datetime.now().year))
+    month = int(request.GET.get('month', datetime.now().month))
+    
+    # Get the first and last day of the month
+    first_day = date(year, month, 1)
+    if month == 12:
+        last_day = date(year + 1, 1, 1)
+    else:
+        last_day = date(year, month + 1, 1)
+    
+    # Get events for this month
+    events = Event.objects.filter(
+        starts_at__date__gte=first_day,
+        starts_at__date__lt=last_day,
+        archived=False
+    ).order_by('starts_at')
+    
+    # Group events by date
+    events_by_date = {}
+    for event in events:
+        event_date = event.starts_at.date()
+        if event_date not in events_by_date:
+            events_by_date[event_date] = []
+        events_by_date[event_date].append(event)
+    
+    # Generate calendar data
+    cal = calendar.Calendar(firstweekday=6)  # Start week on Sunday
+    month_days = cal.monthdayscalendar(year, month)
+    
+    # Calculate previous and next month
+    if month == 1:
+        prev_month, prev_year = 12, year - 1
+    else:
+        prev_month, prev_year = month - 1, year
+        
+    if month == 12:
+        next_month, next_year = 1, year + 1
+    else:
+        next_month, next_year = month + 1, year
+    
+    context = {
+        'current_date': date(year, month, 1),
+        'month_name': calendar.month_name[month],
+        'year': year,
+        'month': month,
+        'month_days': month_days,
+        'events_by_date': events_by_date,
+        'prev_month': prev_month,
+        'prev_year': prev_year,
+        'next_month': next_month,
+        'next_year': next_year,
+        'today': date.today(),
+    }
+    
+    return render(request, 'web/events/calendar.html', context)
