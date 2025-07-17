@@ -137,6 +137,9 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 
 
 def event_list(request: HttpRequest) -> HttpResponse:
+    # Set preferred view in session
+    request.session['preferred_events_view'] = 'list'
+    
     events = EventService().fetch_upcoming_events()
     starts_at_date = lambda event: event.starts_at.date()
 
@@ -204,6 +207,9 @@ def event_registrations_full(request: HttpRequest, event_id: int) -> HttpRespons
 
 
 def calendar_view(request: HttpRequest) -> HttpResponse:
+    # Set preferred view in session
+    request.session['preferred_events_view'] = 'calendar'
+    
     year = int(request.GET.get('year', datetime.now().year))
     month = int(request.GET.get('month', datetime.now().month))
     

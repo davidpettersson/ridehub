@@ -35,9 +35,21 @@
             <a href="{% url 'event_list' %}" class="me-3">
               <img src="{% static 'web/obc-logo.png' %}" alt="Ottawa Bicycle Club" height="40">
             </a>
+            {% flag "calendar_view" %}
+            {% if request.session.preferred_events_view == 'calendar' %}
+            <a href="{% url 'calendar' %}" class="text-white">
+              Events
+            </a>
+            {% else %}
+            <a href="{% url 'event_list' %}" class="text-white">
+              Events
+            </a>
+            {% endif %}
+            {% else %}
             <a href="{% url 'event_list' %}" class="text-white">
               Upcoming events
             </a>
+            {% endflag %}
           </div>
           <div class="d-flex align-items-center">
             {% if user.is_authenticated %}
