@@ -206,26 +206,25 @@ def event_registrations_full(request: HttpRequest, event_id: int) -> HttpRespons
     return render(request, 'web/events/registrations_full.html', context)
 
 
-def calendar_view(request: HttpRequest) -> HttpResponse:
+def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> HttpResponse:
     # Set preferred view in session
     request.session['preferred_events_view'] = 'calendar'
     
-    year = int(request.GET.get('year', datetime.now().year))
-    month = int(request.GET.get('month', datetime.now().month))
+    # Redirect to current year/month if not specified
+    if year is None or month is None:
+        current_date = datetime.now()
+        return redirect('calendar_month', year=current_date.year, month=current_date.month)
     
-    # Get the first and last day of the month
-    first_day = date(year, month, 1)
-    if month == 12:
-        last_day = date(year + 1, 1, 1)
-    else:
-        last_day = date(year, month + 1, 1)
+    # Validate year and month parameters
+    current_year = datetime.now().year
+    if not (1900 <= year <= current_year + 10):  # Allow 10 years in the future
+        return redirect('calendar_month', year=current_year, month=datetime.now().month)
     
-    # Get events for this month
-    events = Event.objects.filter(
-        starts_at__date__gte=first_day,
-        starts_at__date__lt=last_day,
-        archived=False
-    ).order_by('starts_at')
+    if not (1 <= month <= 12):
+        return redirect('calendar_month', year=current_year, month=datetime.now().month)
+    
+    # Get events for this month using EventService
+    events = EventService().fetch_events_for_month(year, month)
     
     # Group events by date
     events_by_date = {}
@@ -236,7 +235,7 @@ def calendar_view(request: HttpRequest) -> HttpResponse:
         events_by_date[event_date].append(event)
     
     # Generate calendar data
-    cal = calendar.Calendar(firstweekday=6)  # Start week on Sunday
+    cal = calendar.Calendar(firstweekday=calendar.SUNDAY)
     month_days = cal.monthdayscalendar(year, month)
     
     # Calculate previous and next month

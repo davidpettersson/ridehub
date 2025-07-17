@@ -18,6 +18,7 @@ urlpatterns = [
     path('debug/trigger_error', trigger_error),
     path('helpers/changes_email_addresses', changes_email_addresses),
     path('calendar', calendar_view, name='calendar'),
+    path('calendar/<int:year>/<int:month>', calendar_view, name='calendar_month'),
     path('events/<int:event_id>/registrations/full', event_registrations_full, name='event_registrations_full'),
     path('events/<int:event_id>/registrations', event_registrations, name='riders_list'),
     path('events/<int:event_id>/registration', registration_create, name='registration_create'),

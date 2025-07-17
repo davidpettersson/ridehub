@@ -7,10 +7,10 @@
             <h1 class="fs-2 fw-bold mb-0">{{ month_name }} {{ year }}</h1>
             <div class="d-flex gap-2">
                 <div class="d-flex align-items-center gap-1">
-                    <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Previous month">
+                    <a href="{% url 'calendar_month' prev_year prev_month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Previous month">
                         <i class="bi bi-chevron-left"></i>
                     </a>
-                    <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Next month">
+                    <a href="{% url 'calendar_month' next_year next_month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Next month">
                         <i class="bi bi-chevron-right"></i>
                     </a>
                 </div>
