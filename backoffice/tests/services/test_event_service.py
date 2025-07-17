@@ -123,3 +123,148 @@ class FetchUpcomingEventsTests(BaseEventServiceTest):
 
         # Assert
         self.assertEqual(5, result.count(), "Should return all upcoming events regardless of visibility")
+
+
+class FetchEventsForMonthTests(BaseEventServiceTest):
+    def setUp(self):
+        super().setUp()
+        
+        # Create additional events for specific month testing
+        # Events in January 2024
+        jan_first = datetime.date(2024, 1, 1)
+        jan_last = datetime.date(2024, 1, 31)
+        jan_middle = datetime.date(2024, 1, 15)
+        
+        Event.objects.create(
+            program=self.program,
+            name="January First",
+            starts_at=timezone.make_aware(datetime.datetime.combine(jan_first, datetime.datetime.min.time())),
+            registration_closes_at=timezone.make_aware(datetime.datetime.combine(jan_first, datetime.datetime.min.time())),
+            visible=True,
+        )
+        
+        Event.objects.create(
+            program=self.program,
+            name="January Last",
+            starts_at=timezone.make_aware(datetime.datetime.combine(jan_last, datetime.datetime.min.time())),
+            registration_closes_at=timezone.make_aware(datetime.datetime.combine(jan_last, datetime.datetime.min.time())),
+            visible=True,
+        )
+        
+        Event.objects.create(
+            program=self.program,
+            name="January Middle",
+            starts_at=timezone.make_aware(datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
+            registration_closes_at=timezone.make_aware(datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
+            visible=True,
+        )
+        
+        # Event in February 2024 (should not be included in January tests)
+        feb_first = datetime.date(2024, 2, 1)
+        Event.objects.create(
+            program=self.program,
+            name="February First",
+            starts_at=timezone.make_aware(datetime.datetime.combine(feb_first, datetime.datetime.min.time())),
+            registration_closes_at=timezone.make_aware(datetime.datetime.combine(feb_first, datetime.datetime.min.time())),
+            visible=True,
+        )
+        
+        # Not visible event in January
+        Event.objects.create(
+            program=self.program,
+            name="January Hidden",
+            starts_at=timezone.make_aware(datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
+            registration_closes_at=timezone.make_aware(datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
+            visible=False,
+        )
+        
+        # Archived event in January
+        Event.objects.create(
+            program=self.program,
+            name="January Archived",
+            starts_at=timezone.make_aware(datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
+            registration_closes_at=timezone.make_aware(datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
+            visible=True,
+            archived=True,
+        )
+
+    def test_fetch_events_for_month_with_only_visible(self):
+        # Arrange
+        # (Setup is done in setUp method)
+        
+        # Act
+        result = self.service.fetch_events_for_month(2024, 1)
+        
+        # Assert
+        self.assertEqual(3, result.count(), "Should return only visible events for January 2024")
+        event_names = [event.name for event in result]
+        self.assertIn("January First", event_names)
+        self.assertIn("January Last", event_names)
+        self.assertIn("January Middle", event_names)
+        self.assertNotIn("February First", event_names)
+        self.assertNotIn("January Hidden", event_names)
+        self.assertNotIn("January Archived", event_names)
+
+    def test_fetch_events_for_month_with_all_visibility(self):
+        # Arrange
+        # (Setup is done in setUp method)
+        
+        # Act
+        result = self.service.fetch_events_for_month(2024, 1, only_visible=False)
+        
+        # Assert
+        self.assertEqual(4, result.count(), "Should return all non-archived events for January 2024 regardless of visibility")
+        event_names = [event.name for event in result]
+        self.assertIn("January First", event_names)
+        self.assertIn("January Last", event_names)
+        self.assertIn("January Middle", event_names)
+        self.assertIn("January Hidden", event_names)
+        self.assertNotIn("February First", event_names)
+        self.assertNotIn("January Archived", event_names)
+
+    def test_fetch_events_for_month_with_archived(self):
+        # Arrange
+        # (Setup is done in setUp method)
+        
+        # Act
+        result = self.service.fetch_events_for_month(2024, 1, include_archived=True, only_visible=False)
+        
+        # Assert
+        self.assertEqual(5, result.count(), "Should return all events for January 2024 including archived")
+        event_names = [event.name for event in result]
+        self.assertIn("January First", event_names)
+        self.assertIn("January Last", event_names)
+        self.assertIn("January Middle", event_names)
+        self.assertIn("January Hidden", event_names)
+        self.assertIn("January Archived", event_names)
+        self.assertNotIn("February First", event_names)
+
+    def test_fetch_events_for_month_leap_year_february(self):
+        # Arrange - Create event on Feb 29, 2024 (leap year)
+        feb_29 = datetime.date(2024, 2, 29)
+        Event.objects.create(
+            program=self.program,
+            name="Leap Day Event",
+            starts_at=timezone.make_aware(datetime.datetime.combine(feb_29, datetime.datetime.min.time())),
+            registration_closes_at=timezone.make_aware(datetime.datetime.combine(feb_29, datetime.datetime.min.time())),
+            visible=True,
+        )
+        
+        # Act
+        result = self.service.fetch_events_for_month(2024, 2)
+        
+        # Assert
+        self.assertEqual(2, result.count(), "Should include events on leap day")
+        event_names = [event.name for event in result]
+        self.assertIn("February First", event_names)
+        self.assertIn("Leap Day Event", event_names)
+
+    def test_fetch_events_for_month_empty_month(self):
+        # Arrange
+        # (No events in March 2024)
+        
+        # Act
+        result = self.service.fetch_events_for_month(2024, 3)
+        
+        # Assert
+        self.assertEqual(0, result.count(), "Should return no events for empty month")
