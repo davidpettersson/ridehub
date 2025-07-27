@@ -88,5 +88,25 @@
                 </div>
             </div>
         </div>
+        
+        <div class="mt-4 text-center">
+            <p class="text-muted small mb-0">
+                Subscribe to this calendar: 
+                <a href="webcal://{{ request.get_host }}{% url 'event_feed' %}" 
+                   class="text-decoration-none" 
+                   title="Add to Apple Calendar on iPhone/iPad/Mac">iPhone/iPad</a>, 
+                <a href="https://calendar.google.com/calendar/render?cid={{ request.build_absolute_uri }}{% url 'event_feed' %}" 
+                   target="_blank" 
+                   class="text-decoration-none" 
+                   title="Add to Google Calendar (Android/Web)">Google Calendar</a>, 
+                <a href="https://outlook.live.com/calendar/0/addfromweb?url={{ request.build_absolute_uri }}{% url 'event_feed' %}" 
+                   target="_blank" 
+                   class="text-decoration-none" 
+                   title="Add to Microsoft 365 / Outlook Online">Outlook</a>, or 
+                <a href="{% url 'event_feed' %}" 
+                   class="text-decoration-none" 
+                   title="Download ICS file for other calendar apps">other apps</a>
+            </p>
+        </div>
     </div>
 {% endblock %}
