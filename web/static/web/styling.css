@@ -98,3 +98,13 @@ body {
 .calendar-day:hover {
   background-color: #f8f9fa;
 }
+
+/* Calendar navigation button hover effects */
+.calendar-nav-btn {
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.calendar-nav-btn:hover {
+  background-color: #e9ecef !important;
+  transform: scale(1.05);
+}
