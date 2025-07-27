@@ -4,16 +4,17 @@
 {% block content %}
     <div class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="fs-2 fw-bold mb-0">{{ month_name }} {{ year }}</h1>
-            <div class="d-flex gap-2">
-                <div class="d-flex align-items-center gap-1">
-                    <a href="{% url 'calendar_month' prev_year prev_month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Previous month">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                    <a href="{% url 'calendar_month' next_year next_month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Next month">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </div>
+            <div class="flex-grow-1"></div>
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'calendar_month' prev_year prev_month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center calendar-nav-btn" style="width: 40px; height: 40px; border: none;" title="Previous month">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+                <h1 class="fs-2 fw-bold mb-0">{{ month_name }} {{ year }}</h1>
+                <a href="{% url 'calendar_month' next_year next_month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center calendar-nav-btn" style="width: 40px; height: 40px; border: none;" title="Next month">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+            <div class="flex-grow-1 d-flex justify-content-end">
                 {% flag "calendar_view" %}
                 <div class="dropdown">
                     <button class="btn btn-light dropdown-toggle d-flex align-items-center" type="button" id="viewDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
@@ -51,9 +52,9 @@
                             {% for week in month_days %}
                             <tr>
                                 {% for day in week %}
-                                <td class="p-0 calendar-day" style="height: 120px; vertical-align: top;">
+                                <td class="p-0 calendar-day" style="min-height: 120px; vertical-align: top;">
                                     {% if day != 0 %}
-                                        <div class="p-2 h-100">
+                                        <div class="p-2" style="min-height: 96px;">
                                             <div class="d-flex justify-content-between align-items-start mb-1">
                                                 <span class="fw-medium{% if day == today.day and month == today.month and year == today.year %} text-primary{% endif %}">{{ day }}</span>
                                             </div>
@@ -86,6 +87,26 @@
                     </table>
                 </div>
             </div>
+        </div>
+        
+        <div class="mt-4 text-center">
+            <p class="text-muted small mb-0">
+                Subscribe to this calendar: 
+                <a href="webcal://{{ request.get_host }}{% url 'event_feed' %}" 
+                   class="text-decoration-none" 
+                   title="Add to Apple Calendar on iPhone/iPad/Mac">iPhone/iPad</a>, 
+                <a href="https://calendar.google.com/calendar/render?cid={{ request.build_absolute_uri }}{% url 'event_feed' %}" 
+                   target="_blank" 
+                   class="text-decoration-none" 
+                   title="Add to Google Calendar (Android/Web)">Google Calendar</a>, 
+                <a href="https://outlook.live.com/calendar/0/addfromweb?url={{ request.build_absolute_uri }}{% url 'event_feed' %}" 
+                   target="_blank" 
+                   class="text-decoration-none" 
+                   title="Add to Microsoft 365 / Outlook Online">Outlook</a>, or 
+                <a href="{% url 'event_feed' %}" 
+                   class="text-decoration-none" 
+                   title="Download ICS file for other calendar apps">other apps</a>
+            </p>
         </div>
     </div>
 {% endblock %}

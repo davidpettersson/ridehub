@@ -66,6 +66,7 @@ body {
   color: rgba(255, 255, 255, 0.8);
 }
 
+
 /* Fix dropdown menu readability */
 .navbar-obc .dropdown-menu .dropdown-item {
   color: #212529 !important;
@@ -87,4 +88,24 @@ body {
 .event-card:hover {
   background-color: #f8f9fa;
   border-color: #6c757d;
+}
+
+/* Calendar day hover animations */
+.calendar-day {
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.calendar-day:hover {
+  background-color: #f8f9fa;
+}
+
+/* Calendar navigation button hover effects */
+.calendar-nav-btn {
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.calendar-nav-btn:hover {
+  background-color: #e9ecef !important;
+  transform: scale(1.05);
 }

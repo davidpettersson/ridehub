@@ -37,16 +37,16 @@
             </a>
             {% flag "calendar_view" %}
             {% if request.session.preferred_events_view == 'calendar' %}
-            <a href="{% url 'calendar' %}" class="text-white">
+            <a href="{% url 'calendar' %}" class="text-white{% if request.resolver_match.url_name == 'calendar' or request.resolver_match.url_name == 'calendar_month' %} active{% endif %}">
               Events
             </a>
             {% else %}
-            <a href="{% url 'event_list' %}" class="text-white">
+            <a href="{% url 'event_list' %}" class="text-white{% if request.resolver_match.url_name == 'event_list' %} active{% endif %}">
               Events
             </a>
             {% endif %}
             {% else %}
-            <a href="{% url 'event_list' %}" class="text-white">
+            <a href="{% url 'event_list' %}" class="text-white{% if request.resolver_match.url_name == 'event_list' %} active{% endif %}">
               Upcoming events
             </a>
             {% endflag %}
