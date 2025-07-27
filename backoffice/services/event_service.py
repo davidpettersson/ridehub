@@ -8,7 +8,10 @@ from backoffice.models import Event
 
 class EventService:
     def fetch_events(self, include_archived: bool = False, only_visible: bool = True) -> QuerySet[Event]:
-        filters = {'archived': include_archived}
+        filters = {}
+        
+        if not include_archived:
+            filters['archived'] = False
 
         if only_visible:
             filters['visible'] = True
@@ -25,7 +28,6 @@ class EventService:
         from datetime import date
         import calendar
         
-        # Get the first and last day of the month using calendar.monthrange
         first_day = date(year, month, 1)
         _, last_day_of_month = calendar.monthrange(year, month)
         last_day = date(year, month, last_day_of_month)
