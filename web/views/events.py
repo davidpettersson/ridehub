@@ -108,8 +108,14 @@ def _get_rides_with_riders_for_event(event_id: int) -> dict:
     return _finalize_rides_data(rides_data)
 
 
-def redirect_to_event_list(request: HttpRequest) -> HttpResponseRedirect:
-    return redirect('event_list')
+def events_redirect(request: HttpRequest) -> HttpResponseRedirect:
+    """Redirect to user's preferred events view or default to upcoming"""
+    preferred_view = request.session.get('preferred_events_view', 'upcoming')
+    
+    if preferred_view == 'calendar':
+        return redirect('calendar')
+    else:
+        return redirect('upcoming')
 
 
 def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
@@ -138,7 +144,7 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 
 def event_list(request: HttpRequest) -> HttpResponse:
     # Set preferred view in session
-    request.session['preferred_events_view'] = 'list'
+    request.session['preferred_events_view'] = 'upcoming'
     
     events = EventService().fetch_upcoming_events()
     starts_at_date = lambda event: event.starts_at.date()

@@ -32,24 +32,12 @@
       <div class="container">
         <div class="d-flex justify-content-between w-100" style="height: 64px;">
           <div class="d-flex align-items-center">
-            <a href="{% url 'event_list' %}" class="me-3">
+            <a href="{% url 'events' %}" class="me-3">
               <img src="{% static 'web/obc-logo.png' %}" alt="Ottawa Bicycle Club" height="40">
             </a>
-            {% flag "calendar_view" %}
-            {% if request.session.preferred_events_view == 'calendar' %}
-            <a href="{% url 'calendar' %}" class="text-white{% if request.resolver_match.url_name == 'calendar' or request.resolver_match.url_name == 'calendar_month' %} active{% endif %}">
+            <a href="{% url 'events' %}" class="text-white{% if request.resolver_match.url_name == 'calendar' or request.resolver_match.url_name == 'calendar_month' or request.resolver_match.url_name == 'upcoming' %} active{% endif %}">
               Events
             </a>
-            {% else %}
-            <a href="{% url 'event_list' %}" class="text-white{% if request.resolver_match.url_name == 'event_list' %} active{% endif %}">
-              Events
-            </a>
-            {% endif %}
-            {% else %}
-            <a href="{% url 'event_list' %}" class="text-white{% if request.resolver_match.url_name == 'event_list' %} active{% endif %}">
-              Upcoming events
-            </a>
-            {% endflag %}
           </div>
           <div class="d-flex align-items-center">
             {% if user.is_authenticated %}
