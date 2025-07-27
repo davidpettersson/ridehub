@@ -81,4 +81,4 @@ class CustomLoginView(SesameLoginView):
 
 def logout_view(request):
     logout(request)
-    return redirect('event_list')
+    return redirect('events')

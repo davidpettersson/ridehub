@@ -38,7 +38,7 @@ class LogoutViewTests(TestCase):
 
         response = self.client.get(self.logout_url)
 
-        self.assertRedirects(response, reverse('event_list'), fetch_redirect_response=False)
+        self.assertRedirects(response, reverse('events'), fetch_redirect_response=False)
 
     def test_logout_clears_authentication(self):
         self.client.login(username='testuser', password='password123')

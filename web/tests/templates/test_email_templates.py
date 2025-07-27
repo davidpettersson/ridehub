@@ -205,12 +205,12 @@ class TestEventCancelledEmail(BaseEmailTestCase):
         self.assert_all_links_absolute(html_content)
 
         # Verify events link exists and is absolute
-        events_url = f"{self.base_url}{reverse('event_list')}"
+        events_url = f"{self.base_url}{reverse('events')}"
         self.assertRegex(html_content, rf'href="{re.escape(events_url)}"')
 
     def test_text_version_has_absolute_urls(self):
         text_content = render_to_string('email/event_cancelled.txt', self.context)
 
         # Verify events URL is present
-        events_url = f"{self.base_url}{reverse('event_list')}"
+        events_url = f"{self.base_url}{reverse('events')}"
         self.assertIn(events_url, text_content)

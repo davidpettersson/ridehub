@@ -12,6 +12,6 @@ REASON FOR CANCELLATION:
 
 We apologize for any inconvenience this may cause.
 
-You can view other upcoming events at: {{ base_url }}{% url 'event_list' %}
+You can view other upcoming events at: {{ base_url }}{% url 'events' %}
 
 Ottawa Bicycle Club
