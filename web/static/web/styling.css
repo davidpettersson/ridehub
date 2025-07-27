@@ -88,3 +88,13 @@ body {
   background-color: #f8f9fa;
   border-color: #6c757d;
 }
+
+/* Calendar day hover animations */
+.calendar-day {
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.calendar-day:hover {
+  background-color: #f8f9fa;
+}
