@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
+from django.utils import timezone
 
 from backoffice.models import Event, Registration
 from backoffice.services.event_service import EventService
@@ -147,7 +148,7 @@ def event_list(request: HttpRequest) -> HttpResponse:
     request.session['preferred_events_view'] = 'upcoming'
     
     events = EventService().fetch_upcoming_events()
-    starts_at_date = lambda event: event.starts_at.date()
+    starts_at_date = lambda event: timezone.localtime(event.starts_at).date()
 
     events_by_date = [
         (date, list(events_on_date)) for date, events_on_date in groupby(events, key=starts_at_date)
@@ -232,10 +233,11 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
     # Get events for this month using EventService
     events = EventService().fetch_events_for_month(year, month)
     
-    # Group events by date
+    # Group events by date (convert to local timezone first)
     events_by_date = {}
     for event in events:
-        event_date = event.starts_at.date()
+        local_starts_at = timezone.localtime(event.starts_at)
+        event_date = local_starts_at.date()
         if event_date not in events_by_date:
             events_by_date[event_date] = []
         events_by_date[event_date].append(event)
