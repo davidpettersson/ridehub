@@ -1,5 +1,5 @@
-from datetime import timedelta, datetime
-import pytz
+from datetime import timedelta, datetime, date
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth.models import User
 from django.test import TestCase, Client
@@ -348,8 +348,7 @@ class EventViewTimezoneTests(TestCase):
         """Test that events are placed on correct calendar dates regardless of UTC vs local time."""
         # Create an event at 7 PM EST on 2025-11-24
         # This is midnight UTC on 2025-11-25, which was causing the issue
-        toronto_tz = pytz.timezone('America/Toronto')
-        local_datetime = toronto_tz.localize(datetime(2025, 11, 24, 19, 0))  # 7 PM EST
+        local_datetime = datetime(2025, 11, 24, 19, 0, tzinfo=ZoneInfo('America/Toronto'))  # 7 PM EST
         
         event = Event.objects.create(
             program=self.program,
@@ -369,13 +368,13 @@ class EventViewTimezoneTests(TestCase):
         events_by_date = response.context['events_by_date']
         
         # Check that the event is on the correct date (local date, not UTC date)
-        event_date = datetime.date(2025, 11, 24)
+        event_date = date(2025, 11, 24)
         self.assertIn(event_date, events_by_date)
         self.assertEqual(len(events_by_date[event_date]), 1)
         self.assertEqual(events_by_date[event_date][0].name, 'Evening Event')
         
         # Ensure it's NOT on November 25th (which would be the UTC date)
-        wrong_date = datetime.date(2025, 11, 25)
+        wrong_date = date(2025, 11, 25)
         if wrong_date in events_by_date:
             # If the date exists, it should not contain our evening event
             event_names = [e.name for e in events_by_date[wrong_date]]
@@ -383,11 +382,9 @@ class EventViewTimezoneTests(TestCase):
     
     def test_event_list_view_timezone_handling(self):
         """Test that events are grouped by correct dates in the event list view."""
-        toronto_tz = pytz.timezone('America/Toronto')
-        
         # Create two events: one in the evening of day 1, one in the morning of day 2
-        evening_datetime = toronto_tz.localize(datetime(2025, 11, 24, 19, 0))  # 7 PM EST Nov 24
-        morning_datetime = toronto_tz.localize(datetime(2025, 11, 25, 9, 0))   # 9 AM EST Nov 25
+        evening_datetime = datetime(2025, 11, 24, 19, 0, tzinfo=ZoneInfo('America/Toronto'))  # 7 PM EST Nov 24
+        morning_datetime = datetime(2025, 11, 25, 9, 0, tzinfo=ZoneInfo('America/Toronto'))   # 9 AM EST Nov 25
         
         evening_event = Event.objects.create(
             program=self.program,
@@ -419,10 +416,10 @@ class EventViewTimezoneTests(TestCase):
         # Verify each event is in the correct date group
         date_groups = dict(events_by_date)
         
-        nov_24_events = date_groups[datetime.date(2025, 11, 24)]
+        nov_24_events = date_groups[date(2025, 11, 24)]
         self.assertEqual(len(nov_24_events), 1)
         self.assertEqual(nov_24_events[0].name, 'Evening Event')
         
-        nov_25_events = date_groups[datetime.date(2025, 11, 25)]
+        nov_25_events = date_groups[date(2025, 11, 25)]
         self.assertEqual(len(nov_25_events), 1)
         self.assertEqual(nov_25_events[0].name, 'Morning Event')
