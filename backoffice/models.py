@@ -421,7 +421,7 @@ class Registration(models.Model):
     legacy_registration_id = models.CharField(
         max_length=255,
         blank=True,
-        help_text='Generated legacy identifier based on event ID, email and reigstration timestamp'
+        help_text='Generated legacy identifier based on event ID, email and registration timestamp'
     )
 
     @transition(field=state, source=STATE_SUBMITTED, target=STATE_CONFIRMED)
