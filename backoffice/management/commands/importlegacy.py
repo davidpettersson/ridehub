@@ -22,6 +22,12 @@ class ImportStats:
         self.registrations_created = 0
         self.registrations_existing = 0
 
+    def increment_total_rows(self):
+        self.total_rows += 1
+
+    def increment_skipped_rows(self):
+        self.skipped_rows += 1
+
     def increment_programs(self, created):
         if created:
             self.programs_created += 1
@@ -44,6 +50,51 @@ class ImportStats:
         else:
             self.registrations_existing += 1
 
+    def print_summary(self, stdout, dry_run):
+        from django.core.management.color import color_style
+        style = color_style()
+
+        stdout.write('')
+        stdout.write('=' * 60)
+        stdout.write(style.SUCCESS('Import Summary'))
+        stdout.write('=' * 60)
+        stdout.write('')
+        stdout.write(f'Total rows processed: {self.total_rows}')
+        stdout.write(f'Rows skipped (missing data): {self.skipped_rows}')
+        stdout.write('')
+
+        if self.programs_created > 0:
+            label = '[DRY RUN] Would create' if dry_run else 'Created'
+            stdout.write(f'{label} programs: {self.programs_created}')
+        stdout.write('')
+
+        if dry_run:
+            stdout.write(f'[DRY RUN] Would create events: {self.events_created}')
+            stdout.write(f'Events already exist: {self.events_existing}')
+            stdout.write('')
+            stdout.write(f'[DRY RUN] Would create users: {self.users_created}')
+            stdout.write(f'Users already exist: {self.users_existing}')
+            stdout.write('')
+            stdout.write(f'[DRY RUN] Would create registrations: {self.registrations_created}')
+            stdout.write(f'Registrations already exist: {self.registrations_existing}')
+        else:
+            stdout.write(f'Events created: {self.events_created}')
+            stdout.write(f'Events already exist: {self.events_existing}')
+            stdout.write('')
+            stdout.write(f'Users created: {self.users_created}')
+            stdout.write(f'Users already exist: {self.users_existing}')
+            stdout.write('')
+            stdout.write(f'Registrations created: {self.registrations_created}')
+            stdout.write(f'Registrations already exist: {self.registrations_existing}')
+
+        stdout.write('')
+        if dry_run:
+            stdout.write(style.NOTICE(
+                'This was a dry run. No changes were made to the database.'
+            ))
+        else:
+            stdout.write(style.SUCCESS('Import completed successfully!'))
+
 
 class ImportOperations:
     def __init__(self):
@@ -52,21 +103,29 @@ class ImportOperations:
         self.users = []
         self.user_profiles = []
         self.registrations = []
+        self.stats = ImportStats()
 
     def add_program(self, program):
         self.programs.append(program)
+        self.stats.increment_programs(True)
 
-    def add_event(self, event):
-        self.events.append(event)
+    def add_event(self, event, existing=False):
+        if not existing:
+            self.events.append(event)
+        self.stats.increment_events(not existing)
 
-    def add_user(self, user):
-        self.users.append(user)
+    def add_user(self, user, existing=False):
+        if not existing:
+            self.users.append(user)
+        self.stats.increment_users(not existing)
 
     def add_user_profile(self, profile):
         self.user_profiles.append(profile)
 
-    def add_registration(self, registration):
-        self.registrations.append(registration)
+    def add_registration(self, registration, existing=False):
+        if not existing:
+            self.registrations.append(registration)
+        self.stats.increment_registrations(not existing)
 
     def save_all(self):
         for program in self.programs:
@@ -110,7 +169,6 @@ class Command(BaseCommand):
         self.stdout.write('=' * 60)
         self.stdout.write('')
 
-        self.stats = ImportStats()
         self.operations = ImportOperations()
         self.program = None
         self.process_csv(csv_file_path)
@@ -138,16 +196,16 @@ class Command(BaseCommand):
                 self.stdout.write('')
 
             for row in csv_reader:
-                self.stats.total_rows += 1
+                self.operations.stats.increment_total_rows()
 
                 event = self.ensure_event(row, events_cache)
                 if not event:
-                    self.stats.skipped_rows += 1
+                    self.operations.stats.increment_skipped_rows()
                     continue
 
                 user = self.ensure_user(row, users_cache)
                 if not user:
-                    self.stats.skipped_rows += 1
+                    self.operations.stats.increment_skipped_rows()
                     continue
 
                 self.create_registration(row, event, user)
@@ -165,7 +223,6 @@ class Command(BaseCommand):
 
         self.program = Program(name=program_name)
         self.operations.add_program(self.program)
-        self.stats.increment_programs(True)
 
         if self.debug:
             label = '[DRY RUN] Would create' if self.dry_run else 'Creating'
@@ -200,7 +257,7 @@ class Command(BaseCommand):
 
         existing = Event.objects.filter(legacy_event_id=event_id).first()
         if existing:
-            self.stats.increment_events(False)
+            self.operations.add_event(existing, existing=True)
             events_cache[cache_key] = existing
             return existing
 
@@ -226,8 +283,7 @@ class Command(BaseCommand):
             archived=True,
             archived_at=timezone.now(),
         )
-        self.operations.add_event(event)
-        self.stats.increment_events(True)
+        self.operations.add_event(event, existing=False)
         events_cache[cache_key] = event
 
         if self.debug:
@@ -256,7 +312,7 @@ class Command(BaseCommand):
 
         existing = User.objects.filter(email=email).first()
         if existing:
-            self.stats.increment_users(False)
+            self.operations.add_user(existing, existing=True)
             users_cache[email] = existing
             return existing
 
@@ -273,7 +329,7 @@ class Command(BaseCommand):
             last_name=last_name,
         )
         user.set_unusable_password()
-        self.operations.add_user(user)
+        self.operations.add_user(user, existing=False)
 
         profile = UserProfile(
             user=user,
@@ -282,7 +338,6 @@ class Command(BaseCommand):
         )
         self.operations.add_user_profile(profile)
 
-        self.stats.increment_users(True)
         users_cache[email] = user
 
         if self.debug:
@@ -316,7 +371,7 @@ class Command(BaseCommand):
             legacy_registration_id=legacy_reg_id
         ).first()
         if existing_registration:
-            self.stats.increment_registrations(False)
+            self.operations.add_registration(existing_registration, existing=True)
             if self.debug:
                 event_name = event.name if hasattr(event, 'name') else event_id
                 self.stdout.write(
@@ -340,8 +395,7 @@ class Command(BaseCommand):
             legacy=True,
             legacy_registration_id=legacy_reg_id,
         )
-        self.operations.add_registration(registration)
-        self.stats.increment_registrations(True)
+        self.operations.add_registration(registration, existing=False)
 
         if self.debug:
             label = '[DRY RUN] Would create' if self.dry_run else 'Creating'
@@ -355,43 +409,4 @@ class Command(BaseCommand):
         return hashlib.sha256(composite_key.encode()).hexdigest()
 
     def print_summary(self):
-        self.stdout.write('')
-        self.stdout.write('=' * 60)
-        self.stdout.write(self.style.SUCCESS('Import Summary'))
-        self.stdout.write('=' * 60)
-        self.stdout.write('')
-        self.stdout.write(f'Total rows processed: {self.stats.total_rows}')
-        self.stdout.write(f'Rows skipped (missing data): {self.stats.skipped_rows}')
-        self.stdout.write('')
-
-        if self.stats.programs_created > 0:
-            label = '[DRY RUN] Would create' if self.dry_run else 'Created'
-            self.stdout.write(f'{label} programs: {self.stats.programs_created}')
-        self.stdout.write('')
-
-        if self.dry_run:
-            self.stdout.write(f'[DRY RUN] Would create events: {self.stats.events_created}')
-            self.stdout.write(f'Events already exist: {self.stats.events_existing}')
-            self.stdout.write('')
-            self.stdout.write(f'[DRY RUN] Would create users: {self.stats.users_created}')
-            self.stdout.write(f'Users already exist: {self.stats.users_existing}')
-            self.stdout.write('')
-            self.stdout.write(f'[DRY RUN] Would create registrations: {self.stats.registrations_created}')
-            self.stdout.write(f'Registrations already exist: {self.stats.registrations_existing}')
-        else:
-            self.stdout.write(f'Events created: {self.stats.events_created}')
-            self.stdout.write(f'Events already exist: {self.stats.events_existing}')
-            self.stdout.write('')
-            self.stdout.write(f'Users created: {self.stats.users_created}')
-            self.stdout.write(f'Users already exist: {self.stats.users_existing}')
-            self.stdout.write('')
-            self.stdout.write(f'Registrations created: {self.stats.registrations_created}')
-            self.stdout.write(f'Registrations already exist: {self.stats.registrations_existing}')
-
-        self.stdout.write('')
-        if self.dry_run:
-            self.stdout.write(self.style.NOTICE(
-                'This was a dry run. No changes were made to the database.'
-            ))
-        else:
-            self.stdout.write(self.style.SUCCESS('Import completed successfully!'))
+        self.operations.stats.print_summary(self.stdout, self.dry_run)
