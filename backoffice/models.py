@@ -135,6 +135,17 @@ class Event(models.Model):
         help_text='When set, members will be able to reach out to the organizer at this email.'
     )
 
+    legacy = models.BooleanField(
+        default=False,
+        help_text='Indicates that this is a legacy event imported from WebScorer'
+    )
+
+    legacy_event_id = models.CharField(
+        max_length=32,
+        blank=True,
+        help_text='Original WebScorer event ID for legacy imports'
+    )
+
     @property
     def duration(self) -> timedelta:
         if self.ends_at:
@@ -297,6 +308,11 @@ class UserProfile(models.Model):
         blank=True
     )
 
+    legacy = models.BooleanField(
+        default=False,
+        help_text='Indicates that this is a legacy profile imported from WebScorer'
+    )
+
     def __str__(self):
         return str(self.user)
 
@@ -375,6 +391,17 @@ class Registration(models.Model):
         on_delete=models.PROTECT,
         null=True,
         blank=True
+    )
+
+    legacy = models.BooleanField(
+        default=False,
+        help_text='Indicates that this is a legacy event imported from WebScorer'
+    )
+
+    legacy_registration_id = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text='Generated legacy identifier based on event ID, email and reigstration timestamp'
     )
 
     @transition(field=state, source=STATE_SUBMITTED, target=STATE_CONFIRMED)
