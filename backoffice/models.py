@@ -135,6 +135,17 @@ class Event(models.Model):
         help_text='When set, members will be able to reach out to the organizer at this email.'
     )
 
+    legacy = models.BooleanField(
+        default=False,
+        help_text='Indicates that this is a legacy event imported from WebScorer'
+    )
+
+    legacy_event_id = models.CharField(
+        max_length=32,
+        blank=True,
+        help_text='Original WebScorer event ID for legacy imports'
+    )
+
     @property
     def duration(self) -> timedelta:
         if self.ends_at:
@@ -287,6 +298,13 @@ class Ride(models.Model):
 
 
 class UserProfile(models.Model):
+    class GenderIdentity(models.TextChoices):
+        WOMAN = 'wm', 'woman'
+        MAN = 'mn', 'man'
+        PREFER_NOT_TO_SAY = 'pn', 'prefer not to say'
+        SELF_DESCRIBED = 'sd', 'self-described'
+        NOT_PROVIDED = 'np', 'not provided'
+
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
@@ -295,6 +313,24 @@ class UserProfile(models.Model):
 
     phone = PhoneNumberField(
         blank=True
+    )
+
+    gender_identity = models.CharField(
+        max_length=2,
+        choices=GenderIdentity,
+        default=GenderIdentity.NOT_PROVIDED,
+    )
+
+    self_described_gender_identity = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text='Self-described gender identity',
+    )
+
+    legacy = models.BooleanField(
+        default=False,
+        help_text='Indicates that this is a legacy profile imported from WebScorer'
     )
 
     def __str__(self):
@@ -375,6 +411,17 @@ class Registration(models.Model):
         on_delete=models.PROTECT,
         null=True,
         blank=True
+    )
+
+    legacy = models.BooleanField(
+        default=False,
+        help_text='Indicates that this is a legacy registration imported from WebScorer'
+    )
+
+    legacy_registration_id = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text='Generated legacy identifier based on event ID, email and registration timestamp'
     )
 
     @transition(field=state, source=STATE_SUBMITTED, target=STATE_CONFIRMED)
