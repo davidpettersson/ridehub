@@ -298,6 +298,14 @@ class Ride(models.Model):
 
 
 class UserProfile(models.Model):
+    class GenderIdentity(models.TextChoices):
+        WOMAN = 'wm', 'woman'
+        MAN = 'mn', 'man'
+        NON_BINARY = 'nb', 'non-binary'
+        TWO_SPIRIT = 'ts', 'two-spirit'
+        PREFER_NOT_TO_SAY = 'pn', 'prefer not to say'
+        NOT_PROVIDED = 'np', 'not provided'
+
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
@@ -306,6 +314,12 @@ class UserProfile(models.Model):
 
     phone = PhoneNumberField(
         blank=True
+    )
+
+    gender_identity = models.CharField(
+        max_length=2,
+        choices=GenderIdentity,
+        default=GenderIdentity.NOT_PROVIDED
     )
 
     legacy = models.BooleanField(
