@@ -2,10 +2,11 @@ import csv
 import hashlib
 import os
 from datetime import datetime
+
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
-from django.db import transaction
 from django.utils import timezone
+
 from backoffice.models import Event, Program, Registration, UserProfile
 
 
@@ -86,7 +87,7 @@ class Command(BaseCommand):
         return stats
 
     def ensure_program(self, stats):
-        program_name = 'Legacy Events'
+        program_name = 'Legacy'
 
         if not self.dry_run:
             program, created = Program.objects.get_or_create(name=program_name)
