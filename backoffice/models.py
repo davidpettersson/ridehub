@@ -415,7 +415,7 @@ class Registration(models.Model):
 
     legacy = models.BooleanField(
         default=False,
-        help_text='Indicates that this is a legacy event imported from WebScorer'
+        help_text='Indicates that this is a legacy registration imported from WebScorer'
     )
 
     legacy_registration_id = models.CharField(
