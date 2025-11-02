@@ -301,9 +301,8 @@ class UserProfile(models.Model):
     class GenderIdentity(models.TextChoices):
         WOMAN = 'wm', 'woman'
         MAN = 'mn', 'man'
-        NON_BINARY = 'nb', 'non-binary'
-        TWO_SPIRIT = 'ts', 'two-spirit'
         PREFER_NOT_TO_SAY = 'pn', 'prefer not to say'
+        SELF_DESCRIBED = 'sd', 'self-described'
         NOT_PROVIDED = 'np', 'not provided'
 
     user = models.OneToOneField(
@@ -319,7 +318,14 @@ class UserProfile(models.Model):
     gender_identity = models.CharField(
         max_length=2,
         choices=GenderIdentity,
-        default=GenderIdentity.NOT_PROVIDED
+        default=GenderIdentity.NOT_PROVIDED,
+    )
+
+    self_described_gender_identity = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text='Self-described gender identity',
     )
 
     legacy = models.BooleanField(
