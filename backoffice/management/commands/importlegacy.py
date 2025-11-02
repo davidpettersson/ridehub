@@ -101,7 +101,7 @@ class ImportOperations:
         self.programs = []
         self.events = []
         self.users = []
-        self.user_profiles = []
+        self.user_profile_data = []
         self.registrations = []
         self.stats = ImportStats()
 
@@ -119,8 +119,8 @@ class ImportOperations:
             self.users.append(user)
         self.stats.increment_users(not existing)
 
-    def add_user_profile(self, profile):
-        self.user_profiles.append(profile)
+    def add_user_profile_data(self, user, profile_data):
+        self.user_profile_data.append((user, profile_data))
 
     def add_registration(self, registration, existing=False):
         if not existing:
@@ -134,7 +134,10 @@ class ImportOperations:
             event.save()
         for user in self.users:
             user.save()
-        for profile in self.user_profiles:
+        for user, profile_data in self.user_profile_data:
+            profile = user.profile
+            for key, value in profile_data.items():
+                setattr(profile, key, value)
             profile.save()
         for registration in self.registrations:
             registration.save()
@@ -299,6 +302,7 @@ class Command(BaseCommand):
         first_name = row.get('First name', '').strip()
         last_name = row.get('Last name', '').strip()
         phone = row.get('Phone #', '').strip()
+        gender = row.get('Gender', '').strip()
 
         if not email or not first_name or not last_name:
             if self.debug:
@@ -331,12 +335,13 @@ class Command(BaseCommand):
         user.set_unusable_password()
         self.operations.add_user(user, existing=False)
 
-        profile = UserProfile(
-            user=user,
-            phone=phone,
-            legacy=True,
-        )
-        self.operations.add_user_profile(profile)
+        gender_identity = self.parse_gender(gender)
+        profile_data = {
+            'phone': phone,
+            'gender_identity': gender_identity,
+            'legacy': True,
+        }
+        self.operations.add_user_profile_data(user, profile_data)
 
         users_cache[email] = user
 
@@ -379,6 +384,8 @@ class Command(BaseCommand):
                 )
             return
 
+        ride_leader_preference = self.parse_ride_leader(row)
+
         registration = Registration(
             name=name,
             first_name=first_name,
@@ -389,6 +396,7 @@ class Command(BaseCommand):
             user=user,
             emergency_contact_name=emergency_contact_name,
             emergency_contact_phone=emergency_contact_phone,
+            ride_leader_preference=ride_leader_preference,
             state=Registration.STATE_CONFIRMED,
             submitted_at=submitted_at,
             confirmed_at=submitted_at,
@@ -407,6 +415,38 @@ class Command(BaseCommand):
     def generate_legacy_registration_id(self, event_id, email, submitted_at):
         composite_key = f"{event_id}_{email}_{submitted_at.isoformat()}"
         return hashlib.sha256(composite_key.encode()).hexdigest()
+
+    def parse_gender(self, gender):
+        gender_lower = gender.lower()
+        if 'female' in gender_lower or 'woman' in gender_lower:
+            return UserProfile.GenderIdentity.WOMAN
+        elif 'male' in gender_lower or 'man' in gender_lower:
+            return UserProfile.GenderIdentity.MAN
+        else:
+            return UserProfile.GenderIdentity.NOT_PROVIDED
+
+    def parse_ride_leader(self, row):
+        wave = row.get('Wave', '').strip().lower()
+        if wave:
+            if 'lead' in wave or 'leader' in wave:
+                return Registration.RideLeaderPreference.YES
+            elif 'ride in' in wave or 'rider in' in wave or 'follow' in wave:
+                return Registration.RideLeaderPreference.NO
+
+        ride_leader_columns = [
+            'Ride leader',
+            'Are you willing to  be a ride leader?',
+            'Are you willing to be a ride leader?',
+        ]
+
+        for col_name in ride_leader_columns:
+            value = row.get(col_name, '').strip().upper()
+            if value in ['Y', 'YES']:
+                return Registration.RideLeaderPreference.YES
+            elif value in ['N', 'NO']:
+                return Registration.RideLeaderPreference.NO
+
+        return Registration.RideLeaderPreference.NOT_APPLICABLE
 
     def print_summary(self):
         self.operations.stats.print_summary(self.stdout, self.dry_run)
