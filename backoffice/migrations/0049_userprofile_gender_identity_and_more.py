@@ -18,6 +18,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='registration',
             name='legacy_registration_id',
-            field=models.CharField(blank=True, help_text='Generated legacy identifier based on event ID, email and reigstration timestamp', max_length=255),
+            field=models.CharField(blank=True, help_text='Generated legacy identifier based on event ID, email and registration timestamp', max_length=255),
         ),
     ]
