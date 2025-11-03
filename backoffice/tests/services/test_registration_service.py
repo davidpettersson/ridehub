@@ -619,3 +619,396 @@ class RegistrationServiceEmailTests(TestCase):
         text_body = email.body
         self.assertIn(expected_profile_url, text_body)
         self.assertIn(expected_riders_list_url, text_body)
+
+
+class FetchPastRegistrationsTestCase(TestCase):
+    def setUp(self):
+        self.service = RegistrationService()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='password'
+        )
+        self.program = Program.objects.create(
+            name="Test Program"
+        )
+        self.test_today_date = timezone.now().date()
+        self.noon_time = datetime.time(12, 0, 0)
+        self.test_today_datetime_noon = timezone.make_aware(
+            datetime.datetime.combine(self.test_today_date, self.noon_time)
+        )
+
+    def test_fetch_past_registrations(self):
+        past_event_1 = Event.objects.create(
+            name="Past Event 1",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=10),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=10),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=11)
+        )
+        reg_past_1 = Registration.objects.create(
+            user=self.user,
+            event=past_event_1,
+            name=self.user.username,
+            email=self.user.email
+        )
+
+        past_event_2 = Event.objects.create(
+            name="Past Event 2",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=6)
+        )
+        reg_past_2 = Registration.objects.create(
+            user=self.user,
+            event=past_event_2,
+            name=self.user.username,
+            email=self.user.email
+        )
+
+        future_event = Event.objects.create(
+            name="Future Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            ends_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            registration_closes_at=self.test_today_datetime_noon
+        )
+        Registration.objects.create(
+            user=self.user,
+            event=future_event,
+            name=self.user.username,
+            email=self.user.email
+        )
+
+        past_registrations = self.service.fetch_past_registrations(self.user)
+
+        self.assertEqual(len(past_registrations), 2)
+        self.assertIn(reg_past_1, past_registrations)
+        self.assertIn(reg_past_2, past_registrations)
+
+        self.assertEqual(past_registrations[0], reg_past_2)
+        self.assertEqual(past_registrations[1], reg_past_1)
+
+    def test_fetch_past_registrations_no_past_registrations(self):
+        new_user = User.objects.create_user(
+            username='newuser',
+            email='newuser@example.com',
+            password='password'
+        )
+
+        past_registrations = self.service.fetch_past_registrations(new_user)
+
+        self.assertEqual(len(past_registrations), 0)
+
+    def test_fetch_past_registrations_only_future_registrations(self):
+        future_event = Event.objects.create(
+            name="Future Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            ends_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            registration_closes_at=self.test_today_datetime_noon
+        )
+        Registration.objects.create(
+            user=self.user,
+            event=future_event,
+            name=self.user.username,
+            email=self.user.email
+        )
+
+        past_registrations = self.service.fetch_past_registrations(self.user)
+
+        self.assertEqual(len(past_registrations), 0)
+
+    def test_fetch_past_registrations_gets_latest_for_multiple_on_same_event(self):
+        past_event = Event.objects.create(
+            name="Past Event with Multiple Registrations",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=6)
+        )
+
+        Registration.objects.create(
+            user=self.user,
+            event=past_event,
+            name=self.user.username,
+            email=self.user.email
+        )
+
+        reg_newer = Registration.objects.create(
+            user=self.user,
+            event=past_event,
+            name=self.user.username,
+            email=self.user.email
+        )
+
+        past_registrations = self.service.fetch_past_registrations(self.user)
+
+        self.assertEqual(len(past_registrations), 1)
+        self.assertIn(reg_newer, past_registrations)
+
+        registrations_for_event = [reg for reg in past_registrations if reg.event == past_event]
+        self.assertEqual(len(registrations_for_event), 1)
+        self.assertEqual(registrations_for_event[0], reg_newer)
+
+    def test_fetch_past_registrations_other_user_not_shown(self):
+        past_event = Event.objects.create(
+            name="Past Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=6)
+        )
+        reg_self = Registration.objects.create(
+            user=self.user,
+            event=past_event,
+            name=self.user.username,
+            email=self.user.email
+        )
+
+        other_user = User.objects.create_user(
+            username='otheruser',
+            email='otheruser@example.com',
+            password='password'
+        )
+        reg_other = Registration.objects.create(
+            user=other_user,
+            event=past_event,
+            name=other_user.username,
+            email=other_user.email
+        )
+
+        past_registrations = self.service.fetch_past_registrations(self.user)
+
+        self.assertEqual(len(past_registrations), 1)
+        self.assertIn(reg_self, past_registrations)
+        self.assertNotIn(reg_other, past_registrations)
+
+        for reg in past_registrations:
+            self.assertEqual(reg.user, self.user)
+
+
+class FetchUserStatisticsTestCase(TestCase):
+    def setUp(self):
+        self.service = RegistrationService()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='password'
+        )
+        self.program = Program.objects.create(
+            name="Test Program"
+        )
+        self.test_today_date = timezone.now().date()
+        self.noon_time = datetime.time(12, 0, 0)
+        self.test_today_datetime_noon = timezone.make_aware(
+            datetime.datetime.combine(self.test_today_date, self.noon_time)
+        )
+
+    def test_fetch_user_statistics_no_registrations(self):
+        statistics = self.service.fetch_user_statistics(self.user)
+
+        self.assertEqual(statistics['total_events_attended'], 0)
+        self.assertEqual(statistics['times_as_ride_leader'], 0)
+
+    def test_fetch_user_statistics_with_confirmed_registrations(self):
+        past_event_1 = Event.objects.create(
+            name="Past Event 1",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=10),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=10),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=11)
+        )
+        reg_1 = Registration.objects.create(
+            user=self.user,
+            event=past_event_1,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg_1.confirm()
+        reg_1.save()
+
+        past_event_2 = Event.objects.create(
+            name="Past Event 2",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=6)
+        )
+        reg_2 = Registration.objects.create(
+            user=self.user,
+            event=past_event_2,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg_2.confirm()
+        reg_2.save()
+
+        statistics = self.service.fetch_user_statistics(self.user)
+
+        self.assertEqual(statistics['total_events_attended'], 2)
+        self.assertEqual(statistics['times_as_ride_leader'], 0)
+
+    def test_fetch_user_statistics_with_ride_leader_registrations(self):
+        past_event_1 = Event.objects.create(
+            name="Past Event 1",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=10),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=10),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=11)
+        )
+        reg_1 = Registration.objects.create(
+            user=self.user,
+            event=past_event_1,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED,
+            ride_leader_preference=Registration.RideLeaderPreference.YES
+        )
+        reg_1.confirm()
+        reg_1.save()
+
+        past_event_2 = Event.objects.create(
+            name="Past Event 2",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=6)
+        )
+        reg_2 = Registration.objects.create(
+            user=self.user,
+            event=past_event_2,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED,
+            ride_leader_preference=Registration.RideLeaderPreference.NO
+        )
+        reg_2.confirm()
+        reg_2.save()
+
+        past_event_3 = Event.objects.create(
+            name="Past Event 3",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=3),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=3),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=4)
+        )
+        reg_3 = Registration.objects.create(
+            user=self.user,
+            event=past_event_3,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED,
+            ride_leader_preference=Registration.RideLeaderPreference.YES
+        )
+        reg_3.confirm()
+        reg_3.save()
+
+        statistics = self.service.fetch_user_statistics(self.user)
+
+        self.assertEqual(statistics['total_events_attended'], 3)
+        self.assertEqual(statistics['times_as_ride_leader'], 2)
+
+    def test_fetch_user_statistics_excludes_future_events(self):
+        past_event = Event.objects.create(
+            name="Past Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=6)
+        )
+        reg_past = Registration.objects.create(
+            user=self.user,
+            event=past_event,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED,
+            ride_leader_preference=Registration.RideLeaderPreference.YES
+        )
+        reg_past.confirm()
+        reg_past.save()
+
+        future_event = Event.objects.create(
+            name="Future Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=5),
+            ends_at=self.test_today_datetime_noon + datetime.timedelta(days=5),
+            registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=4)
+        )
+        reg_future = Registration.objects.create(
+            user=self.user,
+            event=future_event,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED,
+            ride_leader_preference=Registration.RideLeaderPreference.YES
+        )
+        reg_future.confirm()
+        reg_future.save()
+
+        statistics = self.service.fetch_user_statistics(self.user)
+
+        self.assertEqual(statistics['total_events_attended'], 1)
+        self.assertEqual(statistics['times_as_ride_leader'], 1)
+
+    def test_fetch_user_statistics_only_counts_confirmed(self):
+        past_event_1 = Event.objects.create(
+            name="Past Event 1",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=10),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=10),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=11)
+        )
+        reg_confirmed = Registration.objects.create(
+            user=self.user,
+            event=past_event_1,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED,
+            ride_leader_preference=Registration.RideLeaderPreference.YES
+        )
+        reg_confirmed.confirm()
+        reg_confirmed.save()
+
+        past_event_2 = Event.objects.create(
+            name="Past Event 2",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=5),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=6)
+        )
+        reg_submitted = Registration.objects.create(
+            user=self.user,
+            event=past_event_2,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED,
+            ride_leader_preference=Registration.RideLeaderPreference.YES
+        )
+
+        past_event_3 = Event.objects.create(
+            name="Past Event 3",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon - datetime.timedelta(days=3),
+            ends_at=self.test_today_datetime_noon - datetime.timedelta(days=3),
+            registration_closes_at=self.test_today_datetime_noon - datetime.timedelta(days=4)
+        )
+        reg_withdrawn = Registration.objects.create(
+            user=self.user,
+            event=past_event_3,
+            name=self.user.username,
+            email=self.user.email,
+            state=Registration.STATE_SUBMITTED,
+            ride_leader_preference=Registration.RideLeaderPreference.YES
+        )
+        reg_withdrawn.confirm()
+        reg_withdrawn.withdraw()
+        reg_withdrawn.save()
+
+        statistics = self.service.fetch_user_statistics(self.user)
+
+        self.assertEqual(statistics['total_events_attended'], 1)
+        self.assertEqual(statistics['times_as_ride_leader'], 1)
