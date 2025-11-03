@@ -6,41 +6,68 @@
         <h1 class="fs-2 fw-bold mb-0">My profile</h1>
     </div>
     
-    <div class="card shadow-sm mb-4">
-        <div class="card-body p-4">
-            <h3 class="fs-5 fw-medium mb-3">Details on file</h3>
-            
-            <div class="mb-2">
-                <div class="d-flex align-items-center">
-                    <span class="fw-medium me-2">Name:</span>
-                    <span>{{ user.first_name }} {{ user.last_name }}</span>
+    <div class="row mb-4">
+        <div class="col-12 col-md-6 mb-4 mb-md-0">
+            <div class="card shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h3 class="fs-5 fw-medium mb-3">Details on file</h3>
+
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center">
+                            <span class="fw-medium me-2">Name:</span>
+                            <span>{{ user.first_name }} {{ user.last_name }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center">
+                            <span class="fw-medium me-2">Email:</span>
+                            <span>{{ user.email }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="fw-medium me-2">Phone:</span>
+                            <span>{% if user.profile.phone %}{{ user.profile.phone }}{% else %}Not provided{% endif %}</span>
+                        </div>
+                    </div>
+
+                    <div class="text-muted small">
+                        <p class="mb-0">These details are automatically updated when you register for events and will be prefilled to save you time.</p>
+                    </div>
                 </div>
             </div>
-            
-            <div class="mb-2">
-                <div class="d-flex align-items-center">
-                    <span class="fw-medium me-2">Email:</span>
-                    <span>{{ user.email }}</span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <h3 class="fs-5 fw-medium mb-3">My statistics</h3>
+
+                    <div class="row text-center flex-grow-1 align-items-center">
+                        <div class="col-6">
+                            <div class="display-4 fw-bold text-primary">{{ statistics.total_events_attended }}</div>
+                            <div class="small text-muted">Events attended</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="display-4 fw-bold text-primary">{{ statistics.times_as_ride_leader }}</div>
+                            <div class="small text-muted">Times as ride leader</div>
+                        </div>
+                    </div>
+
+                    <div class="text-muted small mt-3">
+                        <p class="mb-0">Ride counts are since the 2020 season when the club started using WebScorer.</p>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="mb-3">
-                <div class="d-flex align-items-center">
-                    <span class="fw-medium me-2">Phone:</span>
-                    <span>{% if user.profile.phone %}{{ user.profile.phone }}{% else %}Not provided{% endif %}</span>
-                </div>
-            </div>
-            
-            <div class="text-muted small">
-                <p class="mb-0">These details are automatically updated when you register for events and will be prefilled to save you time.</p>
             </div>
         </div>
     </div>
     
     <div class="card shadow-sm mb-4">
         <div class="card-body p-4">
-            <h2 class="fs-4 fw-medium mb-3">My current registrations</h2>
-            <p class="text-muted small mb-4">If something is wrong with your registration, simply withdraw and register again. Only current registrations are shown here. Note that registrations using external systems won't appear here.</p>
+            <h2 class="fs-4 fw-medium mb-3">Current registrations</h2>
+            <p class="text-muted small mb-3">If something is wrong with your registration, simply withdraw and register again. Only current registrations are shown here. Note that registrations using external systems won't appear here.</p>
             
             {% if registrations %}
                 <!-- Mobile view (card-based layout) -->
@@ -179,12 +206,96 @@
                     </table>
                 </div>
             {% else %}
-                <div class="text-center py-5">
-                    <p class="text-muted">You haven't registered for any events yet.</p>
-                    <a href="{% url 'events' %}" class="btn btn-primary mt-3 d-inline-flex align-items-center">
-                        <i class="bi bi-calendar-event me-2"></i>
-                        Browse Events
+                <div class="py-2">
+                    <p class="text-muted mb-3">You haven't registered for any events yet.</p>
+                    <a href="{% url 'events' %}" class="btn btn-primary d-inline-flex align-items-center">
+                        Find event
                     </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h2 class="fs-4 fw-medium mb-3">Past registrations</h2>
+            <p class="text-muted small mb-4">Your registration history for events that have ended. Includes events from WebScorer dating back to 2020.</p>
+
+            {% if past_registrations %}
+                <!-- Mobile view (card-based layout) -->
+                <div class="d-md-none">
+                    {% for registration in past_registrations %}
+                        <div class="card mb-3">
+                            <div class="card-body p-3">
+                                <div class="d-flex flex-column">
+                                    <h3 class="fs-6 fw-medium mb-2">
+                                        <a href="{% url 'event_detail' registration.event.id %}" class="text-decoration-none">
+                                            {{ registration.event.name }}
+                                        </a>
+                                        {% if registration.ride_leader_preference == 'y' %}
+                                            <span class="badge bg-primary ms-2">Ride leader</span>
+                                        {% endif %}
+                                    </h3>
+
+                                    <div class="small mb-2">
+                                        <div class="row mb-1">
+                                            <div class="col-4 fw-medium">Date:</div>
+                                            <div class="col-8 text-muted" style="white-space: nowrap;">
+                                                {{ registration.event.starts_at|date:"M j, Y" }}
+                                            </div>
+                                        </div>
+                                        {% if registration.event.has_rides %}
+                                        <div class="row mb-1">
+                                            <div class="col-4 fw-medium">Ride:</div>
+                                            <div class="col-8 text-muted">{{ registration.ride|default:"Not specified" }}</div>
+                                        </div>
+                                        <div class="row mb-1">
+                                            <div class="col-4 fw-medium">Speed:</div>
+                                            <div class="col-8 text-muted">{{ registration.speed_range_preference|default:"Not specified" }}</div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Desktop view (table-based layout) -->
+                <div class="d-none d-md-block overflow-auto">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="small fw-medium">Date</th>
+                                <th scope="col" class="small fw-medium">Event</th>
+                                <th scope="col" class="small fw-medium">Ride</th>
+                                <th scope="col" class="small fw-medium">Speed group</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for registration in past_registrations %}
+                                <tr>
+                                    <td class="small text-muted" style="white-space: nowrap;">
+                                        {{ registration.event.starts_at|date:"M j, Y" }}
+                                    </td>
+                                    <td class="small">
+                                        <a href="{% url 'event_detail' registration.event.id %}" class="text-decoration-none fw-medium">
+                                            {{ registration.event.name }}
+                                        </a>
+                                        {% if registration.ride_leader_preference == 'y' %}
+                                            <span class="badge bg-primary ms-2">Ride leader</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small text-muted">{{ registration.ride|default:"—" }}</td>
+                                    <td class="small text-muted">{{ registration.speed_range_preference|default:"—" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <p class="text-muted">No past registrations found.</p>
                 </div>
             {% endif %}
         </div>
