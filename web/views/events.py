@@ -165,6 +165,7 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
     is_ride_leader = False
+
     if request.user.is_authenticated:
         is_ride_leader = Registration.objects.filter(
             event_id=event_id,
@@ -172,6 +173,8 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
             state=Registration.STATE_CONFIRMED,
             ride_leader_preference=Registration.RideLeaderPreference.YES
         ).exists()
+
+    can_access_rider_contacts = is_ride_leader or (request.user.is_authenticated and request.user.is_staff)
 
     all_riders = Registration.objects.filter(
         event_id=event_id,
@@ -187,10 +190,22 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
         'user__last_name'
     )
 
+    all_emails = ', '.join(sorted(set(
+        rider.email for rider in all_riders if rider.email
+    )))
+
+    ride_leader_emails = ', '.join(sorted(set(
+        rider.email for rider in all_riders
+        if rider.email and rider.ride_leader_preference == Registration.RideLeaderPreference.YES
+    )))
+
     context = {
         'event': event,
         'all_riders': all_riders,
-        'is_ride_leader': is_ride_leader
+        'is_ride_leader': is_ride_leader,
+        'can_access_rider_contacts': can_access_rider_contacts,
+        'all_emails': all_emails,
+        'ride_leader_emails': ride_leader_emails,
     }
 
     return render(request, 'web/events/registrations.html', context=context)

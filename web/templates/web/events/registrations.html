@@ -165,17 +165,17 @@
                     <i class="bi bi-calendar-event me-2"></i>
                     <span>{{ event.starts_at|date:"l, F j, Y" }}</span>
                 </div>
-                
+
                 <div class="d-inline-flex align-items-center text-muted">
                     <i class="bi bi-clock me-2"></i>
                     <span>{{ event.starts_at|date:"g:i A" }}</span>
                 </div>
-                
+
                 {% if event.location %}
                 <div class="d-inline-flex align-items-center text-muted">
                     <i class="bi bi-geo-alt me-2"></i>
                     {% if event.location_url %}
-                    <a href="{{ event.location_url }}" 
+                    <a href="{{ event.location_url }}"
                        class="text-primary d-flex align-items-center"
                        target="_blank" rel="noopener noreferrer">
                         {{ event.location }}
@@ -187,11 +187,33 @@
                 </div>
                 {% endif %}
             </div>
-            
+
             <!-- Global emergency button -->
         </div>
     </div>
-    
+
+    {% if can_access_rider_contacts %}
+    <div class="card shadow-sm p-4 mb-4 d-print-none">
+        <h5 class="fs-6 fw-bold mb-3">Copy Email Addresses</h5>
+        <div class="d-flex flex-column flex-sm-row gap-2">
+            <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center copy-emails-btn" data-emails="{{ all_emails }}" data-type="all">
+                <i class="bi bi-clipboard me-2"></i>
+                Copy all rider emails
+            </button>
+            {% if ride_leader_emails %}
+            <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center copy-emails-btn" data-emails="{{ ride_leader_emails }}" data-type="leaders">
+                <i class="bi bi-clipboard me-2"></i>
+                Copy ride leader emails
+            </button>
+            {% endif %}
+        </div>
+        <div id="copy-success-message" class="alert alert-success mt-3 mb-0 small d-none" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            <span id="copy-success-text"></span>
+        </div>
+    </div>
+    {% endif %}
+
     {% if all_riders %}
         <!-- Mobile view (card-based layout) -->
         <div class="d-md-none">
@@ -312,5 +334,37 @@
         </div>
     {% endif %}
 </div>
+
+{% if can_access_rider_contacts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const copyButtons = document.querySelectorAll('.copy-emails-btn');
+    const successMessage = document.getElementById('copy-success-message');
+    const successText = document.getElementById('copy-success-text');
+
+    copyButtons.forEach(button => {
+        button.addEventListener('click', async function() {
+            const emails = this.getAttribute('data-emails');
+            const type = this.getAttribute('data-type');
+
+            try {
+                await navigator.clipboard.writeText(emails);
+
+                const count = emails ? emails.split(',').length : 0;
+                const label = type === 'all' ? 'rider' : 'ride leader';
+                successText.textContent = `Copied ${count} ${label} email${count !== 1 ? 's' : ''} to clipboard!`;
+                successMessage.classList.remove('d-none');
+
+                setTimeout(() => {
+                    successMessage.classList.add('d-none');
+                }, 3000);
+            } catch (err) {
+                alert('Failed to copy emails. Please try again.');
+            }
+        });
+    });
+});
+</script>
+{% endif %}
 
 {% endblock %} 
