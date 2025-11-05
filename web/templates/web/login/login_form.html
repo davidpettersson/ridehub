@@ -18,7 +18,7 @@
             </div>
             {% else %}
             <div class="mb-4">
-                <p>Note: You must have registered for at least one ride to have an account.</p>
+                <p>Note: You must have registered for at least one ride in the past to have an account.</p>
             </div>
             <form action="{{ request.path }}" method="POST">
                 {% csrf_token %}
