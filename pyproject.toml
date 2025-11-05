@@ -1,0 +1,28 @@
+[project]
+name = "ridehub"
+version = "0.1.0"
+description = "RideHub"
+requires-python = ">=3.13"
+dependencies = [
+    "beartype~=0.20.0",
+    "behave-django~=1.5.0",
+    "celery~=5.4.0",
+    "dj-database-url~=2.3.0",
+    "django~=5.1.6",
+    "django-admin-sortable2~=2.2.6",
+    "django-celery-beat~=2.7.0",
+    "django-cotton~=2.0.0",
+    "django-fsm-2~=4.0.0",
+    "django-gravatar2~=1.4.5",
+    "django-ical~=1.9.2",
+    "django-phonenumber-field[phonenumberslite]~=8.1.0",
+    "django-prose-editor~=0.11.4",
+    "django-sesame~=3.2.2",
+    "django-waffle~=5.0.0",
+    "gunicorn~=23.0.0",
+    "psycopg~=3.2.5",
+    "redis~=5.2.1",
+    "returns~=0.25.0",
+    "sentry-sdk[django]~=2.30.0",
+    "whitenoise~=6.9.0",
+]
