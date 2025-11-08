@@ -25,11 +25,11 @@ wheels = [
 
 [[package]]
 name = "beartype"
-version = "0.20.2"
+version = "0.22.5"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8a/99/eaf0847301a6ca2042927c83f8cc72a29c153132ce49d9a720fe121440ba/beartype-0.20.2.tar.gz", hash = "sha256:38c60c065ad99364a8c767e8a0e71ba8263d467b91414ed5dcffb7758a2e8079", size = 1410390, upload-time = "2025-03-22T04:56:03.899Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a6/09/9003e5662691056e0e8b2e6f57c799e71875fac0be0e785d8cb11557cd2a/beartype-0.22.5.tar.gz", hash = "sha256:516a9096cc77103c96153474fa35c3ebcd9d36bd2ec8d0e3a43307ced0fa6341", size = 1586256, upload-time = "2025-11-01T05:49:20.771Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/78/05/536d025b3e17cf938f836665dde32e86f65ee76acd0ae14e22bda6aee274/beartype-0.20.2-py3-none-any.whl", hash = "sha256:5171a91ecf01438a59884f0cde37d2d5da2c992198b53d6ba31db3940f47ff04", size = 1161292, upload-time = "2025-03-22T04:56:01.77Z" },
+    { url = "https://files.pythonhosted.org/packages/f7/f6/073d19f7b571c08327fbba3f8e011578da67ab62a11f98911274ff80653f/beartype-0.22.5-py3-none-any.whl", hash = "sha256:d9743dd7cd6d193696eaa1e025f8a70fb09761c154675679ff236e61952dfba0", size = 1321700, upload-time = "2025-11-01T05:49:18.436Z" },
 ]
 
 [[package]]
@@ -64,16 +64,16 @@ wheels = [
 
 [[package]]
 name = "behave-django"
-version = "1.5.0"
+version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "behave" },
     { name = "django" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/be/17/f6ac6e7a78ff7180b9e5821b4a31bbc74b0a5473716e7287b1880248b5fd/behave_django-1.5.0.tar.gz", hash = "sha256:e1c4d7e02ad6343a862246fb20ed9f850aa678d61497aad378b67d9b659f3f59", size = 16102, upload-time = "2024-10-03T18:43:47.637Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ca/2d/0991fc8a6415833f47e6e7a195de6d2475a69e23299107c114c89ab8dab2/behave_django-1.6.0.tar.gz", hash = "sha256:189542fd45784a90c182ec300b1d8241bbe142bfd99df70f17d4b013e5a65861", size = 15802, upload-time = "2025-06-14T21:57:15.348Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c2/2e/d16641b62aa7c4f5275ac5817179a538f5284553d9f4a6de6b0d8b64c74b/behave_django-1.5.0-py3-none-any.whl", hash = "sha256:d1cbbd922000109733979863fdc3a947c52754e529d7255c21b1760828bdd4e5", size = 12393, upload-time = "2024-10-03T18:43:45.866Z" },
+    { url = "https://files.pythonhosted.org/packages/94/95/74e5731e792ce6ab3d92db6af6fc6132b9d65a516d161e97f97b041e137d/behave_django-1.6.0-py3-none-any.whl", hash = "sha256:df85a15ef97e80f30a1aa7c00903d66a057366a283f834fca8cc94dca23ff1cf", size = 12122, upload-time = "2025-06-14T21:57:14.083Z" },
 ]
 
 [[package]]
@@ -217,16 +217,16 @@ wheels = [
 
 [[package]]
 name = "django"
-version = "5.1.13"
+version = "5.1.14"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "asgiref" },
     { name = "sqlparse" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bb/57/ad9905d03a2ee39064ee7ba69f8e2790db4a7ffaef9c54f95e7a8f2cb0a1/django-5.1.13.tar.gz", hash = "sha256:543ff21679f15e80edfc01fe7ea35f8291b6d4ea589433882913626a7c1cf929", size = 10742756, upload-time = "2025-10-01T14:25:41.187Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6e/f9/284077f0e61f633e5279518a9ac5924ade4bef12bc841174ca48c57f2438/django-5.1.14.tar.gz", hash = "sha256:b98409fb31fdd6e8c3a6ba2eef3415cc5c0020057b43b21ba7af6eff5f014831", size = 10720998, upload-time = "2025-11-05T14:07:56.294Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/f2/4b39467b74de9bb698c95232011e97dc848f490baae8d78c2e58848c4562/django-5.1.13-py3-none-any.whl", hash = "sha256:06f257f79dc4c17f3f9e23b106a4c5ed1335abecbe731e83c598c941d14fbeed", size = 8277515, upload-time = "2025-10-01T14:25:28.65Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/67/8839eb1d70b5688b7375dce24ccf216e6ab25ee9e6361f22973520d13cd4/django-5.1.14-py3-none-any.whl", hash = "sha256:2a4b9c20404fd1bf50aaaa5542a19d860594cba1354f688f642feb271b91df27", size = 8260068, upload-time = "2025-11-05T14:07:53.26Z" },
 ]
 
 [[package]]
@@ -336,15 +336,15 @@ phonenumberslite = [
 
 [[package]]
 name = "django-prose-editor"
-version = "0.11.4"
+version = "0.20.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "django-js-asset" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b2/8f/4d8dc58a67c90a871c23d4c5297eb2f3320ff25f9f77587f68bc7f30473d/django_prose_editor-0.11.4.tar.gz", hash = "sha256:1684a2624ff2851621a3bcab0e3bb6517509546a104d295d5dd4a33ea16ef218", size = 740407, upload-time = "2025-05-06T06:23:46.551Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/b7/83f7d7ca5b93f545bf89e68d7606d160afc44c798c4cd800f1564cab75f1/django_prose_editor-0.20.0.tar.gz", hash = "sha256:6876c6d8e56ed54734b08392ca9e1b723ff9051c7e790f638a46d0b1d76eeb2e", size = 709238, upload-time = "2025-11-04T20:36:33.341Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a2/88/687050aabd800766e9d2ae8acad45e73c61941afc552f73788e3a1fc19ad/django_prose_editor-0.11.4-py3-none-any.whl", hash = "sha256:1d3f7691ca1e9d9c6abbfea00162eb00443cd21d1b5c3f05567f361fd50c2cd6", size = 754091, upload-time = "2025-05-06T06:23:49.305Z" },
+    { url = "https://files.pythonhosted.org/packages/29/09/ac26b0a5f6a35a07f1f533af1788ca120a9979fb66064e41b3c88900f804/django_prose_editor-0.20.0-py3-none-any.whl", hash = "sha256:59d80e5f1f11143dff36fd4b20fe7d4bdb6ae4d3973481cc81e4b3060ffaa33f", size = 724853, upload-time = "2025-11-04T20:36:31.547Z" },
 ]
 
 [[package]]
@@ -572,40 +572,40 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "beartype", specifier = "~=0.20.0" },
-    { name = "behave-django", specifier = "~=1.5.0" },
+    { name = "beartype", specifier = "~=0.22.5" },
+    { name = "behave-django", specifier = "~=1.6.0" },
     { name = "celery", specifier = "~=5.4.0" },
     { name = "dj-database-url", specifier = "~=2.3.0" },
-    { name = "django", specifier = "~=5.1.6" },
-    { name = "django-admin-sortable2", specifier = "~=2.2.6" },
+    { name = "django", specifier = "~=5.1.14" },
+    { name = "django-admin-sortable2", specifier = "~=2.2.8" },
     { name = "django-celery-beat", specifier = "~=2.7.0" },
-    { name = "django-cotton", specifier = "~=2.0.0" },
+    { name = "django-cotton", specifier = "~=2.0.3" },
     { name = "django-fsm-2", specifier = "~=4.0.0" },
     { name = "django-gravatar2", specifier = "~=1.4.5" },
     { name = "django-ical", specifier = "~=1.9.2" },
     { name = "django-phonenumber-field", extras = ["phonenumberslite"], specifier = "~=8.1.0" },
-    { name = "django-prose-editor", specifier = "~=0.11.4" },
-    { name = "django-sesame", specifier = "~=3.2.2" },
+    { name = "django-prose-editor", specifier = "~=0.20.0" },
+    { name = "django-sesame", specifier = "~=3.2.3" },
     { name = "django-waffle", specifier = "~=5.0.0" },
     { name = "gunicorn", specifier = "~=23.0.0" },
-    { name = "psycopg", specifier = "~=3.2.5" },
+    { name = "psycopg", specifier = "~=3.2.12" },
     { name = "redis", specifier = "~=5.2.1" },
     { name = "returns", specifier = "~=0.25.0" },
-    { name = "sentry-sdk", extras = ["django"], specifier = "~=2.30.0" },
-    { name = "whitenoise", specifier = "~=6.9.0" },
+    { name = "sentry-sdk", extras = ["django"], specifier = "~=2.43.0" },
+    { name = "whitenoise", specifier = "~=6.11.0" },
 ]
 
 [[package]]
 name = "sentry-sdk"
-version = "2.30.0"
+version = "2.43.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/04/4c/af31e0201b48469786ddeb1bf6fd3dfa3a291cc613a0fe6a60163a7535f9/sentry_sdk-2.30.0.tar.gz", hash = "sha256:436369b02afef7430efb10300a344fb61a11fe6db41c2b11f41ee037d2dd7f45", size = 326767, upload-time = "2025-06-12T10:34:34.733Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b3/18/09875b4323b03ca9025bae7e6539797b27e4fc032998a466b4b9c3d24653/sentry_sdk-2.43.0.tar.gz", hash = "sha256:52ed6e251c5d2c084224d73efee56b007ef5c2d408a4a071270e82131d336e20", size = 368953, upload-time = "2025-10-29T11:26:08.156Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5a/99/31ac6faaae33ea698086692638f58d14f121162a8db0039e68e94135e7f1/sentry_sdk-2.30.0-py2.py3-none-any.whl", hash = "sha256:59391db1550662f746ea09b483806a631c3ae38d6340804a1a4c0605044f6877", size = 343149, upload-time = "2025-06-12T10:34:32.896Z" },
+    { url = "https://files.pythonhosted.org/packages/69/31/8228fa962f7fd8814d634e4ebece8780e2cdcfbdf0cd2e14d4a6861a7cd5/sentry_sdk-2.43.0-py2.py3-none-any.whl", hash = "sha256:4aacafcf1756ef066d359ae35030881917160ba7f6fc3ae11e0e58b09edc2d5d", size = 400997, upload-time = "2025-10-29T11:26:05.77Z" },
 ]
 
 [package.optional-dependencies]
@@ -687,9 +687,9 @@ wheels = [
 
 [[package]]
 name = "whitenoise"
-version = "6.9.0"
+version = "6.11.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b9/cf/c15c2f21aee6b22a9f6fc9be3f7e477e2442ec22848273db7f4eb73d6162/whitenoise-6.9.0.tar.gz", hash = "sha256:8c4a7c9d384694990c26f3047e118c691557481d624f069b7f7752a2f735d609", size = 25920, upload-time = "2025-02-06T22:16:34.957Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/95/8c81ec6b6ebcbf8aca2de7603070ccf37dbb873b03f20708e0f7c1664bc6/whitenoise-6.11.0.tar.gz", hash = "sha256:0f5bfce6061ae6611cd9396a8231e088722e4fc67bc13a111be74c738d99375f", size = 26432, upload-time = "2025-09-18T09:16:10.995Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/64/b2/2ce9263149fbde9701d352bda24ea1362c154e196d2fda2201f18fc585d7/whitenoise-6.9.0-py3-none-any.whl", hash = "sha256:c8a489049b7ee9889617bb4c274a153f3d979e8f51d2efd0f5b403caf41c57df", size = 20161, upload-time = "2025-02-06T22:16:32.589Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/e9/4366332f9295fe0647d7d3251ce18f5615fbcb12d02c79a26f8dba9221b3/whitenoise-6.11.0-py3-none-any.whl", hash = "sha256:b2aeb45950597236f53b5342b3121c5de69c8da0109362aee506ce88e022d258", size = 20197, upload-time = "2025-09-18T09:16:09.754Z" },
 ]
