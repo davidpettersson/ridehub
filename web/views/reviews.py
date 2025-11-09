@@ -59,6 +59,13 @@ def review_2025(request: HttpRequest) -> HttpResponse:
         programs_labels.append(program_name)
         programs_counts.append(program['event_count'])
 
+    locations_data = []
+    for location in stats['registrations_by_location']:
+        locations_data.append({
+            'location': location['event__location'],
+            'registrations': location['registration_count']
+        })
+
     context = {
         'stats': stats,
         'monthly_labels': json.dumps(monthly_labels),
@@ -70,6 +77,7 @@ def review_2025(request: HttpRequest) -> HttpResponse:
         'top_routes_details': json.dumps(top_routes_details),
         'programs_labels': json.dumps(programs_labels),
         'programs_counts': json.dumps(programs_counts),
+        'locations_data': json.dumps(locations_data),
     }
 
     return render(request, 'web/reviews/2025.html', context)

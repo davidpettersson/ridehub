@@ -43,6 +43,14 @@ class ReviewsService:
             .order_by('-registration_count')[:20]
         )
 
+        registrations_by_location = (
+            confirmed_registrations
+            .exclude(event__location='')
+            .values('event__location')
+            .annotate(registration_count=Count('id'))
+            .order_by('-registration_count')
+        )
+
         events_by_program = (
             events
             .values('program__name')
@@ -101,6 +109,7 @@ class ReviewsService:
             'total_distance': distance_data['total_distance'] or 0,
             'total_elevation': distance_data['total_elevation'] or 0,
             'top_routes': list(top_routes),
+            'registrations_by_location': list(registrations_by_location),
             'events_by_program': list(events_by_program),
             'monthly_data': list(monthly_data),
             'monthly_events_by_program': list(monthly_events_by_program),
