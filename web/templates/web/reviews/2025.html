@@ -30,6 +30,15 @@
         letter-spacing: -0.02em;
     }
 
+    .stat-card-1 { color: #0d6efd !important; }
+    .stat-card-2 { color: #0dcaf0 !important; }
+    .stat-card-3 { color: #20c997 !important; }
+    .stat-card-4 { color: #f09610 !important; }
+    .stat-card-5 { color: #ff6e14 !important; }
+    .stat-card-6 { color: #0db4fa !important; }
+    .stat-card-7 { color: #50c878 !important; }
+    .stat-card-8 { color: #dcaa28 !important; }
+
     @media (max-width: 768px) {
         .headline-title {
             font-size: 2.8rem;
@@ -50,7 +59,7 @@
         <div class="col-md-6 col-lg-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
-                    <div class="display-3 fw-bold text-primary mb-2">{{ stats.total_events }}</div>
+                    <div class="display-3 fw-bold stat-card-1 mb-2">{{ stats.total_events }}</div>
                     <h5 class="text-muted mb-0">Events held</h5>
                     <p class="text-muted small mb-0 mt-2">Excludes Youth events.</p>
                 </div>
@@ -60,7 +69,7 @@
         <div class="col-md-6 col-lg-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
-                    <div class="display-3 fw-bold text-success mb-2">{{ stats.total_registrations }}</div>
+                    <div class="display-3 fw-bold stat-card-2 mb-2">{{ stats.total_registrations }}</div>
                     <h5 class="text-muted mb-0">Total registrations</h5>
                     <p class="text-muted small mb-0 mt-2">Excludes Time Trial and Youth registrations.</p>
                 </div>
@@ -70,7 +79,7 @@
         <div class="col-md-6 col-lg-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
-                    <div class="display-3 fw-bold text-info mb-2">{{ stats.unique_participants }}</div>
+                    <div class="display-3 fw-bold stat-card-3 mb-2">{{ stats.unique_participants }}</div>
                     <h5 class="text-muted mb-0">Unique riders</h5>
                     <p class="text-muted small mb-0 mt-2">Distinct riders with confirmed registrations. Excludes Time Trial and Youth riders</p>
                 </div>
@@ -80,7 +89,7 @@
         <div class="col-md-6 col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
-                    <div class="display-3 fw-bold text-warning mb-2">{{ stats.total_distance|floatformat:0 }}</div>
+                    <div class="display-3 fw-bold stat-card-4 mb-2">{{ stats.total_distance|floatformat:0 }}</div>
                     <h5 class="text-muted mb-0">Total kilometers</h5>
                     <p class="text-muted small mb-0 mt-2">Confirmed registrations × route distance</p>
                 </div>
@@ -90,7 +99,7 @@
         <div class="col-md-6 col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
-                    <div class="display-3 fw-bold text-danger mb-2">{{ stats.total_elevation|floatformat:0 }}</div>
+                    <div class="display-3 fw-bold stat-card-5 mb-2">{{ stats.total_elevation|floatformat:0 }}</div>
                     <h5 class="text-muted mb-0">Total elevation gain (m)</h5>
                     <p class="text-muted small mb-0 mt-2">Confirmed registrations × route elevation gain</p>
                 </div>
@@ -108,7 +117,7 @@
             <div class="col-md-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-body text-center p-4">
-                        <div class="display-4 fw-bold text-success mb-2">{{ stats.total_ride_leaders }}</div>
+                        <div class="display-4 fw-bold stat-card-6 mb-2">{{ stats.total_ride_leaders }}</div>
                         <h5 class="text-muted mb-0">Total ride leaders</h5>
                         <p class="text-muted small mb-0 mt-2">Unique riders who volunteered as ride leaders at confirmed events</p>
                     </div>
@@ -118,7 +127,7 @@
             <div class="col-md-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-body text-center p-4">
-                        <div class="display-4 fw-bold text-info mb-2">{{ stats.total_ride_leader_slots }}</div>
+                        <div class="display-4 fw-bold stat-card-7 mb-2">{{ stats.total_ride_leader_slots }}</div>
                         <h5 class="text-muted mb-0">Times led</h5>
                         <p class="text-muted small mb-0 mt-2">Total number of ride leader slots filled across all events</p>
                     </div>
@@ -128,7 +137,7 @@
             <div class="col-md-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-body text-center p-4">
-                        <div class="display-4 fw-bold text-warning mb-2">{{ stats.dedicated_leaders }}</div>
+                        <div class="display-4 fw-bold stat-card-8 mb-2">{{ stats.dedicated_leaders }}</div>
                         <h5 class="text-muted mb-0">Dedicated leaders</h5>
                         <p class="text-muted small mb-0 mt-2">Riders who led 5 or more rides during the year</p>
                     </div>
