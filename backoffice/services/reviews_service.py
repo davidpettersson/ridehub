@@ -1,5 +1,5 @@
 from datetime import date
-from django.db.models import Count, Q, Sum, Avg
+from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
 
 from backoffice.models import Event, Registration, Route
@@ -40,7 +40,7 @@ class ReviewsService:
             .filter(ride__route__isnull=False)
             .values('ride__route__id', 'ride__route__name', 'ride__route__distance', 'ride__route__elevation_gain')
             .annotate(registration_count=Count('id'))
-            .order_by('-registration_count')[:5]
+            .order_by('-registration_count')[:20]
         )
 
         events_by_program = (
@@ -49,6 +49,24 @@ class ReviewsService:
             .annotate(event_count=Count('id'))
             .order_by('-event_count')
         )
+
+        monthly_events_by_program = (
+            events
+            .annotate(month=TruncMonth('starts_at'))
+            .values('month', 'program__name')
+            .annotate(event_count=Count('id'))
+            .order_by('month', 'program__name')
+        )
+
+        monthly_registrations_by_program = (
+            confirmed_registrations
+            .annotate(month=TruncMonth('event__starts_at'))
+            .values('month', 'event__program__name')
+            .annotate(registration_count=Count('id'))
+            .order_by('month', 'event__program__name')
+        )
+
+        all_months = events.annotate(month=TruncMonth('starts_at')).values_list('month', flat=True).distinct().order_by('month')
 
         monthly_data = (
             events
@@ -76,13 +94,6 @@ class ReviewsService:
             .count()
         )
 
-        avg_participants = events.annotate(
-            participant_count=Count('registration', filter=Q(registration__state=Registration.STATE_CONFIRMED))
-        ).aggregate(avg=Avg('participant_count'))['avg'] or 0
-
-        most_active_month_data = max(monthly_data, key=lambda x: x['registration_count'], default=None)
-        most_active_month = most_active_month_data['month'].strftime('%B') if most_active_month_data else 'N/A'
-
         return {
             'total_events': total_events,
             'total_registrations': total_registrations,
@@ -92,9 +103,10 @@ class ReviewsService:
             'top_routes': list(top_routes),
             'events_by_program': list(events_by_program),
             'monthly_data': list(monthly_data),
+            'monthly_events_by_program': list(monthly_events_by_program),
+            'monthly_registrations_by_program': list(monthly_registrations_by_program),
+            'all_months': list(all_months),
             'total_ride_leaders': total_ride_leaders,
             'total_ride_leader_slots': total_ride_leader_slots,
             'dedicated_leaders': dedicated_leaders,
-            'avg_participants': round(avg_participants, 1),
-            'most_active_month': most_active_month,
         }
