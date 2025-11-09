@@ -10,13 +10,15 @@
     </div>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">The big numbers</h2>
+        <h2 class="h3 fw-bold mb-4 text-center">The big numbers</h2>
+        <p class="lead text-center m-4">We had another strong year riding together! The Youth Programs numbers are not included here, but adds another 230+ unique riders participating in road, mountain bike, cyclocross and track events.</p>
         <div class="row g-4 mb-3">
         <div class="col-md-6 col-lg-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-primary mb-2">{{ stats.total_events }}</div>
                     <h5 class="text-muted mb-0">Events held</h5>
+                    <p class="text-muted small mb-0 mt-2">Excludes Youth events.</p>
                 </div>
             </div>
         </div>
@@ -26,6 +28,7 @@
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-success mb-2">{{ stats.total_registrations }}</div>
                     <h5 class="text-muted mb-0">Total registrations</h5>
+                    <p class="text-muted small mb-0 mt-2">Excludes Time Trial and Youth registrations.</p>
                 </div>
             </div>
         </div>
@@ -35,6 +38,7 @@
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-info mb-2">{{ stats.unique_participants }}</div>
                     <h5 class="text-muted mb-0">Unique riders</h5>
+                    <p class="text-muted small mb-0 mt-2">Distinct riders with confirmed registrations. Excludes Time Trial and Youth riders</p>
                 </div>
             </div>
         </div>
@@ -44,6 +48,7 @@
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-warning mb-2">{{ stats.total_distance|floatformat:0 }}</div>
                     <h5 class="text-muted mb-0">Total kilometers</h5>
+                    <p class="text-muted small mb-0 mt-2">Confirmed registrations × route distance</p>
                 </div>
             </div>
         </div>
@@ -53,28 +58,25 @@
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-danger mb-2">{{ stats.total_elevation|floatformat:0 }}</div>
                     <h5 class="text-muted mb-0">Total elevation gain (m)</h5>
+                    <p class="text-muted small mb-0 mt-2">Confirmed registrations × route elevation gain</p>
                 </div>
             </div>
         </div>
-
-        <div class="alert alert-light border mt-3">
-            <strong>How we calculated:</strong>
-            <ul class="mb-0 small">
-                <li><strong>Total Kilometers:</strong> Sum of all confirmed registrations × route distance</li>
-                <li><strong>Total Elevation Gain:</strong> Sum of all confirmed registrations × route elevation gain</li>
-                <li><strong>Unique Riders:</strong> Count of distinct participants with confirmed registrations</li>
-            </ul>
         </div>
     </section>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Ride leader recognition</h2>
+        <h2 class="h3 fw-bold mb-4 text-center">Ride leader recognition</h2>
+        <p class="lead text-center mb-4">Our ride leaders, coaches and ride coordinators make every event possible.
+                {{ stats.total_ride_leaders }} riders stepped up to lead rides throughout 2025. Our Youth Program engages 50+ coaches.
+                Thank you for your time!</p>
         <div class="row g-4 mb-3">
             <div class="col-md-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-body text-center p-4">
                         <div class="display-4 fw-bold text-success mb-2">{{ stats.total_ride_leaders }}</div>
                         <h5 class="text-muted mb-0">Total ride leaders</h5>
+                        <p class="text-muted small mb-0 mt-2">Unique riders who volunteered as ride leaders at confirmed events</p>
                     </div>
                 </div>
             </div>
@@ -84,6 +86,7 @@
                     <div class="card-body text-center p-4">
                         <div class="display-4 fw-bold text-info mb-2">{{ stats.total_ride_leader_slots }}</div>
                         <h5 class="text-muted mb-0">Times led</h5>
+                        <p class="text-muted small mb-0 mt-2">Total number of ride leader slots filled across all events</p>
                     </div>
                 </div>
             </div>
@@ -93,38 +96,23 @@
                     <div class="card-body text-center p-4">
                         <div class="display-4 fw-bold text-warning mb-2">{{ stats.dedicated_leaders }}</div>
                         <h5 class="text-muted mb-0">Dedicated leaders</h5>
-                        <p class="small text-muted mb-0">(5+ rides)</p>
+                        <p class="text-muted small mb-0 mt-2">Riders who led 5 or more rides during the year</p>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="alert alert-success border-success">
-            <p class="mb-0">
-                <strong>Thank you to our volunteers!</strong> Our ride leaders make every event possible.
-                {{ stats.total_ride_leaders }} riders stepped up to lead rides throughout 2025,
-                with {{ stats.dedicated_leaders }} dedicated leaders showing up week after week.
-            </p>
-        </div>
-
-        <div class="alert alert-light border mt-3">
-            <strong>How we calculated:</strong>
-            <ul class="mb-0 small">
-                <li><strong>Total Ride Leaders:</strong> Unique riders who volunteered as ride leaders at confirmed events</li>
-                <li><strong>Times Led:</strong> Total number of ride leader slots filled across all events</li>
-                <li><strong>Dedicated Leaders:</strong> Riders who led 5 or more rides during the year</li>
-            </ul>
-        </div>
     </section>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Monthly trends</h2>
+        <h2 class="h3 fw-bold mb-4 text-center">Monthly trends</h2>
+        <p class="lead text-center mb-4">As soon as the weather permitted end of April, the outdoor rides picked up and kept going strong throughout the summer. During the winter months, our indoor Zwift program keeps us all engaged. By the way, we are looking for a new social director to help arrange social events throughout the year. Interested? <a href="mailto:david.pettersson@ottawabicycleclub.ca">Send us an email!</a></p>
         <div class="row g-4 mb-3">
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
                         <h3 class="fs-5 fw-medium mb-3">Events by program</h3>
                         <canvas id="monthlyEventsChart"></canvas>
+                        <p class="text-muted small mb-0 mt-3">Number of events held each month, grouped by program type</p>
                     </div>
                 </div>
             </div>
@@ -133,62 +121,59 @@
                     <div class="card-body p-4">
                         <h3 class="fs-5 fw-medium mb-3">Registrations by program</h3>
                         <canvas id="monthlyRegistrationsChart"></canvas>
+                        <p class="text-muted small mb-0 mt-3">Number of confirmed registrations each month, grouped by program type</p>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="alert alert-light border mt-3">
-            <strong>How we calculated:</strong>
-            <ul class="mb-0 small">
-                <li><strong>Events by Program:</strong> Number of events held each month, grouped by program type</li>
-                <li><strong>Registrations by Program:</strong> Number of confirmed registrations each month, grouped by program type</li>
-            </ul>
-        </div>
     </section>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Popular routes</h2>
+        <h2 class="h3 fw-bold mb-4 text-center">Popular routes</h2>
+        <p class="lead text-center mb-4">Our ride coordinators are doing their very best to offer a diverse and interesting program for all members throughout the season. Thank you!</p>
         <div class="row g-4 mb-3">
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <h3 class="fs-5 fw-medium mb-3">Top 20 most popular routes</h3>
-                        <div style="height: 600px; position: relative;">
-                            <canvas id="routesChart"></canvas>
+                        <h3 class="fs-5 fw-medium mb-3">Most popular routes</h3>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover table-sm">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" class="d-none d-sm-table-cell">#</th>
+                                        <th scope="col">Route Name</th>
+                                        <th scope="col" class="text-end">Registrations</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="routesTableBody">
+                                </tbody>
+                            </table>
                         </div>
+                        <p class="text-muted small mb-0 mt-3">Popularity ranking based on number of confirmed registrations per route</p>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="alert alert-light border mt-3">
-            <strong>How we calculated:</strong>
-            <ul class="mb-0 small">
-                <li><strong>Popularity Ranking:</strong> Based on number of confirmed registrations per route</li>
-                <li><strong>Hover for details:</strong> See distance, elevation, and registration count for each route</li>
-            </ul>
-        </div>
-    </section>
-
-    <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Programs overview</h2>
-        <div class="row g-4 mb-3">
-            <div class="col-lg-6 mx-auto">
+            <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <canvas id="programsChart"></canvas>
+                        <h3 class="fs-5 fw-medium mb-3">Starting points</h3>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover table-sm">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" class="d-none d-sm-table-cell">#</th>
+                                        <th scope="col">Starting Point</th>
+                                        <th scope="col" class="text-end">Registrations</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="locationsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="text-muted small mb-0 mt-3">Number of confirmed registrations grouped by event location</p>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="alert alert-light border mt-3">
-            <strong>How we calculated:</strong>
-            <ul class="mb-0 small">
-                <li><strong>Distribution:</strong> Events grouped by program type, showing percentage breakdown</li>
-                <li><strong>Hover for details:</strong> See exact event count and percentage for each program</li>
-            </ul>
         </div>
     </section>
 </div>
@@ -204,6 +189,7 @@
     const topRoutesDetails = {{ top_routes_details|safe }};
     const programsLabels = {{ programs_labels|safe }};
     const programsCounts = {{ programs_counts|safe }};
+    const locationsData = {{ locations_data|safe }};
 
     const programColors = [
         { bg: 'rgba(13, 110, 253, 0.7)', border: 'rgba(13, 110, 253, 1)' },
@@ -214,9 +200,32 @@
         { bg: 'rgba(108, 117, 125, 0.7)', border: 'rgba(108, 117, 125, 1)' }
     ];
 
+    const filterMonthsWithData = (labels, dataByProgram) => {
+        const filteredIndices = [];
+        labels.forEach((label, index) => {
+            const hasData = Object.values(dataByProgram).some(programData => programData[index] > 0);
+            if (hasData) {
+                filteredIndices.push(index);
+            }
+        });
+
+        return {
+            labels: filteredIndices.map(i => labels[i]),
+            dataByProgram: Object.fromEntries(
+                Object.entries(dataByProgram).map(([program, data]) => [
+                    program,
+                    filteredIndices.map(i => data[i])
+                ])
+            )
+        };
+    };
+
+    const filteredEvents = filterMonthsWithData(monthlyLabels, eventsByProgramMonthly);
+    const filteredRegistrations = filterMonthsWithData(monthlyLabels, registrationsByProgramMonthly);
+
     const monthlyEventsDatasets = programs.map((program, index) => ({
         label: program,
-        data: eventsByProgramMonthly[program],
+        data: filteredEvents.dataByProgram[program],
         backgroundColor: programColors[index % programColors.length].bg,
         borderColor: programColors[index % programColors.length].border,
         borderWidth: 2
@@ -226,7 +235,7 @@
     new Chart(monthlyEventsCtx, {
         type: 'bar',
         data: {
-            labels: monthlyLabels,
+            labels: filteredEvents.labels,
             datasets: monthlyEventsDatasets
         },
         options: {
@@ -238,8 +247,7 @@
             },
             plugins: {
                 legend: {
-                    display: true,
-                    position: 'top',
+                    display: false,
                 },
                 tooltip: {
                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -275,7 +283,7 @@
 
     const monthlyRegistrationsDatasets = programs.map((program, index) => ({
         label: program,
-        data: registrationsByProgramMonthly[program],
+        data: filteredRegistrations.dataByProgram[program],
         backgroundColor: programColors[index % programColors.length].bg,
         borderColor: programColors[index % programColors.length].border,
         borderWidth: 2
@@ -285,7 +293,7 @@
     new Chart(monthlyRegistrationsCtx, {
         type: 'bar',
         data: {
-            labels: monthlyLabels,
+            labels: filteredRegistrations.labels,
             datasets: monthlyRegistrationsDatasets
         },
         options: {
@@ -297,8 +305,7 @@
             },
             plugins: {
                 legend: {
-                    display: true,
-                    position: 'top',
+                    display: false,
                 },
                 tooltip: {
                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -332,134 +339,26 @@
         }
     });
 
-    const routesCtx = document.getElementById('routesChart');
-    new Chart(routesCtx, {
-        type: 'bar',
-        data: {
-            labels: topRoutesLabels,
-            datasets: [{
-                label: 'Registrations',
-                data: topRoutesCounts,
-                backgroundColor: 'rgba(255, 193, 7, 0.7)',
-                borderColor: 'rgba(255, 193, 7, 1)',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
-                    cornerRadius: 8,
-                    titleFont: {
-                        size: 14,
-                        weight: 'bold'
-                    },
-                    bodyFont: {
-                        size: 13
-                    },
-                    callbacks: {
-                        title: function(context) {
-                            return topRoutesDetails[context[0].dataIndex].name;
-                        },
-                        label: function(context) {
-                            const details = topRoutesDetails[context.dataIndex];
-                            return [
-                                'Registrations: ' + details.registrations,
-                                'Distance: ' + details.distance.toFixed(1) + ' km',
-                                'Elevation: ' + details.elevation.toFixed(0) + ' m'
-                            ];
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                },
-                y: {
-                    ticks: {
-                        autoSkip: false,
-                        font: {
-                            size: 11
-                        }
-                    }
-                }
-            },
-            animation: false
-        }
+    const routesTableBody = document.getElementById('routesTableBody');
+    topRoutesDetails.forEach((route, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <th scope="row" class="d-none d-sm-table-cell">${index + 1}</th>
+            <td>${route.name}</td>
+            <td class="text-end"><strong>${route.registrations}</strong></td>
+        `;
+        routesTableBody.appendChild(row);
     });
 
-    const programsCtx = document.getElementById('programsChart');
-    new Chart(programsCtx, {
-        type: 'doughnut',
-        data: {
-            labels: programsLabels,
-            datasets: [{
-                data: programsCounts,
-                backgroundColor: [
-                    'rgba(13, 110, 253, 0.7)',
-                    'rgba(25, 135, 84, 0.7)',
-                    'rgba(255, 193, 7, 0.7)',
-                    'rgba(220, 53, 69, 0.7)',
-                    'rgba(13, 202, 240, 0.7)',
-                    'rgba(108, 117, 125, 0.7)'
-                ],
-                borderColor: [
-                    'rgba(13, 110, 253, 1)',
-                    'rgba(25, 135, 84, 1)',
-                    'rgba(255, 193, 7, 1)',
-                    'rgba(220, 53, 69, 1)',
-                    'rgba(13, 202, 240, 1)',
-                    'rgba(108, 117, 125, 1)'
-                ],
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
-                    cornerRadius: 8,
-                    titleFont: {
-                        size: 14,
-                        weight: 'bold'
-                    },
-                    bodyFont: {
-                        size: 13
-                    },
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return label + ': ' + value + ' events (' + percentage + '%)';
-                        }
-                    }
-                }
-            },
-            animation: {
-                duration: 1500,
-                easing: 'easeInOutQuart'
-            }
-        }
+    const locationsTableBody = document.getElementById('locationsTableBody');
+    locationsData.slice(0, 5).forEach((location, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <th scope="row" class="d-none d-sm-table-cell">${index + 1}</th>
+            <td>${location.location}</td>
+            <td class="text-end"><strong>${location.registrations}</strong></td>
+        `;
+        locationsTableBody.appendChild(row);
     });
 </script>
 {% endblock %}
