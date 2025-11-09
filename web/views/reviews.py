@@ -2,11 +2,11 @@ import json
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
-from backoffice.services.year_in_review_service import YearInReviewService
+from backoffice.services.reviews_service import ReviewsService
 
 
-def year_in_review_2025(request: HttpRequest) -> HttpResponse:
-    service = YearInReviewService()
+def review_2025(request: HttpRequest) -> HttpResponse:
+    service = ReviewsService()
     stats = service.fetch_2025_statistics()
 
     monthly_labels = []
@@ -50,4 +50,4 @@ def year_in_review_2025(request: HttpRequest) -> HttpResponse:
         'programs_counts': json.dumps(programs_counts),
     }
 
-    return render(request, 'web/year_in_review/2025.html', context)
+    return render(request, 'web/reviews/2025.html', context)

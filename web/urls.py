@@ -9,7 +9,7 @@ from web.views.login import LoginFormView, logout_view, CustomLoginView
 from web.views.profile import profile, registration_withdraw
 from web.views.registrations import registration_create, registration_detail, registration_submitted, registration_list
 from web.views.rides import ride_speed_ranges
-from web.views.year_in_review import year_in_review_2025
+from web.views.reviews import review_2025
 
 urlpatterns = [
     path("login/", LoginFormView.as_view(), name="login_form"),
@@ -33,6 +33,6 @@ urlpatterns = [
     path('registrations', registration_list, name='registration_list'),
     path('rides/<int:ride_id>/speed-ranges', ride_speed_ranges, name='get_speed_ranges'),
     path('profile', profile, name='profile'),
-    path('year-in-review/2025', year_in_review_2025, name='year_in_review_2025'),
+    path('reviews/2025', review_2025, name='review_2025'),
     path('', events_redirect, name='index'),
 ]
