@@ -1,0 +1,294 @@
+{% extends 'web/_base_bootstrap.html' %}
+
+{% block title %}Year in Review 2025 - RideHub{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="text-center mb-5">
+        <h1 class="display-3 fw-bold mb-3">🚴 2025 Year in Review</h1>
+        <p class="lead text-muted">A look back at an incredible year of riding together</p>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="display-3 fw-bold text-primary mb-2">{{ stats.total_events }}</div>
+                    <h5 class="text-muted mb-0">Events Held</h5>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="display-3 fw-bold text-success mb-2">{{ stats.total_registrations }}</div>
+                    <h5 class="text-muted mb-0">Total Registrations</h5>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="display-3 fw-bold text-info mb-2">{{ stats.unique_participants }}</div>
+                    <h5 class="text-muted mb-0">Unique Riders</h5>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="display-3 fw-bold text-warning mb-2">{{ stats.total_distance|floatformat:0 }}</div>
+                    <h5 class="text-muted mb-0">Total Kilometers</h5>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="display-3 fw-bold text-danger mb-2">{{ stats.total_elevation|floatformat:0 }}</div>
+                    <h5 class="text-muted mb-0">Total Elevation Gain (m)</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h3 class="fs-4 fw-medium mb-4">Monthly Activity</h3>
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h3 class="fs-4 fw-medium mb-4">Events by Program</h3>
+                    <canvas id="programsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h3 class="fs-4 fw-medium mb-4">Top 5 Most Popular Routes</h3>
+                    <canvas id="routesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const monthlyLabels = {{ monthly_labels|safe }};
+    const monthlyEvents = {{ monthly_events|safe }};
+    const monthlyRegistrations = {{ monthly_registrations|safe }};
+    const topRoutesLabels = {{ top_routes_labels|safe }};
+    const topRoutesCounts = {{ top_routes_counts|safe }};
+    const topRoutesDetails = {{ top_routes_details|safe }};
+    const programsLabels = {{ programs_labels|safe }};
+    const programsCounts = {{ programs_counts|safe }};
+
+    const monthlyCtx = document.getElementById('monthlyChart');
+    new Chart(monthlyCtx, {
+        type: 'bar',
+        data: {
+            labels: monthlyLabels,
+            datasets: [
+                {
+                    label: 'Events',
+                    data: monthlyEvents,
+                    backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    borderWidth: 2
+                },
+                {
+                    label: 'Registrations',
+                    data: monthlyRegistrations,
+                    backgroundColor: 'rgba(25, 135, 84, 0.7)',
+                    borderColor: 'rgba(25, 135, 84, 1)',
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    cornerRadius: 8,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+
+    const routesCtx = document.getElementById('routesChart');
+    new Chart(routesCtx, {
+        type: 'bar',
+        data: {
+            labels: topRoutesLabels,
+            datasets: [{
+                label: 'Registrations',
+                data: topRoutesCounts,
+                backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                borderColor: 'rgba(255, 193, 7, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    cornerRadius: 8,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        title: function(context) {
+                            return topRoutesDetails[context[0].dataIndex].name;
+                        },
+                        label: function(context) {
+                            const details = topRoutesDetails[context.dataIndex];
+                            return [
+                                'Registrations: ' + details.registrations,
+                                'Distance: ' + details.distance.toFixed(1) + ' km',
+                                'Elevation: ' + details.elevation.toFixed(0) + ' m'
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+
+    const programsCtx = document.getElementById('programsChart');
+    new Chart(programsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: programsLabels,
+            datasets: [{
+                data: programsCounts,
+                backgroundColor: [
+                    'rgba(13, 110, 253, 0.7)',
+                    'rgba(25, 135, 84, 0.7)',
+                    'rgba(255, 193, 7, 0.7)',
+                    'rgba(220, 53, 69, 0.7)',
+                    'rgba(13, 202, 240, 0.7)',
+                    'rgba(108, 117, 125, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(13, 110, 253, 1)',
+                    'rgba(25, 135, 84, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(220, 53, 69, 1)',
+                    'rgba(13, 202, 240, 1)',
+                    'rgba(108, 117, 125, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    cornerRadius: 8,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return label + ': ' + value + ' events (' + percentage + '%)';
+                        }
+                    }
+                }
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+</script>
+{% endblock %}
