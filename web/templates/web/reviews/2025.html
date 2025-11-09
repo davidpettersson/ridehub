@@ -3,9 +3,33 @@
 {% block title %}Year in review 2025 - RideHub{% endblock %}
 
 {% block content %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@800;900&display=swap');
+
+    .headline-title {
+        font-family: 'Inter', sans-serif;
+        font-weight: 900;
+        font-size: 5.5rem;
+        letter-spacing: -0.03em;
+        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 50%, #20c997 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin: 20px 0;
+        text-transform: uppercase;
+    }
+
+    @media (max-width: 768px) {
+        .headline-title {
+            font-size: 2.8rem;
+        }
+    }
+</style>
+
 <div class="container my-5">
     <div class="text-center mb-5">
-        <h1 class="display-3 fw-bold mb-3">🚴 2025 year in review</h1>
+        <h1 class="headline-title">OUR 2025 RIDING STORY</h1>
         <p class="lead text-muted">A look back at an incredible year of riding together</p>
     </div>
 
