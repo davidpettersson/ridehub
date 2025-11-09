@@ -1,11 +1,11 @@
 from datetime import date
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, Avg
 from django.db.models.functions import TruncMonth
 
 from backoffice.models import Event, Registration, Route
 
 
-class YearInReviewService:
+class ReviewsService:
     def fetch_2025_statistics(self) -> dict:
         year = 2025
         start_date = date(year, 1, 1)
@@ -61,6 +61,28 @@ class YearInReviewService:
             .order_by('month')
         )
 
+        ride_leader_registrations = confirmed_registrations.filter(
+            ride_leader_preference=Registration.RideLeaderPreference.YES
+        )
+
+        total_ride_leaders = ride_leader_registrations.values('user').distinct().count()
+        total_ride_leader_slots = ride_leader_registrations.count()
+
+        dedicated_leaders = (
+            ride_leader_registrations
+            .values('user')
+            .annotate(times_led=Count('id'))
+            .filter(times_led__gte=5)
+            .count()
+        )
+
+        avg_participants = events.annotate(
+            participant_count=Count('registration', filter=Q(registration__state=Registration.STATE_CONFIRMED))
+        ).aggregate(avg=Avg('participant_count'))['avg'] or 0
+
+        most_active_month_data = max(monthly_data, key=lambda x: x['registration_count'], default=None)
+        most_active_month = most_active_month_data['month'].strftime('%B') if most_active_month_data else 'N/A'
+
         return {
             'total_events': total_events,
             'total_registrations': total_registrations,
@@ -70,4 +92,9 @@ class YearInReviewService:
             'top_routes': list(top_routes),
             'events_by_program': list(events_by_program),
             'monthly_data': list(monthly_data),
+            'total_ride_leaders': total_ride_leaders,
+            'total_ride_leader_slots': total_ride_leader_slots,
+            'dedicated_leaders': dedicated_leaders,
+            'avg_participants': round(avg_participants, 1),
+            'most_active_month': most_active_month,
         }

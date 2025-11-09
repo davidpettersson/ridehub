@@ -9,7 +9,9 @@
         <p class="lead text-muted">A look back at an incredible year of riding together</p>
     </div>
 
-    <div class="row g-4 mb-5">
+    <section class="mb-5">
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">The Big Numbers</h2>
+        <div class="row g-4 mb-3">
         <div class="col-md-6 col-lg-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
@@ -54,38 +56,160 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="row g-4 mb-5">
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-body p-4">
-                    <h3 class="fs-4 fw-medium mb-4">Monthly Activity</h3>
-                    <canvas id="monthlyChart"></canvas>
+        <div class="alert alert-light border mt-3">
+            <strong>How we calculated:</strong>
+            <ul class="mb-0 small">
+                <li><strong>Total Kilometers:</strong> Sum of all confirmed registrations × route distance</li>
+                <li><strong>Total Elevation Gain:</strong> Sum of all confirmed registrations × route elevation gain</li>
+                <li><strong>Unique Riders:</strong> Count of distinct participants with confirmed registrations</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Ride Leader Recognition</h2>
+        <div class="row g-4 mb-3">
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 fw-bold text-success mb-2">{{ stats.total_ride_leaders }}</div>
+                        <h5 class="text-muted mb-0">Total Ride Leaders</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 fw-bold text-info mb-2">{{ stats.total_ride_leader_slots }}</div>
+                        <h5 class="text-muted mb-0">Times Led</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 fw-bold text-warning mb-2">{{ stats.dedicated_leaders }}</div>
+                        <h5 class="text-muted mb-0">Dedicated Leaders</h5>
+                        <p class="small text-muted mb-0">(5+ rides)</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body p-4">
-                    <h3 class="fs-4 fw-medium mb-4">Events by Program</h3>
-                    <canvas id="programsChart"></canvas>
-                </div>
-            </div>
+        <div class="alert alert-success border-success">
+            <p class="mb-0">
+                <strong>Thank you to our volunteers!</strong> Our ride leaders make every event possible.
+                {{ stats.total_ride_leaders }} riders stepped up to lead rides throughout 2025,
+                with {{ stats.dedicated_leaders }} dedicated leaders showing up week after week.
+            </p>
         </div>
-    </div>
 
-    <div class="row g-4 mb-5">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-body p-4">
-                    <h3 class="fs-4 fw-medium mb-4">Top 5 Most Popular Routes</h3>
-                    <canvas id="routesChart"></canvas>
+        <div class="alert alert-light border mt-3">
+            <strong>How we calculated:</strong>
+            <ul class="mb-0 small">
+                <li><strong>Total Ride Leaders:</strong> Unique riders who volunteered as ride leaders at confirmed events</li>
+                <li><strong>Times Led:</strong> Total number of ride leader slots filled across all events</li>
+                <li><strong>Dedicated Leaders:</strong> Riders who led 5 or more rides during the year</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Monthly Trends</h2>
+        <div class="row g-4 mb-3">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        <div class="alert alert-light border mt-3">
+            <strong>How we calculated:</strong>
+            <ul class="mb-0 small">
+                <li><strong>Events:</strong> Number of events held each month</li>
+                <li><strong>Registrations:</strong> Number of confirmed registrations each month</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Popular Routes</h2>
+        <div class="row g-4 mb-3">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <canvas id="routesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-light border mt-3">
+            <strong>How we calculated:</strong>
+            <ul class="mb-0 small">
+                <li><strong>Popularity Ranking:</strong> Based on number of confirmed registrations per route</li>
+                <li><strong>Hover for details:</strong> See distance, elevation, and registration count for each route</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Programs Overview</h2>
+        <div class="row g-4 mb-3">
+            <div class="col-lg-6 mx-auto">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <canvas id="programsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-light border mt-3">
+            <strong>How we calculated:</strong>
+            <ul class="mb-0 small">
+                <li><strong>Distribution:</strong> Events grouped by program type, showing percentage breakdown</li>
+                <li><strong>Hover for details:</strong> See exact event count and percentage for each program</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Community Highlights</h2>
+        <div class="row g-4 mb-3">
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 fw-bold text-primary mb-2">{{ stats.avg_participants }}</div>
+                        <h5 class="text-muted mb-0">Average Riders per Event</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 fw-bold text-success mb-2">{{ stats.most_active_month }}</div>
+                        <h5 class="text-muted mb-0">Most Active Month</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-light border mt-3">
+            <strong>How we calculated:</strong>
+            <ul class="mb-0 small">
+                <li><strong>Average Riders per Event:</strong> Total confirmed registrations ÷ number of events</li>
+                <li><strong>Most Active Month:</strong> Month with the highest number of confirmed registrations</li>
+            </ul>
+        </div>
+    </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
