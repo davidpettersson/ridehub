@@ -1,22 +1,22 @@
 {% extends 'web/_base_bootstrap.html' %}
 
-{% block title %}Year in Review 2025 - RideHub{% endblock %}
+{% block title %}Year in review 2025 - RideHub{% endblock %}
 
 {% block content %}
 <div class="container my-5">
     <div class="text-center mb-5">
-        <h1 class="display-3 fw-bold mb-3">🚴 2025 Year in Review</h1>
+        <h1 class="display-3 fw-bold mb-3">🚴 2025 year in review</h1>
         <p class="lead text-muted">A look back at an incredible year of riding together</p>
     </div>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">The Big Numbers</h2>
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">The big numbers</h2>
         <div class="row g-4 mb-3">
         <div class="col-md-6 col-lg-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-primary mb-2">{{ stats.total_events }}</div>
-                    <h5 class="text-muted mb-0">Events Held</h5>
+                    <h5 class="text-muted mb-0">Events held</h5>
                 </div>
             </div>
         </div>
@@ -25,7 +25,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-success mb-2">{{ stats.total_registrations }}</div>
-                    <h5 class="text-muted mb-0">Total Registrations</h5>
+                    <h5 class="text-muted mb-0">Total registrations</h5>
                 </div>
             </div>
         </div>
@@ -34,7 +34,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-info mb-2">{{ stats.unique_participants }}</div>
-                    <h5 class="text-muted mb-0">Unique Riders</h5>
+                    <h5 class="text-muted mb-0">Unique riders</h5>
                 </div>
             </div>
         </div>
@@ -43,7 +43,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-warning mb-2">{{ stats.total_distance|floatformat:0 }}</div>
-                    <h5 class="text-muted mb-0">Total Kilometers</h5>
+                    <h5 class="text-muted mb-0">Total kilometers</h5>
                 </div>
             </div>
         </div>
@@ -52,7 +52,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-danger mb-2">{{ stats.total_elevation|floatformat:0 }}</div>
-                    <h5 class="text-muted mb-0">Total Elevation Gain (m)</h5>
+                    <h5 class="text-muted mb-0">Total elevation gain (m)</h5>
                 </div>
             </div>
         </div>
@@ -68,13 +68,13 @@
     </section>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Ride Leader Recognition</h2>
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Ride leader recognition</h2>
         <div class="row g-4 mb-3">
             <div class="col-md-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-body text-center p-4">
                         <div class="display-4 fw-bold text-success mb-2">{{ stats.total_ride_leaders }}</div>
-                        <h5 class="text-muted mb-0">Total Ride Leaders</h5>
+                        <h5 class="text-muted mb-0">Total ride leaders</h5>
                     </div>
                 </div>
             </div>
@@ -83,7 +83,7 @@
                 <div class="card shadow-sm h-100">
                     <div class="card-body text-center p-4">
                         <div class="display-4 fw-bold text-info mb-2">{{ stats.total_ride_leader_slots }}</div>
-                        <h5 class="text-muted mb-0">Times Led</h5>
+                        <h5 class="text-muted mb-0">Times led</h5>
                     </div>
                 </div>
             </div>
@@ -92,7 +92,7 @@
                 <div class="card shadow-sm h-100">
                     <div class="card-body text-center p-4">
                         <div class="display-4 fw-bold text-warning mb-2">{{ stats.dedicated_leaders }}</div>
-                        <h5 class="text-muted mb-0">Dedicated Leaders</h5>
+                        <h5 class="text-muted mb-0">Dedicated leaders</h5>
                         <p class="small text-muted mb-0">(5+ rides)</p>
                     </div>
                 </div>
@@ -118,12 +118,12 @@
     </section>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Monthly Trends</h2>
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Monthly trends</h2>
         <div class="row g-4 mb-3">
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <h3 class="fs-5 fw-medium mb-3">Events by Program</h3>
+                        <h3 class="fs-5 fw-medium mb-3">Events by program</h3>
                         <canvas id="monthlyEventsChart"></canvas>
                     </div>
                 </div>
@@ -131,7 +131,7 @@
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <h3 class="fs-5 fw-medium mb-3">Registrations by Program</h3>
+                        <h3 class="fs-5 fw-medium mb-3">Registrations by program</h3>
                         <canvas id="monthlyRegistrationsChart"></canvas>
                     </div>
                 </div>
@@ -148,12 +148,12 @@
     </section>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Popular Routes</h2>
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Popular routes</h2>
         <div class="row g-4 mb-3">
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <h3 class="fs-5 fw-medium mb-3">Top 20 Most Popular Routes</h3>
+                        <h3 class="fs-5 fw-medium mb-3">Top 20 most popular routes</h3>
                         <div style="height: 600px; position: relative;">
                             <canvas id="routesChart"></canvas>
                         </div>
@@ -172,7 +172,7 @@
     </section>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Programs Overview</h2>
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Programs overview</h2>
         <div class="row g-4 mb-3">
             <div class="col-lg-6 mx-auto">
                 <div class="card shadow-sm">
