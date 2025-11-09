@@ -9,13 +9,34 @@ def review_2025(request: HttpRequest) -> HttpResponse:
     service = ReviewsService()
     stats = service.fetch_2025_statistics()
 
-    monthly_labels = []
-    monthly_events = []
-    monthly_registrations = []
-    for month_data in stats['monthly_data']:
-        monthly_labels.append(month_data['month'].strftime('%B'))
-        monthly_events.append(month_data['event_count'])
-        monthly_registrations.append(month_data['registration_count'])
+    monthly_labels = [month.strftime('%B') for month in stats['all_months']]
+
+    programs = sorted(set(
+        [item['program__name'] or 'No Program' for item in stats['monthly_events_by_program']] +
+        [item['event__program__name'] or 'No Program' for item in stats['monthly_registrations_by_program']]
+    ))
+
+    events_by_program_monthly = {}
+    for program in programs:
+        events_by_program_monthly[program] = []
+        for month in stats['all_months']:
+            count = 0
+            for item in stats['monthly_events_by_program']:
+                if item['month'] == month and (item['program__name'] or 'No Program') == program:
+                    count = item['event_count']
+                    break
+            events_by_program_monthly[program].append(count)
+
+    registrations_by_program_monthly = {}
+    for program in programs:
+        registrations_by_program_monthly[program] = []
+        for month in stats['all_months']:
+            count = 0
+            for item in stats['monthly_registrations_by_program']:
+                if item['month'] == month and (item['event__program__name'] or 'No Program') == program:
+                    count = item['registration_count']
+                    break
+            registrations_by_program_monthly[program].append(count)
 
     top_routes_labels = []
     top_routes_counts = []
@@ -41,8 +62,9 @@ def review_2025(request: HttpRequest) -> HttpResponse:
     context = {
         'stats': stats,
         'monthly_labels': json.dumps(monthly_labels),
-        'monthly_events': json.dumps(monthly_events),
-        'monthly_registrations': json.dumps(monthly_registrations),
+        'programs': json.dumps(programs),
+        'events_by_program_monthly': json.dumps(events_by_program_monthly),
+        'registrations_by_program_monthly': json.dumps(registrations_by_program_monthly),
         'top_routes_labels': json.dumps(top_routes_labels),
         'top_routes_counts': json.dumps(top_routes_counts),
         'top_routes_details': json.dumps(top_routes_details),

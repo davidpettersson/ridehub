@@ -1,22 +1,22 @@
 {% extends 'web/_base_bootstrap.html' %}
 
-{% block title %}Year in Review 2025 - RideHub{% endblock %}
+{% block title %}Year in review 2025 - RideHub{% endblock %}
 
 {% block content %}
 <div class="container my-5">
     <div class="text-center mb-5">
-        <h1 class="display-3 fw-bold mb-3">🚴 2025 Year in Review</h1>
+        <h1 class="display-3 fw-bold mb-3">🚴 2025 year in review</h1>
         <p class="lead text-muted">A look back at an incredible year of riding together</p>
     </div>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">The Big Numbers</h2>
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">The big numbers</h2>
         <div class="row g-4 mb-3">
         <div class="col-md-6 col-lg-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-primary mb-2">{{ stats.total_events }}</div>
-                    <h5 class="text-muted mb-0">Events Held</h5>
+                    <h5 class="text-muted mb-0">Events held</h5>
                 </div>
             </div>
         </div>
@@ -25,7 +25,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-success mb-2">{{ stats.total_registrations }}</div>
-                    <h5 class="text-muted mb-0">Total Registrations</h5>
+                    <h5 class="text-muted mb-0">Total registrations</h5>
                 </div>
             </div>
         </div>
@@ -34,7 +34,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-info mb-2">{{ stats.unique_participants }}</div>
-                    <h5 class="text-muted mb-0">Unique Riders</h5>
+                    <h5 class="text-muted mb-0">Unique riders</h5>
                 </div>
             </div>
         </div>
@@ -43,7 +43,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-warning mb-2">{{ stats.total_distance|floatformat:0 }}</div>
-                    <h5 class="text-muted mb-0">Total Kilometers</h5>
+                    <h5 class="text-muted mb-0">Total kilometers</h5>
                 </div>
             </div>
         </div>
@@ -52,7 +52,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center p-4">
                     <div class="display-3 fw-bold text-danger mb-2">{{ stats.total_elevation|floatformat:0 }}</div>
-                    <h5 class="text-muted mb-0">Total Elevation Gain (m)</h5>
+                    <h5 class="text-muted mb-0">Total elevation gain (m)</h5>
                 </div>
             </div>
         </div>
@@ -68,13 +68,13 @@
     </section>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Ride Leader Recognition</h2>
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Ride leader recognition</h2>
         <div class="row g-4 mb-3">
             <div class="col-md-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-body text-center p-4">
                         <div class="display-4 fw-bold text-success mb-2">{{ stats.total_ride_leaders }}</div>
-                        <h5 class="text-muted mb-0">Total Ride Leaders</h5>
+                        <h5 class="text-muted mb-0">Total ride leaders</h5>
                     </div>
                 </div>
             </div>
@@ -83,7 +83,7 @@
                 <div class="card shadow-sm h-100">
                     <div class="card-body text-center p-4">
                         <div class="display-4 fw-bold text-info mb-2">{{ stats.total_ride_leader_slots }}</div>
-                        <h5 class="text-muted mb-0">Times Led</h5>
+                        <h5 class="text-muted mb-0">Times led</h5>
                     </div>
                 </div>
             </div>
@@ -92,7 +92,7 @@
                 <div class="card shadow-sm h-100">
                     <div class="card-body text-center p-4">
                         <div class="display-4 fw-bold text-warning mb-2">{{ stats.dedicated_leaders }}</div>
-                        <h5 class="text-muted mb-0">Dedicated Leaders</h5>
+                        <h5 class="text-muted mb-0">Dedicated leaders</h5>
                         <p class="small text-muted mb-0">(5+ rides)</p>
                     </div>
                 </div>
@@ -118,12 +118,21 @@
     </section>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Monthly Trends</h2>
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Monthly trends</h2>
         <div class="row g-4 mb-3">
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <canvas id="monthlyChart"></canvas>
+                        <h3 class="fs-5 fw-medium mb-3">Events by program</h3>
+                        <canvas id="monthlyEventsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <h3 class="fs-5 fw-medium mb-3">Registrations by program</h3>
+                        <canvas id="monthlyRegistrationsChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -132,19 +141,22 @@
         <div class="alert alert-light border mt-3">
             <strong>How we calculated:</strong>
             <ul class="mb-0 small">
-                <li><strong>Events:</strong> Number of events held each month</li>
-                <li><strong>Registrations:</strong> Number of confirmed registrations each month</li>
+                <li><strong>Events by Program:</strong> Number of events held each month, grouped by program type</li>
+                <li><strong>Registrations by Program:</strong> Number of confirmed registrations each month, grouped by program type</li>
             </ul>
         </div>
     </section>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Popular Routes</h2>
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Popular routes</h2>
         <div class="row g-4 mb-3">
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <canvas id="routesChart"></canvas>
+                        <h3 class="fs-5 fw-medium mb-3">Top 20 most popular routes</h3>
+                        <div style="height: 600px; position: relative;">
+                            <canvas id="routesChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -160,7 +172,7 @@
     </section>
 
     <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Programs Overview</h2>
+        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Programs overview</h2>
         <div class="row g-4 mb-3">
             <div class="col-lg-6 mx-auto">
                 <div class="card shadow-sm">
@@ -179,71 +191,43 @@
             </ul>
         </div>
     </section>
-
-    <section class="mb-5">
-        <h2 class="h3 fw-bold mb-4 pb-2 border-bottom">Community Highlights</h2>
-        <div class="row g-4 mb-3">
-            <div class="col-md-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-body text-center p-4">
-                        <div class="display-4 fw-bold text-primary mb-2">{{ stats.avg_participants }}</div>
-                        <h5 class="text-muted mb-0">Average Riders per Event</h5>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-body text-center p-4">
-                        <div class="display-4 fw-bold text-success mb-2">{{ stats.most_active_month }}</div>
-                        <h5 class="text-muted mb-0">Most Active Month</h5>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="alert alert-light border mt-3">
-            <strong>How we calculated:</strong>
-            <ul class="mb-0 small">
-                <li><strong>Average Riders per Event:</strong> Total confirmed registrations ÷ number of events</li>
-                <li><strong>Most Active Month:</strong> Month with the highest number of confirmed registrations</li>
-            </ul>
-        </div>
-    </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
     const monthlyLabels = {{ monthly_labels|safe }};
-    const monthlyEvents = {{ monthly_events|safe }};
-    const monthlyRegistrations = {{ monthly_registrations|safe }};
+    const programs = {{ programs|safe }};
+    const eventsByProgramMonthly = {{ events_by_program_monthly|safe }};
+    const registrationsByProgramMonthly = {{ registrations_by_program_monthly|safe }};
     const topRoutesLabels = {{ top_routes_labels|safe }};
     const topRoutesCounts = {{ top_routes_counts|safe }};
     const topRoutesDetails = {{ top_routes_details|safe }};
     const programsLabels = {{ programs_labels|safe }};
     const programsCounts = {{ programs_counts|safe }};
 
-    const monthlyCtx = document.getElementById('monthlyChart');
-    new Chart(monthlyCtx, {
+    const programColors = [
+        { bg: 'rgba(13, 110, 253, 0.7)', border: 'rgba(13, 110, 253, 1)' },
+        { bg: 'rgba(25, 135, 84, 0.7)', border: 'rgba(25, 135, 84, 1)' },
+        { bg: 'rgba(255, 193, 7, 0.7)', border: 'rgba(255, 193, 7, 1)' },
+        { bg: 'rgba(220, 53, 69, 0.7)', border: 'rgba(220, 53, 69, 1)' },
+        { bg: 'rgba(13, 202, 240, 0.7)', border: 'rgba(13, 202, 240, 1)' },
+        { bg: 'rgba(108, 117, 125, 0.7)', border: 'rgba(108, 117, 125, 1)' }
+    ];
+
+    const monthlyEventsDatasets = programs.map((program, index) => ({
+        label: program,
+        data: eventsByProgramMonthly[program],
+        backgroundColor: programColors[index % programColors.length].bg,
+        borderColor: programColors[index % programColors.length].border,
+        borderWidth: 2
+    }));
+
+    const monthlyEventsCtx = document.getElementById('monthlyEventsChart');
+    new Chart(monthlyEventsCtx, {
         type: 'bar',
         data: {
             labels: monthlyLabels,
-            datasets: [
-                {
-                    label: 'Events',
-                    data: monthlyEvents,
-                    backgroundColor: 'rgba(13, 110, 253, 0.7)',
-                    borderColor: 'rgba(13, 110, 253, 1)',
-                    borderWidth: 2
-                },
-                {
-                    label: 'Registrations',
-                    data: monthlyRegistrations,
-                    backgroundColor: 'rgba(25, 135, 84, 0.7)',
-                    borderColor: 'rgba(25, 135, 84, 1)',
-                    borderWidth: 2
-                }
-            ]
+            datasets: monthlyEventsDatasets
         },
         options: {
             responsive: true,
@@ -267,16 +251,74 @@
                     },
                     bodyFont: {
                         size: 13
-                    },
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': ' + context.parsed.y;
-                        }
                     }
                 }
             },
             scales: {
+                x: {
+                    stacked: true,
+                },
                 y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+
+    const monthlyRegistrationsDatasets = programs.map((program, index) => ({
+        label: program,
+        data: registrationsByProgramMonthly[program],
+        backgroundColor: programColors[index % programColors.length].bg,
+        borderColor: programColors[index % programColors.length].border,
+        borderWidth: 2
+    }));
+
+    const monthlyRegistrationsCtx = document.getElementById('monthlyRegistrationsChart');
+    new Chart(monthlyRegistrationsCtx, {
+        type: 'bar',
+        data: {
+            labels: monthlyLabels,
+            datasets: monthlyRegistrationsDatasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    cornerRadius: 8,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                },
+                y: {
+                    stacked: true,
                     beginAtZero: true,
                     ticks: {
                         stepSize: 1
@@ -306,7 +348,7 @@
         options: {
             indexAxis: 'y',
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: false
@@ -343,12 +385,17 @@
                     ticks: {
                         stepSize: 1
                     }
+                },
+                y: {
+                    ticks: {
+                        autoSkip: false,
+                        font: {
+                            size: 11
+                        }
+                    }
                 }
             },
-            animation: {
-                duration: 1500,
-                easing: 'easeInOutQuart'
-            }
+            animation: false
         }
     });
 
