@@ -28,7 +28,8 @@ class RegistrationService:
         self.user_service = UserService()
         self.email_service = EmailService()
 
-    def _create_registration(self, event: Event, user: User, registration_detail: RegistrationDetail, request_detail: RequestDetail | None = None) -> Registration:
+    def _create_registration(self, event: Event, user: User, registration_detail: RegistrationDetail,
+                             request_detail: RequestDetail | None = None) -> Registration:
         registration = Registration()
         registration.event = event
         registration.user = user
@@ -71,7 +72,8 @@ class RegistrationService:
             recipient_list=[registration.email],
         )
 
-    def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event, request_detail: RequestDetail | None = None) -> None:
+    def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event,
+                 request_detail: RequestDetail | None = None) -> None:
         user = self.user_service.find_by_email_or_create(user_detail)
 
         registrations_submitted_or_confirmed = \
