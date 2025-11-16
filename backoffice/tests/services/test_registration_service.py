@@ -1053,7 +1053,7 @@ class RegistrationTrackingTestCase(TestCase):
         request_detail = RequestDetail(
             ip_address='192.168.1.100',
             user_agent='Mozilla/5.0',
-            is_authenticated=True
+            authenticated=True
         )
 
         self.service.register(user_detail, registration_detail, self.event, request_detail)
@@ -1078,7 +1078,7 @@ class RegistrationTrackingTestCase(TestCase):
         request_detail = RequestDetail(
             ip_address='192.168.1.100',
             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-            is_authenticated=True
+            authenticated=True
         )
 
         self.service.register(user_detail, registration_detail, self.event, request_detail)
@@ -1103,13 +1103,13 @@ class RegistrationTrackingTestCase(TestCase):
         request_detail = RequestDetail(
             ip_address='192.168.1.100',
             user_agent='Mozilla/5.0',
-            is_authenticated=True
+            authenticated=True
         )
 
         self.service.register(user_detail, registration_detail, self.event, request_detail)
 
         registration = Registration.objects.get(user=self.user, event=self.event)
-        self.assertTrue(registration.is_authenticated)
+        self.assertTrue(registration.authenticated)
 
     def test_registration_captures_authenticated_status_false(self):
         new_user_email = 'newuser@example.com'
@@ -1129,13 +1129,13 @@ class RegistrationTrackingTestCase(TestCase):
         request_detail = RequestDetail(
             ip_address='192.168.1.100',
             user_agent='Mozilla/5.0',
-            is_authenticated=False
+            authenticated=False
         )
 
         self.service.register(user_detail, registration_detail, self.event, request_detail)
 
         registration = Registration.objects.get(email=new_user_email, event=self.event)
-        self.assertFalse(registration.is_authenticated)
+        self.assertFalse(registration.authenticated)
 
     def test_registration_without_request_detail_has_null_tracking_fields(self):
         user_detail = UserDetail(
@@ -1157,4 +1157,4 @@ class RegistrationTrackingTestCase(TestCase):
         registration = Registration.objects.get(user=self.user, event=self.event)
         self.assertIsNone(registration.ip_address)
         self.assertIsNone(registration.user_agent)
-        self.assertIsNone(registration.is_authenticated)
+        self.assertIsNone(registration.authenticated)

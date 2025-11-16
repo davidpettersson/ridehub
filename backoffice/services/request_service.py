@@ -5,7 +5,7 @@ from dataclasses import dataclass
 class RequestDetail:
     ip_address: str | None
     user_agent: str | None
-    is_authenticated: bool
+    authenticated: bool
 
 
 class RequestService:
@@ -13,7 +13,7 @@ class RequestService:
         return RequestDetail(
             ip_address=self._get_client_ip(request),
             user_agent=request.META.get('HTTP_USER_AGENT'),
-            is_authenticated=request.user.is_authenticated
+            authenticated=request.user.is_authenticated
         )
 
     def _get_client_ip(self, request) -> str | None:

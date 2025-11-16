@@ -25,7 +25,7 @@ class RequestServiceTestCase(TestCase):
         self.assertIsInstance(details, RequestDetail)
         self.assertEqual(details.ip_address, '192.168.1.100')
         self.assertEqual(details.user_agent, 'Mozilla/5.0')
-        self.assertTrue(details.is_authenticated)
+        self.assertTrue(details.authenticated)
 
     def test_extract_details_from_anonymous_user(self):
         request = self.factory.post('/register')
@@ -38,7 +38,7 @@ class RequestServiceTestCase(TestCase):
         self.assertIsInstance(details, RequestDetail)
         self.assertEqual(details.ip_address, '192.168.1.100')
         self.assertEqual(details.user_agent, 'Mozilla/5.0')
-        self.assertFalse(details.is_authenticated)
+        self.assertFalse(details.authenticated)
 
     def test_extract_details_with_x_forwarded_for(self):
         request = self.factory.post('/register')
@@ -82,4 +82,4 @@ class RequestServiceTestCase(TestCase):
 
         self.assertEqual(details.ip_address, '192.168.1.100')
         self.assertIsNone(details.user_agent)
-        self.assertTrue(details.is_authenticated)
+        self.assertTrue(details.authenticated)

@@ -423,7 +423,7 @@ class Registration(models.Model):
         blank=True
     )
 
-    is_authenticated = models.BooleanField(
+    authenticated = models.BooleanField(
         null=True,
         blank=True
     )

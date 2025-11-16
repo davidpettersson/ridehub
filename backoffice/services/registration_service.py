@@ -53,7 +53,7 @@ class RegistrationService:
         if request_detail:
             registration.ip_address = request_detail.ip_address
             registration.user_agent = request_detail.user_agent
-            registration.is_authenticated = request_detail.is_authenticated
+            registration.authenticated = request_detail.authenticated
 
         registration.save()
         return registration

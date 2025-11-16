@@ -94,7 +94,7 @@ class RegistrationAdmin(admin.ModelAdmin):
         'withdrawn_at',
         'ip_address',
         'user_agent',
-        'is_authenticated',
+        'authenticated',
     )
 
     readonly_fields = (
@@ -104,7 +104,7 @@ class RegistrationAdmin(admin.ModelAdmin):
         'withdrawn_at',
         'ip_address',
         'user_agent',
-        'is_authenticated',
+        'authenticated',
     )
 
     list_filter = ('submitted_at', 'state',)
