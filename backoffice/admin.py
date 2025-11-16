@@ -92,6 +92,9 @@ class RegistrationAdmin(admin.ModelAdmin):
         'submitted_at',
         'confirmed_at',
         'withdrawn_at',
+        'ip_address',
+        'user_agent',
+        'authenticated',
     )
 
     readonly_fields = (
@@ -99,6 +102,9 @@ class RegistrationAdmin(admin.ModelAdmin):
         'submitted_at',
         'confirmed_at',
         'withdrawn_at',
+        'ip_address',
+        'user_agent',
+        'authenticated',
     )
 
     list_filter = ('submitted_at', 'state',)

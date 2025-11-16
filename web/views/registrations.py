@@ -6,6 +6,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 
 from backoffice.models import Event, Registration
 from backoffice.services.registration_service import RegistrationService, RegistrationDetail
+from backoffice.services.request_service import RequestService
 from backoffice.services.user_service import UserDetail
 from backoffice.utils import ensure
 from web.forms import RegistrationForm
@@ -55,7 +56,8 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     ensure(event.has_capacity_available, 'event has capacity for more registrations')
 
     # OK, proceed
-    service = RegistrationService()
+    registration_service = RegistrationService()
+    request_service = RequestService()
     user = request.user if request.user.is_authenticated else None
 
     initial_data = {}
@@ -71,10 +73,12 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
 
     if request.method == 'POST':
         if form.is_valid():
-            service.register(
+            request_detail = request_service.extract_details(request)
+            registration_service.register(
                 user_detail=_get_user_details(form),
                 registration_detail=_get_registration_detail(form),
-                event=event)
+                event=event,
+                request_detail=request_detail)
             return redirect('registration_submitted')
 
     # Determine the selected ride (if any) to pre-select speed ranges
