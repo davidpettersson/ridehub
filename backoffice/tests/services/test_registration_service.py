@@ -1,11 +1,12 @@
 import datetime
 
-from django.test import TestCase
+from django.test import TestCase, RequestFactory
 from django.contrib.auth.models import User
 from django.utils import timezone
 
 from backoffice.models import Event, Registration, Program, UserProfile
 from backoffice.services.registration_service import RegistrationService, UserDetail, RegistrationDetail
+from backoffice.services.request_service import RequestDetail
 
 from django.core import mail
 from django.urls import reverse
@@ -1012,3 +1013,148 @@ class FetchUserStatisticsTestCase(TestCase):
 
         self.assertEqual(statistics['total_events_attended'], 1)
         self.assertEqual(statistics['times_as_ride_leader'], 1)
+
+
+class RegistrationTrackingTestCase(TestCase):
+    def setUp(self):
+        self.service = RegistrationService()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='password'
+        )
+        self.user.profile.phone = "+16131112222"
+        self.user.profile.save()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            program=self.program,
+            name="Test Event",
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False
+        )
+        mail.outbox = []
+
+    def test_registration_captures_ip_address(self):
+        user_detail = UserDetail(
+            first_name="Test",
+            last_name="User",
+            email=self.user.email,
+            phone="+16131112222"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+        request_detail = RequestDetail(
+            ip_address='192.168.1.100',
+            user_agent='Mozilla/5.0',
+            is_authenticated=True
+        )
+
+        self.service.register(user_detail, registration_detail, self.event, request_detail)
+
+        registration = Registration.objects.get(user=self.user, event=self.event)
+        self.assertEqual(registration.ip_address, '192.168.1.100')
+
+    def test_registration_captures_user_agent(self):
+        user_detail = UserDetail(
+            first_name="Test",
+            last_name="User",
+            email=self.user.email,
+            phone="+16131112222"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+        request_detail = RequestDetail(
+            ip_address='192.168.1.100',
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            is_authenticated=True
+        )
+
+        self.service.register(user_detail, registration_detail, self.event, request_detail)
+
+        registration = Registration.objects.get(user=self.user, event=self.event)
+        self.assertEqual(registration.user_agent, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)')
+
+    def test_registration_captures_authenticated_status_true(self):
+        user_detail = UserDetail(
+            first_name="Test",
+            last_name="User",
+            email=self.user.email,
+            phone="+16131112222"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+        request_detail = RequestDetail(
+            ip_address='192.168.1.100',
+            user_agent='Mozilla/5.0',
+            is_authenticated=True
+        )
+
+        self.service.register(user_detail, registration_detail, self.event, request_detail)
+
+        registration = Registration.objects.get(user=self.user, event=self.event)
+        self.assertTrue(registration.is_authenticated)
+
+    def test_registration_captures_authenticated_status_false(self):
+        new_user_email = 'newuser@example.com'
+        user_detail = UserDetail(
+            first_name="New",
+            last_name="User",
+            email=new_user_email,
+            phone="+16131113333"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+        request_detail = RequestDetail(
+            ip_address='192.168.1.100',
+            user_agent='Mozilla/5.0',
+            is_authenticated=False
+        )
+
+        self.service.register(user_detail, registration_detail, self.event, request_detail)
+
+        registration = Registration.objects.get(email=new_user_email, event=self.event)
+        self.assertFalse(registration.is_authenticated)
+
+    def test_registration_without_request_detail_has_null_tracking_fields(self):
+        user_detail = UserDetail(
+            first_name="Test",
+            last_name="User",
+            email=self.user.email,
+            phone="+16131112222"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+
+        self.service.register(user_detail, registration_detail, self.event)
+
+        registration = Registration.objects.get(user=self.user, event=self.event)
+        self.assertIsNone(registration.ip_address)
+        self.assertIsNone(registration.user_agent)
+        self.assertIsNone(registration.is_authenticated)

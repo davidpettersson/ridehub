@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from backoffice.models import Event, Registration, SpeedRange, Ride
 from backoffice.services.email_service import EmailService
+from backoffice.services.request_service import RequestDetail
 from backoffice.services.user_service import UserService, UserDetail
 from ridehub import settings
 
@@ -27,7 +28,7 @@ class RegistrationService:
         self.user_service = UserService()
         self.email_service = EmailService()
 
-    def _create_registration(self, event: Event, user: User, registration_detail: RegistrationDetail) -> Registration:
+    def _create_registration(self, event: Event, user: User, registration_detail: RegistrationDetail, request_detail: RequestDetail | None = None) -> Registration:
         registration = Registration()
         registration.event = event
         registration.user = user
@@ -49,6 +50,11 @@ class RegistrationService:
             registration.emergency_contact_name = registration_detail.emergency_contact_name
             registration.emergency_contact_phone = registration_detail.emergency_contact_phone
 
+        if request_detail:
+            registration.ip_address = request_detail.ip_address
+            registration.user_agent = request_detail.user_agent
+            registration.is_authenticated = request_detail.is_authenticated
+
         registration.save()
         return registration
 
@@ -65,7 +71,7 @@ class RegistrationService:
             recipient_list=[registration.email],
         )
 
-    def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event) -> None:
+    def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event, request_detail: RequestDetail | None = None) -> None:
         user = self.user_service.find_by_email_or_create(user_detail)
 
         registrations_submitted_or_confirmed = \
@@ -80,7 +86,7 @@ class RegistrationService:
             )
         else:
             # OK, so either no registration exists, or it is withdrawn. Create a new one.
-            registration = self._create_registration(event, user, registration_detail)
+            registration = self._create_registration(event, user, registration_detail, request_detail)
             self._send_confirmation_email(registration)
             registration.confirm()
             registration.save()

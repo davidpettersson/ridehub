@@ -413,6 +413,21 @@ class Registration(models.Model):
         blank=True
     )
 
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True
+    )
+
+    user_agent = models.TextField(
+        null=True,
+        blank=True
+    )
+
+    is_authenticated = models.BooleanField(
+        null=True,
+        blank=True
+    )
+
     legacy = models.BooleanField(
         default=False,
         help_text='Indicates that this is a legacy registration imported from WebScorer'
