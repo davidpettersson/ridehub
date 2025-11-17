@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect, HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404, redirect
 
-from backoffice.models import Event, Registration
+from backoffice.models import Event
 from backoffice.services.registration_service import RegistrationService, RegistrationDetail
 from backoffice.services.request_service import RequestService
 from backoffice.services.user_service import UserDetail
@@ -95,22 +95,3 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         'form': form,
         'selected_ride_id': selected_ride_id,
     })
-
-
-@login_required
-def registration_detail(request: HttpRequest, registration_id: int) -> HttpResponse:
-    registration = get_object_or_404(Registration, id=registration_id)
-
-    context = {
-        'registration': registration,
-    }
-    return render(request, 'web/registrations/detail.html', context=context)
-
-
-@login_required
-def registration_list(request: HttpRequest) -> HttpResponse:
-    context = {
-        # 'registrations': Registration.objects.filter(user=request.user).order_by('event__starts_at'),
-        'registrations': Registration.objects.all().order_by('event__starts_at'),
-    }
-    return render(request, 'web/registrations/list.html', context={})

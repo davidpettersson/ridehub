@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.urls import reverse
 
-from backoffice.models import Event, Program, UserProfile
+from backoffice.models import Event, Program, UserProfile, Registration
 
 
 class RegistrationViewPhoneTests(TestCase):
@@ -204,4 +204,108 @@ class RegistrationViewPhoneTests(TestCase):
         users = User.objects.filter(email='anonymous@example.com')
         self.assertEqual(users.count(), 1)
         user = users.first()
-        self.assertEqual(str(user.profile.phone), '+1555987654') 
+        self.assertEqual(str(user.profile.phone), '+1555987654')
+
+
+class RegistrationWithdrawAccessControlTests(TestCase):
+    def setUp(self):
+        now = timezone.now()
+        program = Program.objects.create(name="Test Program")
+
+        self.event = Event.objects.create(
+            name="Test Event",
+            program=program,
+            starts_at=now,
+            ends_at=now,
+            registration_closes_at=now,
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False
+        )
+
+        self.user_a = User.objects.create_user(
+            username='user_a',
+            email='user_a@example.com',
+            first_name='User',
+            last_name='A'
+        )
+        self.user_a.profile.phone = '+1234567890'
+        self.user_a.profile.save()
+
+        self.user_b = User.objects.create_user(
+            username='user_b',
+            email='user_b@example.com',
+            first_name='User',
+            last_name='B'
+        )
+        self.user_b.profile.phone = '+0987654321'
+        self.user_b.profile.save()
+
+        self.registration_a = Registration.objects.create(
+            event=self.event,
+            user=self.user_a,
+            state='confirmed'
+        )
+
+        self.registration_b = Registration.objects.create(
+            event=self.event,
+            user=self.user_b,
+            state='confirmed'
+        )
+
+    def test_user_can_withdraw_own_registration(self):
+        self.client.force_login(self.user_a)
+
+        response = self.client.post(
+            reverse('registration_withdraw', kwargs={'registration_id': self.registration_a.id})
+        )
+
+        self.assertEqual(response.status_code, 302)
+        updated_registration = Registration.objects.get(id=self.registration_a.id)
+        self.assertEqual(updated_registration.state, 'withdrawn')
+
+    def test_user_cannot_withdraw_other_user_registration(self):
+        self.client.force_login(self.user_a)
+
+        response = self.client.post(
+            reverse('registration_withdraw', kwargs={'registration_id': self.registration_b.id})
+        )
+
+        self.assertEqual(response.status_code, 404)
+        updated_registration = Registration.objects.get(id=self.registration_b.id)
+        self.assertEqual(updated_registration.state, 'confirmed')
+
+    def test_unauthenticated_cannot_withdraw_registration(self):
+        response = self.client.post(
+            reverse('registration_withdraw', kwargs={'registration_id': self.registration_a.id})
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+        updated_registration = Registration.objects.get(id=self.registration_a.id)
+        self.assertEqual(updated_registration.state, 'confirmed')
+
+    def test_withdraw_with_invalid_id_returns_404(self):
+        self.client.force_login(self.user_a)
+
+        response = self.client.post(
+            reverse('registration_withdraw', kwargs={'registration_id': 99999})
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_staff_cannot_withdraw_other_user_registration(self):
+        staff_user = User.objects.create_user(
+            username='staff',
+            email='staff@example.com',
+            is_staff=True
+        )
+        self.client.force_login(staff_user)
+
+        response = self.client.post(
+            reverse('registration_withdraw', kwargs={'registration_id': self.registration_a.id})
+        )
+
+        self.assertEqual(response.status_code, 404)
+        updated_registration = Registration.objects.get(id=self.registration_a.id)
+        self.assertEqual(updated_registration.state, 'confirmed')
