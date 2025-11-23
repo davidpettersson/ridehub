@@ -1440,3 +1440,329 @@ class IsRegistrationAllowedTestCase(TestCase):
 
         self.assertFalse(allowed)
         self.assertEqual(reason, 'Event has reached capacity.')
+
+
+class RegisterMethodTestCase(TestCase):
+    def setUp(self):
+        self.service = RegistrationService()
+        self.program = Program.objects.create(name="Test Program")
+        self.route = Route.objects.create(name="Test Route")
+        self.event = Event.objects.create(
+            program=self.program,
+            name="Test Event",
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False
+        )
+        mail.outbox = []
+
+    def test_register_creates_registration_for_existing_user(self):
+        user = User.objects.create_user(
+            username='existinguser',
+            email='existing@example.com',
+            first_name='Existing',
+            last_name='User'
+        )
+        user.profile.phone = "+16131112222"
+        user.profile.save()
+
+        user_detail = UserDetail(
+            first_name="Existing",
+            last_name="User",
+            email="existing@example.com",
+            phone="+16131112222"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+
+        self.service.register(user_detail, registration_detail, self.event)
+
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.user, user)
+        self.assertEqual(registration.email, "existing@example.com")
+
+    def test_register_creates_new_user_when_email_not_exists(self):
+        user_detail = UserDetail(
+            first_name="New",
+            last_name="User",
+            email="newuser@example.com",
+            phone="+16131113333"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+
+        self.service.register(user_detail, registration_detail, self.event)
+
+        self.assertTrue(User.objects.filter(email="newuser@example.com").exists())
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.email, "newuser@example.com")
+
+    def test_register_saves_user_details(self):
+        user_detail = UserDetail(
+            first_name="Test",
+            last_name="Person",
+            email="testperson@example.com",
+            phone="+16131114444"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+
+        self.service.register(user_detail, registration_detail, self.event)
+
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.first_name, "Test")
+        self.assertEqual(registration.last_name, "Person")
+        self.assertEqual(registration.email, "testperson@example.com")
+        self.assertEqual(registration.phone, "+16131114444")
+        self.assertEqual(registration.name, "Test Person")
+
+    def test_register_saves_ride_and_speed_range_for_event_with_rides(self):
+        ride = Ride.objects.create(name="Test Ride", event=self.event, route=self.route)
+        speed_range = SpeedRange.objects.create(lower_limit=20, upper_limit=25)
+        ride.speed_ranges.add(speed_range)
+
+        user_detail = UserDetail(
+            first_name="Rider",
+            last_name="Test",
+            email="rider@example.com",
+            phone="+16131115555"
+        )
+        registration_detail = RegistrationDetail(
+            ride=ride,
+            ride_leader_preference=None,
+            speed_range_preference=speed_range,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+
+        self.service.register(user_detail, registration_detail, self.event)
+
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.ride, ride)
+        self.assertEqual(registration.speed_range_preference, speed_range)
+
+    def test_register_saves_emergency_contact_when_required(self):
+        self.event.requires_emergency_contact = True
+        self.event.save()
+
+        user_detail = UserDetail(
+            first_name="Emergency",
+            last_name="Contact",
+            email="emergency@example.com",
+            phone="+16131116666"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name="John Doe",
+            emergency_contact_phone="+16131117777"
+        )
+
+        self.service.register(user_detail, registration_detail, self.event)
+
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.emergency_contact_name, "John Doe")
+        self.assertEqual(registration.emergency_contact_phone, "+16131117777")
+
+    def test_register_saves_ride_leader_preference_when_wanted(self):
+        self.event.ride_leaders_wanted = True
+        self.event.save()
+
+        user_detail = UserDetail(
+            first_name="Leader",
+            last_name="Test",
+            email="leader@example.com",
+            phone="+16131118888"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=Registration.RideLeaderPreference.YES,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+
+        self.service.register(user_detail, registration_detail, self.event)
+
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.ride_leader_preference, Registration.RideLeaderPreference.YES)
+
+    def test_register_does_not_create_duplicate_for_already_registered_user(self):
+        user = User.objects.create_user(
+            username='alreadyregistered',
+            email='already@example.com',
+            first_name='Already',
+            last_name='Registered'
+        )
+        user.profile.phone = "+16131119999"
+        user.profile.save()
+
+        Registration.objects.create(
+            user=user,
+            event=self.event,
+            name="Already Registered",
+            first_name="Already",
+            last_name="Registered",
+            email="already@example.com",
+            state=Registration.STATE_CONFIRMED
+        )
+
+        user_detail = UserDetail(
+            first_name="Already",
+            last_name="Registered",
+            email="already@example.com",
+            phone="+16131119999"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+
+        self.service.register(user_detail, registration_detail, self.event)
+
+        registrations = Registration.objects.filter(user=user, event=self.event)
+        self.assertEqual(registrations.count(), 1)
+
+    def test_register_allows_reregistration_after_withdrawal(self):
+        user = User.objects.create_user(
+            username='withdrawnuser',
+            email='withdrawn@example.com',
+            first_name='Withdrawn',
+            last_name='User'
+        )
+        user.profile.phone = "+16131110000"
+        user.profile.save()
+
+        old_registration = Registration.objects.create(
+            user=user,
+            event=self.event,
+            name="Withdrawn User",
+            first_name="Withdrawn",
+            last_name="User",
+            email="withdrawn@example.com",
+            state=Registration.STATE_SUBMITTED
+        )
+        old_registration.confirm()
+        old_registration.withdraw()
+        old_registration.save()
+
+        user_detail = UserDetail(
+            first_name="Withdrawn",
+            last_name="User",
+            email="withdrawn@example.com",
+            phone="+16131110000"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+
+        self.service.register(user_detail, registration_detail, self.event)
+
+        registrations = Registration.objects.filter(user=user, event=self.event)
+        self.assertEqual(registrations.count(), 2)
+        new_registration = registrations.exclude(pk=old_registration.pk).first()
+        self.assertEqual(new_registration.state, Registration.STATE_CONFIRMED)
+
+    def test_register_sets_registration_state_to_confirmed(self):
+        user_detail = UserDetail(
+            first_name="Confirmed",
+            last_name="User",
+            email="confirmed@example.com",
+            phone="+16131111111"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+
+        self.service.register(user_detail, registration_detail, self.event)
+
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+
+    def test_register_sends_confirmation_email(self):
+        user_detail = UserDetail(
+            first_name="Email",
+            last_name="Test",
+            email="emailtest@example.com",
+            phone="+16131112222"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+
+        self.service.register(user_detail, registration_detail, self.event)
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertIn("emailtest@example.com", email.to)
+        self.assertIn(self.event.name, email.subject)
+
+    def test_register_does_not_send_email_for_duplicate_registration(self):
+        user = User.objects.create_user(
+            username='noemail',
+            email='noemail@example.com',
+            first_name='No',
+            last_name='Email'
+        )
+        user.profile.phone = "+16131113333"
+        user.profile.save()
+
+        Registration.objects.create(
+            user=user,
+            event=self.event,
+            name="No Email",
+            first_name="No",
+            last_name="Email",
+            email="noemail@example.com",
+            state=Registration.STATE_CONFIRMED
+        )
+
+        user_detail = UserDetail(
+            first_name="No",
+            last_name="Email",
+            email="noemail@example.com",
+            phone="+16131113333"
+        )
+        registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None
+        )
+
+        self.service.register(user_detail, registration_detail, self.event)
+
+        self.assertEqual(len(mail.outbox), 0)

@@ -47,6 +47,7 @@ class RegistrationForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         assert event
+        self.event = event
 
         registration_service = RegistrationService()
         requirements = registration_service.get_event_requirements(event)
@@ -117,16 +118,14 @@ class RegistrationForm(forms.Form):
         cleaned_data = super().clean()
         ride = cleaned_data.get('ride')
         speed_range_preference = cleaned_data.get('speed_range_preference')
-        
-        # If speed range is selected, ensure it belongs to the selected ride
-        if speed_range_preference and ride:
-            if not ride.speed_ranges.filter(id=speed_range_preference.id).exists():
-                self.add_error('speed_range_preference', 'Selected speed range is not available for this ride.')
-        
-        # If a ride is selected and it has speed ranges, require speed range selection
-        if ride and ride.speed_ranges.exists() and not speed_range_preference:
-            self.add_error('speed_range_preference', 'Please select a speed range for this ride.')
-        
+
+        registration_service = RegistrationService()
+        errors = registration_service.validate_registration_selections(
+            self.event, ride, speed_range_preference
+        )
+        for field, message in errors.items():
+            self.add_error(field, message)
+
         return cleaned_data
 
 
