@@ -75,6 +75,8 @@ class RouteAdmin(admin.ModelAdmin):
 class RegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'state', 'submitted_at', 'username', 'event', 'ride', 'speed_range_preference')
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'event__name',)
+    autocomplete_fields = ('user', 'event')
+    list_filter = ('submitted_at', 'state',)
 
     fields = (
         'user',
@@ -107,7 +109,8 @@ class RegistrationAdmin(admin.ModelAdmin):
         'authenticated',
     )
 
-    list_filter = ('submitted_at', 'state',)
+    def has_add_permission(self, request):
+        return False
 
     @admin.display(ordering='user__username')
     def username(self, obj):

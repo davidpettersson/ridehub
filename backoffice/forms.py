@@ -1,11 +1,13 @@
 from django import forms
+
 from .models import Event
 from .widgets import EndsAtWidget, RegistrationClosesAtWidget
+
 
 class EventAdminForm(forms.ModelForm):
     class Meta:
         model = Event
-        fields = '__all__' # Or list specific fields if you don't want all of them
+        fields = '__all__'
         widgets = {
             'ends_at': EndsAtWidget(),
             'registration_closes_at': RegistrationClosesAtWidget(),
