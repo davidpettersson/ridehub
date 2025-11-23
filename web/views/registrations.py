@@ -8,7 +8,6 @@ from backoffice.models import Event
 from backoffice.services.registration_service import RegistrationService, RegistrationDetail
 from backoffice.services.request_service import RequestService
 from backoffice.services.user_service import UserDetail
-from backoffice.utils import ensure
 from web.forms import RegistrationForm
 
 logger = logging.getLogger(__name__)
@@ -39,24 +38,14 @@ def _get_user_details(form: RegistrationForm) -> UserDetail:
 
 def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedirect | HttpResponse:
     event = get_object_or_404(Event, id=event_id)
+    registration_service = RegistrationService()
 
-    # Adding these here to avoid bots making mistakes
-    if not event.registration_open:
-        logger.warning("Attempt register for closed event", extra={'event': event})
-        return HttpResponseBadRequest('Registration closed')
-
-    if event.cancelled:
-        logger.warning("Attempt register for cancelled event", extra={'event': event})
-        return HttpResponseBadRequest('Event cancelled')
-
-    # Safe guards
-    ensure(event.registration_open, 'registration is open')
-    ensure(not event.cancelled, 'event must not be cancelled')
-    ensure(not event.external_registration_url, 'event does not use external registration')
-    ensure(event.has_capacity_available, 'event has capacity for more registrations')
+    allowed, reason = registration_service.is_registration_allowed(event)
+    if not allowed:
+        logger.warning("Registration not allowed", extra={'event': event, 'reason': reason})
+        return HttpResponseBadRequest(reason)
 
     # OK, proceed
-    registration_service = RegistrationService()
     request_service = RequestService()
     user = request.user if request.user.is_authenticated else None
 

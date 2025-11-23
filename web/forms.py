@@ -1,6 +1,7 @@
 from django import forms
 
 from backoffice.models import Registration, Event, Ride, SpeedRange
+from backoffice.services.registration_service import RegistrationService
 
 
 class RegistrationForm(forms.Form):
@@ -47,10 +48,13 @@ class RegistrationForm(forms.Form):
 
         assert event
 
-        # Only add ride and speed fields if this event has rides
-        if Ride.objects.filter(event=event).exists():
+        registration_service = RegistrationService()
+        requirements = registration_service.get_event_requirements(event)
+        rides = registration_service.get_rides_for_event(event)
+
+        if rides.exists():
             self.fields['ride'] = forms.ModelChoiceField(
-                queryset=Ride.objects.filter(event=event),
+                queryset=rides,
                 label="Ride",
                 required=True
             )
@@ -61,7 +65,7 @@ class RegistrationForm(forms.Form):
                 required=False
             )
 
-        if event.requires_emergency_contact:
+        if requirements.requires_emergency_contact:
             self.fields['emergency_contact_name'] = forms.CharField(
                 max_length=128,
                 min_length=2,
@@ -82,7 +86,7 @@ class RegistrationForm(forms.Form):
                 })
             )
 
-        if event.ride_leaders_wanted:
+        if requirements.ride_leaders_wanted:
             self.fields['ride_leader_preference'] = forms.ChoiceField(
                 choices=[
                     (Registration.RideLeaderPreference.YES, 'Yes'),
@@ -93,7 +97,7 @@ class RegistrationForm(forms.Form):
                 required=True
             )
 
-        if event.requires_membership:
+        if requirements.requires_membership:
             self.fields['membership_confirmation'] = forms.BooleanField(
                 required=True,
                 label="I am a current OBC member",
