@@ -23,6 +23,14 @@ class RegistrationDetail:
     emergency_contact_phone: str | None
 
 
+@dataclass
+class EventRequirements:
+    has_rides: bool
+    requires_emergency_contact: bool
+    requires_membership: bool
+    ride_leaders_wanted: bool
+
+
 class RegistrationService:
     def __init__(self):
         self.user_service = UserService()
@@ -145,3 +153,55 @@ class RegistrationService:
             'total_events_attended': total_events_attended,
             'times_as_ride_leader': times_as_ride_leader,
         }
+
+    def get_rides_for_event(self, event: Event) -> QuerySet[Ride]:
+        return Ride.objects.filter(event=event)
+
+    def get_speed_ranges_for_ride(self, ride: Ride | None) -> QuerySet[SpeedRange]:
+        if ride is None:
+            return SpeedRange.objects.none()
+        return ride.speed_ranges.all()
+
+    def get_event_requirements(self, event: Event) -> EventRequirements:
+        return EventRequirements(
+            has_rides=event.has_rides,
+            requires_emergency_contact=event.requires_emergency_contact,
+            requires_membership=event.requires_membership,
+            ride_leaders_wanted=event.ride_leaders_wanted,
+        )
+
+    def validate_registration_selections(self, event: Event, ride: Ride | None, speed_range: SpeedRange | None) -> dict:
+        errors = {}
+
+        if ride is not None and ride.event_id != event.id:
+            errors['ride'] = 'Selected ride does not belong to this event.'
+
+        if speed_range is not None and ride is not None:
+            if not ride.speed_ranges.filter(id=speed_range.id).exists():
+                errors['speed_range_preference'] = 'Selected speed range is not available for this ride.'
+
+        if event.has_rides and ride is None:
+            errors['ride'] = 'A ride selection is required for this event.'
+
+        if ride is not None and ride.speed_ranges.exists() and speed_range is None:
+            errors['speed_range_preference'] = 'A speed range selection is required for this ride.'
+
+        return errors
+
+    def is_registration_allowed(self, event: Event) -> tuple[bool, str | None]:
+        if event.cancelled:
+            return False, 'Event is cancelled.'
+
+        if event.archived:
+            return False, 'Event is archived.'
+
+        if not event.registration_open:
+            return False, 'Registration is closed.'
+
+        if event.external_registration_url:
+            return False, 'Event uses external registration.'
+
+        if not event.has_capacity_available:
+            return False, 'Event has reached capacity.'
+
+        return True, None

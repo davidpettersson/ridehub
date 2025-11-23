@@ -455,13 +455,18 @@ class Registration(models.Model):
         return f"{self.name} for {self.event}"
 
     def clean(self):
+        if self.ride and self.ride.event_id != self.event_id:
+            raise ValidationError({
+                'ride': f"The ride '{self.ride}' does not belong to this event."
+            })
+
         if not self.event.ride_set.exists():
             return
 
         if self.ride and self.speed_range_preference:
             if not self.ride.speed_ranges.filter(id=self.speed_range_preference.id).exists():
                 raise ValidationError({
-                    'speed_range_preference': f"{self.id} The speed range '{self.speed_range_preference}' is not available for {self.ride}."
+                    'speed_range_preference': f"The speed range '{self.speed_range_preference}' is not available for {self.ride}."
                 })
 
         if self.event.requires_emergency_contact:
