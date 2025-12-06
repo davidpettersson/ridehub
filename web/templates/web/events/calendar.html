@@ -5,28 +5,21 @@
     <div class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div class="d-flex align-items-center gap-3">
-                <a href="{% url 'calendar_month' prev_year prev_month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center calendar-nav-btn" style="width: 40px; height: 40px; border: none;" title="Previous month">
-                    <i class="bi bi-chevron-left"></i>
-                </a>
-                <a href="{% url 'calendar_month' next_year next_month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center calendar-nav-btn" style="width: 40px; height: 40px; border: none;" title="Next month">
-                    <i class="bi bi-chevron-right"></i>
-                </a>
+                <div class="d-flex align-items-center gap-1">
+                    <a href="{% url 'calendar_month' prev_year prev_month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center calendar-nav-btn" style="width: 40px; height: 40px; border: none;" title="Previous month">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                    <a href="{% url 'calendar_month' next_year next_month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center calendar-nav-btn" style="width: 40px; height: 40px; border: none;" title="Next month">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
                 <h1 class="fs-2 fw-bold mb-0">{{ month_name }} {{ year }}</h1>
             </div>
             <div class="d-flex justify-content-end">
                 {% flag "calendar_view" %}
-                <div class="dropdown">
-                    <button class="btn btn-light dropdown-toggle d-flex align-items-center" type="button" id="viewDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
-                        <i class="bi bi-calendar3 me-2"></i>Calendar
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="viewDropdown">
-                        <li><a class="dropdown-item" href="{% url 'upcoming' %}">
-                            <i class="bi bi-list-ul me-2"></i>List
-                        </a></li>
-                        <li><a class="dropdown-item active" href="{% url 'calendar' %}">
-                            <i class="bi bi-calendar3 me-2"></i>Calendar
-                        </a></li>
-                    </ul>
+                <div class="btn-group" role="group" aria-label="View selector">
+                    <a href="{% url 'upcoming' %}" class="btn btn-outline-secondary">List</a>
+                    <a href="{% url 'calendar' %}" class="btn btn-secondary active">Calendar</a>
                 </div>
                 {% endflag %}
             </div>
