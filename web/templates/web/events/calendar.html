@@ -63,12 +63,14 @@
                                                     <div class="mb-1">
                                                         <a href="{% url 'event_detail' event.id %}" class="text-decoration-none">
                                                             {% if event.starts_at.date < today %}
-                                                            <div class="p-1 bg-secondary bg-opacity-10 border border-secondary border-opacity-25 rounded text-secondary text-truncate" style="font-size: 0.75rem;" title="{{ event.name }} - {{ event.starts_at|date:'g' }}{{ event.starts_at|date:'A'|lower|cut:'.m.' }}">
-                                                                <span class="fw-medium">{{ event.starts_at|date:"g" }} {{ event.starts_at|date:"A"|lower|cut:".m." }}</span> {{ event.name }}
+                                                            <div class="p-1 bg-secondary bg-opacity-10 border border-secondary border-opacity-25 rounded text-secondary" title="{{ event.name }} - {{ event.starts_at|date:'g:i A'|lower|cut:'.m.' }}{% if event.ends_at %} - {{ event.ends_at|date:'g:i A'|lower|cut:'.m.' }}{% endif %}">
+                                                                <div class="fw-medium text-truncate" style="font-size: 0.65rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %}</div>
+                                                                <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}</div>
                                                             </div>
                                                             {% else %}
-                                                            <div class="p-1 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded text-primary text-truncate" style="font-size: 0.75rem;" title="{{ event.name }} - {{ event.starts_at|date:'g' }}{{ event.starts_at|date:'A'|lower|cut:'.m.' }}">
-                                                                <span class="fw-medium">{{ event.starts_at|date:"g" }} {{ event.starts_at|date:"A"|lower|cut:".m." }}</span> {{ event.name }}
+                                                            <div class="p-1 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded text-primary" title="{{ event.name }} - {{ event.starts_at|date:'g:i A'|lower|cut:'.m.' }}{% if event.ends_at %} - {{ event.ends_at|date:'g:i A'|lower|cut:'.m.' }}{% endif %}">
+                                                                <div class="fw-medium text-truncate" style="font-size: 0.65rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %}</div>
+                                                                <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}</div>
                                                             </div>
                                                             {% endif %}
                                                         </a>
