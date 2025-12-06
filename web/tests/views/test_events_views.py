@@ -346,10 +346,14 @@ class EventViewTimezoneTests(TestCase):
         
     def test_calendar_view_timezone_handling(self):
         """Test that events are placed on correct calendar dates regardless of UTC vs local time."""
-        # Create an event at 7 PM EST on 2025-11-24
-        # This is midnight UTC on 2025-11-25, which was causing the issue
-        local_datetime = datetime(2025, 11, 24, 19, 0, tzinfo=ZoneInfo('America/Toronto'))  # 7 PM EST
-        
+        # Create an event at 7 PM local time in the future
+        # When converted to UTC, this becomes the next day (midnight UTC)
+        # This tests that the calendar uses local dates, not UTC dates
+        now = timezone.now()
+        future_date = now + timedelta(days=30)
+
+        local_datetime = datetime(future_date.year, future_date.month, future_date.day, 19, 0, tzinfo=ZoneInfo('America/Toronto'))
+
         event = Event.objects.create(
             program=self.program,
             name='Evening Event',
@@ -357,24 +361,25 @@ class EventViewTimezoneTests(TestCase):
             starts_at=local_datetime,
             registration_closes_at=local_datetime - timedelta(days=1),
         )
-        
-        # Get calendar view for November 2025
-        url = reverse('calendar_month', kwargs={'year': 2025, 'month': 11})
+
+        # Get calendar view for the event's month
+        url = reverse('calendar_month', kwargs={'year': future_date.year, 'month': future_date.month})
         response = self.client.get(url)
-        
+
         self.assertEqual(response.status_code, 200)
-        
-        # The event should appear on November 24th in the events_by_date context
+
+        # The event should appear on the correct local date in the events_by_date context
         events_by_date = response.context['events_by_date']
-        
+
         # Check that the event is on the correct date (local date, not UTC date)
-        event_date = date(2025, 11, 24)
+        event_date = date(future_date.year, future_date.month, future_date.day)
         self.assertIn(event_date, events_by_date)
         self.assertEqual(len(events_by_date[event_date]), 1)
         self.assertEqual(events_by_date[event_date][0].name, 'Evening Event')
-        
-        # Ensure it's NOT on November 25th (which would be the UTC date)
-        wrong_date = date(2025, 11, 25)
+
+        # Ensure it's NOT on the next day (which would be the UTC date)
+        next_day = future_date + timedelta(days=1)
+        wrong_date = date(next_day.year, next_day.month, next_day.day)
         if wrong_date in events_by_date:
             # If the date exists, it should not contain our evening event
             event_names = [e.name for e in events_by_date[wrong_date]]
@@ -439,42 +444,54 @@ class CalendarMonthPreservationTests(TestCase):
         self.program = Program.objects.create(name='Test Program')
         self.client = Client()
 
-        past_event_datetime = datetime(2025, 10, 15, 10, 0, tzinfo=ZoneInfo('America/Toronto'))
-        self.past_event = Event.objects.create(
+        now = timezone.now()
+
+        # Create event 30 days in the future
+        first_event_date = now + timedelta(days=30)
+        first_event_datetime = datetime(first_event_date.year, first_event_date.month, first_event_date.day, 10, 0, tzinfo=ZoneInfo('America/Toronto'))
+        self.first_event = Event.objects.create(
             program=self.program,
-            name='Past Event',
-            description='Event in October',
-            starts_at=past_event_datetime,
-            registration_closes_at=past_event_datetime - timedelta(days=1),
+            name='First Event',
+            description='Event in first month',
+            starts_at=first_event_datetime,
+            registration_closes_at=first_event_datetime - timedelta(days=1),
         )
 
-        future_event_datetime = datetime(2026, 2, 20, 10, 0, tzinfo=ZoneInfo('America/Toronto'))
-        self.future_event = Event.objects.create(
+        # Create event 90 days in the future (different month)
+        second_event_date = now + timedelta(days=90)
+        second_event_datetime = datetime(second_event_date.year, second_event_date.month, second_event_date.day, 10, 0, tzinfo=ZoneInfo('America/Toronto'))
+        self.second_event = Event.objects.create(
             program=self.program,
-            name='Future Event',
-            description='Event in February',
-            starts_at=future_event_datetime,
-            registration_closes_at=future_event_datetime - timedelta(days=1),
+            name='Second Event',
+            description='Event in second month',
+            starts_at=second_event_datetime,
+            registration_closes_at=second_event_datetime - timedelta(days=1),
         )
+
+        # Store the dates for use in tests
+        self.first_month = first_event_date.month
+        self.first_year = first_event_date.year
+        self.second_month = second_event_date.month
+        self.second_year = second_event_date.year
 
     def test_calendar_view_stores_selected_month_in_session(self):
         # Arrange
-        url = reverse('calendar_month', kwargs={'year': 2025, 'month': 10})
+        url = reverse('calendar_month', kwargs={'year': self.first_year, 'month': self.first_month})
 
         # Act
         response = self.client.get(url)
 
         # Assert
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(self.client.session['calendar_selected_year'], 2025)
-        self.assertEqual(self.client.session['calendar_selected_month'], 10)
+        self.assertEqual(self.client.session['calendar_selected_year'], self.first_year)
+        self.assertEqual(self.client.session['calendar_selected_month'], self.first_month)
 
     def test_events_redirect_uses_stored_month(self):
         # Arrange
         session = self.client.session
         session['preferred_events_view'] = 'calendar'
-        session['calendar_selected_year'] = 2025
-        session['calendar_selected_month'] = 10
+        session['calendar_selected_year'] = self.first_year
+        session['calendar_selected_month'] = self.first_month
         session.save()
 
         # Act
@@ -482,7 +499,7 @@ class CalendarMonthPreservationTests(TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('calendar_month', kwargs={'year': 2025, 'month': 10}))
+        self.assertEqual(response.url, reverse('calendar_month', kwargs={'year': self.first_year, 'month': self.first_month}))
 
     def test_events_redirect_falls_back_to_calendar_without_stored_month(self):
         # Arrange
@@ -499,47 +516,47 @@ class CalendarMonthPreservationTests(TestCase):
 
     def test_navigation_to_event_detail_and_back_preserves_month(self):
         # Arrange
-        calendar_url = reverse('calendar_month', kwargs={'year': 2025, 'month': 10})
+        calendar_url = reverse('calendar_month', kwargs={'year': self.first_year, 'month': self.first_month})
 
-        # Act - View October calendar
+        # Act - View first month calendar
         calendar_response = self.client.get(calendar_url)
         self.assertEqual(calendar_response.status_code, 200)
 
         # Act - View event detail
-        event_detail_url = reverse('event_detail', kwargs={'event_id': self.past_event.id})
+        event_detail_url = reverse('event_detail', kwargs={'event_id': self.first_event.id})
         detail_response = self.client.get(event_detail_url)
         self.assertEqual(detail_response.status_code, 200)
 
         # Act - Navigate back to events
         back_response = self.client.get(reverse('events'))
 
-        # Assert - Should return to October, not current month
+        # Assert - Should return to first month, not current month
         self.assertEqual(back_response.status_code, 302)
-        self.assertEqual(back_response.url, reverse('calendar_month', kwargs={'year': 2025, 'month': 10}))
+        self.assertEqual(back_response.url, reverse('calendar_month', kwargs={'year': self.first_year, 'month': self.first_month}))
 
     def test_switching_months_updates_session(self):
         # Arrange
-        october_url = reverse('calendar_month', kwargs={'year': 2025, 'month': 10})
-        february_url = reverse('calendar_month', kwargs={'year': 2026, 'month': 2})
+        first_url = reverse('calendar_month', kwargs={'year': self.first_year, 'month': self.first_month})
+        second_url = reverse('calendar_month', kwargs={'year': self.second_year, 'month': self.second_month})
 
-        # Act - View October
-        self.client.get(october_url)
-        self.assertEqual(self.client.session['calendar_selected_month'], 10)
-        self.assertEqual(self.client.session['calendar_selected_year'], 2025)
+        # Act - View first month
+        self.client.get(first_url)
+        self.assertEqual(self.client.session['calendar_selected_month'], self.first_month)
+        self.assertEqual(self.client.session['calendar_selected_year'], self.first_year)
 
-        # Act - Switch to February
-        self.client.get(february_url)
+        # Act - Switch to second month
+        self.client.get(second_url)
 
         # Assert - Session should be updated
-        self.assertEqual(self.client.session['calendar_selected_month'], 2)
-        self.assertEqual(self.client.session['calendar_selected_year'], 2026)
+        self.assertEqual(self.client.session['calendar_selected_month'], self.second_month)
+        self.assertEqual(self.client.session['calendar_selected_year'], self.second_year)
 
     def test_events_redirect_prefers_upcoming_when_not_calendar(self):
         # Arrange
         session = self.client.session
         session['preferred_events_view'] = 'upcoming'
-        session['calendar_selected_year'] = 2025
-        session['calendar_selected_month'] = 10
+        session['calendar_selected_year'] = self.first_year
+        session['calendar_selected_month'] = self.first_month
         session.save()
 
         # Act
