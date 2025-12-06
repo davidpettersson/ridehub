@@ -423,3 +423,121 @@ class EventViewTimezoneTests(TestCase):
         nov_25_events = date_groups[date(2025, 11, 25)]
         self.assertEqual(len(nov_25_events), 1)
         self.assertEqual(nov_25_events[0].name, 'Morning Event')
+
+
+class CalendarMonthPreservationTests(TestCase):
+    """Tests for preserving selected month when navigating between calendar and event details."""
+
+    def setUp(self):
+        self.program = Program.objects.create(name='Test Program')
+        self.client = Client()
+
+        past_event_datetime = datetime(2025, 10, 15, 10, 0, tzinfo=ZoneInfo('America/Toronto'))
+        self.past_event = Event.objects.create(
+            program=self.program,
+            name='Past Event',
+            description='Event in October',
+            starts_at=past_event_datetime,
+            registration_closes_at=past_event_datetime - timedelta(days=1),
+        )
+
+        future_event_datetime = datetime(2026, 2, 20, 10, 0, tzinfo=ZoneInfo('America/Toronto'))
+        self.future_event = Event.objects.create(
+            program=self.program,
+            name='Future Event',
+            description='Event in February',
+            starts_at=future_event_datetime,
+            registration_closes_at=future_event_datetime - timedelta(days=1),
+        )
+
+    def test_calendar_view_stores_selected_month_in_session(self):
+        # Arrange
+        url = reverse('calendar_month', kwargs={'year': 2025, 'month': 10})
+
+        # Act
+        response = self.client.get(url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.session['calendar_selected_year'], 2025)
+        self.assertEqual(self.client.session['calendar_selected_month'], 10)
+
+    def test_events_redirect_uses_stored_month(self):
+        # Arrange
+        session = self.client.session
+        session['preferred_events_view'] = 'calendar'
+        session['calendar_selected_year'] = 2025
+        session['calendar_selected_month'] = 10
+        session.save()
+
+        # Act
+        response = self.client.get(reverse('events'))
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('calendar_month', kwargs={'year': 2025, 'month': 10}))
+
+    def test_events_redirect_falls_back_to_calendar_without_stored_month(self):
+        # Arrange
+        session = self.client.session
+        session['preferred_events_view'] = 'calendar'
+        session.save()
+
+        # Act
+        response = self.client.get(reverse('events'))
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('calendar'))
+
+    def test_navigation_to_event_detail_and_back_preserves_month(self):
+        # Arrange
+        calendar_url = reverse('calendar_month', kwargs={'year': 2025, 'month': 10})
+
+        # Act - View October calendar
+        calendar_response = self.client.get(calendar_url)
+        self.assertEqual(calendar_response.status_code, 200)
+
+        # Act - View event detail
+        event_detail_url = reverse('event_detail', kwargs={'event_id': self.past_event.id})
+        detail_response = self.client.get(event_detail_url)
+        self.assertEqual(detail_response.status_code, 200)
+
+        # Act - Navigate back to events
+        back_response = self.client.get(reverse('events'))
+
+        # Assert - Should return to October, not current month
+        self.assertEqual(back_response.status_code, 302)
+        self.assertEqual(back_response.url, reverse('calendar_month', kwargs={'year': 2025, 'month': 10}))
+
+    def test_switching_months_updates_session(self):
+        # Arrange
+        october_url = reverse('calendar_month', kwargs={'year': 2025, 'month': 10})
+        february_url = reverse('calendar_month', kwargs={'year': 2026, 'month': 2})
+
+        # Act - View October
+        self.client.get(october_url)
+        self.assertEqual(self.client.session['calendar_selected_month'], 10)
+        self.assertEqual(self.client.session['calendar_selected_year'], 2025)
+
+        # Act - Switch to February
+        self.client.get(february_url)
+
+        # Assert - Session should be updated
+        self.assertEqual(self.client.session['calendar_selected_month'], 2)
+        self.assertEqual(self.client.session['calendar_selected_year'], 2026)
+
+    def test_events_redirect_prefers_upcoming_when_not_calendar(self):
+        # Arrange
+        session = self.client.session
+        session['preferred_events_view'] = 'upcoming'
+        session['calendar_selected_year'] = 2025
+        session['calendar_selected_month'] = 10
+        session.save()
+
+        # Act
+        response = self.client.get(reverse('events'))
+
+        # Assert - Should redirect to upcoming, not calendar
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('upcoming'))
