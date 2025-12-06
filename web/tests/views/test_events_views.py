@@ -383,9 +383,14 @@ class EventViewTimezoneTests(TestCase):
     def test_event_list_view_timezone_handling(self):
         """Test that events are grouped by correct dates in the event list view."""
         # Create two events: one in the evening of day 1, one in the morning of day 2
-        evening_datetime = datetime(2025, 11, 24, 19, 0, tzinfo=ZoneInfo('America/Toronto'))  # 7 PM EST Nov 24
-        morning_datetime = datetime(2025, 11, 25, 9, 0, tzinfo=ZoneInfo('America/Toronto'))   # 9 AM EST Nov 25
-        
+        # Use future dates to ensure they appear in the upcoming view
+        now = timezone.now()
+        future_date = now + timedelta(days=30)
+
+        evening_datetime = datetime(future_date.year, future_date.month, future_date.day, 19, 0, tzinfo=ZoneInfo('America/Toronto'))
+        next_day = future_date + timedelta(days=1)
+        morning_datetime = datetime(next_day.year, next_day.month, next_day.day, 9, 0, tzinfo=ZoneInfo('America/Toronto'))
+
         evening_event = Event.objects.create(
             program=self.program,
             name='Evening Event',
@@ -393,7 +398,7 @@ class EventViewTimezoneTests(TestCase):
             starts_at=evening_datetime,
             registration_closes_at=evening_datetime - timedelta(days=1),
         )
-        
+
         morning_event = Event.objects.create(
             program=self.program,
             name='Morning Event',
@@ -401,28 +406,30 @@ class EventViewTimezoneTests(TestCase):
             starts_at=morning_datetime,
             registration_closes_at=morning_datetime - timedelta(days=1),
         )
-        
+
         url = reverse('upcoming')
         response = self.client.get(url)
-        
+
         self.assertEqual(response.status_code, 200)
-        
+
         # Check that events are grouped by correct local dates
         events_by_date = response.context['events_by_date']
-        
-        # Should have two groups: Nov 24 and Nov 25
+
+        # Should have two groups for the two different days
         self.assertEqual(len(events_by_date), 2)
-        
+
         # Verify each event is in the correct date group
         date_groups = dict(events_by_date)
-        
-        nov_24_events = date_groups[date(2025, 11, 24)]
-        self.assertEqual(len(nov_24_events), 1)
-        self.assertEqual(nov_24_events[0].name, 'Evening Event')
-        
-        nov_25_events = date_groups[date(2025, 11, 25)]
-        self.assertEqual(len(nov_25_events), 1)
-        self.assertEqual(nov_25_events[0].name, 'Morning Event')
+
+        evening_date = date(future_date.year, future_date.month, future_date.day)
+        evening_events = date_groups[evening_date]
+        self.assertEqual(len(evening_events), 1)
+        self.assertEqual(evening_events[0].name, 'Evening Event')
+
+        morning_date = date(next_day.year, next_day.month, next_day.day)
+        morning_events = date_groups[morning_date]
+        self.assertEqual(len(morning_events), 1)
+        self.assertEqual(morning_events[0].name, 'Morning Event')
 
 
 class CalendarMonthPreservationTests(TestCase):
