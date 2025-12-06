@@ -1,16 +1,12 @@
 {% extends 'web/_base_bootstrap.html' %}
-{% load waffle_tags %}
 {% block title %}Events Calendar{% endblock %}
 {% block content %}
     <div class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="fs-2 fw-bold mb-0">Upcoming events</h1>
-            {% flag "calendar_view" %}
-            <div class="btn-group" role="group" aria-label="View selector">
-                <a href="{% url 'upcoming' %}" class="btn btn-secondary active">List</a>
-                <a href="{% url 'calendar' %}" class="btn btn-outline-secondary">Calendar</a>
-            </div>
-            {% endflag %}
+            <a href="{% url 'calendar' %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Switch to calendar view" aria-label="Switch to calendar view">
+                <i class="bi bi-calendar3"></i>
+            </a>
         </div>
         
         {% for date, events in events_by_date %}

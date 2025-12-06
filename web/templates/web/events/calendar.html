@@ -1,5 +1,4 @@
 {% extends 'web/_base_bootstrap.html' %}
-{% load waffle_tags %}
 {% block title %}{{ month_name }} {{ year }}{% endblock %}
 {% block content %}
     <div class="mb-4">
@@ -13,15 +12,19 @@
                         <i class="bi bi-chevron-right"></i>
                     </a>
                 </div>
-                <h1 class="fs-2 fw-bold mb-0">{{ month_name }} {{ year }}</h1>
+                <h1 class="fs-2 fw-bold mb-0 d-flex align-items-center gap-2">
+                    <span>{{ month_name }} {{ year }}</span>
+                    {% if year != today.year or month != today.month %}
+                    <a href="{% url 'calendar_month' today.year today.month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Go to current month" aria-label="Go to current month">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                    {% endif %}
+                </h1>
             </div>
             <div class="d-flex justify-content-end">
-                {% flag "calendar_view" %}
-                <div class="btn-group" role="group" aria-label="View selector">
-                    <a href="{% url 'upcoming' %}" class="btn btn-outline-secondary">List</a>
-                    <a href="{% url 'calendar' %}" class="btn btn-secondary active">Calendar</a>
-                </div>
-                {% endflag %}
+                <a href="{% url 'upcoming' %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Switch to list view" aria-label="Switch to list view">
+                    <i class="bi bi-list-ul"></i>
+                </a>
             </div>
         </div>
         
