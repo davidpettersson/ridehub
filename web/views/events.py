@@ -1,6 +1,6 @@
-from itertools import groupby
 import calendar
 from datetime import datetime, date
+from itertools import groupby
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -49,7 +49,7 @@ def _add_rider_to_speed_range(rides_data, ride_id, speed_range_key, registration
                 'ride_leader_count': 0,
                 'non_leader_count': 0
             }
-    
+
     rides_data[ride_id]['speed_ranges'][speed_range_key]['riders'].append(registration)
 
 
@@ -57,10 +57,10 @@ def _populate_riders(rides_data, registrations):
     for reg in registrations:
         if not reg.ride:
             continue
-            
+
         ride_id = str(reg.ride.id)
         speed_range_key = _get_speed_range_key(reg)
-        
+
         if speed_range_key in rides_data[ride_id]['speed_ranges'] or speed_range_key == 'none':
             _add_rider_to_speed_range(rides_data, ride_id, speed_range_key, reg)
 
@@ -74,14 +74,14 @@ def _sort_speed_range_data(speed_ranges):
         speed_ranges.items(),
         key=lambda x: x[1]['sort_key']
     )
-    
+
     sorted_speed_ranges = {}
     for speed_range_id, speed_range_data in sorted_items:
         speed_range_data['riders'].sort(key=lambda r: r.name)
         speed_range_data['ride_leader_count'] = _count_ride_leaders(speed_range_data['riders'])
         speed_range_data['non_leader_count'] = len(speed_range_data['riders']) - speed_range_data['ride_leader_count']
         sorted_speed_ranges[speed_range_id] = speed_range_data
-    
+
     return sorted_speed_ranges
 
 
@@ -97,24 +97,29 @@ def _finalize_rides_data(rides_data):
 
 def _get_rides_with_riders_for_event(event_id: int) -> dict:
     event = get_object_or_404(Event, id=event_id)
-    
+
     registrations = Registration.objects.filter(
         event_id=event_id,
         state=Registration.STATE_CONFIRMED
     ).select_related('ride', 'speed_range_preference', 'ride__route')
-    
+
     rides_data = _initialize_rides_structure(event)
     _populate_riders(rides_data, registrations)
-    
+
     return _finalize_rides_data(rides_data)
 
 
 def events_redirect(request: HttpRequest) -> HttpResponseRedirect:
-    """Redirect to user's preferred events view or default to upcoming"""
     preferred_view = request.session.get('preferred_events_view', 'upcoming')
-    
+
     if preferred_view == 'calendar':
-        return redirect('calendar')
+        year = request.session.get('calendar_selected_year')
+        month = request.session.get('calendar_selected_month')
+
+        if year and month:
+            return redirect('calendar_month', year=year, month=month)
+        else:
+            return redirect('calendar')
     else:
         return redirect('upcoming')
 
@@ -146,7 +151,7 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 def event_list(request: HttpRequest) -> HttpResponse:
     # Set preferred view in session
     request.session['preferred_events_view'] = 'upcoming'
-    
+
     events = EventService().fetch_upcoming_events()
     starts_at_date = lambda event: timezone.localtime(event.starts_at).date()
 
@@ -229,26 +234,25 @@ def event_registrations_full(request: HttpRequest, event_id: int) -> HttpRespons
 
 
 def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> HttpResponse:
-    # Set preferred view in session
     request.session['preferred_events_view'] = 'calendar'
-    
-    # Redirect to current year/month if not specified
+
     if year is None or month is None:
         current_date = datetime.now()
         return redirect('calendar_month', year=current_date.year, month=current_date.month)
-    
-    # Validate year and month parameters
+
     current_year = datetime.now().year
-    if not (1900 <= year <= current_year + 10):  # Allow 10 years in the future
+
+    if not (1900 <= year <= current_year + 10):
         return redirect('calendar_month', year=current_year, month=datetime.now().month)
-    
+
     if not (1 <= month <= 12):
         return redirect('calendar_month', year=current_year, month=datetime.now().month)
-    
-    # Get events for this month using EventService
+
+    request.session['calendar_selected_year'] = year
+    request.session['calendar_selected_month'] = month
+
     events = EventService().fetch_events_for_month(year, month)
-    
-    # Group events by date (convert to local timezone first)
+
     events_by_date = {}
     for event in events:
         local_starts_at = timezone.localtime(event.starts_at)
@@ -256,22 +260,20 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
         if event_date not in events_by_date:
             events_by_date[event_date] = []
         events_by_date[event_date].append(event)
-    
-    # Generate calendar data
+
     cal = calendar.Calendar(firstweekday=calendar.SUNDAY)
     month_days = cal.monthdayscalendar(year, month)
-    
-    # Calculate previous and next month
+
     if month == 1:
         prev_month, prev_year = 12, year - 1
     else:
         prev_month, prev_year = month - 1, year
-        
+
     if month == 12:
         next_month, next_year = 1, year + 1
     else:
         next_month, next_year = month + 1, year
-    
+
     context = {
         'current_date': date(year, month, 1),
         'month_name': calendar.month_name[month],
@@ -285,5 +287,5 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
         'next_year': next_year,
         'today': date.today(),
     }
-    
+
     return render(request, 'web/events/calendar.html', context)
