@@ -303,7 +303,7 @@ class RegistrationFormTest(TestCase):
         self.assertIn('speed_range_preference', form.errors)
         self.assertEqual(
             form.errors['speed_range_preference'][0],
-            'Please select a speed range for this ride.'
+            'A speed range selection is required for this ride.'
         )
 
     def test_form_validation_fails_with_speed_range_not_for_selected_ride(self):
@@ -395,7 +395,7 @@ class RegistrationFormTest(TestCase):
         self.assertIn('speed_range_preference', form.errors)
         self.assertEqual(
             form.errors['speed_range_preference'][0],
-            'Please select a speed range for this ride.'
+            'A speed range selection is required for this ride.'
         )
 
     def test_form_validation_without_ride_selected(self):
