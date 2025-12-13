@@ -8,7 +8,9 @@ from django.template.response import TemplateResponse
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 
 from backoffice.services.email_service import EmailService
+from backoffice.services.event_service import EventService
 from backoffice.models import Registration
+from backoffice.forms import EventDuplicationFormSet
 
 
 def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
@@ -62,17 +64,56 @@ cancel_event.short_description = "Cancel selected events"
 
 
 def duplicate_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
-    duplicate_count = 0
+    if request.method == 'POST' and 'post' in request.POST:
+        formset = EventDuplicationFormSet(request.POST)
 
-    if duplicate_count == 1:
-        message = "1 event was successfully cancelled."
-    else:
-        message = f"{duplicate_count} events were successfully cancelled."
+        if formset.is_valid():
+            service = EventService()
+            duplicate_count = 0
 
-    admin.message_user(request, message, messages.SUCCESS)
+            events_by_id = {event.pk: event for event in query_set}
+
+            for form in formset:
+                event_id = form.cleaned_data['event_id']
+                new_name = form.cleaned_data['new_name']
+                new_starts_at = form.cleaned_data['new_starts_at']
+
+                source_event = events_by_id.get(event_id)
+                if source_event:
+                    service.duplicate_event(source_event, new_name, new_starts_at)
+                    duplicate_count += 1
+
+            if duplicate_count == 1:
+                message = "1 event was successfully duplicated."
+            else:
+                message = f"{duplicate_count} events were successfully duplicated."
+
+            admin.message_user(request, message, messages.SUCCESS)
+            return redirect('admin:backoffice_event_changelist')
+
+    initial_data = [
+        {
+            'event_id': event.pk,
+            'original_name': event.name,
+            'new_name': event.name,
+            'new_starts_at': event.starts_at,
+        }
+        for event in query_set
+    ]
+    formset = EventDuplicationFormSet(initial=initial_data)
+
+    context = {
+        'title': 'Duplicate selected events',
+        'queryset': query_set,
+        'opts': admin.model._meta,
+        'action_checkbox_name': ACTION_CHECKBOX_NAME,
+        'formset': formset,
+    }
+
+    return TemplateResponse(request, 'admin/backoffice/event/duplicate_selected.html', context)
 
 
-duplicate_event.short_description = "Duplicate selected events (does not work yet)"
+duplicate_event.short_description = "Duplicate selected events"
 
 def archive_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
     archive_count = 0

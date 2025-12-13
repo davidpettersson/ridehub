@@ -1,9 +1,9 @@
-from datetime import date
+from datetime import date, datetime
 
 from django.db.models import QuerySet
 from django.utils import timezone
 
-from backoffice.models import Event
+from backoffice.models import Event, Ride
 
 
 class EventService:
@@ -36,3 +36,44 @@ class EventService:
             starts_at__date__gte=first_day,
             starts_at__date__lte=last_day
         )
+
+    def duplicate_event(self, source_event: Event, new_name: str, new_starts_at: datetime) -> Event:
+        ends_at_delta = None
+        if source_event.ends_at:
+            ends_at_delta = source_event.ends_at - source_event.starts_at
+
+        registration_closes_delta = source_event.registration_closes_at - source_event.starts_at
+
+        new_event = Event.objects.create(
+            program=source_event.program,
+            name=new_name,
+            visible=False,
+            location=source_event.location,
+            location_url=source_event.location_url,
+            starts_at=new_starts_at,
+            ends_at=new_starts_at + ends_at_delta if ends_at_delta else None,
+            registration_closes_at=new_starts_at + registration_closes_delta,
+            external_registration_url=source_event.external_registration_url,
+            registration_limit=source_event.registration_limit,
+            description=source_event.description,
+            virtual=source_event.virtual,
+            ride_leaders_wanted=source_event.ride_leaders_wanted,
+            requires_emergency_contact=source_event.requires_emergency_contact,
+            requires_membership=source_event.requires_membership,
+            organizer_email=source_event.organizer_email,
+        )
+
+        self._copy_rides(source_event, new_event)
+
+        return new_event
+
+    def _copy_rides(self, source_event: Event, target_event: Event) -> None:
+        for ride in source_event.ride_set.all():
+            new_ride = Ride.objects.create(
+                event=target_event,
+                name=ride.name,
+                description=ride.description,
+                route=ride.route,
+                ordering=ride.ordering,
+            )
+            new_ride.speed_ranges.set(ride.speed_ranges.all())
