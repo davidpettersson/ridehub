@@ -65,7 +65,9 @@ class Event(models.Model):
     )
 
     registration_closes_at = models.DateTimeField(
-        help_text='Closing time of the registration',
+        help_text='Closing time of the registration. May be blank if an external registration URL is provided.',
+        blank=True,
+        null=True,
     )
 
     external_registration_url = models.URLField(
@@ -190,6 +192,17 @@ class Event(models.Model):
 
     def clean(self):
         super().clean()
+
+        if self.starts_at and self.ends_at:
+            if self.ends_at < self.starts_at:
+                raise ValidationError({
+                    'ends_at': 'End time cannot be before the start time.'
+                })
+
+        if not self.registration_closes_at and not self.external_registration_url:
+            raise ValidationError({
+                'registration_closes_at': 'Registration close time is required unless an external registration URL is provided.'
+            })
 
         if self.starts_at and self.registration_closes_at:
             if self.registration_closes_at > self.starts_at:

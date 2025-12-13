@@ -1,4 +1,4 @@
-# Duplication of events
+# Events: Duplication
 
 ## Summary
 
@@ -41,19 +41,7 @@ Flow:
    - Registration close time should be calculated again: take the time delta as for end time and do the calculation.
  - Once everything is saved, the ride administrator must be redirected to the event index view with a success message at the top
 
-## Implementation
-
-### Files
-
-| File | Purpose |
-|------|---------|
-| `backoffice/services/event_service.py` | `duplicate_event()` method containing core duplication logic |
-| `backoffice/actions.py` | `duplicate_event` admin action with form handling |
-| `backoffice/forms.py` | `EventDuplicationForm` and `EventDuplicationFormSet` |
-| `templates/admin/backoffice/event/duplicate_selected.html` | Bulk edit form template |
-| `backoffice/tests/services/test_event_service.py` | `DuplicateEventTestCase` with 13 tests |
-
-### Field copying rules
+## Field copying rules
 
 | Field | Action |
 |-------|--------|
@@ -72,7 +60,7 @@ Flow:
 | archived, archived_at | Do not copy (use defaults) |
 | legacy, legacy_event_id | Do not copy (use defaults) |
 
-### Ride copying
+## Ride copying
 
 Each ride is deep copied as a new `Ride` object with:
 - Same `name`, `description`, `ordering` values

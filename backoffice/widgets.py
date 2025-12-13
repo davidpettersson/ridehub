@@ -12,14 +12,16 @@ class EndsAtWidget(AdminSplitDateTime):
         dropdown_html = f'''
         <div style="margin-left: 2em; margin-top: 6px; padding-top: 4px;">
             <select id="{dropdown_id}" style="min-width: 220px; padding: 4px;" 
-                    onchange="if(this.value) {{ 
-                        setEndsAtTime(parseInt(this.value), 'id_starts_at', 'id_{name}'); 
-                        this.selectedIndex = 0; 
+                    onchange="if(this.value) {{
+                        setEndsAtTime(parseFloat(this.value), 'id_starts_at', 'id_{name}');
+                        this.selectedIndex = 0;
                     }}">
                 <option value="">Quick set...</option>
                 <option value="1">Add 1 hour</option>
+                <option value="1.5">Add 1.5 hours</option>
                 <option value="2">Add 2 hours</option>
                 <option value="3">Add 3 hours</option>
+                <option value="4">Add 4 hours</option>
                 <option value="5">Add 5 hours</option>
                 <option value="8">Add 8 hours</option>
             </select>
@@ -57,6 +59,8 @@ class RegistrationClosesAtWidget(AdminSplitDateTime):
                         this.selectedIndex = 0; 
                     }}">
                 <option value="">Quick set...</option>
+                <option value="hours_before:0">At start</option>
+                <option value="hours_before:1">1 hour before start</option>
                 <option value="hours_before:2">2 hours before start</option>
                 <option value="hours_before:3">3 hours before start</option>
                 <option value="day_of:12:00">Same day at noon</option>
