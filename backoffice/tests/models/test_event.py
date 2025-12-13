@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -142,4 +143,108 @@ class EventTimeFieldsTestCase(TestCase):
         # Duration should now be longer
         new_duration = event.duration
         self.assertEqual(new_duration, timedelta(hours=3))
+
+
+class EventTimeValidationTestCase(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.now = timezone.now()
+        self.one_hour_ago = self.now - timedelta(hours=1)
+        self.one_hour_later = self.now + timedelta(hours=1)
+        self.two_hours_later = self.now + timedelta(hours=2)
+
+    def test_ends_at_before_starts_at_raises_error(self):
+        event = Event(
+            program=self.program,
+            name="Test Event",
+            description="Test description",
+            starts_at=self.two_hours_later,
+            ends_at=self.one_hour_later,
+            registration_closes_at=self.now
+        )
+        with self.assertRaises(ValidationError) as context:
+            event.full_clean()
+        self.assertIn('ends_at', context.exception.message_dict)
+
+    def test_ends_at_equal_to_starts_at_is_valid(self):
+        event = Event(
+            program=self.program,
+            name="Test Event",
+            description="Test description",
+            starts_at=self.one_hour_later,
+            ends_at=self.one_hour_later,
+            registration_closes_at=self.now
+        )
+        event.full_clean()
+
+    def test_ends_at_after_starts_at_is_valid(self):
+        event = Event(
+            program=self.program,
+            name="Test Event",
+            description="Test description",
+            starts_at=self.one_hour_later,
+            ends_at=self.two_hours_later,
+            registration_closes_at=self.now
+        )
+        event.full_clean()
+
+    def test_registration_closes_at_after_starts_at_raises_error(self):
+        event = Event(
+            program=self.program,
+            name="Test Event",
+            description="Test description",
+            starts_at=self.one_hour_later,
+            ends_at=self.two_hours_later,
+            registration_closes_at=self.two_hours_later
+        )
+        with self.assertRaises(ValidationError) as context:
+            event.full_clean()
+        self.assertIn('registration_closes_at', context.exception.message_dict)
+
+    def test_registration_closes_at_equal_to_starts_at_is_valid(self):
+        event = Event(
+            program=self.program,
+            name="Test Event",
+            description="Test description",
+            starts_at=self.one_hour_later,
+            ends_at=self.two_hours_later,
+            registration_closes_at=self.one_hour_later
+        )
+        event.full_clean()
+
+    def test_registration_closes_at_before_starts_at_is_valid(self):
+        event = Event(
+            program=self.program,
+            name="Test Event",
+            description="Test description",
+            starts_at=self.one_hour_later,
+            ends_at=self.two_hours_later,
+            registration_closes_at=self.now
+        )
+        event.full_clean()
+
+    def test_registration_closes_at_required_without_external_url(self):
+        event = Event(
+            program=self.program,
+            name="Test Event",
+            description="Test description",
+            starts_at=self.one_hour_later,
+            ends_at=self.two_hours_later,
+            registration_closes_at=None
+        )
+        with self.assertRaises(ValidationError) as context:
+            event.full_clean()
+        self.assertIn('registration_closes_at', context.exception.message_dict)
+
+    def test_registration_closes_at_optional_with_external_url(self):
+        event = Event(
+            program=self.program,
+            name="Test Event",
+            description="Test description",
+            starts_at=self.one_hour_later,
+            ends_at=self.two_hours_later,
+            registration_closes_at=None,
+            external_registration_url='https://example.com/register'
+        )
+        event.full_clean()
 
