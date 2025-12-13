@@ -91,16 +91,17 @@ def duplicate_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet
             admin.message_user(request, message, messages.SUCCESS)
             return redirect('admin:backoffice_event_changelist')
 
+    events_list = list(query_set)
     initial_data = [
         {
             'event_id': event.pk,
-            'original_name': event.name,
             'new_name': event.name,
-            'new_starts_at': event.starts_at,
+            'new_starts_at': event.starts_at.strftime('%Y-%m-%dT%H:%M'),
         }
-        for event in query_set
+        for event in events_list
     ]
     formset = EventDuplicationFormSet(initial=initial_data)
+    forms_with_events = list(zip(formset, events_list))
 
     context = {
         'title': 'Duplicate selected events',
@@ -108,6 +109,7 @@ def duplicate_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet
         'opts': admin.model._meta,
         'action_checkbox_name': ACTION_CHECKBOX_NAME,
         'formset': formset,
+        'forms_with_events': forms_with_events,
     }
 
     return TemplateResponse(request, 'admin/backoffice/event/duplicate_selected.html', context)

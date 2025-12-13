@@ -1,5 +1,4 @@
 from django import forms
-from django.contrib.admin.widgets import AdminSplitDateTime
 
 from .models import Event
 from .widgets import EndsAtWidget, RegistrationClosesAtWidget
@@ -7,9 +6,15 @@ from .widgets import EndsAtWidget, RegistrationClosesAtWidget
 
 class EventDuplicationForm(forms.Form):
     event_id = forms.IntegerField(widget=forms.HiddenInput())
-    original_name = forms.CharField(disabled=True, required=False, label="Original Event")
     new_name = forms.CharField(max_length=128, label="New Event Name")
-    new_starts_at = forms.SplitDateTimeField(widget=AdminSplitDateTime(), label="New Start Time")
+    new_starts_at = forms.DateTimeField(
+        widget=forms.DateTimeInput(
+            attrs={'type': 'datetime-local'},
+            format='%Y-%m-%dT%H:%M'
+        ),
+        input_formats=['%Y-%m-%dT%H:%M'],
+        label="New Start Time"
+    )
 
 
 EventDuplicationFormSet = forms.formset_factory(EventDuplicationForm, extra=0)
