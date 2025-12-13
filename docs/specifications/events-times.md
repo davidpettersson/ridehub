@@ -2,7 +2,7 @@
 
 ## Start time
 
- - Can be any time, past or present
+ - Can be any time, past or future
  - Must always be set
 
 ## End time
