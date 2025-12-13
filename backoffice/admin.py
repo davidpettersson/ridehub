@@ -31,7 +31,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
     date_hierarchy = 'starts_at'
     list_filter = ('starts_at', 'program', 'visible', 'cancelled', )
     search_fields = ('name',)
-    actions = [cancel_event, archive_event, duplicate_event]
+    actions = [cancel_event, duplicate_event]
     readonly_fields = ('cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
     form = EventAdminForm
 
