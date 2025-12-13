@@ -24,11 +24,12 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(SortableAdminBase, admin.ModelAdmin):
-    list_display = ('name', 'starts_at', 'registration_count', 'organizer_email', 'links', 'cancelled', 'archived',)
+    list_display = ('starts_at', 'name', 'registration_count', 'links', 'visible', 'cancelled',)
+    list_display_links = ['name', ]
     inlines = [RideInline, ]
     ordering = ('-starts_at',)
     date_hierarchy = 'starts_at'
-    list_filter = ('starts_at', 'program', 'cancelled', 'archived',)
+    list_filter = ('starts_at', 'program', 'visible', 'cancelled', )
     search_fields = ('name',)
     actions = [cancel_event, archive_event, duplicate_event]
     readonly_fields = ('cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
