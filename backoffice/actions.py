@@ -77,6 +77,8 @@ def duplicate_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet
                 event_id = form.cleaned_data['event_id']
                 new_name = form.cleaned_data['new_name']
                 new_starts_at = form.cleaned_data['new_starts_at']
+                if timezone.is_naive(new_starts_at):
+                    new_starts_at = timezone.make_aware(new_starts_at)
 
                 source_event = events_by_id.get(event_id)
                 if source_event:

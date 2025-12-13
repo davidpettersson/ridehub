@@ -38,6 +38,9 @@ class EventService:
         )
 
     def duplicate_event(self, source_event: Event, new_name: str, new_starts_at: datetime) -> Event:
+        if timezone.is_naive(new_starts_at):
+            raise ValueError("new_starts_at must be a timezone-aware datetime")
+
         ends_at_delta = None
         if source_event.ends_at:
             ends_at_delta = source_event.ends_at - source_event.starts_at

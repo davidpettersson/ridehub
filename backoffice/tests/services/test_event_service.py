@@ -506,3 +506,13 @@ class DuplicateEventTestCase(TestCase):
 
         self.assertEqual(self.source_event.registration_set.count(), 1)
         self.assertEqual(new_event.registration_set.count(), 0)
+
+    def test_duplicate_event_raises_for_naive_datetime(self):
+        naive_starts_at = datetime.datetime(2025, 7, 1, 10, 0, 0)
+
+        with self.assertRaises(ValueError) as context:
+            self.service.duplicate_event(
+                self.source_event, "New Event", naive_starts_at
+            )
+
+        self.assertIn("timezone-aware", str(context.exception))
