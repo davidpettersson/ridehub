@@ -16,6 +16,8 @@ Rules:
  - All fields from the existing event are copied over to the new event, with exceptions:
    - A new event must never carry over any cancellation status.
    - A new event must never start as visible.
+   - A new event must never carry over archived status.
+   - A new event must never carry over legacy import fields.
  - Linked records may sometimes be deep copied, sometimes not.
    - Ride records must be duplicated.
      - Routes referenced from a ride must never be duplicated, but the ride should reference the same route.
@@ -38,3 +40,41 @@ Flow:
    - End time should be calculated again: take the time delta from the old event and calculate duration, add that to the start time to get a new end time
    - Registration close time should be calculated again: take the time delta as for end time and do the calculation.
  - Once everything is saved, the ride administrator must be redirected to the event index view with a success message at the top
+
+## Implementation
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `backoffice/services/event_service.py` | `duplicate_event()` method containing core duplication logic |
+| `backoffice/actions.py` | `duplicate_event` admin action with form handling |
+| `backoffice/forms.py` | `EventDuplicationForm` and `EventDuplicationFormSet` |
+| `templates/admin/backoffice/event/duplicate_selected.html` | Bulk edit form template |
+| `backoffice/tests/services/test_event_service.py` | `DuplicateEventTestCase` with 13 tests |
+
+### Field copying rules
+
+| Field | Action |
+|-------|--------|
+| name | Use form value |
+| location, location_url, description | Copy from source |
+| external_registration_url, registration_limit | Copy from source |
+| virtual, ride_leaders_wanted | Copy from source |
+| requires_emergency_contact, requires_membership | Copy from source |
+| organizer_email | Copy from source |
+| program | Same FK reference |
+| starts_at | Use form value |
+| ends_at | Recalculate: `new_starts_at + (ends_at - starts_at)` |
+| registration_closes_at | Recalculate: `new_starts_at + (registration_closes_at - starts_at)` |
+| visible | Set to `False` |
+| cancelled, cancelled_at, cancellation_reason | Reset to defaults |
+| archived, archived_at | Do not copy (use defaults) |
+| legacy, legacy_event_id | Do not copy (use defaults) |
+
+### Ride copying
+
+Each ride is deep copied as a new `Ride` object with:
+- Same `name`, `description`, `ordering` values
+- Same `route` FK reference (not duplicated)
+- Same `speed_ranges` M2M associations (not duplicated)
