@@ -104,7 +104,7 @@
 
                 {% if event.registration_open %}
                 <div class="mt-4 mb-4">
-                    {% if event.has_capacity_available and not user_is_registered %}
+                    {% if event.has_capacity_available and not user_is_registered and event.registration_closes_at %}
                     <div class="d-flex align-items-center mb-4">
                         <div class="text-muted">Registration closes {{ event.registration_closes_at|date:"F j, g:i A" }}.</div>
                     </div>
