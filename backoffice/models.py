@@ -185,7 +185,8 @@ class Event(models.Model):
         if self.archived:
             return False
 
-        return timezone.now() < self.registration_closes_at
+        closes_at = self.registration_closes_at or self.starts_at
+        return timezone.now() < closes_at
 
     def __str__(self):
         return self.name

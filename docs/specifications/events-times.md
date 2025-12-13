@@ -23,6 +23,7 @@
  - Always less than or equal to start time
  - May be blank if there exists an external registration URL
  - Must be set if no external registration URL
+ - If blank, assume it is equivalent to the start time
  - Offers quick set options:
    - At start
    - 1 hour before start
