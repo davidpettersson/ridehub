@@ -45,7 +45,9 @@ class EventService:
         if source_event.ends_at:
             ends_at_delta = source_event.ends_at - source_event.starts_at
 
-        registration_closes_delta = source_event.registration_closes_at - source_event.starts_at
+        registration_closes_delta = None
+        if source_event.registration_closes_at:
+            registration_closes_delta = source_event.registration_closes_at - source_event.starts_at
 
         new_event = Event.objects.create(
             program=source_event.program,
@@ -55,7 +57,7 @@ class EventService:
             location_url=source_event.location_url,
             starts_at=new_starts_at,
             ends_at=new_starts_at + ends_at_delta if ends_at_delta else None,
-            registration_closes_at=new_starts_at + registration_closes_delta,
+            registration_closes_at=new_starts_at + registration_closes_delta if registration_closes_delta else None,
             external_registration_url=source_event.external_registration_url,
             registration_limit=source_event.registration_limit,
             description=source_event.description,

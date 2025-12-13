@@ -248,3 +248,32 @@ class EventTimeValidationTestCase(TestCase):
         )
         event.full_clean()
 
+
+class EventRegistrationOpenTestCase(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.now = timezone.now()
+        self.one_hour_later = self.now + timedelta(hours=1)
+
+    def test_registration_open_with_null_registration_closes_at_before_start(self):
+        event = Event(
+            program=self.program,
+            name="Test Event",
+            starts_at=self.one_hour_later,
+            registration_closes_at=None,
+            external_registration_url='https://example.com/register'
+        )
+
+        self.assertTrue(event.registration_open)
+
+    def test_registration_open_with_null_registration_closes_at_after_start(self):
+        event = Event(
+            program=self.program,
+            name="Test Event",
+            starts_at=self.now - timedelta(hours=1),
+            registration_closes_at=None,
+            external_registration_url='https://example.com/register'
+        )
+
+        self.assertFalse(event.registration_open)
+

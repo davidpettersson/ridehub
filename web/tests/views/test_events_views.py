@@ -336,6 +336,22 @@ class EventDetailViewTests(BaseEventViewTestCase):
         self.assertFalse(response.context['user_is_registered'])
         self.assertNotContains(response, 'You are registered for this event')
 
+    def test_event_detail_with_external_registration_url_and_no_registration_closes_at(self):
+        now = timezone.now()
+        event = Event.objects.create(
+            program=self.program,
+            name='External Registration Event',
+            starts_at=now + timedelta(days=7),
+            registration_closes_at=None,
+            external_registration_url='https://example.com/register'
+        )
+        url = reverse('event_detail', kwargs={'event_id': event.id})
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/events/detail.html')
+
 
 class EventViewTimezoneTests(TestCase):
     """Tests for timezone handling in event views."""
