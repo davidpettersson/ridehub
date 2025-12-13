@@ -1,0 +1,119 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    #content table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    #content table th {
+        text-align: left;
+        padding: 8px;
+        background: var(--darkened-bg);
+    }
+    #content table td {
+        padding: 8px;
+        vertical-align: middle;
+    }
+    #content table input[type="text"],
+    #content table input[type="datetime-local"] {
+        padding: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+    }
+    #content table input[type="text"] {
+        width: 250px;
+    }
+    .submit-row {
+        padding: 12px 14px;
+        margin: 20px 0 0 0;
+        background: var(--darkened-bg);
+        border: 1px solid var(--hairline-color);
+        border-radius: 4px;
+        display: flex;
+        gap: 10px;
+    }
+    .submit-row input[type="submit"],
+    .submit-row a.button {
+        padding: 10px 15px;
+        font-size: 14px;
+        text-transform: none;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_label|capfirst }}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; {% translate 'Duplicate events' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<p>{% translate 'Modify the details for each duplicated event below. The new events will be created as invisible (not visible to members) and can be made visible after review.' %}</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    <table>
+        <thead>
+            <tr>
+                <th>{% translate 'Original Start Time' %}</th>
+                <th>{% translate 'Original Event' %}</th>
+                <th>{% translate 'New Start Time' %}</th>
+                <th>{% translate 'New Event Name' %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for form, event in forms_with_events %}
+            <tr class="{% cycle 'row1' 'row2' %}">
+                <td>
+                    {{ form.event_id }}
+                    {{ event.starts_at|date:"Y-m-d H:i" }}
+                </td>
+                <td>
+                    {{ event.name }}
+                </td>
+                <td>
+                    {{ form.new_starts_at }}
+                    {% if form.new_starts_at.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.new_starts_at.errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </td>
+                <td>
+                    {{ form.new_name }}
+                    {% if form.new_name.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.new_name.errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <input type="hidden" name="action" value="duplicate_event">
+    <input type="hidden" name="post" value="yes">
+    {% for obj in queryset %}
+    <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">
+    {% endfor %}
+
+    <div class="submit-row">
+        <input type="submit" value="{% translate 'Duplicate Events' %}" class="default">
+        <a href="{% url opts|admin_urlname:'changelist' %}" class="button">{% translate 'Cancel' %}</a>
+    </div>
+</form>
+{% endblock %}
