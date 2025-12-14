@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django_gravatar',
     'django_prose_editor',
     'adminsortable2',
+    'colorfield',
     'backoffice',
     'web',
 ]

@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from colorfield.fields import ColorField
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -18,7 +19,32 @@ class Member(models.Model):
 
 
 class Program(models.Model):
-    name = models.CharField(max_length=128)
+    name = models.CharField(
+        max_length=128,
+        help_text='Name of the program'
+    )
+
+    description = models.CharField(
+        max_length=256,
+        blank=True,
+        help_text='Optional description of the program'
+    )
+
+    emoji = models.CharField(
+        max_length=3,
+        blank=True,
+        help_text='Optional emoji to make the program name more playful in various settings'
+    )
+
+    color = ColorField(
+        blank=True,
+        help_text='Optional color to associate with the program'
+    )
+
+    archived = models.BooleanField(
+        default=False,
+        help_text='Indicates if this program is archived and not to be used anymore'
+    )
 
     def __str__(self):
         return self.name

@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 
-from backoffice.actions import cancel_event, duplicate_event, archive_event
+from backoffice.actions import cancel_event, duplicate_event
 from backoffice.models import Member, Ride, Route, Event, Program, SpeedRange, Registration, Announcement, UserProfile
 from .forms import EventAdminForm
 
@@ -29,7 +29,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
     inlines = [RideInline, ]
     ordering = ('-starts_at',)
     date_hierarchy = 'starts_at'
-    list_filter = ('starts_at', 'program', 'visible', 'cancelled', )
+    list_filter = ('starts_at', 'program', 'visible', 'cancelled',)
     search_fields = ('name',)
     actions = [cancel_event, duplicate_event]
     readonly_fields = ('cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
@@ -136,7 +136,14 @@ class AnnouncementAdmin(admin.ModelAdmin):
     ordering = ('-end_at',)
 
 
-admin.site.register(Program)
+class ProgramAdmin(admin.ModelAdmin):
+    list_display = ('emoji', 'name', 'description', 'archived',)
+    list_display_links = ('name',)
+    list_filter = ('archived',)
+    ordering = ('name',)
+
+
+admin.site.register(Program, ProgramAdmin)
 admin.site.register(UserProfile)
 admin.site.register(Member, MemberAdmin)
 admin.site.register(Route, RouteAdmin)
