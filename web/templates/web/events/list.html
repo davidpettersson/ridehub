@@ -17,7 +17,7 @@
             <div class="d-flex flex-column gap-3">
                 {% for event in events %}
                 <a href="{% url 'event_detail' event.id %}" class="text-decoration-none">
-                    <div class="card shadow-sm border h-100 event-card">
+                    <div class="card shadow-sm border h-100 event-card"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %}>
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">

@@ -83,11 +83,55 @@ body {
   transition: background-color 0.2s ease, border-color 0.2s ease;
   background-color: #ffffff;
   border-color: #dee2e6;
+  position: relative;
+  overflow: hidden;
+}
+
+.event-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(to right, var(--program-color, transparent) 0%, transparent 30%);
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.event-card .card-body {
+  position: relative;
+  z-index: 1;
 }
 
 .event-card:hover {
   background-color: #f8f9fa;
   border-color: #6c757d;
+}
+
+/* Calendar event color accent */
+.calendar-event {
+  position: relative;
+  overflow: hidden;
+}
+
+.calendar-event::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(to right, var(--program-color, transparent) 0%, transparent 40%);
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.calendar-event > div {
+  position: relative;
+  z-index: 1;
 }
 
 /* Calendar day hover animations */
