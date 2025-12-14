@@ -24,7 +24,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="small text-uppercase fw-semibold text-muted mb-1">
-                            {{ event.program }}
+                            {% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}
                         </div>
                         <h1 class="fs-2 fw-bold mb-3">
                             {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}

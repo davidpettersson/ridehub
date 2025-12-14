@@ -59,12 +59,12 @@
                                                     <div class="mb-1">
                                                         <a href="{% url 'event_detail' event.id %}" class="text-decoration-none">
                                                             {% if event.starts_at.date < today %}
-                                                            <div class="p-1 bg-secondary bg-opacity-10 border border-secondary border-opacity-25 rounded text-secondary calendar-event"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %} title="{{ event.name }} - {{ event.starts_at|date:'g:i A'|lower|cut:'.m.' }}{% if event.ends_at %} - {{ event.ends_at|date:'g:i A'|lower|cut:'.m.' }}{% endif %}">
+                                                            <div class="p-1 bg-white border rounded text-muted calendar-event"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %} title="{{ event.name }} - {{ event.starts_at|date:'g:i A'|lower|cut:'.m.' }}{% if event.ends_at %} - {{ event.ends_at|date:'g:i A'|lower|cut:'.m.' }}{% endif %}">
                                                                 <div class="fw-medium text-truncate" style="font-size: 0.65rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %}</div>
                                                                 <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}</div>
                                                             </div>
                                                             {% else %}
-                                                            <div class="p-1 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded text-primary calendar-event"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %} title="{{ event.name }} - {{ event.starts_at|date:'g:i A'|lower|cut:'.m.' }}{% if event.ends_at %} - {{ event.ends_at|date:'g:i A'|lower|cut:'.m.' }}{% endif %}">
+                                                            <div class="p-1 bg-white border rounded text-dark calendar-event"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %} title="{{ event.name }} - {{ event.starts_at|date:'g:i A'|lower|cut:'.m.' }}{% if event.ends_at %} - {{ event.ends_at|date:'g:i A'|lower|cut:'.m.' }}{% endif %}">
                                                                 <div class="fw-medium text-truncate" style="font-size: 0.65rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %}</div>
                                                                 <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}</div>
                                                             </div>
