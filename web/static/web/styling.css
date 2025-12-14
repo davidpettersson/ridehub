@@ -94,8 +94,8 @@ body {
   left: 0;
   bottom: 0;
   width: 100%;
-  background: linear-gradient(to right, var(--program-color, transparent) 0%, transparent 30%);
-  opacity: 0.12;
+  background: linear-gradient(to right, var(--program-color, transparent) 0%, transparent 100%);
+  opacity: 0.08;
   pointer-events: none;
   z-index: 0;
 }
@@ -106,8 +106,8 @@ body {
 }
 
 .event-card:hover {
-  background-color: #f8f9fa;
-  border-color: #6c757d;
+  background-color: #f8f9fa !important;
+  border-color: #6c757d !important;
 }
 
 /* Calendar event color accent */
@@ -123,8 +123,8 @@ body {
   left: 0;
   bottom: 0;
   width: 100%;
-  background: linear-gradient(to right, var(--program-color, transparent) 0%, transparent 40%);
-  opacity: 0.15;
+  background: linear-gradient(to right, var(--program-color, transparent) 0%, transparent 100%);
+  opacity: 0.08;
   pointer-events: none;
   z-index: 0;
 }
@@ -132,6 +132,15 @@ body {
 .calendar-event > div {
   position: relative;
   z-index: 1;
+}
+
+.calendar-event {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.calendar-event:hover {
+  background-color: #f8f9fa !important;
+  border-color: #6c757d !important;
 }
 
 /* Calendar day hover animations */
