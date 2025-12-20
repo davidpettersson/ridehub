@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'adminsortable2',
     'colorfield',
     'backoffice',
+    'membership',
     'web',
 ]
 
