@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from membership.models import Member, Registration, Match
+from membership.models import Member, Registration
 
 
 class MemberAdmin(admin.ModelAdmin):
@@ -10,17 +10,12 @@ class MemberAdmin(admin.ModelAdmin):
 
 
 class RegistrationAdmin(admin.ModelAdmin):
-    list_display = ('identity', 'first_name', 'last_name', 'registered_at',)
+    list_display = ('identity', 'first_name', 'last_name', 'registered_at', 'matched_member',)
     list_display_links = ('identity',)
     date_hierarchy = 'registered_at'
     ordering = ('-registered_at',)
     search_fields = ('first_name', 'last_name',)
 
 
-class MatchAdmin(admin.ModelAdmin):
-    list_display = ('registration', 'member', 'method', 'confidence',)
-
-
 admin.site.register(Member, MemberAdmin)
 admin.site.register(Registration, RegistrationAdmin)
-admin.site.register(Match, MatchAdmin)

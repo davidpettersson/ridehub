@@ -4,7 +4,7 @@ from django.db import transaction
 import pandas as pd
 import recordlinkage
 
-from membership.models import Match, Member
+from membership.models import Member, Registration
 from membership.services.matching_service import UnionFind
 
 
@@ -70,7 +70,7 @@ class Command(BaseCommand):
 
         member_lookup = {m.id: m for m in members}
 
-        stats = {'members_deleted': 0, 'matches_deleted': 0}
+        stats = {'members_deleted': 0, 'registrations_unlinked': 0}
 
         if not self.dry_run:
             with transaction.atomic():
@@ -173,17 +173,17 @@ class Command(BaseCommand):
                               f'cohort {keeper.cohort}, {keeper.email}')
 
             for member in to_delete:
-                match_count = Match.objects.filter(member=member).count()
+                reg_count = Registration.objects.filter(matched_member=member).count()
                 self.stdout.write(f'  Deleting: Member #{member.id}: {member.first_name} '
                                   f'{member.last_name}, DOB {member.date_of_birth}, '
                                   f'cohort {member.cohort}, {member.email} '
-                                  f'({match_count} match records)')
+                                  f'({reg_count} registrations)')
 
                 if not self.dry_run:
-                    Match.objects.filter(member=member).delete()
+                    Registration.objects.filter(matched_member=member).update(matched_member=None)
                     member.delete()
 
-                stats['matches_deleted'] += match_count
+                stats['registrations_unlinked'] += reg_count
                 stats['members_deleted'] += 1
 
             self.stdout.write('')
@@ -196,14 +196,14 @@ class Command(BaseCommand):
 
         if self.dry_run:
             self.stdout.write(f'[DRY RUN] Would delete members: {stats["members_deleted"]}')
-            self.stdout.write(f'[DRY RUN] Would delete match records: {stats["matches_deleted"]}')
+            self.stdout.write(f'[DRY RUN] Would unlink registrations: {stats["registrations_unlinked"]}')
             self.stdout.write('')
             self.stdout.write(self.style.NOTICE(
                 'This was a dry run. No changes were made to the database.'
             ))
         else:
             self.stdout.write(f'Members deleted: {stats["members_deleted"]}')
-            self.stdout.write(f'Match records deleted: {stats["matches_deleted"]}')
+            self.stdout.write(f'Registrations unlinked: {stats["registrations_unlinked"]}')
             self.stdout.write('')
             self.stdout.write(self.style.SUCCESS('Merge completed successfully!'))
             self.stdout.write('')
