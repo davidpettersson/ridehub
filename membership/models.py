@@ -1,4 +1,4 @@
-from dateutil.utils import today
+from django.contrib.auth.models import User
 from django.db import models
 
 
@@ -49,6 +49,13 @@ class Member(models.Model):
 
     last_registration_year = models.DateField(
         help_text='Identifies which year the member was last registered. Month and day always 1.',
+    )
+
+    user = models.ForeignKey(
+        to=User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
 
     def __str__(self):
