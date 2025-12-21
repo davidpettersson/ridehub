@@ -265,3 +265,6 @@ http-client.private.env.json
 # Don't show test reports
 tests/reports/*.xml
 /web/tests/reports/*.xml
+
+# Don't risk data
+data/

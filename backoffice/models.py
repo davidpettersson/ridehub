@@ -10,14 +10,6 @@ from django_prose_editor.fields import ProseEditorField
 from phonenumber_field.modelfields import PhoneNumberField
 
 
-class Member(models.Model):
-    full_name = models.CharField(max_length=128)
-    email = models.EmailField()
-
-    def __str__(self):
-        return self.full_name
-
-
 class Program(models.Model):
     name = models.CharField(
         max_length=128,
