@@ -46,7 +46,7 @@ class Command(BaseCommand):
         self.stdout.write(f'Minimum confidence threshold: {self.min_confidence}')
         self.stdout.write('')
 
-        members = list(Member.objects.filter(user__isnull=True))
+        members = list(Member.objects.filter(matched_user__isnull=True))
         self.stdout.write(f'Found {len(members)} unlinked members')
 
         users = list(User.objects.select_related('profile').all())
@@ -184,8 +184,8 @@ class Command(BaseCommand):
             )
 
             if not self.dry_run:
-                member.user = user
-                member.save(update_fields=['user'])
+                member.matched_user = user
+                member.save(update_fields=['matched_user'])
 
             stats['linked'] += 1
 

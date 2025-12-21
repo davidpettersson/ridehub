@@ -51,7 +51,7 @@ class Member(models.Model):
         help_text='Identifies which year the member was last registered. Month and day always 1.',
     )
 
-    user = models.ForeignKey(
+    matched_user = models.ForeignKey(
         to=User,
         on_delete=models.SET_NULL,
         null=True,
@@ -128,37 +128,12 @@ class Registration(models.Model):
         null=True,
     )
 
+    matched_member = models.ForeignKey(
+        to=Member,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
     def __str__(self):
         return f"{self.first_name} {self.last_name} in {self.registered_at.year}"
-
-
-class Match(models.Model):
-    registration = models.OneToOneField(
-        to=Registration,
-        on_delete=models.CASCADE,
-    )
-
-    member = models.ForeignKey(
-        to=Member,
-        on_delete=models.CASCADE,
-    )
-
-    method = models.CharField(
-        max_length=128,
-    )
-
-    confidence = models.FloatField(
-        help_text='Confidence score between 0..1'
-    )
-
-    matched_at = models.DateTimeField(
-        auto_now_add=True,
-        null=True,
-    )
-
-    def __str__(self):
-        return f"{self.registration} -> {self.member}"
-
-    class Meta:
-        verbose_name = 'match'
-        verbose_name_plural = 'matches'

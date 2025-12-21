@@ -4,7 +4,7 @@ import pandas as pd
 import recordlinkage
 from django.db.models import Max, QuerySet
 
-from membership.models import Match, Member, Registration
+from membership.models import Member, Registration
 
 
 @dataclass
@@ -73,8 +73,7 @@ class MatchingService:
             self.log(message)
 
     def fetch_unprocessed_registrations(self) -> QuerySet[Registration]:
-        matched_registration_ids = Match.objects.values_list('registration_id', flat=True)
-        return Registration.objects.exclude(id__in=matched_registration_ids)
+        return Registration.objects.filter(matched_member__isnull=True)
 
     def build_registration_dataframe(self, registrations) -> pd.DataFrame:
         data = []
@@ -295,14 +294,13 @@ class MatchingService:
 
     def update_member_from_registration(self, member: Member,
                                         registration: Registration) -> bool:
-        latest_match = (Match.objects
-                        .filter(member=member)
-                        .select_related('registration')
-                        .order_by('-registration__registered_at')
-                        .first())
+        latest_reg = (Registration.objects
+                      .filter(matched_member=member)
+                      .order_by('-registered_at')
+                      .first())
 
-        if latest_match:
-            if registration.registered_at <= latest_match.registration.registered_at:
+        if latest_reg:
+            if registration.registered_at <= latest_reg.registered_at:
                 return False
 
         member.first_name = registration.first_name
@@ -329,9 +327,9 @@ class MatchingService:
         members_updated = 0
 
         for member in Member.objects.all():
-            latest_year = (Match.objects
-                           .filter(member=member)
-                           .aggregate(max_year=Max('registration__year'))['max_year'])
+            latest_year = (Registration.objects
+                           .filter(matched_member=member)
+                           .aggregate(max_year=Max('year'))['max_year'])
 
             if latest_year and latest_year != member.last_registration_year:
                 member.last_registration_year = latest_year
@@ -410,12 +408,8 @@ class MatchingService:
                     )
                     for reg_id in cluster_reg_ids:
                         reg = reg_lookup[reg_id]
-                        Match.objects.create(
-                            registration=reg,
-                            member=member,
-                            method='recordlinkage-new',
-                            confidence=1.0,
-                        )
+                        reg.matched_member = member
+                        reg.save(update_fields=['matched_member'])
                     members_list.append(member)
                 result.new_members_created += 1
                 result.registrations_linked += len(cluster_reg_ids)
@@ -428,12 +422,8 @@ class MatchingService:
                     self.update_cohort_if_earlier(member, earliest_reg)
                     for reg_id in cluster_reg_ids:
                         reg = reg_lookup[reg_id]
-                        Match.objects.create(
-                            registration=reg,
-                            member=member,
-                            method='recordlinkage-dedup',
-                            confidence=confidence,
-                        )
+                        reg.matched_member = member
+                        reg.save(update_fields=['matched_member'])
                 result.members_updated += 1
                 result.registrations_linked += len(cluster_reg_ids)
                 self.log_debug(f'Matched cluster: {most_recent_reg.first_name} '
