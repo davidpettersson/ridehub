@@ -1,3 +1,4 @@
+from dateutil.utils import today
 from django.db import models
 
 
@@ -21,6 +22,11 @@ class Member(models.Model):
         max_length=64,
     )
 
+    city = models.CharField(
+        max_length=64,
+        default='',
+    )
+
     country = models.CharField(
         max_length=32,
     )
@@ -40,6 +46,13 @@ class Member(models.Model):
     cohort = models.DateField(
         help_text='Identified year+month cohort. Day always 1.',
     )
+
+    last_registration_year = models.DateField(
+        help_text='Identifies which year the member was last registered. Month and day always 1.',
+    )
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
 
 
 class Registration(models.Model):
@@ -64,6 +77,9 @@ class Registration(models.Model):
     )
 
     date_of_birth = models.DateField(
+    )
+
+    year = models.DateField(
     )
 
     category = models.CharField(
@@ -95,14 +111,6 @@ class Registration(models.Model):
         help_text='Self-reported membership duration'
     )
 
-    member = models.ForeignKey(
-        to=Member,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        help_text='Linked to member record'
-    )
-
     created_at = models.DateTimeField(
         auto_now_add=True,
         null=True,
@@ -113,9 +121,12 @@ class Registration(models.Model):
         null=True,
     )
 
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} in {self.registered_at.year}"
+
 
 class Match(models.Model):
-    registration = models.ForeignKey(
+    registration = models.OneToOneField(
         to=Registration,
         on_delete=models.CASCADE,
     )
@@ -137,3 +148,10 @@ class Match(models.Model):
         auto_now_add=True,
         null=True,
     )
+
+    def __str__(self):
+        return f"{self.registration} -> {self.member}"
+
+    class Meta:
+        verbose_name = 'match'
+        verbose_name_plural = 'matches'

@@ -1,5 +1,6 @@
 import csv
 import os
+import re
 import zoneinfo
 from datetime import datetime
 
@@ -111,6 +112,15 @@ class Command(BaseCommand):
         phone = row.get('Registrant Telephone', '').strip()
         duration = row.get('How long have you been a member of the OBC?', '').strip()
 
+        year = self.parse_year(row.get('Event Year', '').strip())
+        if not year:
+            self.stats['skipped'] += 1
+            if self.debug:
+                self.stdout.write(self.style.WARNING(
+                    f'Skipping row with invalid Event Year: {row.get("Event Year", "")}'
+                ))
+            return
+
         existing = Registration.objects.filter(
             identity=identity, registered_at=registered_at
         ).first()
@@ -120,6 +130,7 @@ class Command(BaseCommand):
             existing.last_name = last_name
             existing.sex = sex
             existing.date_of_birth = date_of_birth
+            existing.year = year
             existing.category = category
             existing.city = city
             existing.country = country
@@ -141,6 +152,7 @@ class Command(BaseCommand):
                 last_name=last_name,
                 sex=sex,
                 date_of_birth=date_of_birth,
+                year=year,
                 category=category,
                 city=city,
                 country=country,
@@ -180,6 +192,15 @@ class Command(BaseCommand):
             return datetime.strptime(date_str, '%m/%d/%Y').date()
         except ValueError:
             return None
+
+    def parse_year(self, year_str):
+        if not year_str:
+            return None
+        match = re.search(r'(\d{4})', year_str)
+        if match:
+            year = int(match.group(1))
+            return datetime(year, 1, 1).date()
+        return None
 
     def save_operations(self):
         with transaction.atomic():
