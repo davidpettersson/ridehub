@@ -22,6 +22,7 @@ dependencies = [
     "django-waffle~=5.0.0",
     "gunicorn~=23.0.0",
     "psycopg~=3.2.12",
+    "recordlinkage>=0.16",
     "redis~=5.2.1",
     "returns~=0.25.0",
     "sentry-sdk[django]~=2.43.0",
