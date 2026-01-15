@@ -53,7 +53,7 @@ Club board members and volunteers who have Microsoft 365 accounts can sign in di
 - This happens on every login, ensuring permissions stay in sync
 
 **Configuration**:
-- Requires Azure AD app registration (see `docs/azure-setup.md`)
+- Requires Azure AD app registration (see `docs/users-configure-azure-ad-authentication.md`)
 - Environment variables: `AZURE_AD_CLIENT_ID`, `AZURE_AD_CLIENT_SECRET`, `AZURE_AD_TENANT_ID`
 - Restricted to the Ottawa Bicycle Club tenant only
 
