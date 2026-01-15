@@ -198,3 +198,6 @@ SOCIALACCOUNT_PROVIDERS = {
         },
     }
 }
+
+AZURE_AD_STAFF_DOMAIN = '@ottawabicycleclub.ca'
+AZURE_AD_STAFF_GROUP = 'Ride Administrators'

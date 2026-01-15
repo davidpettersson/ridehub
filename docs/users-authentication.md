@@ -47,6 +47,11 @@ Club board members and volunteers who have Microsoft 365 accounts can sign in di
 - All existing data (registrations, profile) is preserved
 - Future logins via Microsoft are instant
 
+**Automatic permissions for @ottawabicycleclub.ca users**:
+- Automatically set as Django staff (`is_staff = True`)
+- Automatically added to the "Ride Administrators" group
+- This happens on every login, ensuring permissions stay in sync
+
 **Configuration**:
 - Requires Azure AD app registration (see `docs/azure-setup.md`)
 - Environment variables: `AZURE_AD_CLIENT_ID`, `AZURE_AD_CLIENT_SECRET`, `AZURE_AD_TENANT_ID`
