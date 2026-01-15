@@ -1,5 +1,5 @@
 {% extends 'web/_base.html' %}
-{% load form_filters %}
+{% load form_filters waffle_tags %}
 {% block title %}Log in{% endblock %}
 {% block content %}
 <div class="max-w-md mx-auto">
@@ -32,6 +32,33 @@
                     </button>
                 </div>
             </form>
+
+            {% switch "microsoft_login" %}
+            <div class="relative my-8">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white dark:bg-gray-800 text-gray-500">Club volunteers</span>
+                </div>
+            </div>
+
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-3 text-center">
+                    Volunteers with an @ottawabicycleclub.ca account:
+                </p>
+                <a href="{% url 'microsoft_login' %}"
+                   class="btn-secondary w-full flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" viewBox="0 0 21 21">
+                        <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                        <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                        <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                        <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                    </svg>
+                    Sign in with Microsoft
+                </a>
+            </div>
+            {% endswitch %}
             {% endif %}
         </div>
     </div>
