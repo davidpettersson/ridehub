@@ -24,6 +24,8 @@ else:
     ALLOWED_HOSTS = [".localhost", "127.0.0.1", "[::1]", "0.0.0.0", "[::]"]
     DEBUG = True
 
+WAFFLE_OVERRIDE = True
+
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 
 INSTALLED_APPS = [
@@ -43,6 +45,10 @@ INSTALLED_APPS = [
     'django_prose_editor',
     'adminsortable2',
     'colorfield',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.microsoft',
     'backoffice',
     'membership',
     'web',
@@ -55,6 +61,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'waffle.middleware.WaffleMiddleware',
@@ -63,6 +70,7 @@ MIDDLEWARE = [
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'sesame.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 SESAME_MAX_AGE = 60 * 5
@@ -170,3 +178,26 @@ CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 CELERY_WORKER_LOG_FORMAT = '[%(asctime)s: %(levelname)s/%(processName)s] %(message)s'
 CELERY_WORKER_TASK_LOG_FORMAT = '[%(asctime)s: %(levelname)s/%(processName)s][%(task_name)s(%(task_id)s)] %(message)s'
+
+# Django-allauth Configuration
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*']
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+SOCIALACCOUNT_LOGIN_ON_GET = False
+SOCIALACCOUNT_ADAPTER = 'backoffice.adapters.RideHubSocialAccountAdapter'
+
+SOCIALACCOUNT_PROVIDERS = {
+    'microsoft': {
+        'TENANT': os.environ.get('AZURE_AD_TENANT_ID', ''),
+        'APP': {
+            'client_id': os.environ.get('AZURE_AD_CLIENT_ID', ''),
+            'secret': os.environ.get('AZURE_AD_CLIENT_SECRET', ''),
+        },
+    }
+}
+
+AZURE_AD_STAFF_DOMAIN = '@ottawabicycleclub.ca'
+AZURE_AD_STAFF_GROUP = 'Ride Administrators'

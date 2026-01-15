@@ -9,6 +9,7 @@ dependencies = [
     "celery~=5.4.0",
     "dj-database-url~=2.3.0",
     "django~=5.1.14",
+    "django-allauth[socialaccount]~=65.3",
     "django-admin-sortable2~=2.2.8",
     "django-celery-beat~=2.7.0",
     "django-colorfield>=0.14.0",
