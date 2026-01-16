@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from django.db.models import QuerySet
 from django.utils import timezone
@@ -38,9 +38,7 @@ class EventService:
         )
 
     def duplicate_event(self, source_event: Event, new_name: str, new_date: date) -> Event:
-        from datetime import timedelta
-
-        date_delta = timedelta(days=(new_date - source_event.starts_at.date()).days)
+        date_delta = new_date - source_event.starts_at.date()
 
         new_starts_at = source_event.starts_at + date_delta
         new_ends_at = source_event.ends_at + date_delta if source_event.ends_at else None

@@ -401,6 +401,21 @@ class DuplicateEventTestCase(TestCase):
         self.assertEqual(new_event.starts_at.date(), new_date)
         self.assertEqual(new_event.ends_at.date(), new_date)
 
+    def test_duplicate_event_preserves_multi_day_span(self):
+        self.source_event.ends_at = self.source_event.starts_at + datetime.timedelta(days=2, hours=3)
+        self.source_event.save()
+
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
+
+        new_event = self.service.duplicate_event(
+            self.source_event, "New Event", new_date
+        )
+
+        original_duration = self.source_event.ends_at - self.source_event.starts_at
+        new_duration = new_event.ends_at - new_event.starts_at
+        self.assertEqual(new_duration, original_duration)
+        self.assertEqual(new_event.ends_at.date(), new_date + datetime.timedelta(days=2))
+
     def test_duplicate_event_inherits_registration_closes_at_time(self):
         new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
