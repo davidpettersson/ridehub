@@ -331,10 +331,10 @@ class DuplicateEventTestCase(TestCase):
         self.ride2.speed_ranges.add(self.speed_range_slow, self.speed_range_fast)
 
     def test_duplicate_event_copies_basic_fields(self):
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event Name", new_starts_at
+            self.source_event, "New Event Name", new_date
         )
 
         self.assertEqual(new_event.name, "New Event Name")
@@ -350,14 +350,14 @@ class DuplicateEventTestCase(TestCase):
         self.assertEqual(new_event.requires_membership, True)
         self.assertEqual(new_event.organizer_email, "organizer@example.com")
 
-    def test_duplicate_event_sets_visible_false(self):
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+    def test_duplicate_event_sets_visible_true(self):
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_starts_at
+            self.source_event, "New Event", new_date
         )
 
-        self.assertFalse(new_event.visible)
+        self.assertTrue(new_event.visible)
 
     def test_duplicate_event_clears_cancelled_status(self):
         self.source_event.cancelled = True
@@ -365,10 +365,10 @@ class DuplicateEventTestCase(TestCase):
         self.source_event.cancellation_reason = "Bad weather"
         self.source_event.save()
 
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_starts_at
+            self.source_event, "New Event", new_date
         )
 
         self.assertFalse(new_event.cancelled)
@@ -380,62 +380,83 @@ class DuplicateEventTestCase(TestCase):
         self.source_event.archived_at = timezone.now()
         self.source_event.save()
 
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_starts_at
+            self.source_event, "New Event", new_date
         )
 
         self.assertFalse(new_event.archived)
         self.assertIsNone(new_event.archived_at)
 
-    def test_duplicate_event_recalculates_end_time(self):
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+    def test_duplicate_event_inherits_same_times(self):
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_starts_at
+            self.source_event, "New Event", new_date
         )
 
-        expected_end_time = new_starts_at + datetime.timedelta(hours=3)
-        self.assertEqual(new_event.ends_at, expected_end_time)
+        self.assertEqual(new_event.starts_at.time(), self.source_event.starts_at.time())
+        self.assertEqual(new_event.ends_at.time(), self.source_event.ends_at.time())
+        self.assertEqual(new_event.starts_at.date(), new_date)
+        self.assertEqual(new_event.ends_at.date(), new_date)
 
-    def test_duplicate_event_recalculates_registration_closes_at(self):
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+    def test_duplicate_event_preserves_multi_day_span(self):
+        self.source_event.ends_at = self.source_event.starts_at + datetime.timedelta(days=2, hours=3)
+        self.source_event.save()
+
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_starts_at
+            self.source_event, "New Event", new_date
         )
 
-        expected_registration_close = new_starts_at - datetime.timedelta(hours=2)
-        self.assertEqual(new_event.registration_closes_at, expected_registration_close)
+        original_duration = self.source_event.ends_at - self.source_event.starts_at
+        new_duration = new_event.ends_at - new_event.starts_at
+        self.assertEqual(new_duration, original_duration)
+        self.assertEqual(new_event.ends_at.date(), new_date + datetime.timedelta(days=2))
+
+    def test_duplicate_event_inherits_registration_closes_at_time(self):
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
+
+        new_event = self.service.duplicate_event(
+            self.source_event, "New Event", new_date
+        )
+
+        self.assertEqual(
+            new_event.registration_closes_at.time(),
+            self.source_event.registration_closes_at.time()
+        )
+        expected_reg_close_date = self.source_event.registration_closes_at.date() + datetime.timedelta(days=7)
+        self.assertEqual(new_event.registration_closes_at.date(), expected_reg_close_date)
 
     def test_duplicate_event_handles_null_ends_at(self):
         self.source_event.ends_at = None
         self.source_event.save()
 
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_starts_at
+            self.source_event, "New Event", new_date
         )
 
         self.assertIsNone(new_event.ends_at)
 
     def test_duplicate_event_creates_new_event_object(self):
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_starts_at
+            self.source_event, "New Event", new_date
         )
 
         self.assertNotEqual(new_event.pk, self.source_event.pk)
         self.assertEqual(Event.objects.count(), 2)
 
     def test_duplicate_event_deep_copies_rides(self):
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_starts_at
+            self.source_event, "New Event", new_date
         )
 
         self.assertEqual(new_event.ride_set.count(), 2)
@@ -447,10 +468,10 @@ class DuplicateEventTestCase(TestCase):
             self.assertNotIn(new_ride.pk, original_ride_pks)
 
     def test_duplicate_event_copies_ride_fields(self):
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_starts_at
+            self.source_event, "New Event", new_date
         )
 
         new_rides = list(new_event.ride_set.order_by('ordering'))
@@ -462,10 +483,10 @@ class DuplicateEventTestCase(TestCase):
         self.assertEqual(new_rides[1].ordering, 1)
 
     def test_duplicate_event_rides_reference_same_routes(self):
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_starts_at
+            self.source_event, "New Event", new_date
         )
 
         new_rides = list(new_event.ride_set.order_by('ordering'))
@@ -474,10 +495,10 @@ class DuplicateEventTestCase(TestCase):
         self.assertEqual(Route.objects.count(), 2)
 
     def test_duplicate_event_rides_have_same_speed_range_associations(self):
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_starts_at
+            self.source_event, "New Event", new_date
         )
 
         new_rides = list(new_event.ride_set.order_by('ordering'))
@@ -498,21 +519,20 @@ class DuplicateEventTestCase(TestCase):
             user=user,
         )
 
-        new_starts_at = self.base_start_time + datetime.timedelta(days=7)
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_starts_at
+            self.source_event, "New Event", new_date
         )
 
         self.assertEqual(self.source_event.registration_set.count(), 1)
         self.assertEqual(new_event.registration_set.count(), 0)
 
-    def test_duplicate_event_raises_for_naive_datetime(self):
-        naive_starts_at = datetime.datetime(2025, 7, 1, 10, 0, 0)
+    def test_duplicate_event_accepts_date_object(self):
+        new_date = datetime.date(2025, 7, 1)
 
-        with self.assertRaises(ValueError) as context:
-            self.service.duplicate_event(
-                self.source_event, "New Event", naive_starts_at
-            )
+        new_event = self.service.duplicate_event(
+            self.source_event, "New Event", new_date
+        )
 
-        self.assertIn("timezone-aware", str(context.exception))
+        self.assertEqual(new_event.starts_at.date(), new_date)

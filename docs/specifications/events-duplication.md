@@ -15,7 +15,7 @@ Rules:
  - Duplication of an event creates a new event record.
  - All fields from the existing event are copied over to the new event, with exceptions:
    - A new event must never carry over any cancellation status.
-   - A new event must never start as visible.
+   - A new event starts as visible by default.
    - A new event must never carry over archived status.
    - A new event must never carry over legacy import fields.
  - Linked records may sometimes be deep copied, sometimes not.
@@ -33,12 +33,11 @@ Flow:
  - Once they select the duplicate action, a bulk edit view is shown.
  - For each ride selected for duplication, the administrator must have the option to:
    - Change the name of the event
-   - Change the start time of the event
+   - Change the date of the event (the time of day is inherited from the original event)
  - When the administrator presses save, the new events should be created as per the rules above, with the following side-effects:
    - Name should be changed to what was entered in the bulk edit view
-   - Start time of the event should be updated to what was entered in the bulk view
-   - End time should be calculated again: take the time delta from the old event and calculate duration, add that to the start time to get a new end time
-   - Registration close time should be calculated again: take the time delta as for end time and do the calculation.
+   - Date of the event should be updated to what was entered in the bulk view
+   - Start time, end time, and registration close time inherit the same time of day from the original event, shifted to the new date
  - Once everything is saved, the ride administrator must be redirected to the event index view with a success message at the top
 
 ## Field copying rules
@@ -52,10 +51,10 @@ Flow:
 | requires_emergency_contact, requires_membership | Copy from source |
 | organizer_email | Copy from source |
 | program | Same FK reference |
-| starts_at | Use form value |
-| ends_at | Recalculate: `new_starts_at + (ends_at - starts_at)` |
-| registration_closes_at | Recalculate: `new_starts_at + (registration_closes_at - starts_at)` |
-| visible | Set to `False` |
+| starts_at | Inherit time from source, use new date from form |
+| ends_at | Inherit time from source, shift date by same offset as starts_at |
+| registration_closes_at | Inherit time from source, shift date by same offset as starts_at |
+| visible | Set to `True` |
 | cancelled, cancelled_at, cancellation_reason | Reset to defaults |
 | archived, archived_at | Do not copy (use defaults) |
 | legacy, legacy_event_id | Do not copy (use defaults) |

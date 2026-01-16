@@ -18,7 +18,7 @@
         vertical-align: middle;
     }
     #content table input[type="text"],
-    #content table input[type="datetime-local"] {
+    #content table input[type="date"] {
         padding: 8px;
         border: 1px solid var(--border-color);
         border-radius: 4px;
@@ -55,7 +55,7 @@
 {% endblock %}
 
 {% block content %}
-<p>{% translate 'Modify the details for each duplicated event below. The new events will be created as invisible (not visible to members) and can be made visible after review.' %}</p>
+<p>{% translate 'Modify the details for each duplicated event below. The new events will inherit the same start and end times as the original events.' %}</p>
 
 <form method="post">
     {% csrf_token %}
@@ -66,7 +66,7 @@
             <tr>
                 <th>{% translate 'Original Start Time' %}</th>
                 <th>{% translate 'Original Event' %}</th>
-                <th>{% translate 'New Start Time' %}</th>
+                <th>{% translate 'New Date' %}</th>
                 <th>{% translate 'New Event Name' %}</th>
             </tr>
         </thead>
@@ -81,10 +81,10 @@
                     {{ event.name }}
                 </td>
                 <td>
-                    {{ form.new_starts_at }}
-                    {% if form.new_starts_at.errors %}
+                    {{ form.new_date }}
+                    {% if form.new_date.errors %}
                     <ul class="errorlist">
-                        {% for error in form.new_starts_at.errors %}
+                        {% for error in form.new_date.errors %}
                         <li>{{ error }}</li>
                         {% endfor %}
                     </ul>
