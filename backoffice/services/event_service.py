@@ -37,27 +37,28 @@ class EventService:
             starts_at__date__lte=last_day
         )
 
-    def duplicate_event(self, source_event: Event, new_name: str, new_starts_at: datetime) -> Event:
-        if timezone.is_naive(new_starts_at):
-            raise ValueError("new_starts_at must be a timezone-aware datetime")
+    def duplicate_event(self, source_event: Event, new_name: str, new_date: date) -> Event:
+        from datetime import timedelta
 
-        ends_at_delta = None
-        if source_event.ends_at:
-            ends_at_delta = source_event.ends_at - source_event.starts_at
+        date_delta = timedelta(days=(new_date - source_event.starts_at.date()).days)
 
-        registration_closes_delta = None
-        if source_event.registration_closes_at:
-            registration_closes_delta = source_event.registration_closes_at - source_event.starts_at
+        new_starts_at = source_event.starts_at + date_delta
+        new_ends_at = source_event.ends_at + date_delta if source_event.ends_at else None
+        new_registration_closes_at = (
+            source_event.registration_closes_at + date_delta
+            if source_event.registration_closes_at
+            else None
+        )
 
         new_event = Event.objects.create(
             program=source_event.program,
             name=new_name,
-            visible=False,
+            visible=True,
             location=source_event.location,
             location_url=source_event.location_url,
             starts_at=new_starts_at,
-            ends_at=new_starts_at + ends_at_delta if ends_at_delta else None,
-            registration_closes_at=new_starts_at + registration_closes_delta if registration_closes_delta else None,
+            ends_at=new_ends_at,
+            registration_closes_at=new_registration_closes_at,
             external_registration_url=source_event.external_registration_url,
             registration_limit=source_event.registration_limit,
             description=source_event.description,

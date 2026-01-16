@@ -7,13 +7,13 @@ from .widgets import EndsAtWidget, RegistrationClosesAtWidget
 class EventDuplicationForm(forms.Form):
     event_id = forms.IntegerField(widget=forms.HiddenInput())
     new_name = forms.CharField(max_length=128, label="New Event Name")
-    new_starts_at = forms.DateTimeField(
-        widget=forms.DateTimeInput(
-            attrs={'type': 'datetime-local'},
-            format='%Y-%m-%dT%H:%M'
+    new_date = forms.DateField(
+        widget=forms.DateInput(
+            attrs={'type': 'date'},
+            format='%Y-%m-%d'
         ),
-        input_formats=['%Y-%m-%dT%H:%M'],
-        label="New Start Time"
+        input_formats=['%Y-%m-%d'],
+        label="New Date"
     )
 
 

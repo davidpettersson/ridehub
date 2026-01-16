@@ -76,13 +76,11 @@ def duplicate_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet
             for form in formset:
                 event_id = form.cleaned_data['event_id']
                 new_name = form.cleaned_data['new_name']
-                new_starts_at = form.cleaned_data['new_starts_at']
-                if timezone.is_naive(new_starts_at):
-                    new_starts_at = timezone.make_aware(new_starts_at)
+                new_date = form.cleaned_data['new_date']
 
                 source_event = events_by_id.get(event_id)
                 if source_event:
-                    service.duplicate_event(source_event, new_name, new_starts_at)
+                    service.duplicate_event(source_event, new_name, new_date)
                     duplicate_count += 1
 
             if duplicate_count == 1:
@@ -98,7 +96,7 @@ def duplicate_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet
         {
             'event_id': event.pk,
             'new_name': event.name,
-            'new_starts_at': event.starts_at.strftime('%Y-%m-%dT%H:%M'),
+            'new_date': event.starts_at.strftime('%Y-%m-%d'),
         }
         for event in events_list
     ]
