@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.test import TestCase
 from django.utils import timezone
+from django_fsm import TransitionNotAllowed
 
 from backoffice.models import Program, Event
 
@@ -77,6 +78,7 @@ class EventStatesTestCase(TestCase):
         event.save()
 
         self.assertEqual(event.state, Event.STATE_PREVIEW)
+        self.assertTrue(event.visible)
 
     def test_preview_from_published(self):
         event = self.create_event(state=Event.STATE_PUBLISHED)
@@ -86,6 +88,7 @@ class EventStatesTestCase(TestCase):
         event.save()
 
         self.assertEqual(event.state, Event.STATE_PREVIEW)
+        self.assertTrue(event.visible)
 
     def test_draft_from_preview(self):
         event = self.create_event(state=Event.STATE_PREVIEW)
@@ -148,21 +151,49 @@ class EventStatesTestCase(TestCase):
         event = self.create_event(state=Event.STATE_CANCELLED)
         self.assertEqual(event.state, Event.STATE_CANCELLED)
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(TransitionNotAllowed):
             event.publish()
 
     def test_cannot_cancel_from_draft(self):
         event = self.create_event(state=Event.STATE_DRAFT)
         self.assertEqual(event.state, Event.STATE_DRAFT)
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(TransitionNotAllowed):
             event.cancel()
 
     def test_cannot_cancel_from_archived(self):
         event = self.create_event(state=Event.STATE_ARCHIVED)
         self.assertEqual(event.state, Event.STATE_ARCHIVED)
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(TransitionNotAllowed):
+            event.cancel()
+
+    def test_cannot_archive_from_draft(self):
+        event = self.create_event(state=Event.STATE_DRAFT)
+        self.assertEqual(event.state, Event.STATE_DRAFT)
+
+        with self.assertRaises(TransitionNotAllowed):
+            event.archive()
+
+    def test_cannot_archive_from_preview(self):
+        event = self.create_event(state=Event.STATE_PREVIEW)
+        self.assertEqual(event.state, Event.STATE_PREVIEW)
+
+        with self.assertRaises(TransitionNotAllowed):
+            event.archive()
+
+    def test_cannot_publish_from_archived(self):
+        event = self.create_event(state=Event.STATE_ARCHIVED)
+        self.assertEqual(event.state, Event.STATE_ARCHIVED)
+
+        with self.assertRaises(TransitionNotAllowed):
+            event.publish()
+
+    def test_cannot_cancel_from_preview(self):
+        event = self.create_event(state=Event.STATE_PREVIEW)
+        self.assertEqual(event.state, Event.STATE_PREVIEW)
+
+        with self.assertRaises(TransitionNotAllowed):
             event.cancel()
 
 

@@ -29,14 +29,14 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
                     'cancellation_reason': cancellation_reason,
                     'base_url': f"https://{request.get_host()}"
                 }
-                
+
                 EmailService().send_email(
                     template_name='event_cancelled',
                     context=context,
                     subject=f"RIDE CANCELLED {event.name}",
                     recipient_list=[registration.email],
                 )
-            
+
             cancel_count += 1
         
         if cancel_count == 1:

@@ -60,7 +60,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
             }),
         ]
 
-        if obj and (obj.cancelled or obj.state == Event.STATE_CANCELLED):
+        if obj and obj.state == Event.STATE_CANCELLED:
             fieldsets.append(
                 ('Cancellation information', {
                     'fields': ('cancelled', 'cancelled_at', 'cancellation_reason'),

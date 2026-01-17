@@ -256,7 +256,7 @@ class Event(models.Model):
 
     @transition(field=state, source=[STATE_DRAFT, STATE_PUBLISHED], target=STATE_PREVIEW)
     def preview(self):
-        pass
+        self.visible = True
 
     @transition(field=state, source=[STATE_PREVIEW, STATE_PUBLISHED], target=STATE_DRAFT)
     def draft(self):
@@ -270,6 +270,7 @@ class Event(models.Model):
     @transition(field=state, source=[STATE_PUBLISHED, STATE_CANCELLED], target=STATE_ARCHIVED)
     def archive(self):
         self.archived = True
+        self.visible = False
         self.archived_at = timezone.now()
 
 
@@ -485,7 +486,7 @@ class Registration(models.Model):
         default=STATE_SUBMITTED,
         choices=STATE_CHOICES,
         protected=True,
-        help_text = 'Current state of the registration in the lifecycle.'
+        help_text='Current state of the registration in the lifecycle.'
     )
 
     submitted_at = models.DateTimeField(auto_now_add=True)
