@@ -24,15 +24,15 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(SortableAdminBase, admin.ModelAdmin):
-    list_display = ('starts_at', 'name', 'registration_count', 'links', 'visible', 'cancelled',)
+    list_display = ('starts_at', 'name', 'registration_count', 'links', 'visible', 'cancelled', 'state',)
     list_display_links = ['name', ]
     inlines = [RideInline, ]
     ordering = ('-starts_at',)
     date_hierarchy = 'starts_at'
-    list_filter = ('starts_at', 'program', 'visible', 'cancelled',)
+    list_filter = ('starts_at', 'program', 'visible', 'cancelled', 'state',)
     search_fields = ('name',)
     actions = [cancel_event, duplicate_event]
-    readonly_fields = ('cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
+    readonly_fields = ('state', 'cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
     form = EventAdminForm
 
     def links(self, obj):
@@ -43,25 +43,32 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
 
     links.short_description = 'Links'
 
-    fieldsets = [
-        (None, {
-            'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url',
-                       'organizer_email', 'virtual',
-                       'visible')
-        }),
-        ('Registration options', {
-            'fields': ('registration_closes_at', 'external_registration_url', 'registration_limit'),
-            'description': 'Configure when registration closes and/or provide an external registration URL.'
-        }),
-        ('Registration form settings', {
-            'fields': ('ride_leaders_wanted', 'requires_emergency_contact', 'requires_membership'),
-            'description': 'Configure what information is collected during registration.'
-        }),
-        ('Cancellation information', {
-            'fields': ('cancelled', 'cancelled_at', 'cancellation_reason'),
-            'description': 'These fields are read-only and can only be modified through the Cancel Event action.'
-        }),
-    ]
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = [
+            (None, {
+                'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url',
+                           'organizer_email', 'virtual',
+                           'visible', 'state',)
+            }),
+            ('Registration options', {
+                'fields': ('registration_closes_at', 'external_registration_url', 'registration_limit'),
+                'description': 'Configure when registration closes and/or provide an external registration URL.'
+            }),
+            ('Registration form settings', {
+                'fields': ('ride_leaders_wanted', 'requires_emergency_contact', 'requires_membership'),
+                'description': 'Configure what information is collected during registration.'
+            }),
+        ]
+
+        if obj and obj.state == Event.STATE_CANCELLED:
+            fieldsets.append(
+                ('Cancellation information', {
+                    'fields': ('cancelled', 'cancelled_at', 'cancellation_reason'),
+                    'description': 'These fields are read-only and can only be modified through the Cancel Event action.'
+                })
+            )
+
+        return fieldsets
 
 
 class SpeedRangeAdmin(admin.ModelAdmin):

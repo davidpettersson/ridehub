@@ -2,7 +2,6 @@ from django.contrib import messages
 from django.contrib.admin import ModelAdmin
 from django.db.models import QuerySet
 from django.http import HttpRequest
-from django.utils import timezone
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
@@ -16,13 +15,11 @@ from backoffice.forms import EventDuplicationFormSet
 def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
     if request.method == 'POST' and 'post' in request.POST:
         cancellation_reason = request.POST.get('cancellation_reason', '')
-        now = timezone.now()
-        
+
         cancel_count = 0
         for event in query_set:
-            event.cancelled = True
-            event.cancelled_at = now
             event.cancellation_reason = cancellation_reason
+            event.cancel()
             event.save()
             
             for registration in event.registration_set.filter(state=Registration.STATE_CONFIRMED):
@@ -32,14 +29,14 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
                     'cancellation_reason': cancellation_reason,
                     'base_url': f"https://{request.get_host()}"
                 }
-                
+
                 EmailService().send_email(
                     template_name='event_cancelled',
                     context=context,
                     subject=f"RIDE CANCELLED {event.name}",
                     recipient_list=[registration.email],
                 )
-            
+
             cancel_count += 1
         
         if cancel_count == 1:
@@ -119,11 +116,9 @@ duplicate_event.short_description = "Duplicate selected events"
 
 def archive_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
     archive_count = 0
-    now = timezone.now()
 
     for event in query_set:
-        event.archived = True
-        event.archived_at = now
+        event.archive()
         event.save()
 
         archive_count += 1
