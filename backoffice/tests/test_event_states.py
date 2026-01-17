@@ -164,3 +164,57 @@ class EventStatesTestCase(TestCase):
 
         with self.assertRaises(Exception):
             event.cancel()
+
+
+class EventAdminFieldsetsTestCase(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.now = timezone.now()
+        self.tomorrow = self.now + timedelta(days=1)
+
+    def create_event(self, state=Event.STATE_PUBLISHED):
+        event = Event.objects.create(
+            program=self.program,
+            name='Test Event',
+            starts_at=self.tomorrow,
+            registration_closes_at=self.now,
+        )
+        if state == Event.STATE_CANCELLED:
+            event.cancel()
+            event.save()
+        return event
+
+    def get_fieldset_names(self, fieldsets):
+        return [name for name, _ in fieldsets]
+
+    def test_cancellation_fieldset_hidden_for_published_event(self):
+        from backoffice.admin import EventAdmin
+
+        event = self.create_event(state=Event.STATE_PUBLISHED)
+        admin = EventAdmin(Event, None)
+
+        fieldsets = admin.get_fieldsets(None, obj=event)
+        fieldset_names = self.get_fieldset_names(fieldsets)
+
+        self.assertNotIn('Cancellation information', fieldset_names)
+
+    def test_cancellation_fieldset_hidden_for_new_event(self):
+        from backoffice.admin import EventAdmin
+
+        admin = EventAdmin(Event, None)
+
+        fieldsets = admin.get_fieldsets(None, obj=None)
+        fieldset_names = self.get_fieldset_names(fieldsets)
+
+        self.assertNotIn('Cancellation information', fieldset_names)
+
+    def test_cancellation_fieldset_shown_for_cancelled_event(self):
+        from backoffice.admin import EventAdmin
+
+        event = self.create_event(state=Event.STATE_CANCELLED)
+        admin = EventAdmin(Event, None)
+
+        fieldsets = admin.get_fieldsets(None, obj=event)
+        fieldset_names = self.get_fieldset_names(fieldsets)
+
+        self.assertIn('Cancellation information', fieldset_names)
