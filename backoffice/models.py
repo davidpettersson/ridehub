@@ -60,6 +60,27 @@ class Event(models.Model):
         help_text='Check if the event is visible to members.'
     )
 
+    STATE_DRAFT = 'draft'
+    STATE_PREVIEW = 'preview'
+    STATE_PUBLISHED = 'published'
+    STATE_CANCELLED = 'cancelled'
+    STATE_ARCHIVED = 'archived'
+
+    STATE_CHOICES = [
+        (STATE_DRAFT, 'Draft'),
+        (STATE_PREVIEW, 'Preview'),
+        (STATE_PUBLISHED, 'Published'),
+        (STATE_CANCELLED, 'Cancelled'),
+        (STATE_ARCHIVED, 'Archived'),
+    ]
+
+    state = FSMField(
+        default=STATE_PUBLISHED,
+        choices=STATE_CHOICES,
+        protected=False,
+        help_text='Current state of the event in the lifecycle.'
+    )
+
     location = models.CharField(
         max_length=128,
         blank=True,
@@ -228,6 +249,28 @@ class Event(models.Model):
                 raise ValidationError({
                     'registration_closes_at': 'Registration cannot close after the event starts.'
                 })
+
+    @transition(field=state, source=[STATE_DRAFT, STATE_PREVIEW], target=STATE_PUBLISHED)
+    def publish(self):
+        self.visible = True
+
+    @transition(field=state, source=[STATE_DRAFT, STATE_PUBLISHED], target=STATE_PREVIEW)
+    def preview(self):
+        pass
+
+    @transition(field=state, source=[STATE_PREVIEW, STATE_PUBLISHED], target=STATE_DRAFT)
+    def draft(self):
+        self.visible = False
+
+    @transition(field=state, source=STATE_PUBLISHED, target=STATE_CANCELLED)
+    def cancel(self):
+        self.cancelled = True
+        self.cancelled_at = timezone.now()
+
+    @transition(field=state, source=[STATE_PUBLISHED, STATE_CANCELLED], target=STATE_ARCHIVED)
+    def archive(self):
+        self.archived = True
+        self.archived_at = timezone.now()
 
 
 class Route(models.Model):
@@ -432,7 +475,18 @@ class Registration(models.Model):
     STATE_CONFIRMED = 'confirmed'
     STATE_WITHDRAWN = 'withdrawn'
 
-    state = FSMField(default=STATE_SUBMITTED, protected=True)
+    STATE_CHOICES = [
+        (STATE_SUBMITTED, 'Submitted'),
+        (STATE_CONFIRMED, 'Confirmed'),
+        (STATE_WITHDRAWN, 'Withdrawn'),
+    ]
+
+    state = FSMField(
+        default=STATE_SUBMITTED,
+        choices=STATE_CHOICES,
+        protected=True,
+        help_text = 'Current state of the registration in the lifecycle.'
+    )
 
     submitted_at = models.DateTimeField(auto_now_add=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)

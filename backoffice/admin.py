@@ -24,15 +24,15 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(SortableAdminBase, admin.ModelAdmin):
-    list_display = ('starts_at', 'name', 'registration_count', 'links', 'visible', 'cancelled',)
+    list_display = ('starts_at', 'name', 'registration_count', 'links', 'visible', 'cancelled', 'state',)
     list_display_links = ['name', ]
     inlines = [RideInline, ]
     ordering = ('-starts_at',)
     date_hierarchy = 'starts_at'
-    list_filter = ('starts_at', 'program', 'visible', 'cancelled',)
+    list_filter = ('starts_at', 'program', 'visible', 'cancelled', 'state',)
     search_fields = ('name',)
     actions = [cancel_event, duplicate_event]
-    readonly_fields = ('cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
+    readonly_fields = ('state', 'cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
     form = EventAdminForm
 
     def links(self, obj):
@@ -58,7 +58,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
             'description': 'Configure what information is collected during registration.'
         }),
         ('Cancellation information', {
-            'fields': ('cancelled', 'cancelled_at', 'cancellation_reason'),
+            'fields': ('state', 'cancelled', 'cancelled_at', 'cancellation_reason'),
             'description': 'These fields are read-only and can only be modified through the Cancel Event action.'
         }),
     ]
