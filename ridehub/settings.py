@@ -192,6 +192,7 @@ SOCIALACCOUNT_ADAPTER = 'backoffice.adapters.RideHubSocialAccountAdapter'
 SOCIALACCOUNT_PROVIDERS = {
     'microsoft': {
         'TENANT': os.environ.get('AZURE_AD_TENANT_ID', ''),
+        'VERIFIED_EMAIL': True,
         'APP': {
             'client_id': os.environ.get('AZURE_AD_CLIENT_ID', ''),
             'secret': os.environ.get('AZURE_AD_CLIENT_SECRET', ''),
