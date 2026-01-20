@@ -121,7 +121,25 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'web/events/registrations.html')
         self.assertTrue(response.context['is_ride_leader'])
+        self.assertTrue(response.context['can_access_rider_contacts'])
         # Check that private data is visible to ride leaders
+        self.assertContains(response, 'Emergency Contact')  # The actual emergency contact name
+        self.assertContains(response, '123-456-7890')  # The actual emergency contact phone
+        self.assertContains(response, 'mailto:regular@example.com')  # Email links
+
+    def test_staff_user_access(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/events/registrations.html')
+        self.assertFalse(response.context['is_ride_leader'])
+        self.assertTrue(response.context['can_access_rider_contacts'])
+        # Check that private data is visible to staff users
         self.assertContains(response, 'Emergency Contact')  # The actual emergency contact name
         self.assertContains(response, '123-456-7890')  # The actual emergency contact phone
         self.assertContains(response, 'mailto:regular@example.com')  # Email links
@@ -137,6 +155,7 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'web/events/registrations.html')
         self.assertFalse(response.context['is_ride_leader'])
+        self.assertFalse(response.context['can_access_rider_contacts'])
         # Check that specific private data is not exposed
         self.assertNotContains(response, 'Emergency Contact')  # The actual emergency contact name
         self.assertNotContains(response, '123-456-7890')  # The actual emergency contact phone
@@ -153,6 +172,7 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'web/events/registrations.html')
         self.assertFalse(response.context['is_ride_leader'])
+        self.assertFalse(response.context['can_access_rider_contacts'])
         # Check that specific private data is not exposed
         self.assertNotContains(response, 'Emergency Contact')  # The actual emergency contact name
         self.assertNotContains(response, '123-456-7890')  # The actual emergency contact phone

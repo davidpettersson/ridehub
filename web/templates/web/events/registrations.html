@@ -146,11 +146,29 @@
 </style>
 
 <div class="mb-4">
-    <div class="mb-3 d-print-none">
+    <div class="mb-3 d-print-none d-flex flex-wrap gap-2 align-items-center">
         <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
             <i class="bi bi-arrow-left me-2"></i> Back to event details
         </a>
+        {% if can_access_rider_contacts %}
+        <button class="btn btn-outline-danger btn-sm rounded-pill d-inline-flex align-items-center copy-emails-btn" data-emails="{{ all_emails }}" data-type="all">
+            <i class="bi bi-clipboard me-2"></i>
+            Copy all rider emails
+        </button>
+        {% if ride_leader_emails %}
+        <button class="btn btn-outline-danger btn-sm rounded-pill d-inline-flex align-items-center copy-emails-btn" data-emails="{{ ride_leader_emails }}" data-type="leaders">
+            <i class="bi bi-clipboard me-2"></i>
+            Copy ride leader emails
+        </button>
+        {% endif %}
+        {% endif %}
     </div>
+    {% if can_access_rider_contacts %}
+    <div id="copy-success-message" class="alert alert-success mb-3 small d-none d-print-none" role="alert">
+        <i class="bi bi-check-circle me-2"></i>
+        <span id="copy-success-text"></span>
+    </div>
+    {% endif %}
 
     <div class="mb-3">
         <h1 class="fs-2 fw-bold mb-0">
@@ -192,28 +210,6 @@
         </div>
     </div>
 
-    {% if can_access_rider_contacts %}
-    <div class="card shadow-sm p-4 mb-4 d-print-none">
-        <h5 class="fs-6 fw-bold mb-3">Copy Email Addresses</h5>
-        <div class="d-flex flex-column flex-sm-row gap-2">
-            <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center copy-emails-btn" data-emails="{{ all_emails }}" data-type="all">
-                <i class="bi bi-clipboard me-2"></i>
-                Copy all rider emails
-            </button>
-            {% if ride_leader_emails %}
-            <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center copy-emails-btn" data-emails="{{ ride_leader_emails }}" data-type="leaders">
-                <i class="bi bi-clipboard me-2"></i>
-                Copy ride leader emails
-            </button>
-            {% endif %}
-        </div>
-        <div id="copy-success-message" class="alert alert-success mt-3 mb-0 small d-none" role="alert">
-            <i class="bi bi-check-circle me-2"></i>
-            <span id="copy-success-text"></span>
-        </div>
-    </div>
-    {% endif %}
-
     {% if all_riders %}
         <!-- Mobile view (card-based layout) -->
         <div class="d-md-none">
@@ -237,7 +233,7 @@
                             <div class="col-7 text-muted">{{ rider_reg.speed_range_preference.range|default:"N/A" }}</div>
                         </div>
                         
-                        {% if is_ride_leader %}
+                        {% if can_access_rider_contacts %}
                         <div class="mt-3 border-top border-danger-subtle pt-2 w-100">
                             <div class="row mb-1">
                                 <div class="col-5 fw-medium">Email:</div>
@@ -283,7 +279,7 @@
                             <th scope="col" class="small fw-medium">Name</th>
                             <th scope="col" class="small fw-medium">Ride</th>
                             <th scope="col" class="small fw-medium">Speed group</th>
-                            {% if is_ride_leader %}
+                            {% if can_access_rider_contacts %}
                             <th scope="col" class="small fw-medium">Email</th>
                             <th scope="col" class="small fw-medium">Phone</th>
                             <th scope="col" class="emergency-info small fw-medium">Emergency contact</th>
@@ -302,7 +298,7 @@
                                 </td>
                                 <td class="small text-muted">{{ rider_reg.ride.name|default:"N/A" }}</td>
                                 <td class="small text-muted">{{ rider_reg.speed_range_preference.range|default:"N/A" }}</td>
-                                {% if is_ride_leader %}
+                                {% if can_access_rider_contacts %}
                                 <td class="small text-muted">
                                     <a href="mailto:{{ rider_reg.email }}" class="text-primary">
                                         {{ rider_reg.email }}
