@@ -1,0 +1,19 @@
+{% extends 'web/_base.html' %}
+{% block title %}Login Cancelled{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="card rounded-lg">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold text-gray-900 mb-4">Login Cancelled</h1>
+            <p class="mb-4">
+                You cancelled the login process. If this was a mistake, please try again.
+            </p>
+            <div class="mt-6">
+                <a href="{% url 'login_form' %}" class="btn-primary w-full inline-block text-center">
+                    Return to Login
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
