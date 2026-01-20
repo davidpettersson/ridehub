@@ -186,12 +186,13 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
-SOCIALACCOUNT_LOGIN_ON_GET = False
+SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_ADAPTER = 'backoffice.adapters.RideHubSocialAccountAdapter'
 
 SOCIALACCOUNT_PROVIDERS = {
     'microsoft': {
         'TENANT': os.environ.get('AZURE_AD_TENANT_ID', ''),
+        'VERIFIED_EMAIL': True,
         'APP': {
             'client_id': os.environ.get('AZURE_AD_CLIENT_ID', ''),
             'secret': os.environ.get('AZURE_AD_CLIENT_SECRET', ''),
