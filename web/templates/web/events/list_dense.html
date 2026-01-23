@@ -33,13 +33,27 @@
                                 </div>
                             </div>
                         </div>
-                        <hr class="my-0">
+                        <hr class="my-0 opacity-25">
                         <div class="px-3 py-2">
                             <div class="d-flex flex-wrap gap-2 text-muted" style="font-size: 0.8rem;">
                                 {% if event.location %}
                                 <div class="d-inline-flex align-items-center">
                                     <i class="bi bi-geo-alt me-1"></i>
                                     <span>{{ event.location }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if event.has_rides %}
+                                <div class="d-inline-flex align-items-center">
+                                    <i class="bi bi-bicycle me-1"></i>
+                                    <span>{{ event.ride_count }} ride{{ event.ride_count|pluralize }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if event.distance_range %}
+                                <div class="d-inline-flex align-items-center">
+                                    <i class="bi bi-signpost-split me-1"></i>
+                                    <span>{% if event.distance_range.0 == event.distance_range.1 %}{{ event.distance_range.0 }} km{% else %}{{ event.distance_range.0 }}-{{ event.distance_range.1 }} km{% endif %}</span>
                                 </div>
                                 {% endif %}
 

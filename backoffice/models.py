@@ -203,6 +203,17 @@ class Event(models.Model):
         return self.ride_set.count()
 
     @property
+    def distance_range(self) -> tuple[int, int] | None:
+        distances = [
+            ride.route.distance
+            for ride in self.ride_set.select_related('route').all()
+            if ride.route and ride.route.distance
+        ]
+        if not distances:
+            return None
+        return (min(distances), max(distances))
+
+    @property
     def registration_count(self) -> int:
         return self.registration_set.filter(state=Registration.STATE_CONFIRMED).count()
 
