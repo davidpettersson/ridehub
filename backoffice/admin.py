@@ -1,5 +1,6 @@
 from adminsortable2.admin import SortableAdminBase, SortableStackedInline
 from django.contrib import admin
+from django.db.models import Count, Q
 from django.urls import reverse
 from django.utils.html import format_html
 
@@ -24,7 +25,7 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(SortableAdminBase, admin.ModelAdmin):
-    list_display = ('starts_at', 'name', 'registration_count', 'links', 'visible', 'cancelled', 'state',)
+    list_display = ('starts_at', 'name', 'admin_registration_count', 'links', 'visible', 'cancelled', 'state',)
     list_display_links = ['name', ]
     inlines = [RideInline, ]
     ordering = ('-starts_at',)
@@ -34,6 +35,19 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
     actions = [cancel_event, duplicate_event]
     readonly_fields = ('state', 'cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
     form = EventAdminForm
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(
+            confirmed_registration_count=Count(
+                'registration',
+                filter=Q(registration__state=Registration.STATE_CONFIRMED)
+            )
+        )
+
+    @admin.display(description='Registrations', ordering='confirmed_registration_count')
+    def admin_registration_count(self, obj):
+        return obj.confirmed_registration_count
 
     def links(self, obj):
         public_url = reverse('event_detail', args=[obj.id])
