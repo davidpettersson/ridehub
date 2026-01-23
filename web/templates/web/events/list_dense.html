@@ -1,0 +1,79 @@
+{% extends 'web/_base_bootstrap.html' %}
+{% block title %}Events Calendar{% endblock %}
+{% block content %}
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="fs-2 fw-bold mb-0">Upcoming events</h1>
+            <a href="{% url 'calendar' %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Switch to calendar view" aria-label="Switch to calendar view">
+                <i class="bi bi-calendar3"></i>
+            </a>
+        </div>
+
+        {% for date, events in events_by_date %}
+        <div class="mt-4 mb-3">
+            <h2 class="fs-5 fw-semibold text-muted mb-2">
+                {% if date == today %}Today{% elif date == tomorrow %}Tomorrow{% else %}{{ date|date:"l, F j" }}{% endif %}
+            </h2>
+            <div class="d-flex flex-column gap-2">
+                {% for event in events %}
+                <a href="{% url 'event_detail' event.id %}" class="text-decoration-none">
+                    <div class="card shadow-sm border h-100 event-card"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %}>
+                        <div class="card-body py-2 px-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="small text-muted" style="font-size: 0.8rem;">
+                                        {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% endif %}
+                                    </div>
+                                    <div class="fs-6 fw-medium text-dark">
+                                        {% if event.cancelled %}<span class="text-decoration-line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.8rem;">
+                                        {% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr class="my-0 opacity-25">
+                        <div class="px-3 py-2">
+                            <div class="d-flex flex-wrap gap-2 text-muted" style="font-size: 0.8rem;">
+                                {% if event.location %}
+                                <div class="d-inline-flex align-items-center">
+                                    <i class="bi bi-geo-alt me-1"></i>
+                                    <span>{{ event.location }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if event.has_rides %}
+                                <div class="d-inline-flex align-items-center">
+                                    <i class="bi bi-bicycle me-1"></i>
+                                    <span>{{ event.ride_count }} ride{{ event.ride_count|pluralize }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if event.distance_range %}
+                                <div class="d-inline-flex align-items-center">
+                                    <i class="bi bi-signpost-split me-1"></i>
+                                    <span>{% if event.distance_range.0 == event.distance_range.1 %}{{ event.distance_range.0 }} km{% else %}{{ event.distance_range.0 }}-{{ event.distance_range.1 }} km{% endif %}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if not event.external_registration_url %}
+                                <div class="d-inline-flex align-items-center">
+                                    <i class="bi bi-people me-1"></i>
+                                    <span>{{ event.registration_count }} registered{% if not event.has_capacity_available %} (full){% endif %}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="py-5 text-center">
+            <p class="text-muted">No upcoming events scheduled. Check back soon!</p>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}

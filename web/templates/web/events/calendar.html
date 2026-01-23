@@ -62,11 +62,13 @@
                                                             <div class="p-1 bg-white border rounded text-muted calendar-event"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %} title="{{ event.name }} - {{ event.starts_at|date:'g:i A'|lower|cut:'.m.' }}{% if event.ends_at %} - {{ event.ends_at|date:'g:i A'|lower|cut:'.m.' }}{% endif %}">
                                                                 <div class="fw-medium text-truncate" style="font-size: 0.65rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %}</div>
                                                                 <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}</div>
+                                                                <div class="text-truncate" style="font-size: 0.65rem;">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}</div>
                                                             </div>
                                                             {% else %}
                                                             <div class="p-1 bg-white border rounded text-dark calendar-event"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %} title="{{ event.name }} - {{ event.starts_at|date:'g:i A'|lower|cut:'.m.' }}{% if event.ends_at %} - {{ event.ends_at|date:'g:i A'|lower|cut:'.m.' }}{% endif %}">
                                                                 <div class="fw-medium text-truncate" style="font-size: 0.65rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %}</div>
                                                                 <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}</div>
+                                                                <div class="text-truncate" style="font-size: 0.65rem;">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}</div>
                                                             </div>
                                                             {% endif %}
                                                         </a>
