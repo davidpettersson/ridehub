@@ -21,25 +21,23 @@
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">
-                                    <div class="small text-uppercase fw-semibold text-muted mb-1">
-                                        {% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}
+                                    <div class="small text-muted mb-1">
+                                        {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% endif %}
                                     </div>
                                     <h3 class="fs-5 fw-medium mb-1 text-dark">
                                         {% if event.cancelled %}<span class="text-decoration-line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
                                     </h3>
-                                    <div class="d-flex flex-wrap gap-3 small text-muted mb-2">
-                                        <div class="d-inline-flex align-items-center">
-                                            <i class="bi bi-clock me-2"></i>
-                                            <span>{{ event.starts_at|date:"g:i A" }}</span>
-                                        </div>
-                                        
+                                    <div class="small text-muted mb-2">
+                                        {% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-3 small text-muted">
                                         {% if event.location %}
                                         <div class="d-inline-flex align-items-center">
                                             <i class="bi bi-geo-alt me-2"></i>
                                             <span>{{ event.location }}</span>
                                         </div>
                                         {% endif %}
-                                        
+
                                         {% if not event.external_registration_url %}
                                         <div class="d-inline-flex align-items-center">
                                             <i class="bi bi-people me-2"></i>
