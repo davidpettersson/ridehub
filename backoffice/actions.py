@@ -54,7 +54,7 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
         'action_checkbox_name': ACTION_CHECKBOX_NAME,
     }
     
-    return TemplateResponse(request, 'admin/backoffice/event/cancel_selected_confirmation.html', context)
+    return TemplateResponse(request, 'admin/backoffice/event/cancel_selected.html', context)
 
 
 cancel_event.short_description = "Cancel selected events"
