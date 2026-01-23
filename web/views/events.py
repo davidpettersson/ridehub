@@ -1,5 +1,5 @@
 import calendar
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from itertools import groupby
 
 from django.contrib.auth.decorators import login_required
@@ -7,6 +7,8 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
+
+from waffle import flag_is_active
 
 from backoffice.models import Event, Registration
 from backoffice.services.event_service import EventService
@@ -159,10 +161,17 @@ def event_list(request: HttpRequest) -> HttpResponse:
         (date, list(events_on_date)) for date, events_on_date in groupby(events, key=starts_at_date)
     ]
 
+    today = timezone.localdate()
+    tomorrow = today + timedelta(days=1)
+
     context = {
-        'events_by_date': events_by_date
+        'events_by_date': events_by_date,
+        'today': today,
+        'tomorrow': tomorrow,
     }
 
+    if flag_is_active(request, 'upcoming_dense_view'):
+        return render(request, 'web/events/list_dense.html', context)
     return render(request, 'web/events/list.html', context)
 
 
