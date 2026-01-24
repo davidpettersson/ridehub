@@ -33,6 +33,7 @@
                                 </div>
                             </div>
                         </div>
+                        {% if event.location or event.has_rides or event.distance_range or not event.external_registration_url %}
                         <hr class="my-0 opacity-25">
                         <div class="px-3 py-2">
                             <div class="d-flex flex-wrap gap-2 text-muted" style="font-size: 0.8rem;">
@@ -65,6 +66,7 @@
                                 {% endif %}
                             </div>
                         </div>
+                        {% endif %}
                     </div>
                 </a>
                 {% endfor %}

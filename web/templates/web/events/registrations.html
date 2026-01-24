@@ -146,7 +146,7 @@
 </style>
 
 <div class="mb-4">
-    <div class="mb-3 d-print-none d-flex flex-wrap gap-2 align-items-center">
+    <div class="mb-4 d-print-none d-flex flex-wrap gap-2 align-items-center">
         <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
             <i class="bi bi-arrow-left me-2"></i> Back to event details
         </a>
@@ -171,31 +171,26 @@
     </div>
     {% endif %}
 
-    <div class="mb-3">
-        <h1 class="fs-2 fw-bold mb-0">
-            Riders for {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
+    <div class="mb-4">
+        <div class="text-muted small mb-2">
+            {{ event.starts_at|date:"l, F j" }} · {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% if event.starts_at|date:"Y-m-d" != event.ends_at|date:"Y-m-d" %}<sup>+1</sup>{% endif %}{% endif %}
+        </div>
+        <h1 class="fs-2 fw-bold mb-1">
+            {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
         </h1>
+        <div class="text-muted mb-3">
+            {% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}
+        </div>
     </div>
 
+    {% if event.location or event.location_url %}
     <div class="card shadow-sm p-4 mb-4">
-        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between">
-            <div class="d-flex flex-wrap gap-3 small">
-                <div class="d-inline-flex align-items-center text-muted">
-                    <i class="bi bi-calendar-event me-2"></i>
-                    <span>{{ event.starts_at|date:"l, F j, Y" }}</span>
-                </div>
-
-                <div class="d-inline-flex align-items-center text-muted">
-                    <i class="bi bi-clock me-2"></i>
-                    <span>{{ event.starts_at|date:"g:i A" }}</span>
-                </div>
-
-                {% if event.location %}
+        <div class="d-flex flex-wrap gap-3 small">
                 <div class="d-inline-flex align-items-center text-muted">
                     <i class="bi bi-geo-alt me-2"></i>
                     {% if event.location_url %}
                     <a href="{{ event.location_url }}"
-                       class="text-primary d-flex align-items-center"
+                       class="text-primary text-decoration-underline d-flex align-items-center"
                        target="_blank" rel="noopener noreferrer">
                         {{ event.location }}
                         <i class="bi bi-box-arrow-up-right ms-1 small"></i>
@@ -204,14 +199,12 @@
                     <span>{{ event.location }}</span>
                     {% endif %}
                 </div>
-                {% endif %}
             </div>
-
-            <!-- Global emergency button -->
-        </div>
     </div>
+    {% endif %}
 
     {% if all_riders %}
+    <h2 class="fs-5 fw-medium mb-3">Registered riders ({{ all_riders|length }})</h2>
         <!-- Mobile view (card-based layout) -->
         <div class="d-md-none">
             {% for rider_reg in all_riders %}
@@ -326,9 +319,10 @@
             </div>
         </div>
     {% else %}
-        <div class="py-5 text-center card">
-            <p class="text-muted">No riders found for this event.</p>
-        </div>
+    <h2 class="fs-5 fw-medium mb-3">Registered riders (0)</h2>
+    <div class="py-5 text-center card">
+        <p class="text-muted">No riders found for this event.</p>
+    </div>
     {% endif %}
 </div>
 

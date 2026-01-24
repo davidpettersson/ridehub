@@ -3,58 +3,51 @@
 {% block title %}Register for {{ event.name }}{% endblock %}
 {% block content %}
     <div class="mb-4">
-        <div class="mb-3">
+        <div class="mb-4">
             <a href="{% url 'event_detail' event.id %}"
                class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
                 <i class="bi bi-arrow-left me-2"></i> Back to event detail
             </a>
         </div>
 
-        <div class="mb-3">
-            <h1 class="fs-2 fw-bold mb-0">
-                {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span>
-                    (cancelled){% else %}{{ event.name }}{% endif %}
+        <div class="mb-4">
+            <div class="text-muted small mb-2">
+                {{ event.starts_at|date:"l, F j" }} · {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% if event.starts_at|date:"Y-m-d" != event.ends_at|date:"Y-m-d" %}<sup>+1</sup>{% endif %}{% endif %}
+            </div>
+            <h1 class="fs-2 fw-bold mb-1">
+                {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
             </h1>
-        </div>
-
-        <div class="card shadow-sm p-4 mb-4">
-            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between">
-                <div class="d-flex flex-wrap gap-3 small">
-                    <div class="d-inline-flex align-items-center text-muted">
-                        <i class="bi bi-calendar-event me-2"></i>
-                        <span>{{ event.starts_at|date:"l, F j, Y" }}</span>
-                    </div>
-
-                    <div class="d-inline-flex align-items-center text-muted">
-                        <i class="bi bi-clock me-2"></i>
-                        <span>{{ event.starts_at|date:"g:i A" }}</span>
-                    </div>
-
-                    {% if event.location or event.location_url %}
-                        <div class="d-inline-flex align-items-center text-muted">
-                            <i class="bi bi-geo-alt me-2"></i>
-                            {% if event.location_url %}
-                                <a href="{{ event.location_url }}"
-                                   class="text-primary d-flex align-items-center"
-                                   target="_blank" rel="noopener noreferrer">
-                                    {% if event.location %}{{ event.location }}{% else %}See location{% endif %}
-                                    <i class="bi bi-box-arrow-up-right ms-1 small"></i>
-                                </a>
-                            {% else %}
-                                <span>{{ event.location }}</span>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-                </div>
+            <div class="text-muted mb-3">
+                {% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}
             </div>
         </div>
+
+        {% if event.location or event.location_url %}
+        <div class="card shadow-sm p-4 mb-4">
+            <div class="d-flex flex-wrap gap-3 small">
+                    <div class="d-inline-flex align-items-center text-muted">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        {% if event.location_url %}
+                        <a href="{{ event.location_url }}"
+                           class="text-primary text-decoration-underline d-flex align-items-center"
+                           target="_blank" rel="noopener noreferrer">
+                            {% if event.location %}{{ event.location }}{% else %}See location{% endif %}
+                            <i class="bi bi-box-arrow-up-right ms-1 small"></i>
+                        </a>
+                        {% else %}
+                        <span>{{ event.location }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+        </div>
+        {% endif %}
 
         <form method="post">
             {% csrf_token %}
 
+            <h2 class="fs-5 fw-medium mb-3">Registration details</h2>
             <div class="card shadow-sm">
                 <div class="card-body p-4">
-                    <h2 class="fs-4 fw-medium mb-4">Registration Details</h2>
 
                     {% if messages %}
                         <div class="alert alert-success mb-4">
