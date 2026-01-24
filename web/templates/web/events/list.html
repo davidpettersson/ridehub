@@ -27,8 +27,8 @@
                                     <h3 class="fs-5 fw-medium mb-1 text-dark">
                                         {% if event.cancelled %}<span class="text-decoration-line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
                                     </h3>
-                                    <div class="small text-muted mb-2">
-                                        {% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}
+                                    <div class="mb-2">
+                                        <span class="badge fw-normal text-muted small" style="background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}</span>
                                     </div>
                                     <div class="d-flex flex-wrap gap-3 small text-muted">
                                         {% if event.location %}

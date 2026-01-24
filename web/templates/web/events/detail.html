@@ -26,30 +26,19 @@
             {% endif %}
         </div>
 
-        <div class="card shadow-sm mb-4">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="small text-uppercase fw-semibold text-muted mb-1">
-                            {% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}
-                        </div>
-                        <h1 class="fs-2 fw-bold mb-3">
-                            {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
-                        </h1>
-                    </div>
-                </div>
+        <div class="mb-4">
+            <div class="text-muted small mb-2">
+                {{ event.starts_at|date:"l, F j" }} · {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% if event.starts_at|date:"Y-m-d" != event.ends_at|date:"Y-m-d" %}<sup>+1</sup>{% endif %}{% endif %}
+            </div>
+            <h1 class="fs-2 fw-bold mb-2">
+                {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
+            </h1>
+            <span class="badge fw-normal text-muted" style="font-size: 0.85rem; background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
+        </div>
 
-                <div class="d-flex flex-wrap gap-3 mb-4 small">
-                    <div class="d-inline-flex align-items-center text-muted">
-                        <i class="bi bi-calendar-event me-2"></i>
-                        <span>{{ event.starts_at|date:"l, F j, Y" }}</span>
-                    </div>
-
-                    <div class="d-inline-flex align-items-center text-muted">
-                        <i class="bi bi-clock me-2"></i>
-                        <span>{{ event.starts_at|date:"g:i A" }}</span>
-                    </div>
-
+        {% if event.location or event.location_url or not event.external_registration_url %}
+        <div class="card shadow-sm p-4 mb-4">
+            <div class="d-flex flex-wrap gap-3 small">
                     {% if event.location or event.location_url %}
                     <div class="d-inline-flex align-items-center text-muted">
                         <i class="bi bi-geo-alt me-2"></i>
@@ -66,7 +55,7 @@
                     </div>
                     {% endif %}
 
-                    {% if not event.external_registration_url  %}
+                    {% if not event.external_registration_url %}
                     <div class="d-inline-flex align-items-center text-muted">
                         <i class="bi bi-people me-2"></i>
                         <a href="{% url 'riders_list' event.id %}" class="text-primary text-decoration-underline">
@@ -75,7 +64,12 @@
                     </div>
                     {% endif %}
                 </div>
+        </div>
+        {% endif %}
 
+        <h2 class="fs-5 fw-medium mb-3">About the event</h2>
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-4">
                 {% if event.cancelled %}
                 <div class="mb-4 p-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded">
                     <div>
@@ -93,13 +87,13 @@
                 </div>
                 {% endif %}
 
-                <hr>
-
-                <div class="prose mb-4">
+                <div class="prose{% if event.organizer_email or event.registration_open or not event.cancelled %} mb-4{% endif %}">
                     <p>{{ event.description|safe }}</p>
                 </div>
 
+                {% if event.organizer_email or event.registration_open or not event.cancelled %}
                 <hr>
+                {% endif %}
 
                 {% if event.organizer_email %}
                 <div class="mt-4">
@@ -110,7 +104,7 @@
                 {% endif %}
 
                 {% if event.registration_open %}
-                <div class="mt-4 mb-4">
+                <div class="mt-4">
                     {% if event.has_capacity_available and not user_is_registered and event.registration_closes_at %}
                     <div class="d-flex align-items-center mb-4">
                         <div class="text-muted">Registration closes {{ event.registration_closes_at|date:"F j, g:i A" }}.</div>
@@ -146,7 +140,7 @@
 
         {% if event.ride_set.all %}
         <div class="mb-4">
-            <h2 class="fs-4 fw-medium mb-3">Available Rides</h2>
+            <h2 class="fs-5 fw-medium mb-3">Available rides</h2>
 
             {% for ride in event.ride_set.all %}
             <div class="card shadow-sm mb-4">
