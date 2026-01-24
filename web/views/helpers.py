@@ -28,7 +28,7 @@ def changes_email_addresses(request: HttpRequest) -> HttpResponse:
     all_emails = set(staff_users) | set(ride_leader_users)
 
     # Remove officials
-    all_emails_except_officials = filter(lambda e: e.endswith('@ottawabicycleclub.ca'), all_emails)
+    all_emails_except_officials = filter(lambda e: not e.endswith('@ottawabicycleclub.ca'), all_emails)
 
     # Return comma-separated email addresses
     email_list = ','.join(sorted(all_emails_except_officials))
