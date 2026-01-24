@@ -17,7 +17,7 @@
             <h1 class="fs-2 fw-bold mb-2">
                 {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
             </h1>
-            <span class="badge bg-secondary bg-opacity-10 text-muted fw-normal" style="font-size: 0.85rem;">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
+            <span class="badge fw-normal text-muted" style="font-size: 0.85rem; background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
         </div>
 
         {% if event.location or event.location_url %}
