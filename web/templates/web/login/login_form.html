@@ -54,6 +54,20 @@
         </a>
     </div>
     {% endflag %}
+    {% flag "strava_login" %}
+    <div class="mt-6 text-center">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+            Already linked your Strava account?
+        </p>
+        <a href="{% url 'strava_login' %}"
+           class="inline-flex items-center gap-2 text-sm text-white rounded px-4 py-2" style="background-color: #FC4C02;">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.172"/>
+            </svg>
+            Sign in with Strava
+        </a>
+    </div>
+    {% endflag %}
     {% endif %}
 </div>
 {% endblock %}
