@@ -66,6 +66,64 @@ body {
   color: rgba(255, 255, 255, 0.8);
 }
 
+/* Nav link styles */
+.nav-link-obc {
+  padding: 6px 12px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  transition: color 0.2s ease;
+  position: relative;
+}
+
+.nav-link-obc:hover {
+  text-decoration: underline;
+  color: white !important;
+}
+
+.nav-link-obc.active {
+  font-weight: 700;
+  color: white !important;
+}
+
+
+/* Mobile hamburger button */
+.navbar-toggler-obc {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  line-height: 1;
+}
+
+.navbar-toggler-obc:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile collapse menu */
+.mobile-nav-menu {
+  padding: 8px 0 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-nav-link {
+  display: block;
+  padding: 10px 16px;
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.mobile-nav-link:hover,
+.mobile-nav-link.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
 
 /* Fix dropdown menu readability */
 .navbar-obc .dropdown-menu .dropdown-item {

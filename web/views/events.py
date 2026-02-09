@@ -285,7 +285,7 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
 
     context = {
         'current_date': date(year, month, 1),
-        'month_name': calendar.month_name[month],
+        'month_name': calendar.month_abbr[month],
         'year': year,
         'month': month,
         'month_days': month_days,
