@@ -57,6 +57,17 @@ body {
   background-color: var(--obc-blue);
 }
 
+.navbar-autohide {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  transition: transform 0.3s ease;
+}
+
+.navbar-hidden {
+  transform: translateY(-100%);
+}
+
 .navbar-obc a {
   color: white;
   text-decoration: none;
@@ -64,6 +75,10 @@ body {
 
 .navbar-obc a:hover {
   color: rgba(255, 255, 255, 0.8);
+}
+
+.navbar-obc .dropdown {
+  height: 32px;
 }
 
 /* Nav link styles */
