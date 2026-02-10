@@ -131,14 +131,21 @@
       (function() {
         var lastScrollY = window.scrollY;
         var nav = document.querySelector('.navbar-autohide');
+        var ticking = false;
         window.addEventListener('scroll', function() {
-          if (window.scrollY > lastScrollY && window.scrollY > 80) {
-            nav.classList.add('navbar-hidden');
-          } else {
-            nav.classList.remove('navbar-hidden');
+          if (!ticking) {
+            requestAnimationFrame(function() {
+              if (window.scrollY > lastScrollY && window.scrollY > 80) {
+                nav.classList.add('navbar-hidden');
+              } else {
+                nav.classList.remove('navbar-hidden');
+              }
+              lastScrollY = window.scrollY;
+              ticking = false;
+            });
+            ticking = true;
           }
-          lastScrollY = window.scrollY;
-        });
+        }, { passive: true });
       })();
     </script>
   </body>

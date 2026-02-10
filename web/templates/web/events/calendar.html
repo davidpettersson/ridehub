@@ -41,13 +41,13 @@
                                 <th class="text-center py-2 d-none d-md-table-cell" style="width: 14.28%;">Thu</th>
                                 <th class="text-center py-2 d-none d-md-table-cell" style="width: 14.28%;">Fri</th>
                                 <th class="text-center py-2 d-none d-md-table-cell" style="width: 14.28%;">Sat</th>
-                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">S</th>
-                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">M</th>
-                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">T</th>
-                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">W</th>
-                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">T</th>
-                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">F</th>
-                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">S</th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;"><abbr title="Sunday">S</abbr></th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;"><abbr title="Monday">M</abbr></th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;"><abbr title="Tuesday">T</abbr></th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;"><abbr title="Wednesday">W</abbr></th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;"><abbr title="Thursday">T</abbr></th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;"><abbr title="Friday">F</abbr></th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;"><abbr title="Saturday">S</abbr></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -87,14 +87,17 @@
                                         </div>
                                         <!-- Mobile: day number + colored dots -->
                                         <div class="d-md-none text-center calendar-day-mobile"
+                                             role="button" tabindex="0"
                                              @click="selectedDay = selectedDay === {{ day }} ? 0 : {{ day }}"
+                                             @keydown.enter.prevent="selectedDay = selectedDay === {{ day }} ? 0 : {{ day }}"
+                                             @keydown.space.prevent="selectedDay = selectedDay === {{ day }} ? 0 : {{ day }}"
                                              :class="{ 'calendar-day-selected': selectedDay === {{ day }} }">
                                             <div class="calendar-day-number{% if day == today.day and month == today.month and year == today.year %} calendar-day-today{% endif %}">{{ day }}</div>
                                             <div class="calendar-dots">
                                                 {% for event_date, events in events_by_date.items %}
                                                     {% if event_date.day == day %}
                                                         {% for event in events %}
-                                                            <span class="calendar-dot{% if event.starts_at.date < today %} calendar-dot-past{% endif %}" style="background-color: {{ event.program.color|default:'#6c757d' }};"></span>
+                                                            <span class="calendar-dot{% if event_date < today %} calendar-dot-past{% endif %}" style="background-color: {{ event.program.color|default:'#6c757d' }};"></span>
                                                         {% endfor %}
                                                     {% endif %}
                                                 {% endfor %}
@@ -117,7 +120,7 @@
                 <a href="{% url 'event_detail' event.id %}" class="calendar-day-detail text-decoration-none d-flex align-items-center gap-2">
                     <span class="calendar-dot-detail" style="background-color: {{ event.program.color|default:'#6c757d' }};"></span>
                     <div class="flex-grow-1" style="min-width: 0;">
-                        <div class="fw-medium{% if event.starts_at.date < today %} text-muted{% else %} text-dark{% endif %}" style="font-size: 0.875rem;">{{ event.name }}</div>
+                        <div class="fw-medium{% if event_date < today %} text-muted{% else %} text-dark{% endif %}" style="font-size: 0.875rem;">{{ event.name }}</div>
                         <div class="text-muted" style="font-size: 0.75rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} – {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %} · {{ event.program.name }}</div>
                     </div>
                     <i class="bi bi-chevron-right text-muted"></i>
