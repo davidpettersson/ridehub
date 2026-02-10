@@ -12,7 +12,7 @@
                         <i class="bi bi-chevron-right"></i>
                     </a>
                 </div>
-                <h1 class="fs-2 fw-bold mb-0 d-flex align-items-center gap-2">
+                <h1 class="fs-4 fs-md-2 fw-bold mb-0 d-flex align-items-center gap-2">
                     <span>{{ month_name }} {{ year }}</span>
                     {% if year != today.year or month != today.month %}
                     <a href="{% url 'calendar_month' today.year today.month %}" class="btn btn-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: none;" title="Go to current month" aria-label="Go to current month">
@@ -28,28 +28,36 @@
             </div>
         </div>
         
-        <div class="calendar-grid">
+        <div class="calendar-grid" x-data="{ selectedDay: 0 }">
             <div class="card">
                 <div class="card-body p-0">
                     <table class="table table-bordered mb-0" style="table-layout: fixed;">
                         <thead class="table-light">
                             <tr>
-                                <th class="text-center py-2" style="width: 14.28%;">Sun</th>
-                                <th class="text-center py-2" style="width: 14.28%;">Mon</th>
-                                <th class="text-center py-2" style="width: 14.28%;">Tue</th>
-                                <th class="text-center py-2" style="width: 14.28%;">Wed</th>
-                                <th class="text-center py-2" style="width: 14.28%;">Thu</th>
-                                <th class="text-center py-2" style="width: 14.28%;">Fri</th>
-                                <th class="text-center py-2" style="width: 14.28%;">Sat</th>
+                                <th class="text-center py-2 d-none d-md-table-cell" style="width: 14.28%;">Sun</th>
+                                <th class="text-center py-2 d-none d-md-table-cell" style="width: 14.28%;">Mon</th>
+                                <th class="text-center py-2 d-none d-md-table-cell" style="width: 14.28%;">Tue</th>
+                                <th class="text-center py-2 d-none d-md-table-cell" style="width: 14.28%;">Wed</th>
+                                <th class="text-center py-2 d-none d-md-table-cell" style="width: 14.28%;">Thu</th>
+                                <th class="text-center py-2 d-none d-md-table-cell" style="width: 14.28%;">Fri</th>
+                                <th class="text-center py-2 d-none d-md-table-cell" style="width: 14.28%;">Sat</th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">S</th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">M</th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">T</th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">W</th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">T</th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">F</th>
+                                <th class="text-center py-1 d-md-none" style="width: 14.28%; font-size: 0.7rem;">S</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for week in month_days %}
                             <tr>
                                 {% for day in week %}
-                                <td class="p-0 calendar-day" style="min-height: 120px; vertical-align: top;">
+                                <td class="p-0 calendar-day" style="vertical-align: top;">
                                     {% if day != 0 %}
-                                        <div class="p-2" style="min-height: 96px;">
+                                        <!-- Desktop: full event details -->
+                                        <div class="d-none d-md-block p-2" style="min-height: 96px;">
                                             <div class="d-flex justify-content-between align-items-start mb-1">
                                                 <span class="fw-medium{% if day == today.day and month == today.month and year == today.year %} text-primary{% endif %}">{{ day }}</span>
                                             </div>
@@ -77,6 +85,21 @@
                                                 {% endif %}
                                             {% endfor %}
                                         </div>
+                                        <!-- Mobile: day number + colored dots -->
+                                        <div class="d-md-none text-center calendar-day-mobile"
+                                             @click="selectedDay = selectedDay === {{ day }} ? 0 : {{ day }}"
+                                             :class="{ 'calendar-day-selected': selectedDay === {{ day }} }">
+                                            <div class="calendar-day-number{% if day == today.day and month == today.month and year == today.year %} calendar-day-today{% endif %}">{{ day }}</div>
+                                            <div class="calendar-dots">
+                                                {% for event_date, events in events_by_date.items %}
+                                                    {% if event_date.day == day %}
+                                                        {% for event in events %}
+                                                            <span class="calendar-dot{% if event.starts_at.date < today %} calendar-dot-past{% endif %}" style="background-color: {{ event.program.color|default:'#6c757d' }};"></span>
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
                                     {% endif %}
                                 </td>
                                 {% endfor %}
@@ -86,8 +109,24 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Mobile day detail panel -->
+            {% for event_date, events in events_by_date.items %}
+            <div class="d-md-none" x-cloak x-show="selectedDay === {{ event_date.day }}">
+                {% for event in events %}
+                <a href="{% url 'event_detail' event.id %}" class="calendar-day-detail text-decoration-none d-flex align-items-center gap-2">
+                    <span class="calendar-dot-detail" style="background-color: {{ event.program.color|default:'#6c757d' }};"></span>
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <div class="fw-medium{% if event.starts_at.date < today %} text-muted{% else %} text-dark{% endif %}" style="font-size: 0.875rem;">{{ event.name }}</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} – {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %} · {{ event.program.name }}</div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </a>
+                {% endfor %}
+            </div>
+            {% endfor %}
         </div>
-        
+
         <div class="mt-4 text-center">
             <p class="text-muted small mb-0">
                 Subscribe to this calendar: 
