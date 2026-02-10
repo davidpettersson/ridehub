@@ -6,6 +6,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="rgb(0, 85, 150)">
     <title>{% block title %}RideHub{% endblock %}</title>
 
     <!-- Early scripts -->
@@ -28,7 +29,7 @@
     <link href="{% static 'web/prose-styling.css' %}" rel="stylesheet">
   </head>
   <body class="d-flex flex-column h-100">
-    <nav class="navbar navbar-obc shadow-sm py-0">
+    <nav class="navbar navbar-obc shadow-sm py-0 navbar-autohide">
       <div class="container">
         <!-- Desktop navbar (md and up) -->
         <div class="d-none d-md-flex justify-content-between w-100" style="height: 64px;">
@@ -126,5 +127,26 @@
       class="container py-4">
       {% block content %}CONTENT{% endblock %}
     </main>
+    <script>
+      (function() {
+        var lastScrollY = window.scrollY;
+        var nav = document.querySelector('.navbar-autohide');
+        var ticking = false;
+        window.addEventListener('scroll', function() {
+          if (!ticking) {
+            requestAnimationFrame(function() {
+              if (window.scrollY > lastScrollY && window.scrollY > 80) {
+                nav.classList.add('navbar-hidden');
+              } else {
+                nav.classList.remove('navbar-hidden');
+              }
+              lastScrollY = window.scrollY;
+              ticking = false;
+            });
+            ticking = true;
+          }
+        }, { passive: true });
+      })();
+    </script>
   </body>
 </html>
