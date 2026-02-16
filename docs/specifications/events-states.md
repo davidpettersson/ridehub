@@ -6,13 +6,13 @@ This document describes the event lifecycle state machine introduced in Step 1 o
 
 The Event model has five possible states, defined as class constants (e.g., `Event.STATE_LIVE`):
 
-| State | Description | Visibility | Registration |
-|-------|-------------|------------|--------------|
-| `draft` | Event is being prepared | Admin-only | Closed |
-| `announced` | Event is visible but not open for registration | Public | Closed |
-| `live` | Event is live and accepting registrations | Public | Open |
-| `cancelled` | Event has been cancelled | Public | Closed |
-| `archived` | Event has been removed/deleted | Admin-only | Closed |
+| State       | Description                                    | Visibility | Registration |
+|-------------|------------------------------------------------|------------|--------------|
+| `draft`     | Event is being prepared                        | Admin-only | Closed       |
+| `announced` | Event is visible but not open for registration | Public     | Closed       |
+| `live`      | Event is live and accepting registrations      | Public     | Open         |
+| `cancelled` | Event has been cancelled                       | Public     | Closed       |
+| `archived`  | Event has been removed/deleted                 | Admin-only | Closed       |
 
 ## State Transitions
 
@@ -38,25 +38,25 @@ The Event model has five possible states, defined as class constants (e.g., `Eve
 
 ### Available Transitions
 
-| Transition | Source States | Target State | Side Effects |
-|------------|---------------|--------------|--------------|
-| `live()` | draft, announced | live | Sets `visible=True` |
-| `announce()` | draft, live | announced | Sets `visible=True` |
-| `draft()` | announced, live | draft | Sets `visible=False` |
-| `cancel()` | live | cancelled | Sets `cancelled=True`, `cancelled_at` |
-| `archive()` | open, cancelled | archived | Sets `archived=True`, `archived_at` |
+| Transition   | Source States    | Target State | Side Effects                          |
+|--------------|------------------|--------------|---------------------------------------|
+| `live()`     | draft, announced | live         | Sets `visible=True`                   |
+| `announce()` | draft, live      | announced    | Sets `visible=True`                   |
+| `draft()`    | announced, live  | draft        | Sets `visible=False`                  |
+| `cancel()`   | live             | cancelled    | Sets `cancelled=True`, `cancelled_at` |
+| `archive()`  | live, cancelled  | archived     | Sets `archived=True`, `archived_at`   |
 
 ## Legacy Boolean Field Mapping
 
 The state field shadows existing boolean fields for backwards compatibility:
 
-| State | `visible` | `cancelled` | `archived` |
-|-------|-----------|-------------|------------|
-| draft | False | False | False |
-| announced | True/False | False | False |
-| live | True | False | False |
-| cancelled | True | True | False |
-| archived | False | False | True |
+| State     | `visible`  | `cancelled` | `archived` |
+|-----------|------------|-------------|------------|
+| draft     | False      | False       | False      |
+| announced | True/False | False       | False      |
+| live      | True       | False       | False      |
+| cancelled | True       | True        | False      |
+| archived  | False      | False       | True       |
 
 ## Data Migration
 
