@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.microsoft',
+    'allauth.socialaccount.providers.strava',
     'backoffice',
     'membership',
     'web',
@@ -197,7 +198,14 @@ SOCIALACCOUNT_PROVIDERS = {
             'client_id': os.environ.get('AZURE_AD_CLIENT_ID', ''),
             'secret': os.environ.get('AZURE_AD_CLIENT_SECRET', ''),
         },
-    }
+    },
+    'strava': {
+        'SCOPE': ['profile:read_all'],
+        'APP': {
+            'client_id': os.environ.get('STRAVA_CLIENT_ID', ''),
+            'secret': os.environ.get('STRAVA_CLIENT_SECRET', ''),
+        },
+    },
 }
 
 AZURE_AD_STAFF_DOMAIN = '@ottawabicycleclub.ca'
