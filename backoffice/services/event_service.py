@@ -51,7 +51,7 @@ class EventService:
         new_event = Event.objects.create(
             program=source_event.program,
             name=new_name,
-            state=Event.STATE_PUBLISHED,
+            state=Event.STATE_OPEN,
             visible=True,
             location=source_event.location,
             location_url=source_event.location_url,

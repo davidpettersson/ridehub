@@ -61,21 +61,21 @@ class Event(models.Model):
     )
 
     STATE_DRAFT = 'draft'
-    STATE_PREVIEW = 'preview'
-    STATE_PUBLISHED = 'published'
+    STATE_ANNOUNCED = 'announced'
+    STATE_OPEN = 'open'
     STATE_CANCELLED = 'cancelled'
     STATE_ARCHIVED = 'archived'
 
     STATE_CHOICES = [
         (STATE_DRAFT, 'Draft'),
-        (STATE_PREVIEW, 'Preview'),
-        (STATE_PUBLISHED, 'Published'),
+        (STATE_ANNOUNCED, 'Announced'),
+        (STATE_OPEN, 'Open'),
         (STATE_CANCELLED, 'Cancelled'),
         (STATE_ARCHIVED, 'Archived'),
     ]
 
     state = FSMField(
-        default=STATE_PUBLISHED,
+        default=STATE_OPEN,
         choices=STATE_CHOICES,
         protected=False,
         help_text='Current state of the event in the lifecycle.'
@@ -261,24 +261,24 @@ class Event(models.Model):
                     'registration_closes_at': 'Registration cannot close after the event starts.'
                 })
 
-    @transition(field=state, source=[STATE_DRAFT, STATE_PREVIEW], target=STATE_PUBLISHED)
-    def publish(self):
+    @transition(field=state, source=[STATE_DRAFT, STATE_ANNOUNCED], target=STATE_OPEN)
+    def open(self):
         self.visible = True
 
-    @transition(field=state, source=[STATE_DRAFT, STATE_PUBLISHED], target=STATE_PREVIEW)
-    def preview(self):
+    @transition(field=state, source=[STATE_DRAFT, STATE_OPEN], target=STATE_ANNOUNCED)
+    def announce(self):
         self.visible = True
 
-    @transition(field=state, source=[STATE_PREVIEW, STATE_PUBLISHED], target=STATE_DRAFT)
+    @transition(field=state, source=[STATE_ANNOUNCED, STATE_OPEN], target=STATE_DRAFT)
     def draft(self):
         self.visible = False
 
-    @transition(field=state, source=STATE_PUBLISHED, target=STATE_CANCELLED)
+    @transition(field=state, source=STATE_OPEN, target=STATE_CANCELLED)
     def cancel(self):
         self.cancelled = True
         self.cancelled_at = timezone.now()
 
-    @transition(field=state, source=[STATE_PUBLISHED, STATE_CANCELLED], target=STATE_ARCHIVED)
+    @transition(field=state, source=[STATE_OPEN, STATE_CANCELLED], target=STATE_ARCHIVED)
     def archive(self):
         self.archived = True
         self.visible = False
