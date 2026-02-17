@@ -114,7 +114,7 @@ class RegistrationService:
         return Registration.objects.filter(
             user=user,
             event__starts_at__date__gte=today,
-            event__state__in=[Event.STATE_DRAFT, Event.STATE_ANNOUNCED, Event.STATE_LIVE, Event.STATE_CANCELLED],
+            event__state__in=[Event.STATE_LIVE, Event.STATE_CANCELLED],
             state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED],
             pk=Subquery(latest_pk_subquery)
         ).order_by('event__starts_at')
