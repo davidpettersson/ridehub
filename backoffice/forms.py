@@ -31,18 +31,6 @@ class EventAdminForm(forms.ModelForm):
             'registration_closes_at': RegistrationClosesAtWidget(),
         }
 
-    TRANSITION_MAP = {
-        (Event.STATE_DRAFT, Event.STATE_LIVE): 'live',
-        (Event.STATE_ANNOUNCED, Event.STATE_LIVE): 'live',
-        (Event.STATE_DRAFT, Event.STATE_ANNOUNCED): 'announce',
-        (Event.STATE_LIVE, Event.STATE_ANNOUNCED): 'announce',
-        (Event.STATE_ANNOUNCED, Event.STATE_DRAFT): 'draft',
-        (Event.STATE_LIVE, Event.STATE_DRAFT): 'draft',
-        (Event.STATE_LIVE, Event.STATE_CANCELLED): 'cancel',
-        (Event.STATE_LIVE, Event.STATE_ARCHIVED): 'archive',
-        (Event.STATE_CANCELLED, Event.STATE_ARCHIVED): 'archive',
-    }
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
@@ -60,8 +48,11 @@ class EventAdminForm(forms.ModelForm):
             if old_state != new_state:
                 self.instance.state = old_state
 
-                transition_key = (old_state, new_state)
-                method_name = self.TRANSITION_MAP.get(transition_key)
+                method_name = None
+                for t in self.instance.get_all_state_transitions():
+                    if t.source == old_state and t.target == new_state:
+                        method_name = t.name
+                        break
 
                 if method_name is None:
                     raise ValidationError(
