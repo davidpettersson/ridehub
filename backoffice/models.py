@@ -255,8 +255,6 @@ class Event(models.Model):
                 })
 
     def has_no_confirmed_registrations(self):
-        if self.state != self.STATE_LIVE:
-            return True
         return self.registration_count == 0
 
     @transition(field=state, source=[STATE_DRAFT, STATE_ANNOUNCED], target=STATE_LIVE)
@@ -277,8 +275,7 @@ class Event(models.Model):
     def cancel(self):
         self.cancelled_at = timezone.now()
 
-    @transition(field=state, source=[STATE_LIVE, STATE_CANCELLED], target=STATE_ARCHIVED,
-                conditions=[has_no_confirmed_registrations])
+    @transition(field=state, source=[STATE_LIVE, STATE_CANCELLED], target=STATE_ARCHIVED)
     def archive(self):
         self.archived_at = timezone.now()
 

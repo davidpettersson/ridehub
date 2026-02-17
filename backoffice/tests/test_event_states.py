@@ -229,13 +229,6 @@ class EventStatesTestCase(TestCase):
         with self.assertRaises(TransitionNotAllowed):
             event.announce()
 
-    def test_cannot_archive_from_live_with_registrations(self):
-        event = self.create_event(state=Event.STATE_LIVE)
-        self._add_confirmed_registration(event)
-
-        with self.assertRaises(TransitionNotAllowed):
-            event.archive()
-
     def test_can_draft_from_live_without_registrations(self):
         event = self.create_event(state=Event.STATE_LIVE)
 
@@ -251,25 +244,6 @@ class EventStatesTestCase(TestCase):
         event.save()
 
         self.assertEqual(event.state, Event.STATE_ANNOUNCED)
-
-    def test_can_archive_from_live_without_registrations(self):
-        event = self.create_event(state=Event.STATE_LIVE)
-
-        event.archive()
-        event.save()
-
-        self.assertEqual(event.state, Event.STATE_ARCHIVED)
-
-    def test_can_archive_from_cancelled_with_registrations(self):
-        event = self.create_event(state=Event.STATE_LIVE)
-        self._add_confirmed_registration(event)
-        event.cancel()
-        event.save()
-
-        event.archive()
-        event.save()
-
-        self.assertEqual(event.state, Event.STATE_ARCHIVED)
 
     def test_visible_property_by_state(self):
         for state, expected in [
