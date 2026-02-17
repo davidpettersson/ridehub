@@ -298,7 +298,7 @@ class FetchCurrentRegistrationsTestCase(TestCase):
             program=self.program,
             starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
             registration_closes_at=self.test_today_datetime_noon,
-            archived=False
+            state=Event.STATE_LIVE
         )
         reg_not_archived = Registration.objects.create(
             user=self.user,
@@ -313,7 +313,7 @@ class FetchCurrentRegistrationsTestCase(TestCase):
             program=self.program,
             starts_at=self.test_today_datetime_noon + datetime.timedelta(days=2),
             registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
-            archived=True
+            state=Event.STATE_ARCHIVED
         )
         Registration.objects.create(
             user=self.user,
@@ -338,7 +338,7 @@ class FetchCurrentRegistrationsTestCase(TestCase):
             program=self.program,
             starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
             registration_closes_at=self.test_today_datetime_noon,
-            archived=False
+            state=Event.STATE_LIVE
         )
 
         # Older registration for multi_reg_event (created first, lower pk)
@@ -363,7 +363,7 @@ class FetchCurrentRegistrationsTestCase(TestCase):
             program=self.program,
             starts_at=self.test_today_datetime_noon + datetime.timedelta(days=2),
             registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
-            archived=False
+            state=Event.STATE_LIVE
         )
         reg_other_single = Registration.objects.create(
             user=self.user,
@@ -399,7 +399,7 @@ class FetchCurrentRegistrationsTestCase(TestCase):
             program=self.program,
             starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
             registration_closes_at=self.test_today_datetime_noon,
-            archived=False
+            state=Event.STATE_LIVE
         )
         
         # Create a submitted registration
@@ -417,7 +417,7 @@ class FetchCurrentRegistrationsTestCase(TestCase):
             program=self.program,
             starts_at=self.test_today_datetime_noon + datetime.timedelta(days=2),
             registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
-            archived=False
+            state=Event.STATE_LIVE
         )
         reg_confirmed = Registration.objects.create(
             user=self.user,
@@ -435,7 +435,7 @@ class FetchCurrentRegistrationsTestCase(TestCase):
             program=self.program,
             starts_at=self.test_today_datetime_noon + datetime.timedelta(days=3),
             registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=2),
-            archived=False
+            state=Event.STATE_LIVE
         )
         reg_withdrawn = Registration.objects.create(
             user=self.user,
@@ -469,7 +469,7 @@ class FetchCurrentRegistrationsTestCase(TestCase):
             program=self.program,
             starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
             registration_closes_at=self.test_today_datetime_noon,
-            archived=False
+            state=Event.STATE_LIVE
         )
         
         # First registration - Submitted (oldest)
@@ -1367,7 +1367,7 @@ class IsRegistrationAllowedTestCase(TestCase):
             name="Cancelled Event",
             starts_at=timezone.now() + timezone.timedelta(days=7),
             registration_closes_at=timezone.now() + timezone.timedelta(days=6),
-            cancelled=True
+            state=Event.STATE_CANCELLED,
         )
 
         allowed, reason = self.service.is_registration_allowed(event)
@@ -1381,7 +1381,7 @@ class IsRegistrationAllowedTestCase(TestCase):
             name="Archived Event",
             starts_at=timezone.now() + timezone.timedelta(days=7),
             registration_closes_at=timezone.now() + timezone.timedelta(days=6),
-            archived=True
+            state=Event.STATE_ARCHIVED,
         )
 
         allowed, reason = self.service.is_registration_allowed(event)

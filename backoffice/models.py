@@ -55,11 +55,6 @@ class Event(models.Model):
         max_length=128,
     )
 
-    visible = models.BooleanField(
-        default=True,
-        help_text='Check if the event is visible to members.'
-    )
-
     STATE_DRAFT = 'draft'
     STATE_ANNOUNCED = 'announced'
     STATE_LIVE = 'live'
@@ -144,11 +139,6 @@ class Event(models.Model):
         help_text='Check if you want to require users to confirm that they are members.'
     )
 
-    cancelled = models.BooleanField(
-        default=False,
-        help_text='Indicates if the event has been cancelled.'
-    )
-
     cancelled_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -158,11 +148,6 @@ class Event(models.Model):
     cancellation_reason = models.TextField(
         blank=True,
         help_text='Reason for cancellation.'
-    )
-
-    archived = models.BooleanField(
-        default=False,
-        help_text='Indicates if the event has been archived. Archived events are not visible to members.'
     )
 
     archived_at = models.DateTimeField(
@@ -186,6 +171,18 @@ class Event(models.Model):
         blank=True,
         help_text='Original WebScorer event ID for legacy imports'
     )
+
+    @property
+    def visible(self) -> bool:
+        return self.state in (self.STATE_ANNOUNCED, self.STATE_LIVE, self.STATE_CANCELLED)
+
+    @property
+    def cancelled(self) -> bool:
+        return self.state == self.STATE_CANCELLED
+
+    @property
+    def archived(self) -> bool:
+        return self.state == self.STATE_ARCHIVED
 
     @property
     def duration(self) -> timedelta:
@@ -229,12 +226,8 @@ class Event(models.Model):
 
     @property
     def registration_open(self) -> bool:
-        if self.cancelled:
+        if self.state != self.STATE_LIVE:
             return False
-
-        if self.archived:
-            return False
-
         closes_at = self.registration_closes_at or self.starts_at
         return timezone.now() < closes_at
 
@@ -261,27 +254,32 @@ class Event(models.Model):
                     'registration_closes_at': 'Registration cannot close after the event starts.'
                 })
 
+    def has_no_confirmed_registrations(self):
+        if self.state != self.STATE_LIVE:
+            return True
+        return self.registration_count == 0
+
     @transition(field=state, source=[STATE_DRAFT, STATE_ANNOUNCED], target=STATE_LIVE)
     def live(self):
-        self.visible = True
+        pass
 
-    @transition(field=state, source=[STATE_DRAFT, STATE_LIVE], target=STATE_ANNOUNCED)
+    @transition(field=state, source=[STATE_DRAFT, STATE_LIVE], target=STATE_ANNOUNCED,
+                conditions=[has_no_confirmed_registrations])
     def announce(self):
-        self.visible = True
+        pass
 
-    @transition(field=state, source=[STATE_ANNOUNCED, STATE_LIVE], target=STATE_DRAFT)
+    @transition(field=state, source=[STATE_ANNOUNCED, STATE_LIVE], target=STATE_DRAFT,
+                conditions=[has_no_confirmed_registrations])
     def draft(self):
-        self.visible = False
+        pass
 
     @transition(field=state, source=STATE_LIVE, target=STATE_CANCELLED)
     def cancel(self):
-        self.cancelled = True
         self.cancelled_at = timezone.now()
 
-    @transition(field=state, source=[STATE_LIVE, STATE_CANCELLED], target=STATE_ARCHIVED)
+    @transition(field=state, source=[STATE_LIVE, STATE_CANCELLED], target=STATE_ARCHIVED,
+                conditions=[has_no_confirmed_registrations])
     def archive(self):
-        self.archived = True
-        self.visible = False
         self.archived_at = timezone.now()
 
 

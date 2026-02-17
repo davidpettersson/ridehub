@@ -14,7 +14,8 @@ class ReviewsService:
         events = Event.objects.filter(
             starts_at__date__gte=start_date,
             starts_at__date__lte=end_date,
-            archived=False
+        ).exclude(
+            state=Event.STATE_ARCHIVED
         )
 
         confirmed_registrations = Registration.objects.filter(
