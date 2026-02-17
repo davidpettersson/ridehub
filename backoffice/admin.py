@@ -25,7 +25,7 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(SortableAdminBase, admin.ModelAdmin):
-    list_display = ('starts_at', 'name', 'admin_registration_count', 'links', 'state',)
+    list_display = ('starts_at', 'name', 'state', 'admin_registration_count', 'links',)
     list_display_links = ['name', ]
     inlines = [RideInline, ]
     ordering = ('-starts_at',)
