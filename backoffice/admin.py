@@ -47,6 +47,8 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
 
     @admin.display(description='Registrations', ordering='confirmed_registration_count')
     def admin_registration_count(self, obj):
+        if obj.state in (Event.STATE_DRAFT, Event.STATE_ANNOUNCED):
+            return '–'
         return obj.confirmed_registration_count
 
     def links(self, obj):
