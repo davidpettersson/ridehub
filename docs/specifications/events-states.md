@@ -1,6 +1,6 @@
 # Event State Machine
 
-This document describes the event lifecycle state machine introduced in Step 1 of the event states implementation.
+This document describes the event lifecycle state machine. The `state` field is the single source of truth for event visibility, cancellation, and archival status.
 
 ## States
 
@@ -13,6 +13,16 @@ The Event model has five possible states, defined as class constants (e.g., `Eve
 | `live`      | Event is live and accepting registrations      | Public     | Open         |
 | `cancelled` | Event has been cancelled                       | Public     | Closed       |
 | `archived`  | Event has been removed/deleted                 | Admin-only | Closed       |
+
+## Computed Properties
+
+The model provides computed properties derived from `state`:
+
+| Property    | True when state is                          |
+|-------------|---------------------------------------------|
+| `visible`   | `announced`, `live`, `cancelled`            |
+| `cancelled` | `cancelled`                                 |
+| `archived`  | `archived`                                  |
 
 ## State Transitions
 
@@ -38,46 +48,21 @@ The Event model has five possible states, defined as class constants (e.g., `Eve
 
 ### Available Transitions
 
-| Transition   | Source States    | Target State | Side Effects                          |
-|--------------|------------------|--------------|---------------------------------------|
-| `live()`     | draft, announced | live         | Sets `visible=True`                   |
-| `announce()` | draft, live      | announced    | Sets `visible=True`                   |
-| `draft()`    | announced, live  | draft        | Sets `visible=False`                  |
-| `cancel()`   | live             | cancelled    | Sets `cancelled=True`, `cancelled_at` |
-| `archive()`  | live, cancelled  | archived     | Sets `archived=True`, `archived_at`   |
+| Transition   | Source States    | Target State | Side Effects          | Guard Conditions                |
+|--------------|-----------------|--------------|-----------------------|---------------------------------|
+| `live()`     | draft, announced | live         | None                  | None                            |
+| `announce()` | draft, live      | announced    | None                  | No confirmed registrations*     |
+| `draft()`    | announced, live  | draft        | None                  | No confirmed registrations*     |
+| `cancel()`   | live             | cancelled    | Sets `cancelled_at`   | None                            |
+| `archive()`  | live, cancelled  | archived     | Sets `archived_at`    | No confirmed registrations*     |
 
-## Legacy Boolean Field Mapping
-
-The state field shadows existing boolean fields for backwards compatibility:
-
-| State     | `visible`  | `cancelled` | `archived` |
-|-----------|------------|-------------|------------|
-| draft     | False      | False       | False      |
-| announced | True/False | False       | False      |
-| live      | True       | False       | False      |
-| cancelled | True       | True        | False      |
-| archived  | False      | False       | True       |
-
-## Data Migration
-
-Existing events were migrated to states based on their boolean fields:
-
-1. `archived=True` -> state='archived'
-2. `cancelled=True` -> state='cancelled'
-3. `visible=True` -> state='live'
-4. `visible=False` -> state='draft'
+*Guard only applies when transitioning from `live` state. Transitioning from other source states (e.g., `cancelled` to `archived`) is always allowed.
 
 ## Admin Interface
 
 The state field is:
 - Displayed in the event list view
 - Available as a filter
-- Shown as read-only in the detail view
-- Modified only through admin actions (Cancel Event, Archive Event)
-
-## Future Steps
-
-Steps 2-4 of the implementation will:
-- Add guard conditions for transitions (e.g., no registrations for draft/announced)
-- Migrate UI to use state instead of boolean fields
-- Eventually deprecate the boolean fields
+- Editable via a dropdown in the detail view
+- State changes trigger FSM transitions with side effects and guard conditions
+- Invalid transitions or guard failures show validation errors in the admin UI
