@@ -93,10 +93,7 @@ class EventAdminFormTestCase(TestCase):
         data = self._get_form_data(event, state=Event.STATE_DRAFT)
 
         form = TestEventAdminForm(data=data, instance=event)
-        self.assertTrue(form.is_valid(), form.errors)
-
-        with self.assertRaises(ValidationError):
-            form.save()
+        self.assertFalse(form.is_valid())
 
     def test_guard_blocks_transition_with_registrations(self):
         event = self.create_event(state=Event.STATE_LIVE)
@@ -104,10 +101,7 @@ class EventAdminFormTestCase(TestCase):
         data = self._get_form_data(event, state=Event.STATE_DRAFT)
 
         form = TestEventAdminForm(data=data, instance=event)
-        self.assertTrue(form.is_valid(), form.errors)
-
-        with self.assertRaises(ValidationError):
-            form.save()
+        self.assertFalse(form.is_valid())
 
     def test_guard_allows_transition_without_registrations(self):
         event = self.create_event(state=Event.STATE_LIVE)
@@ -119,42 +113,17 @@ class EventAdminFormTestCase(TestCase):
 
         self.assertEqual(saved_event.state, Event.STATE_DRAFT)
 
-    def test_cancel_via_form_sets_cancelled_at(self):
+    def test_cancelled_not_in_state_choices(self):
         event = self.create_event(state=Event.STATE_LIVE)
-        self.assertIsNone(event.cancelled_at)
-        data = self._get_form_data(event, state=Event.STATE_CANCELLED)
+        form = TestEventAdminForm(instance=event)
+        state_values = [value for value, _ in form.fields['state'].choices]
+        self.assertNotIn(Event.STATE_CANCELLED, state_values)
 
-        form = TestEventAdminForm(data=data, instance=event)
-        self.assertTrue(form.is_valid(), form.errors)
-        saved_event = form.save()
-
-        self.assertEqual(saved_event.state, Event.STATE_CANCELLED)
-        self.assertIsNotNone(saved_event.cancelled_at)
-
-    def test_archive_via_form_sets_archived_at(self):
+    def test_archived_not_in_state_choices(self):
         event = self.create_event(state=Event.STATE_LIVE)
-        self.assertIsNone(event.archived_at)
-        data = self._get_form_data(event, state=Event.STATE_ARCHIVED)
-
-        form = TestEventAdminForm(data=data, instance=event)
-        self.assertTrue(form.is_valid(), form.errors)
-        saved_event = form.save()
-
-        self.assertEqual(saved_event.state, Event.STATE_ARCHIVED)
-        self.assertIsNotNone(saved_event.archived_at)
-
-    def test_archive_from_cancelled_with_registrations_allowed(self):
-        event = self.create_event(state=Event.STATE_LIVE)
-        self._add_confirmed_registration(event)
-        event.cancel()
-        event.save()
-
-        data = self._get_form_data(event, state=Event.STATE_ARCHIVED)
-        form = TestEventAdminForm(data=data, instance=event)
-        self.assertTrue(form.is_valid(), form.errors)
-        saved_event = form.save()
-
-        self.assertEqual(saved_event.state, Event.STATE_ARCHIVED)
+        form = TestEventAdminForm(instance=event)
+        state_values = [value for value, _ in form.fields['state'].choices]
+        self.assertNotIn(Event.STATE_ARCHIVED, state_values)
 
     def test_no_state_change_saves_normally(self):
         event = self.create_event(state=Event.STATE_LIVE)

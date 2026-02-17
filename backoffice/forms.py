@@ -39,33 +39,57 @@ class EventAdminForm(forms.ModelForm):
             self.instance._original_state = None
         if 'ends_at' in self.fields:
             self.fields['ends_at'].required = False
+        if 'state' in self.fields:
+            self.fields['state'].choices = [
+                (value, label)
+                for value, label in self.fields['state'].choices
+                if value not in (Event.STATE_CANCELLED, Event.STATE_ARCHIVED)
+            ]
+
+    def _find_transition_method(self, old_state, new_state):
+        for t in self.instance.get_all_state_transitions():
+            if t.source == old_state and t.target == new_state:
+                return t.name
+        return None
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not (self.instance.pk and self.instance._original_state):
+            return cleaned_data
+
+        old_state = self.instance._original_state
+        new_state = cleaned_data.get('state', old_state)
+
+        if old_state == new_state:
+            return cleaned_data
+
+        self.instance.state = old_state
+
+        method_name = self._find_transition_method(old_state, new_state)
+        if method_name is None:
+            raise ValidationError(
+                f"Cannot change state from '{old_state}' to '{new_state}'. "
+                f"This transition is not supported."
+            )
+
+        method = getattr(self.instance, method_name)
+        try:
+            method()
+        except TransitionNotAllowed:
+            raise ValidationError(
+                f"Cannot change state from '{old_state}' to '{new_state}'. "
+                f"The event may have confirmed registrations that prevent this change."
+            )
+
+        self.instance.state = old_state
+        self._transition_method_name = method_name
+
+        return cleaned_data
 
     def save(self, commit=True):
-        if self.instance.pk and self.instance._original_state:
-            old_state = self.instance._original_state
-            new_state = self.cleaned_data.get('state', old_state)
-
-            if old_state != new_state:
-                self.instance.state = old_state
-
-                method_name = None
-                for t in self.instance.get_all_state_transitions():
-                    if t.source == old_state and t.target == new_state:
-                        method_name = t.name
-                        break
-
-                if method_name is None:
-                    raise ValidationError(
-                        f"Invalid state transition from {old_state} to {new_state}."
-                    )
-
-                method = getattr(self.instance, method_name)
-                try:
-                    method()
-                except TransitionNotAllowed:
-                    raise ValidationError(
-                        f"Cannot move to {new_state}: transition is not allowed "
-                        f"(event may have confirmed registrations)."
-                    )
+        if hasattr(self, '_transition_method_name'):
+            self.instance.state = self.instance._original_state
+            method = getattr(self.instance, self._transition_method_name)
+            method()
 
         return super().save(commit=commit)
