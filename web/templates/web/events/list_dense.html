@@ -58,7 +58,7 @@
                                 </div>
                                 {% endif %}
 
-                                {% if not event.external_registration_url %}
+                                {% if not event.external_registration_url and event.state != "announced" %}
                                 <div class="d-inline-flex align-items-center">
                                     <i class="bi bi-people me-1"></i>
                                     <span>{{ event.registration_count }} registered{% if not event.has_capacity_available %} (full){% endif %}</span>
