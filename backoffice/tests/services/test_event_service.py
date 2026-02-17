@@ -34,7 +34,7 @@ class BaseEventServiceTest(TestCase):
             starts_at=timezone.make_aware(datetime.datetime.combine(self.yesterday, datetime.datetime.min.time())),
             registration_closes_at=timezone.make_aware(
                 datetime.datetime.combine(self.yesterday, datetime.datetime.min.time())),
-            visible=True,
+            state=Event.STATE_LIVE,
         )
 
         Event.objects.create(
@@ -43,7 +43,7 @@ class BaseEventServiceTest(TestCase):
             starts_at=timezone.make_aware(datetime.datetime.combine(self.today, datetime.datetime.min.time())),
             registration_closes_at=timezone.make_aware(
                 datetime.datetime.combine(self.today, datetime.datetime.min.time())),
-            visible=True,
+            state=Event.STATE_LIVE,
         )
 
         Event.objects.create(
@@ -51,7 +51,7 @@ class BaseEventServiceTest(TestCase):
             name="Today 23:59",
             starts_at=timezone.make_aware(datetime.datetime.combine(self.today, datetime.time(23, 59))),
             registration_closes_at=timezone.make_aware(datetime.datetime.combine(self.today, datetime.time(23, 59))),
-            visible=True,
+            state=Event.STATE_LIVE,
         )
 
         Event.objects.create(
@@ -60,7 +60,7 @@ class BaseEventServiceTest(TestCase):
             starts_at=timezone.make_aware(datetime.datetime.combine(self.tomorrow, datetime.datetime.min.time())),
             registration_closes_at=timezone.make_aware(
                 datetime.datetime.combine(self.tomorrow, datetime.datetime.min.time())),
-            visible=True,
+            state=Event.STATE_LIVE,
         )
 
         # Create not visible events
@@ -69,7 +69,7 @@ class BaseEventServiceTest(TestCase):
             name="Today 12:00 (Not Visible)",
             starts_at=timezone.make_aware(datetime.datetime.combine(self.today, datetime.time(12, 0))),
             registration_closes_at=timezone.make_aware(datetime.datetime.combine(self.today, datetime.time(12, 0))),
-            visible=False,
+            state=Event.STATE_DRAFT,
         )
 
         Event.objects.create(
@@ -78,7 +78,7 @@ class BaseEventServiceTest(TestCase):
             starts_at=timezone.make_aware(datetime.datetime.combine(self.tomorrow, datetime.datetime.min.time())),
             registration_closes_at=timezone.make_aware(
                 datetime.datetime.combine(self.tomorrow, datetime.datetime.min.time())),
-            visible=False,
+            state=Event.STATE_DRAFT,
         )
 
 
@@ -142,7 +142,7 @@ class FetchEventsForMonthTests(BaseEventServiceTest):
             starts_at=timezone.make_aware(datetime.datetime.combine(jan_first, datetime.datetime.min.time())),
             registration_closes_at=timezone.make_aware(
                 datetime.datetime.combine(jan_first, datetime.datetime.min.time())),
-            visible=True,
+            state=Event.STATE_LIVE,
         )
 
         Event.objects.create(
@@ -151,7 +151,7 @@ class FetchEventsForMonthTests(BaseEventServiceTest):
             starts_at=timezone.make_aware(datetime.datetime.combine(jan_last, datetime.datetime.min.time())),
             registration_closes_at=timezone.make_aware(
                 datetime.datetime.combine(jan_last, datetime.datetime.min.time())),
-            visible=True,
+            state=Event.STATE_LIVE,
         )
 
         Event.objects.create(
@@ -160,7 +160,7 @@ class FetchEventsForMonthTests(BaseEventServiceTest):
             starts_at=timezone.make_aware(datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
             registration_closes_at=timezone.make_aware(
                 datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
-            visible=True,
+            state=Event.STATE_LIVE,
         )
 
         # Event in February 2024 (should not be included in January tests)
@@ -171,7 +171,7 @@ class FetchEventsForMonthTests(BaseEventServiceTest):
             starts_at=timezone.make_aware(datetime.datetime.combine(feb_first, datetime.datetime.min.time())),
             registration_closes_at=timezone.make_aware(
                 datetime.datetime.combine(feb_first, datetime.datetime.min.time())),
-            visible=True,
+            state=Event.STATE_LIVE,
         )
 
         # Not visible event in January
@@ -181,7 +181,7 @@ class FetchEventsForMonthTests(BaseEventServiceTest):
             starts_at=timezone.make_aware(datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
             registration_closes_at=timezone.make_aware(
                 datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
-            visible=False,
+            state=Event.STATE_DRAFT,
         )
 
         # Archived event in January
@@ -191,8 +191,7 @@ class FetchEventsForMonthTests(BaseEventServiceTest):
             starts_at=timezone.make_aware(datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
             registration_closes_at=timezone.make_aware(
                 datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
-            visible=True,
-            archived=True,
+            state=Event.STATE_ARCHIVED,
         )
 
     def test_fetch_events_for_month_with_only_visible(self):
@@ -255,7 +254,7 @@ class FetchEventsForMonthTests(BaseEventServiceTest):
             name="Leap Day Event",
             starts_at=timezone.make_aware(datetime.datetime.combine(feb_29, datetime.datetime.min.time())),
             registration_closes_at=timezone.make_aware(datetime.datetime.combine(feb_29, datetime.datetime.min.time())),
-            visible=True,
+            state=Event.STATE_LIVE,
         )
 
         # Act
@@ -296,7 +295,7 @@ class DuplicateEventTestCase(TestCase):
         self.source_event = Event.objects.create(
             program=self.program,
             name="Original Event",
-            visible=True,
+            state=Event.STATE_LIVE,
             location="Test Location",
             location_url="https://maps.example.com/test",
             starts_at=self.base_start_time,
@@ -360,8 +359,7 @@ class DuplicateEventTestCase(TestCase):
         self.assertTrue(new_event.visible)
 
     def test_duplicate_event_clears_cancelled_status(self):
-        self.source_event.cancelled = True
-        self.source_event.cancelled_at = timezone.now()
+        self.source_event.cancel()
         self.source_event.cancellation_reason = "Bad weather"
         self.source_event.save()
 
@@ -376,8 +374,7 @@ class DuplicateEventTestCase(TestCase):
         self.assertEqual(new_event.cancellation_reason, "")
 
     def test_duplicate_event_does_not_copy_archived_fields(self):
-        self.source_event.archived = True
-        self.source_event.archived_at = timezone.now()
+        self.source_event.archive()
         self.source_event.save()
 
         new_date = self.base_start_time.date() + datetime.timedelta(days=7)

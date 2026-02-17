@@ -6,6 +6,8 @@ from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 
+from django_fsm import TransitionNotAllowed
+
 from backoffice.services.email_service import EmailService
 from backoffice.services.event_service import EventService
 from backoffice.models import Registration
@@ -17,11 +19,16 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
         cancellation_reason = request.POST.get('cancellation_reason', '')
 
         cancel_count = 0
+        skipped = []
         for event in query_set:
-            event.cancellation_reason = cancellation_reason
-            event.cancel()
-            event.save()
-            
+            try:
+                event.cancellation_reason = cancellation_reason
+                event.cancel()
+                event.save()
+            except TransitionNotAllowed:
+                skipped.append(event.name)
+                continue
+
             for registration in event.registration_set.filter(state=Registration.STATE_CONFIRMED):
                 context = {
                     'event': event,
@@ -38,12 +45,21 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
                 )
 
             cancel_count += 1
-        
+
+        if skipped:
+            admin.message_user(
+                request,
+                f"Could not cancel: {', '.join(skipped)}. Only live events can be cancelled.",
+                messages.ERROR,
+            )
+
         if cancel_count == 1:
             message = "1 event was successfully cancelled and notifications were sent."
-        else:
+        elif cancel_count > 1:
             message = f"{cancel_count} events were successfully cancelled and notifications were sent."
-        
+        else:
+            return redirect('admin:backoffice_event_changelist')
+
         admin.message_user(request, message, messages.SUCCESS)
         return redirect('admin:backoffice_event_changelist')
         
@@ -116,17 +132,31 @@ duplicate_event.short_description = "Duplicate selected events"
 
 def archive_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
     archive_count = 0
+    skipped = []
 
     for event in query_set:
-        event.archive()
-        event.save()
+        try:
+            event.archive()
+            event.save()
+        except TransitionNotAllowed:
+            skipped.append(event.name)
+            continue
 
         archive_count += 1
 
+    if skipped:
+        admin.message_user(
+            request,
+            f"Could not archive: {', '.join(skipped)}. Only live or cancelled events can be archived.",
+            messages.ERROR,
+        )
+
     if archive_count == 1:
         message = "1 event was successfully archived."
-    else:
+    elif archive_count > 1:
         message = f"{archive_count} events were successfully archived."
+    else:
+        return
 
     admin.message_user(request, message, messages.SUCCESS)
 

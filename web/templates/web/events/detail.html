@@ -10,7 +10,7 @@
             </a>
             {% if user.is_staff %}
             <span class="text-muted mx-1">|</span>
-            <a href="{% url 'admin:backoffice_event_change' event.id %}" class="btn btn-outline-info btn-sm rounded-pill d-inline-flex align-items-center">
+            <a href="{% url 'admin:backoffice_event_change' event.id %}" class="btn btn-outline-primary btn-sm rounded-pill d-inline-flex align-items-center">
                 <i class="bi bi-pencil me-2"></i> Edit in admin
             </a>
             {% if not event.cancelled %}
@@ -55,7 +55,7 @@
                     </div>
                     {% endif %}
 
-                    {% if not event.external_registration_url %}
+                    {% if not event.external_registration_url and event.state != "announced" and event.registration_count > 0 %}
                     <div class="d-inline-flex align-items-center text-muted">
                         <i class="bi bi-people me-2"></i>
                         <a href="{% url 'riders_list' event.id %}" class="text-primary text-decoration-underline">
@@ -129,6 +129,10 @@
                             </div>
                         {% endif %}
                     </div>
+                </div>
+                {% elif event.state == "announced" %}
+                <div class="mt-4 p-4 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded">
+                    <p class="text-primary mb-0">Registration is coming soon. Please check back later.</p>
                 </div>
                 {% elif not event.cancelled %}
                 <div class="mt-4 p-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded">

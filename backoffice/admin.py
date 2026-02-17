@@ -25,15 +25,15 @@ class RegistrationInline(admin.TabularInline):
 
 
 class EventAdmin(SortableAdminBase, admin.ModelAdmin):
-    list_display = ('starts_at', 'name', 'admin_registration_count', 'links', 'visible', 'cancelled', 'state',)
+    list_display = ('starts_at', 'name', 'state', 'admin_registration_count', 'links',)
     list_display_links = ['name', ]
     inlines = [RideInline, ]
     ordering = ('-starts_at',)
     date_hierarchy = 'starts_at'
-    list_filter = ('starts_at', 'program', 'visible', 'cancelled', 'state',)
+    list_filter = ('starts_at', 'program', 'state',)
     search_fields = ('name',)
     actions = [cancel_event, duplicate_event]
-    readonly_fields = ('state', 'cancelled', 'cancelled_at', 'cancellation_reason', 'archived', 'archived_at')
+    readonly_fields = ('cancelled_at', 'cancellation_reason', 'archived_at')
     form = EventAdminForm
 
     def get_queryset(self, request):
@@ -47,6 +47,8 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
 
     @admin.display(description='Registrations', ordering='confirmed_registration_count')
     def admin_registration_count(self, obj):
+        if obj.state in (Event.STATE_DRAFT, Event.STATE_ANNOUNCED):
+            return '–'
         return obj.confirmed_registration_count
 
     def links(self, obj):
@@ -62,7 +64,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
             (None, {
                 'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url',
                            'organizer_email', 'virtual',
-                           'visible', 'state',)
+                           'state',)
             }),
             ('Registration options', {
                 'fields': ('registration_closes_at', 'external_registration_url', 'registration_limit'),
@@ -77,7 +79,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
         if obj and obj.state == Event.STATE_CANCELLED:
             fieldsets.append(
                 ('Cancellation information', {
-                    'fields': ('cancelled', 'cancelled_at', 'cancellation_reason'),
+                    'fields': ('cancelled_at', 'cancellation_reason'),
                     'description': 'These fields are read-only and can only be modified through the Cancel Event action.'
                 })
             )

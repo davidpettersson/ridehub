@@ -8,15 +8,17 @@ from backoffice.models import Event, Ride
 
 class EventService:
     def fetch_events(self, include_archived: bool = False, only_visible: bool = True) -> QuerySet[Event]:
-        filters = {}
-        
+        queryset = Event.objects.all()
+
         if not include_archived:
-            filters['archived'] = False
+            queryset = queryset.exclude(state=Event.STATE_ARCHIVED)
 
         if only_visible:
-            filters['visible'] = True
+            queryset = queryset.filter(
+                state__in=[Event.STATE_ANNOUNCED, Event.STATE_LIVE, Event.STATE_CANCELLED]
+            )
 
-        return Event.objects.filter(**filters).order_by('starts_at')
+        return queryset.order_by('starts_at')
 
     def fetch_upcoming_events(self, include_archived: bool = False, only_visible: bool = True,
                               current_date: date | None = None) -> QuerySet[Event]:
@@ -52,7 +54,6 @@ class EventService:
             program=source_event.program,
             name=new_name,
             state=Event.STATE_LIVE,
-            visible=True,
             location=source_event.location,
             location_url=source_event.location_url,
             starts_at=new_starts_at,

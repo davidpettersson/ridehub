@@ -322,8 +322,9 @@ class RegistrationCreateErrorCaseTests(TestCase):
             program=self.program,
             starts_at=timezone.now() + timezone.timedelta(days=7),
             registration_closes_at=timezone.now() + timezone.timedelta(days=6),
-            cancelled=True
         )
+        event.cancel()
+        event.save()
 
         response = self.client.get(reverse('registration_create', args=[event.id]))
 
@@ -336,8 +337,9 @@ class RegistrationCreateErrorCaseTests(TestCase):
             program=self.program,
             starts_at=timezone.now() + timezone.timedelta(days=7),
             registration_closes_at=timezone.now() + timezone.timedelta(days=6),
-            archived=True
         )
+        event.archive()
+        event.save()
 
         response = self.client.get(reverse('registration_create', args=[event.id]))
 
@@ -407,8 +409,9 @@ class RegistrationCreateErrorCaseTests(TestCase):
             program=self.program,
             starts_at=timezone.now() + timezone.timedelta(days=7),
             registration_closes_at=timezone.now() + timezone.timedelta(days=6),
-            cancelled=True
         )
+        event.cancel()
+        event.save()
 
         form_data = {
             'first_name': 'Test',
