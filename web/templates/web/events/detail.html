@@ -36,7 +36,7 @@
             <span class="badge fw-normal text-muted" style="font-size: 0.85rem; background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
         </div>
 
-        {% if event.location or event.location_url or not event.external_registration_url %}
+        {% if event.location or event.location_url or (not event.external_registration_url and event.state != "announced" and event.registration_count > 0) %}
         <div class="card shadow-sm p-4 mb-4">
             <div class="d-flex flex-wrap gap-3 small">
                     {% if event.location or event.location_url %}
