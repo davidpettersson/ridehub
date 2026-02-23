@@ -15,6 +15,13 @@ body {
   min-height: 100vh;
   background-color: #f9fafb;
   color: #4b5563;
+  padding-top: 56px;
+}
+
+@media (min-width: 768px) {
+  body {
+    padding-top: 64px;
+  }
 }
 
 .dark-mode {
@@ -62,16 +69,17 @@ body {
 }
 
 .navbar-autohide {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1030;
   transition: transform 0.3s ease;
+  will-change: transform;
 }
 
 .navbar-hidden {
   transform: translateY(-100%);
-  max-height: 0;
-  overflow: hidden;
 }
 
 .navbar-obc a {

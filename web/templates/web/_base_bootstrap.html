@@ -132,15 +132,21 @@
         var lastScrollY = window.scrollY;
         var nav = document.querySelector('.navbar-autohide');
         var ticking = false;
+        var delta = 10;
         window.addEventListener('scroll', function() {
           if (!ticking) {
             requestAnimationFrame(function() {
-              if (window.scrollY > lastScrollY && window.scrollY > 80) {
+              var currentScrollY = window.scrollY;
+              if (Math.abs(currentScrollY - lastScrollY) < delta) {
+                ticking = false;
+                return;
+              }
+              if (currentScrollY > lastScrollY && currentScrollY > 80) {
                 nav.classList.add('navbar-hidden');
               } else {
                 nav.classList.remove('navbar-hidden');
               }
-              lastScrollY = window.scrollY;
+              lastScrollY = currentScrollY;
               ticking = false;
             });
             ticking = true;
