@@ -155,7 +155,7 @@ def event_list(request: HttpRequest) -> HttpResponse:
     # Set preferred view in session
     request.session['preferred_events_view'] = 'upcoming'
 
-    events = EventService().fetch_upcoming_events()
+    events = list(EventService().fetch_upcoming_events())
     starts_at_date = lambda event: timezone.localtime(event.starts_at).date()
 
     events_by_date = [
@@ -268,7 +268,7 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
     request.session['calendar_selected_year'] = year
     request.session['calendar_selected_month'] = month
 
-    events = EventService().fetch_events_for_month(year, month)
+    events = list(EventService().fetch_events_for_month(year, month))
 
     events_by_date = {}
     for event in events:

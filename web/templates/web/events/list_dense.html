@@ -32,7 +32,8 @@
                                     </div>
                                 </div>
                                 {% if user.is_authenticated and event.id in registered_event_ids %}
-                                <i class="bi bi-check-circle-fill text-success" style="font-size: 1.1rem; flex-shrink: 0;" title="You are registered"></i>
+                                <i class="bi bi-check-circle-fill text-success" style="font-size: 1.1rem; flex-shrink: 0;" aria-hidden="true"></i>
+                                <span class="visually-hidden">You are registered</span>
                                 {% endif %}
                             </div>
                         </div>

@@ -532,6 +532,171 @@ class FetchCurrentRegistrationsTestCase(TestCase):
         self.assertIn(registrations_for_event[0].state, [Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED])
 
 
+class FetchConfirmedEventIdsTestCase(TestCase):
+    def setUp(self):
+        self.service = RegistrationService()
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='password'
+        )
+        self.other_user = User.objects.create_user(
+            username='otheruser',
+            email='other@example.com',
+            password='password'
+        )
+        self.program = Program.objects.create(name="Test Program")
+        self.test_today_date = timezone.now().date()
+        self.noon_time = datetime.time(12, 0, 0)
+        self.test_today_datetime_noon = timezone.make_aware(
+            datetime.datetime.combine(self.test_today_date, self.noon_time)
+        )
+
+    def test_returns_only_confirmed_registrations(self):
+        # Arrange
+        event_confirmed = Event.objects.create(
+            name="Confirmed Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            registration_closes_at=self.test_today_datetime_noon,
+        )
+        reg = Registration.objects.create(
+            user=self.user, event=event_confirmed,
+            name=self.user.username, email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg.confirm()
+        reg.save()
+
+        event_submitted = Event.objects.create(
+            name="Submitted Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=2),
+            registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+        )
+        Registration.objects.create(
+            user=self.user, event=event_submitted,
+            name=self.user.username, email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+
+        event_withdrawn = Event.objects.create(
+            name="Withdrawn Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=3),
+            registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=2),
+        )
+        reg_w = Registration.objects.create(
+            user=self.user, event=event_withdrawn,
+            name=self.user.username, email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg_w.confirm()
+        reg_w.withdraw()
+        reg_w.save()
+
+        # Act
+        result = self.service.fetch_confirmed_event_ids(
+            self.user, [event_confirmed.id, event_submitted.id, event_withdrawn.id]
+        )
+
+        # Assert
+        self.assertEqual(result, {event_confirmed.id})
+
+    def test_returns_only_requested_event_ids(self):
+        # Arrange
+        event_included = Event.objects.create(
+            name="Included Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            registration_closes_at=self.test_today_datetime_noon,
+        )
+        reg1 = Registration.objects.create(
+            user=self.user, event=event_included,
+            name=self.user.username, email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg1.confirm()
+        reg1.save()
+
+        event_excluded = Event.objects.create(
+            name="Excluded Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=2),
+            registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+        )
+        reg2 = Registration.objects.create(
+            user=self.user, event=event_excluded,
+            name=self.user.username, email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg2.confirm()
+        reg2.save()
+
+        # Act
+        result = self.service.fetch_confirmed_event_ids(
+            self.user, [event_included.id]
+        )
+
+        # Assert
+        self.assertEqual(result, {event_included.id})
+        self.assertNotIn(event_excluded.id, result)
+
+    def test_returns_only_for_specified_user(self):
+        # Arrange
+        event = Event.objects.create(
+            name="Shared Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            registration_closes_at=self.test_today_datetime_noon,
+        )
+        reg_self = Registration.objects.create(
+            user=self.user, event=event,
+            name=self.user.username, email=self.user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg_self.confirm()
+        reg_self.save()
+
+        reg_other = Registration.objects.create(
+            user=self.other_user, event=event,
+            name=self.other_user.username, email=self.other_user.email,
+            state=Registration.STATE_SUBMITTED
+        )
+        reg_other.confirm()
+        reg_other.save()
+
+        # Act
+        result_self = self.service.fetch_confirmed_event_ids(self.user, [event.id])
+        result_other = self.service.fetch_confirmed_event_ids(self.other_user, [event.id])
+
+        # Assert
+        self.assertEqual(result_self, {event.id})
+        self.assertEqual(result_other, {event.id})
+
+    def test_returns_empty_set_when_no_registrations(self):
+        # Arrange
+        event = Event.objects.create(
+            name="No Registration Event",
+            program=self.program,
+            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
+            registration_closes_at=self.test_today_datetime_noon,
+        )
+
+        # Act
+        result = self.service.fetch_confirmed_event_ids(self.user, [event.id])
+
+        # Assert
+        self.assertEqual(result, set())
+
+    def test_returns_empty_set_for_empty_event_ids(self):
+        # Act
+        result = self.service.fetch_confirmed_event_ids(self.user, [])
+
+        # Assert
+        self.assertEqual(result, set())
+
+
 class RegistrationServiceEmailTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser_email', email='test_email@example.com', password='password')
