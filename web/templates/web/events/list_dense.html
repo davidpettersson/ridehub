@@ -31,6 +31,10 @@
                                         <span class="badge fw-normal text-muted" style="font-size: 0.75rem; background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}</span>
                                     </div>
                                 </div>
+                                {% if user.is_authenticated and event.id in registered_event_ids %}
+                                <i class="bi bi-check-circle-fill text-success" style="font-size: 1.1rem; flex-shrink: 0;" aria-hidden="true"></i>
+                                <span class="visually-hidden">You are registered</span>
+                                {% endif %}
                             </div>
                         </div>
                         {% if event.location or event.has_rides or event.distance_range or not event.external_registration_url and event.state != "announced" and event.registration_count > 0 %}

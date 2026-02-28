@@ -12,6 +12,7 @@ from waffle import flag_is_active
 
 from backoffice.models import Event, Registration
 from backoffice.services.event_service import EventService
+from backoffice.services.registration_service import RegistrationService
 
 
 def _create_ride_structure(ride):
@@ -154,12 +155,18 @@ def event_list(request: HttpRequest) -> HttpResponse:
     # Set preferred view in session
     request.session['preferred_events_view'] = 'upcoming'
 
-    events = EventService().fetch_upcoming_events()
+    events = list(EventService().fetch_upcoming_events())
     starts_at_date = lambda event: timezone.localtime(event.starts_at).date()
 
     events_by_date = [
         (date, list(events_on_date)) for date, events_on_date in groupby(events, key=starts_at_date)
     ]
+
+    registered_event_ids = set()
+    if request.user.is_authenticated:
+        registered_event_ids = RegistrationService().fetch_confirmed_event_ids(
+            request.user, [e.id for e in events]
+        )
 
     today = timezone.localdate()
     tomorrow = today + timedelta(days=1)
@@ -168,6 +175,7 @@ def event_list(request: HttpRequest) -> HttpResponse:
         'events_by_date': events_by_date,
         'today': today,
         'tomorrow': tomorrow,
+        'registered_event_ids': registered_event_ids,
     }
 
     if flag_is_active(request, 'upcoming_dense_view'):
@@ -260,7 +268,7 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
     request.session['calendar_selected_year'] = year
     request.session['calendar_selected_month'] = month
 
-    events = EventService().fetch_events_for_month(year, month)
+    events = list(EventService().fetch_events_for_month(year, month))
 
     events_by_date = {}
     for event in events:
@@ -269,6 +277,12 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
         if event_date not in events_by_date:
             events_by_date[event_date] = []
         events_by_date[event_date].append(event)
+
+    registered_event_ids = set()
+    if request.user.is_authenticated:
+        registered_event_ids = RegistrationService().fetch_confirmed_event_ids(
+            request.user, [e.id for e in events]
+        )
 
     cal = calendar.Calendar(firstweekday=calendar.SUNDAY)
     month_days = cal.monthdayscalendar(year, month)
@@ -295,6 +309,7 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
         'next_month': next_month,
         'next_year': next_year,
         'today': date.today(),
+        'registered_event_ids': registered_event_ids,
     }
 
     return render(request, 'web/events/calendar.html', context)

@@ -69,13 +69,13 @@
                                                             {% if event.starts_at.date < today %}
                                                             <div class="p-1 bg-white border rounded text-muted calendar-event"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %} title="{{ event.name }} - {{ event.starts_at|date:'g:i A'|lower|cut:'.m.' }}{% if event.ends_at %} - {{ event.ends_at|date:'g:i A'|lower|cut:'.m.' }}{% endif %}">
                                                                 <div class="fw-medium text-truncate" style="font-size: 0.65rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %}</div>
-                                                                <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}</div>
+                                                                <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}{% if user.is_authenticated and event.id in registered_event_ids %}<span class="text-success" style="font-size: 0.65rem;" aria-hidden="true">✓</span><span class="visually-hidden">Registered</span>{% endif %}</div>
                                                                 <div class="text-truncate"><span class="badge fw-normal text-muted" style="font-size: 0.6rem; background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}</span></div>
                                                             </div>
                                                             {% else %}
                                                             <div class="p-1 bg-white border rounded text-dark calendar-event"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %} title="{{ event.name }} - {{ event.starts_at|date:'g:i A'|lower|cut:'.m.' }}{% if event.ends_at %} - {{ event.ends_at|date:'g:i A'|lower|cut:'.m.' }}{% endif %}">
                                                                 <div class="fw-medium text-truncate" style="font-size: 0.65rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %}</div>
-                                                                <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}</div>
+                                                                <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}{% if user.is_authenticated and event.id in registered_event_ids %}<span class="text-success" style="font-size: 0.65rem;" aria-hidden="true">✓</span><span class="visually-hidden">Registered</span>{% endif %}</div>
                                                                 <div class="text-truncate"><span class="badge fw-normal text-muted" style="font-size: 0.6rem; background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}</span></div>
                                                             </div>
                                                             {% endif %}
@@ -123,7 +123,12 @@
                         <div class="fw-medium{% if event_date < today %} text-muted{% else %} text-dark{% endif %}" style="font-size: 0.875rem;">{{ event.name }}</div>
                         <div class="text-muted" style="font-size: 0.75rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} – {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %} · {{ event.program.name }}</div>
                     </div>
-                    <i class="bi bi-chevron-right text-muted"></i>
+                    {% if user.is_authenticated and event.id in registered_event_ids %}
+                    <i class="bi bi-check-circle-fill text-success" aria-hidden="true"></i>
+                    <span class="visually-hidden">Registered</span>
+                    {% else %}
+                    <i class="bi bi-chevron-right text-muted" aria-hidden="true"></i>
+                    {% endif %}
                 </a>
                 {% endfor %}
             </div>
