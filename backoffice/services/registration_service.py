@@ -101,6 +101,15 @@ class RegistrationService:
             registration.confirm()
             registration.save()
 
+    def fetch_confirmed_event_ids(self, user: User, event_ids: list[int]) -> set[int]:
+        return set(
+            Registration.objects.filter(
+                user=user,
+                event_id__in=event_ids,
+                state=Registration.STATE_CONFIRMED
+            ).values_list('event_id', flat=True)
+        )
+
     def fetch_current_registrations(self, user: User) -> QuerySet[Registration]:
         today = timezone.now().date()
 

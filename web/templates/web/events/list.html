@@ -46,6 +46,9 @@
                                         {% endif %}
                                     </div>
                                 </div>
+                                {% if user.is_authenticated and event.id in registered_event_ids %}
+                                <i class="bi bi-check-circle-fill text-success" style="font-size: 1.1rem; flex-shrink: 0;" title="You are registered"></i>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
