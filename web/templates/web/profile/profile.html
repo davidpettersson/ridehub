@@ -1,4 +1,5 @@
 {% extends 'web/_base_bootstrap.html' %}
+{% load waffle_tags socialaccount %}
 {% block title %}My profile{% endblock %}
 {% block content %}
 <div class="mb-4">
@@ -7,7 +8,7 @@
     </div>
     
     <div class="row mb-4">
-        <div class="col-12 col-md-6 mb-4 mb-md-0">
+        <div class="col-12 col-md-4 mb-4 mb-md-0">
             <div class="card shadow-sm h-100">
                 <div class="card-body p-4">
                     <h3 class="fs-5 fw-medium mb-3">Details on file</h3>
@@ -40,7 +41,35 @@
             </div>
         </div>
 
-        <div class="col-12 col-md-6">
+        {% flag "strava_linking" %}
+        <div class="col-12 col-md-4 mb-4 mb-md-0">
+            <div class="card shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h3 class="fs-5 fw-medium mb-3">Connected accounts</h3>
+
+                    {% get_social_accounts user as social_accounts %}
+                    {% if social_accounts.strava %}
+                        <a href="{% url 'socialaccount_connections' %}" class="btn d-inline-flex align-items-center text-white" style="background-color: #FC4C02;">
+                            <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.172"/>
+                            </svg>
+                            Manage Strava
+                        </a>
+                    {% else %}
+                        <a href="{% provider_login_url 'strava' process='connect' %}" class="btn d-inline-flex align-items-center text-white" style="background-color: #FC4C02;">
+                            <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.172"/>
+                            </svg>
+                            Connect with Strava
+                        </a>
+                        <p class="text-muted small mt-3 mb-0">Connecting to Strava will allow us to use your Strava profile image on registration pages and other places around the site.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endflag %}
+
+        <div class="col-12 col-md-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body p-4 d-flex flex-column">
                     <h3 class="fs-5 fw-medium mb-3">My statistics</h3>
@@ -63,7 +92,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="card shadow-sm mb-4">
         <div class="card-body p-4">
             <h2 class="fs-4 fw-medium mb-3">Current registrations</h2>

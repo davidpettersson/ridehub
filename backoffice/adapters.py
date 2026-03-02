@@ -50,6 +50,14 @@ class RideHubSocialAccountAdapter(DefaultSocialAccountAdapter):
 
     def populate_user(self, request, sociallogin, data):
         user = super().populate_user(request, sociallogin, data)
-        user.email = data.get('email', '').lower()
-        logger.info(f"Populated user with email: {user.email}")
+        provider = sociallogin.account.provider
+
+        if provider == 'strava':
+            extra_data = sociallogin.account.extra_data
+            user.first_name = extra_data.get('firstname', '')
+            user.last_name = extra_data.get('lastname', '')
+
+        email = data.get('email', '')
+        user.email = email.lower() if email else ''
+        logger.info(f"Populated user from {provider}: {user.email}")
         return user
