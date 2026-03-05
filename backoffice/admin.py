@@ -155,17 +155,17 @@ class ProgramAdmin(admin.ModelAdmin):
     ordering = ('name',)
 
 
-admin.site.register(Program, ProgramAdmin)
-admin.site.register(UserProfile)
-admin.site.register(Route, RouteAdmin)
-admin.site.register(SpeedRange, SpeedRangeAdmin)
-admin.site.register(Event, EventAdmin)
-admin.site.register(Registration, RegistrationAdmin)
 class UserMembershipNumberAdmin(admin.ModelAdmin):
     list_display = ('user', 'number', 'year', 'created_at')
     list_filter = ('year',)
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'number')
 
 
+admin.site.register(Program, ProgramAdmin)
+admin.site.register(UserProfile)
+admin.site.register(Route, RouteAdmin)
+admin.site.register(SpeedRange, SpeedRangeAdmin)
+admin.site.register(Event, EventAdmin)
+admin.site.register(Registration, RegistrationAdmin)
 admin.site.register(Announcement, AnnouncementAdmin)
 admin.site.register(UserMembershipNumber, UserMembershipNumberAdmin)

@@ -9,7 +9,7 @@ from backoffice.models import Event
 from backoffice.services.membership_service import MembershipService
 from backoffice.services.registration_service import RegistrationService, RegistrationDetail
 from backoffice.services.request_service import RequestService
-from backoffice.services.user_service import UserDetail
+from backoffice.services.user_service import UserDetail, UserService
 from web.forms import RegistrationForm, MembershipNumberForm
 
 logger = logging.getLogger(__name__)
@@ -65,18 +65,23 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     if request.method == 'POST':
         if form.is_valid():
             request_detail = request_service.extract_details(request)
-            user = registration_service.register(
-                user_detail=_get_user_details(form),
+            user_detail = _get_user_details(form)
+            registration_service.register(
+                user_detail=user_detail,
                 registration_detail=_get_registration_detail(form),
                 event=event,
                 request_detail=request_detail)
 
             if (flag_is_active(request, 'capture_membership_number')
                     and event.requires_membership):
+                # Look up the user that register() created/found so we can
+                # store their ID in the session for the interstitial page.
+                user_service = UserService()
+                registered_user = user_service.find_by_email(user_detail.email).unwrap()
                 membership_service = MembershipService()
-                if request.user.is_authenticated and membership_service.has_current_membership_number(user):
+                if request.user.is_authenticated and membership_service.has_current_membership_number(registered_user):
                     return redirect('registration_submitted')
-                request.session['membership_capture_user_id'] = user.id
+                request.session['membership_capture_user_id'] = registered_user.id
                 return redirect('membership_number_capture', event_id=event.id)
 
             return redirect('registration_submitted')

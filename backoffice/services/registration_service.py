@@ -81,7 +81,7 @@ class RegistrationService:
         )
 
     def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event,
-                 request_detail: RequestDetail | None = None) -> User:
+                 request_detail: RequestDetail | None = None) -> None:
         user = self.user_service.find_by_email_or_create(user_detail)
 
         registrations_submitted_or_confirmed = \
@@ -89,16 +89,17 @@ class RegistrationService:
                                         state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED])
 
         if registrations_submitted_or_confirmed.exists():
+            # Do nothing, mostly because we don't want to reveal that they are registered already.
+            # Log that a user attempted to register for an event they're already registered for.
             logger.info(
                 f"User {user.email} (id={user.id}) attempted to register for event {event.name} (id={event.id}) but already has an active registration"
             )
         else:
+            # OK, so either no registration exists, or it is withdrawn. Create a new one.
             registration = self._create_registration(event, user, registration_detail, request_detail)
             self._send_confirmation_email(registration)
             registration.confirm()
             registration.save()
-
-        return user
 
     def fetch_confirmed_event_ids(self, user: User, event_ids: list[int]) -> set[int]:
         return set(
