@@ -73,3 +73,29 @@ class MembershipServiceTests(TestCase):
 
         # Assert
         self.assertEqual(result.number, 'OBC-54321')
+
+    def test_save_membership_number_is_idempotent(self):
+        # Arrange
+        self.service.save_membership_number(self.user, 'OBC-FIRST')
+
+        # Act
+        result = self.service.save_membership_number(self.user, 'OBC-FIRST')
+
+        # Assert
+        self.assertEqual(
+            UserMembershipNumber.objects.filter(user=self.user, year=timezone.now().year).count(), 1
+        )
+        self.assertEqual(result.number, 'OBC-FIRST')
+
+    def test_save_membership_number_updates_existing_if_different(self):
+        # Arrange
+        self.service.save_membership_number(self.user, 'OBC-OLD')
+
+        # Act
+        result = self.service.save_membership_number(self.user, 'OBC-NEW')
+
+        # Assert
+        self.assertEqual(
+            UserMembershipNumber.objects.filter(user=self.user, year=timezone.now().year).count(), 1
+        )
+        self.assertEqual(result.number, 'OBC-NEW')
