@@ -1,4 +1,5 @@
 {% extends 'web/_base_bootstrap.html' %}
+{% load waffle_tags %}
 {% block title %}My profile{% endblock %}
 {% block content %}
 <div class="mb-4">
@@ -26,12 +27,34 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <div class="d-flex align-items-center">
                             <span class="fw-medium me-2">Phone:</span>
                             <span>{% if user.profile.phone %}{{ user.profile.phone }}{% else %}Not provided{% endif %}</span>
                         </div>
                     </div>
+
+                    {% flag "capture_membership_number" %}
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="fw-medium me-2">Membership number:</span>
+                            {% if membership_number %}
+                                <span>{{ membership_number.number }} ({{ membership_number.year }})</span>
+                            {% else %}
+                                <span id="membership-number-link">
+                                    <a href="#" onclick="document.getElementById('membership-number-link').style.display='none'; document.getElementById('membership-number-form').style.display='block'; return false;" class="text-decoration-none">Enter membership number</a>
+                                </span>
+                                <span id="membership-number-form" style="display: none;">
+                                    <form method="post" action="{% url 'profile_membership_number' %}" class="d-inline-flex align-items-center gap-2">
+                                        {% csrf_token %}
+                                        <input type="text" name="membership_number" class="form-control form-control-sm" style="width: 160px;" placeholder="e.g. OBC-12345" maxlength="32" required>
+                                        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                                    </form>
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endflag %}
 
                     <div class="text-muted small">
                         <p class="mb-0">These details are automatically updated when you register for events and will be prefilled to save you time.</p>

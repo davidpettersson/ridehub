@@ -129,6 +129,18 @@ class RegistrationForm(forms.Form):
         return cleaned_data
 
 
+class MembershipNumberForm(forms.Form):
+    membership_number = forms.CharField(
+        max_length=32,
+        required=True,
+        label="Membership number",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. OBC-12345',
+        })
+    )
+
+
 class EmailLoginForm(forms.Form):
     email = forms.EmailField(widget=forms.EmailInput(attrs={
         'autocomplete': 'email'
