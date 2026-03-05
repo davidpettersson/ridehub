@@ -419,13 +419,13 @@ class UserProfile(models.Model):
         return str(self.user)
 
 
-def _current_year():
+def current_year():
     return timezone.now().year
 
 
 class UserMembershipNumber(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
-    year = models.PositiveIntegerField(default=_current_year)
+    year = models.PositiveIntegerField(default=current_year)
     number = models.CharField(max_length=32)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='membership_numbers')
 
