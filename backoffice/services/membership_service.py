@@ -26,6 +26,6 @@ class MembershipService:
 
         if not created and membership_number.number != normalized_number:
             membership_number.number = normalized_number
-            membership_number.save(update_fields=['number'])
+            membership_number.save(update_fields=['number', 'updated_at'])
 
         return membership_number

@@ -156,7 +156,7 @@ class ProgramAdmin(admin.ModelAdmin):
 
 
 class UserMembershipNumberAdmin(admin.ModelAdmin):
-    list_display = ('user', 'number', 'year', 'created_at')
+    list_display = ('user', 'number', 'year', 'created_at', 'updated_at')
     list_filter = ('year',)
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'number')
 

@@ -425,6 +425,7 @@ def current_year():
 
 class UserMembershipNumber(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     year = models.PositiveIntegerField(default=current_year)
     number = models.CharField(max_length=32)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='membership_numbers')
