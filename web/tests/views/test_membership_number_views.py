@@ -131,6 +131,7 @@ class MembershipNumberRegistrationFlowTests(TestCase):
         self.assertIn('submitted', response.url)
 
 
+@override_flag('capture_membership_number', active=True)
 class MembershipNumberInterstitialTests(TestCase):
     def setUp(self):
         now = timezone.now()
@@ -192,7 +193,7 @@ class MembershipNumberInterstitialTests(TestCase):
         # Act
         response = self.client.post(
             reverse('membership_number_capture', args=[self.event.id]),
-            {},
+            {'skip': '1'},
         )
 
         # Assert

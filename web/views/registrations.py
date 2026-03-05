@@ -114,16 +114,22 @@ def membership_number_capture(request: HttpRequest, event_id: int) -> HttpRespon
         return redirect('registration_submitted')
 
     if request.method == 'POST':
+        # Skip button bypasses validation and cleans up session
+        if 'skip' in request.POST:
+            request.session.pop('membership_capture_user_id', None)
+            return redirect('registration_submitted')
+
         form = MembershipNumberForm(request.POST)
-        if form.is_valid() and form.cleaned_data['membership_number']:
+        if form.is_valid():
             user = get_object_or_404(User, id=user_id)
             membership_service = MembershipService()
-            membership_service.save_membership_number(user, form.cleaned_data['membership_number'])
+            if not membership_service.has_current_membership_number(user):
+                membership_service.save_membership_number(user, form.cleaned_data['membership_number'])
+            request.session.pop('membership_capture_user_id', None)
+            return redirect('registration_submitted')
+    else:
+        form = MembershipNumberForm()
 
-        request.session.pop('membership_capture_user_id', None)
-        return redirect('registration_submitted')
-
-    form = MembershipNumberForm()
     return render(request, 'web/registrations/membership_number.html', {
         'event': event,
         'form': form,
