@@ -104,6 +104,10 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
 
 def membership_number_capture(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
+
+    if not flag_is_active(request, 'capture_membership_number') or not event.requires_membership:
+        return redirect('registration_submitted')
+
     user_id = request.session.get('membership_capture_user_id')
 
     if not user_id:

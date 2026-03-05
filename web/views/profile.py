@@ -43,7 +43,7 @@ def registration_withdraw(request: HttpRequest, registration_id: int) -> HttpRes
 
 @login_required
 def profile_membership_number(request: HttpRequest) -> HttpResponseRedirect:
-    if request.method == 'POST':
+    if request.method == 'POST' and flag_is_active(request, 'capture_membership_number'):
         form = MembershipNumberForm(request.POST)
         membership_service = MembershipService()
         if form.is_valid() and not membership_service.has_current_membership_number(request.user):
