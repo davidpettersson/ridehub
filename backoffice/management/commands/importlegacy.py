@@ -3,6 +3,7 @@ import hashlib
 import os
 from datetime import datetime
 
+import phonenumbers
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -337,7 +338,7 @@ class Command(BaseCommand):
 
         gender_identity = self.parse_gender(gender)
         profile_data = {
-            'phone': phone,
+            'phone': self.normalize_phone(phone),
             'gender_identity': gender_identity,
             'legacy': True,
         }
@@ -391,7 +392,7 @@ class Command(BaseCommand):
             first_name=first_name,
             last_name=last_name,
             email=email,
-            phone=phone,
+            phone=self.normalize_phone(phone),
             event=event,
             user=user,
             emergency_contact_name=emergency_contact_name,
@@ -415,6 +416,15 @@ class Command(BaseCommand):
     def generate_legacy_registration_id(self, event_id, email, submitted_at):
         composite_key = f"{event_id}_{email}_{submitted_at.isoformat()}"
         return hashlib.sha256(composite_key.encode()).hexdigest()
+
+    def normalize_phone(self, raw_phone):
+        if not raw_phone:
+            return raw_phone
+        try:
+            parsed = phonenumbers.parse(raw_phone, 'CA')
+            return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+        except phonenumbers.NumberParseException:
+            return raw_phone
 
     def parse_gender(self, gender):
         gender_lower = gender.lower()

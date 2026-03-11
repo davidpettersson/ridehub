@@ -158,7 +158,7 @@ class RegistrationFormTest(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'ride': ride.id,
             'speed_range_preference': speed_range.id,
             # membership_confirmation intentionally omitted
@@ -186,7 +186,7 @@ class RegistrationFormTest(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'ride': ride.id,
             'speed_range_preference': speed_range.id,
             'membership_confirmation': True
@@ -224,7 +224,7 @@ class RegistrationFormTest(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
         }
         form = RegistrationForm(data=form_data, event=self.event_without_rides)
 
@@ -244,7 +244,7 @@ class RegistrationFormTest(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'ride': ride.id,
             # No speed range preference - should be valid
         }
@@ -268,7 +268,7 @@ class RegistrationFormTest(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'ride': ride.id,
             'speed_range_preference': speed_range.id,
         }
@@ -292,7 +292,7 @@ class RegistrationFormTest(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'ride': ride.id,
             # No speed range preference - should be invalid since ride has speed ranges
         }
@@ -330,7 +330,7 @@ class RegistrationFormTest(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'ride': ride1.id,
             'speed_range_preference': speed_range2.id,  # Speed range belongs to ride2, not ride1
         }
@@ -360,7 +360,7 @@ class RegistrationFormTest(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'ride': ride.id,
             'speed_range_preference': speed_range2.id,  # Select the second speed range
         }
@@ -384,7 +384,7 @@ class RegistrationFormTest(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'ride': ride.id,
             'speed_range_preference': '',  # Empty string should be treated as no selection
         }
@@ -405,7 +405,7 @@ class RegistrationFormTest(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             # No ride selected
         }
         form = RegistrationForm(data=form_data, event=self.event_with_rides)

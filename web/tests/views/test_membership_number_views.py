@@ -24,7 +24,7 @@ class MembershipNumberRegistrationFlowTests(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'testflow@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'membership_confirmation': 'on',
         }
 
@@ -61,7 +61,7 @@ class MembershipNumberRegistrationFlowTests(TestCase):
             first_name='Test',
             last_name='User',
         )
-        user.profile.phone = '+1234567890'
+        user.profile.phone = '+16135550100'
         user.profile.save()
         self.client.force_login(user)
 
@@ -84,7 +84,7 @@ class MembershipNumberRegistrationFlowTests(TestCase):
             first_name='Test',
             last_name='User',
         )
-        user.profile.phone = '+1234567890'
+        user.profile.phone = '+16135550100'
         user.profile.save()
         UserMembershipNumber.objects.create(
             user=user, number='OBC-123', year=timezone.now().year
@@ -117,7 +117,7 @@ class MembershipNumberRegistrationFlowTests(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'nomembership@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
         }
 
         # Act

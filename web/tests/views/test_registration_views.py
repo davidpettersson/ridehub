@@ -30,7 +30,7 @@ class RegistrationViewPhoneTests(TestCase):
             last_name='User'
         )
         # Profile is automatically created by signals, just update the phone
-        user.profile.phone = '+1234567890'
+        user.profile.phone = '+16135550100'
         user.profile.save()
         
         self.client.force_login(user)
@@ -44,7 +44,7 @@ class RegistrationViewPhoneTests(TestCase):
         self.assertEqual(form.initial['first_name'], 'Test')
         self.assertEqual(form.initial['last_name'], 'User')
         self.assertEqual(form.initial['email'], 'testuser@example.com')
-        self.assertEqual(form.initial['phone'], '+1234567890')
+        self.assertEqual(form.initial['phone'], '+16135550100')
 
     def test_registration_form_initial_data_user_with_profile_no_phone(self):
         # Arrange
@@ -125,7 +125,7 @@ class RegistrationViewPhoneTests(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'testuser@example.com',
-            'phone': '+1987654321',
+            'phone': '+16139876543',
         }
 
         # Act
@@ -137,7 +137,7 @@ class RegistrationViewPhoneTests(TestCase):
         # Check that the profile was updated with the new phone number
         user.refresh_from_db()
         self.assertTrue(hasattr(user, 'profile'))
-        self.assertEqual(str(user.profile.phone), '+1987654321')
+        self.assertEqual(str(user.profile.phone), '+16139876543')
 
     def test_registration_form_stores_phone_in_registration_record(self):
         # Arrange
@@ -154,7 +154,7 @@ class RegistrationViewPhoneTests(TestCase):
             'first_name': 'Phone',
             'last_name': 'Test', 
             'email': 'phonetest@example.com',
-            'phone': '+1555123456',
+            'phone': '+16135551234',
         }
 
         # Act
@@ -170,11 +170,11 @@ class RegistrationViewPhoneTests(TestCase):
         
         # Check that the registration record has the phone number
         registration = registrations.first()
-        self.assertEqual(str(registration.phone), '+1555123456')
+        self.assertEqual(str(registration.phone), '+16135551234')
         
         # Also verify the user profile was updated
         user.refresh_from_db()
-        self.assertEqual(str(user.profile.phone), '+1555123456')
+        self.assertEqual(str(user.profile.phone), '+16135551234')
 
     def test_registration_form_stores_phone_for_anonymous_user(self):
         # Arrange - no user login (anonymous registration)
@@ -182,7 +182,7 @@ class RegistrationViewPhoneTests(TestCase):
             'first_name': 'Anonymous',
             'last_name': 'User',
             'email': 'anonymous@example.com',
-            'phone': '+1555987654',
+            'phone': '+16135559876',
         }
 
         # Act
@@ -198,14 +198,14 @@ class RegistrationViewPhoneTests(TestCase):
         
         # Check that the registration record has the phone number
         registration = registrations.first()
-        self.assertEqual(str(registration.phone), '+1555987654')
+        self.assertEqual(str(registration.phone), '+16135559876')
         
         # Verify user was created and profile has phone
         from django.contrib.auth.models import User
         users = User.objects.filter(email='anonymous@example.com')
         self.assertEqual(users.count(), 1)
         user = users.first()
-        self.assertEqual(str(user.profile.phone), '+1555987654')
+        self.assertEqual(str(user.profile.phone), '+16135559876')
 
 
 class RegistrationWithdrawAccessControlTests(TestCase):
@@ -230,7 +230,7 @@ class RegistrationWithdrawAccessControlTests(TestCase):
             first_name='User',
             last_name='A'
         )
-        self.user_a.profile.phone = '+1234567890'
+        self.user_a.profile.phone = '+16135550100'
         self.user_a.profile.save()
 
         self.user_b = User.objects.create_user(
@@ -417,7 +417,7 @@ class RegistrationCreateErrorCaseTests(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'test@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
         }
 
         response = self.client.post(reverse('registration_create', args=[event.id]), form_data)
@@ -447,7 +447,7 @@ class RegistrationFullFlowTests(TestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'email': 'testuser@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
         }
 
         response = self.client.post(reverse('registration_create', args=[event.id]), form_data)
@@ -481,7 +481,7 @@ class RegistrationFullFlowTests(TestCase):
             'first_name': 'Rider',
             'last_name': 'Test',
             'email': 'rider@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'ride': ride.id,
             'speed_range_preference': speed_range.id,
         }
@@ -510,7 +510,7 @@ class RegistrationFullFlowTests(TestCase):
             'first_name': 'Emergency',
             'last_name': 'Test',
             'email': 'emergency@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'emergency_contact_name': 'John Doe',
             'emergency_contact_phone': '+9876543210',
         }
@@ -539,7 +539,7 @@ class RegistrationFullFlowTests(TestCase):
             'first_name': 'Leader',
             'last_name': 'Test',
             'email': 'leader@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'ride_leader_preference': Registration.RideLeaderPreference.YES,
         }
 
@@ -569,7 +569,7 @@ class RegistrationFullFlowTests(TestCase):
             'first_name': 'Full',
             'last_name': 'Test',
             'email': 'full@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
             'ride': ride.id,
             'speed_range_preference': speed_range.id,
             'emergency_contact_name': 'Emergency Person',
@@ -601,7 +601,7 @@ class RegistrationFullFlowTests(TestCase):
             first_name='Auth',
             last_name='User'
         )
-        user.profile.phone = '+1234567890'
+        user.profile.phone = '+16135550100'
         user.profile.save()
 
         event = Event.objects.create(
@@ -627,7 +627,7 @@ class RegistrationFullFlowTests(TestCase):
             'first_name': 'Auth',
             'last_name': 'User',
             'email': 'authuser@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
         }
 
         response = self.client.post(reverse('registration_create', args=[event.id]), form_data)
@@ -653,7 +653,7 @@ class RegistrationFullFlowTests(TestCase):
             'first_name': 'New',
             'last_name': 'Person',
             'email': 'newperson@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
         }
 
         response = self.client.post(reverse('registration_create', args=[event.id]), form_data)
@@ -683,7 +683,7 @@ class RegistrationFullFlowTests(TestCase):
             'first_name': 'Redirect',
             'last_name': 'Test',
             'email': 'redirect@example.com',
-            'phone': '+1234567890',
+            'phone': '+16135550100',
         }
 
         response = self.client.post(reverse('registration_create', args=[event.id]), form_data)
