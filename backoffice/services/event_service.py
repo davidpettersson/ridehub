@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 
 from backoffice.models import Event, Ride
@@ -28,7 +28,7 @@ class EventService:
         if program_id:
             qs = qs.filter(program_id=program_id)
         if query:
-            qs = qs.filter(name__icontains=query) | qs.filter(program__name__icontains=query)
+            qs = qs.filter(Q(name__icontains=query) | Q(program__name__icontains=query)).distinct()
         return qs
 
     def fetch_events_for_month(self, year: int, month: int, include_archived: bool = False,
@@ -48,7 +48,7 @@ class EventService:
         if program_id:
             qs = qs.filter(program_id=program_id)
         if query:
-            qs = qs.filter(name__icontains=query) | qs.filter(program__name__icontains=query)
+            qs = qs.filter(Q(name__icontains=query) | Q(program__name__icontains=query)).distinct()
         return qs
 
     def duplicate_event(self, source_event: Event, new_name: str, new_date: date) -> Event:
