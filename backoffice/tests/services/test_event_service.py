@@ -533,3 +533,98 @@ class DuplicateEventTestCase(TestCase):
         )
 
         self.assertEqual(new_event.starts_at.date(), new_date)
+
+
+class FetchUpcomingEventsQueryFilterTests(TestCase):
+    def setUp(self):
+        self.road = Program.objects.create(name='Road')
+        self.gravel = Program.objects.create(name='Gravel')
+        tomorrow = timezone.now() + timedelta(days=1)
+        self.road_event = Event.objects.create(
+            program=self.road, name='Tuesday Morning Ride',
+            starts_at=tomorrow, state=Event.STATE_LIVE,
+        )
+        self.gravel_event = Event.objects.create(
+            program=self.gravel, name='Weekend Explorer',
+            starts_at=tomorrow + timedelta(days=1), state=Event.STATE_LIVE,
+        )
+        self.service = EventService()
+
+    def test_query_filters_by_event_name(self):
+        result = list(self.service.fetch_upcoming_events(query='Tuesday'))
+
+        self.assertIn(self.road_event, result)
+        self.assertNotIn(self.gravel_event, result)
+
+    def test_query_filters_by_program_name(self):
+        result = list(self.service.fetch_upcoming_events(query='Gravel'))
+
+        self.assertIn(self.gravel_event, result)
+        self.assertNotIn(self.road_event, result)
+
+    def test_query_is_case_insensitive(self):
+        result = list(self.service.fetch_upcoming_events(query='tuesday'))
+
+        self.assertIn(self.road_event, result)
+
+    def test_query_with_no_match_returns_empty(self):
+        result = list(self.service.fetch_upcoming_events(query='Nonexistent'))
+
+        self.assertEqual([], result)
+
+    def test_no_query_returns_all_events(self):
+        result = list(self.service.fetch_upcoming_events())
+
+        self.assertIn(self.road_event, result)
+        self.assertIn(self.gravel_event, result)
+
+    def test_query_matching_both_name_and_program_does_not_duplicate(self):
+        Event.objects.create(
+            program=self.road, name='Road Special',
+            starts_at=timezone.now() + timedelta(days=3), state=Event.STATE_LIVE,
+        )
+
+        result = list(self.service.fetch_upcoming_events(query='Road'))
+
+        road_events = [e for e in result if e.name == 'Road Special']
+        self.assertEqual(1, len(road_events))
+
+
+class FetchEventsForMonthQueryFilterTests(TestCase):
+    def setUp(self):
+        self.road = Program.objects.create(name='Road')
+        self.gravel = Program.objects.create(name='Gravel')
+        self.road_event = Event.objects.create(
+            program=self.road, name='Club Ride',
+            starts_at=timezone.make_aware(datetime.datetime(2024, 1, 10, 9, 0)),
+            state=Event.STATE_LIVE,
+        )
+        self.gravel_event = Event.objects.create(
+            program=self.gravel, name='Trail Blast',
+            starts_at=timezone.make_aware(datetime.datetime(2024, 1, 20, 9, 0)),
+            state=Event.STATE_LIVE,
+        )
+        self.service = EventService()
+
+    def test_query_filters_by_event_name(self):
+        result = list(self.service.fetch_events_for_month(2024, 1, query='Club'))
+
+        self.assertIn(self.road_event, result)
+        self.assertNotIn(self.gravel_event, result)
+
+    def test_query_filters_by_program_name(self):
+        result = list(self.service.fetch_events_for_month(2024, 1, query='Gravel'))
+
+        self.assertIn(self.gravel_event, result)
+        self.assertNotIn(self.road_event, result)
+
+    def test_query_with_no_match_returns_empty(self):
+        result = list(self.service.fetch_events_for_month(2024, 1, query='Nonexistent'))
+
+        self.assertEqual([], result)
+
+    def test_no_query_returns_all_events_in_month(self):
+        result = list(self.service.fetch_events_for_month(2024, 1))
+
+        self.assertIn(self.road_event, result)
+        self.assertIn(self.gravel_event, result)

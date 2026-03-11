@@ -1,0 +1,29 @@
+<div class="mb-4">
+    <form hx-get="{{ request.path }}"
+          hx-target="#events-container"
+          hx-select="#events-container > *"
+          hx-push-url="true"
+          hx-trigger="filtertrigger"
+          x-data="{ query: '{{ active_query|escapejs }}' }">
+        <div class="position-relative">
+            <i class="bi bi-search position-absolute text-muted" style="left: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none;"></i>
+            <input type="text"
+                   name="q"
+                   x-model="query"
+                   placeholder="Search events..."
+                   class="form-control rounded-pill"
+                   style="padding-left: 2.25rem; padding-right: 2.25rem;"
+                   autocomplete="off"
+                   @input.debounce.400ms="htmx.trigger($el.closest('form'), 'filtertrigger')">
+            <button type="button"
+                    x-show="query"
+                    x-cloak
+                    @click="query = ''; $nextTick(() => htmx.trigger($el.closest('form'), 'filtertrigger'))"
+                    class="btn position-absolute border-0 p-0 text-muted"
+                    style="right: 0.75rem; top: 50%; transform: translateY(-50%);"
+                    aria-label="Clear search">
+                <i class="bi bi-x-lg" style="font-size: 0.75rem;"></i>
+            </button>
+        </div>
+    </form>
+</div>

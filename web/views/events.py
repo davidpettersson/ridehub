@@ -1,6 +1,7 @@
 import calendar
 from datetime import datetime, date, timedelta
 from itertools import groupby
+from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -151,11 +152,21 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
     return render(request, 'web/events/detail.html', context)
 
 
+def _get_filter_params(request):
+    if not flag_is_active(request, 'event_filter_and_search'):
+        return False, '', ''
+
+    active_query = request.GET.get('q', '').strip()
+    filter_query_string = ('?' + urlencode({'q': active_query})) if active_query else ''
+    return True, active_query, filter_query_string
+
+
 def event_list(request: HttpRequest) -> HttpResponse:
-    # Set preferred view in session
     request.session['preferred_events_view'] = 'upcoming'
 
-    events = list(EventService().fetch_upcoming_events())
+    filter_enabled, active_query, _ = _get_filter_params(request)
+
+    events = list(EventService().fetch_upcoming_events(query=active_query))
     starts_at_date = lambda event: timezone.localtime(event.starts_at).date()
 
     events_by_date = [
@@ -176,6 +187,8 @@ def event_list(request: HttpRequest) -> HttpResponse:
         'today': today,
         'tomorrow': tomorrow,
         'registered_event_ids': registered_event_ids,
+        'filter_enabled': filter_enabled,
+        'active_query': active_query,
     }
 
     if flag_is_active(request, 'upcoming_dense_view'):
@@ -268,7 +281,9 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
     request.session['calendar_selected_year'] = year
     request.session['calendar_selected_month'] = month
 
-    events = list(EventService().fetch_events_for_month(year, month))
+    filter_enabled, active_query, filter_query_string = _get_filter_params(request)
+
+    events = list(EventService().fetch_events_for_month(year, month, query=active_query))
 
     events_by_date = {}
     for event in events:
@@ -310,6 +325,9 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
         'next_year': next_year,
         'today': date.today(),
         'registered_event_ids': registered_event_ids,
+        'filter_enabled': filter_enabled,
+        'active_query': active_query,
+        'filter_query_string': filter_query_string,
     }
 
     return render(request, 'web/events/calendar.html', context)

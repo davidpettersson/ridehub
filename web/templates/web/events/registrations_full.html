@@ -1,3 +1,4 @@
+{% load phone_filters %}
 <html>
 <head>
     <title>Registrations for {{ event.name }}</title>
@@ -28,7 +29,7 @@
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.id }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.first_name }} {{ reg.last_name }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.email }}</td>
-            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.phone }}</td>
+            <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.phone|national_phone }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.state }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{{ reg.submitted_at|date:"Y-m-d H:i:s" }}</td>
             <td style="padding: 2pt; border: 1px solid #DDDDDD;">{% if reg.confirmed_at %}{{ reg.confirmed_at|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</td>

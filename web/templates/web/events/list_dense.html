@@ -9,6 +9,11 @@
             </a>
         </div>
 
+        {% if filter_enabled %}
+        {% include 'web/events/_event_filter_bar.html' %}
+        {% endif %}
+
+        <div id="events-container">
         {% for date, events in events_by_date %}
         <div class="mt-4 mb-3">
             <h2 class="fs-5 fw-semibold text-muted mb-2">
@@ -78,8 +83,14 @@
         </div>
         {% empty %}
         <div class="py-5 text-center">
+            {% if active_query %}
+            <p class="text-muted mb-2">No events match your filters.</p>
+            <a href="{% url 'upcoming' %}" class="btn btn-outline-secondary btn-sm">Clear filters</a>
+            {% else %}
             <p class="text-muted">No upcoming events scheduled. Check back soon!</p>
+            {% endif %}
         </div>
         {% endfor %}
+        </div>
     </div>
 {% endblock %}

@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 
 from backoffice.models import Event, Ride
@@ -21,23 +21,35 @@ class EventService:
         return queryset.order_by('starts_at')
 
     def fetch_upcoming_events(self, include_archived: bool = False, only_visible: bool = True,
-                              current_date: date | None = None) -> QuerySet[Event]:
+                              current_date: date | None = None, program_id: int | None = None,
+                              query: str | None = None) -> QuerySet[Event]:
         current_date = current_date or timezone.now().date()
-        return self.fetch_events(include_archived, only_visible).filter(starts_at__date__gte=current_date)
+        qs = self.fetch_events(include_archived, only_visible).filter(starts_at__date__gte=current_date)
+        if program_id is not None:
+            qs = qs.filter(program_id=program_id)
+        if query:
+            qs = qs.filter(Q(name__icontains=query) | Q(program__name__icontains=query)).distinct()
+        return qs
 
-    def fetch_events_for_month(self, year: int, month: int, include_archived: bool = False, 
-                               only_visible: bool = True) -> QuerySet[Event]:
+    def fetch_events_for_month(self, year: int, month: int, include_archived: bool = False,
+                               only_visible: bool = True, program_id: int | None = None,
+                               query: str | None = None) -> QuerySet[Event]:
         from datetime import date
         import calendar
-        
+
         first_day = date(year, month, 1)
         _, last_day_of_month = calendar.monthrange(year, month)
         last_day = date(year, month, last_day_of_month)
-        
-        return self.fetch_events(include_archived, only_visible).filter(
+
+        qs = self.fetch_events(include_archived, only_visible).filter(
             starts_at__date__gte=first_day,
             starts_at__date__lte=last_day
         )
+        if program_id is not None:
+            qs = qs.filter(program_id=program_id)
+        if query:
+            qs = qs.filter(Q(name__icontains=query) | Q(program__name__icontains=query)).distinct()
+        return qs
 
     def duplicate_event(self, source_event: Event, new_name: str, new_date: date) -> Event:
         date_delta = new_date - source_event.starts_at.date()
