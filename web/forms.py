@@ -1,4 +1,5 @@
 from django import forms
+from phonenumber_field.formfields import PhoneNumberField
 
 from backoffice.models import Registration, Event, Ride, SpeedRange
 from backoffice.services.registration_service import RegistrationService
@@ -31,15 +32,9 @@ class RegistrationForm(forms.Form):
         })
     )
 
-    phone = forms.CharField(
-        max_length=128,
-        required=True,
-        min_length=2,
+    phone = PhoneNumberField(
+        region='CA',
         label="Phone number",
-        widget=forms.TextInput(attrs={
-            'type': 'tel',
-            'autocomplete': 'tel'
-        })
     )
 
     def __init__(self, *args, **kwargs):
