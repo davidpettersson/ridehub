@@ -65,7 +65,7 @@ class EventService:
         new_event = Event.objects.create(
             program=source_event.program,
             name=new_name,
-            state=Event.STATE_LIVE,
+            state=source_event.state,
             location=source_event.location,
             location_url=source_event.location_url,
             starts_at=new_starts_at,
