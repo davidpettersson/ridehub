@@ -1,6 +1,7 @@
 import calendar
 from datetime import datetime, date, timedelta
 from itertools import groupby
+from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -156,7 +157,7 @@ def _get_filter_params(request):
         return False, '', ''
 
     active_query = request.GET.get('q', '').strip()
-    filter_query_string = ('?q=' + active_query) if active_query else ''
+    filter_query_string = ('?' + urlencode({'q': active_query})) if active_query else ''
     return True, active_query, filter_query_string
 
 
