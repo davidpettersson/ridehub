@@ -419,6 +419,24 @@ class UserProfile(models.Model):
         return str(self.user)
 
 
+def current_year():
+    return timezone.now().year
+
+
+class UserMembershipNumber(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    year = models.PositiveIntegerField(default=current_year)
+    number = models.CharField(max_length=32)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='membership_numbers')
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.number} ({self.year})"
+
+
 class Registration(models.Model):
     class RideLeaderPreference(models.TextChoices):
         YES = 'y', 'Yes'

@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from backoffice.actions import cancel_event, duplicate_event
-from backoffice.models import Ride, Route, Event, Program, SpeedRange, Registration, Announcement, UserProfile
+from backoffice.models import Ride, Route, Event, Program, SpeedRange, Registration, Announcement, UserProfile, UserMembershipNumber
 from .forms import EventAdminForm
 
 
@@ -155,6 +155,12 @@ class ProgramAdmin(admin.ModelAdmin):
     ordering = ('name',)
 
 
+class UserMembershipNumberAdmin(admin.ModelAdmin):
+    list_display = ('user', 'number', 'year', 'created_at', 'updated_at')
+    list_filter = ('year',)
+    search_fields = ('user__email', 'user__first_name', 'user__last_name', 'number')
+
+
 admin.site.register(Program, ProgramAdmin)
 admin.site.register(UserProfile)
 admin.site.register(Route, RouteAdmin)
@@ -162,3 +168,4 @@ admin.site.register(SpeedRange, SpeedRangeAdmin)
 admin.site.register(Event, EventAdmin)
 admin.site.register(Registration, RegistrationAdmin)
 admin.site.register(Announcement, AnnouncementAdmin)
+admin.site.register(UserMembershipNumber, UserMembershipNumberAdmin)

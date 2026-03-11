@@ -1,14 +1,16 @@
 import logging
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect, HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404, redirect
+from waffle import flag_is_active
 
 from backoffice.models import Event
+from backoffice.services.membership_service import MembershipService
 from backoffice.services.registration_service import RegistrationService, RegistrationDetail
 from backoffice.services.request_service import RequestService
-from backoffice.services.user_service import UserDetail
-from web.forms import RegistrationForm
+from backoffice.services.user_service import UserDetail, UserService
+from web.forms import RegistrationForm, MembershipNumberForm
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +65,25 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     if request.method == 'POST':
         if form.is_valid():
             request_detail = request_service.extract_details(request)
+            user_detail = _get_user_details(form)
             registration_service.register(
-                user_detail=_get_user_details(form),
+                user_detail=user_detail,
                 registration_detail=_get_registration_detail(form),
                 event=event,
                 request_detail=request_detail)
+
+            if (flag_is_active(request, 'capture_membership_number')
+                    and event.requires_membership):
+                # Look up the user that register() created/found so we can
+                # store their ID in the session for the interstitial page.
+                user_service = UserService()
+                registered_user = user_service.find_by_email(user_detail.email).unwrap()
+                membership_service = MembershipService()
+                if request.user.is_authenticated and membership_service.has_current_membership_number(registered_user):
+                    return redirect('registration_submitted')
+                request.session['membership_capture_user_id'] = registered_user.id
+                return redirect('membership_number_capture', event_id=event.id)
+
             return redirect('registration_submitted')
 
     # Determine the selected ride (if any) to pre-select speed ranges
@@ -83,4 +99,38 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         'event': event,
         'form': form,
         'selected_ride_id': selected_ride_id,
+    })
+
+
+def membership_number_capture(request: HttpRequest, event_id: int) -> HttpResponse:
+    event = get_object_or_404(Event, id=event_id)
+
+    if not flag_is_active(request, 'capture_membership_number') or not event.requires_membership:
+        return redirect('registration_submitted')
+
+    user_id = request.session.get('membership_capture_user_id')
+
+    if not user_id:
+        return redirect('registration_submitted')
+
+    if request.method == 'POST':
+        # Skip button bypasses validation and cleans up session
+        if 'skip' in request.POST:
+            request.session.pop('membership_capture_user_id', None)
+            return redirect('registration_submitted')
+
+        form = MembershipNumberForm(request.POST)
+        if form.is_valid():
+            user = get_object_or_404(User, id=user_id)
+            membership_service = MembershipService()
+            if not membership_service.has_current_membership_number(user):
+                membership_service.save_membership_number(user, form.cleaned_data['membership_number'])
+            request.session.pop('membership_capture_user_id', None)
+            return redirect('registration_submitted')
+    else:
+        form = MembershipNumberForm()
+
+    return render(request, 'web/registrations/membership_number.html', {
+        'event': event,
+        'form': form,
     })

@@ -1,0 +1,40 @@
+{% extends 'web/_base_bootstrap.html' %}
+{% block title %}Membership Number{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h1 class="fs-4 fw-bold mb-3">Your registration is confirmed!</h1>
+
+                    <p class="mb-2">Before you go, would you like to save your OBC membership number?</p>
+
+                    <p class="text-muted small mb-2">Your membership number can be found in the email titled <strong>"Ottawa Bicycle Club Membership - {% now "Y" %}"</strong> and starts with <strong>"OBC"</strong>.</p>
+
+                    <p class="text-muted small mb-2">If you save it now, you won't have to enter it again during the season. It also helps ride leaders confirm your insurance coverage.</p>
+
+                    <p class="text-muted small mb-3">We ask because our registration system is separate from the membership database, and membership situations can be complex. We appreciate your help!</p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_membership_number" class="form-label">{{ form.membership_number.label }}</label>
+                            {{ form.membership_number }}
+                            {% if form.membership_number.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.membership_number.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="submit" class="btn btn-primary">Save</button>
+                            <button type="submit" name="skip" value="1" class="btn btn-link text-muted small text-decoration-none">Skip</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
