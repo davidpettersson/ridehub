@@ -25,7 +25,7 @@ class EventService:
                               query: str | None = None) -> QuerySet[Event]:
         current_date = current_date or timezone.now().date()
         qs = self.fetch_events(include_archived, only_visible).filter(starts_at__date__gte=current_date)
-        if program_id:
+        if program_id is not None:
             qs = qs.filter(program_id=program_id)
         if query:
             qs = qs.filter(Q(name__icontains=query) | Q(program__name__icontains=query)).distinct()
@@ -45,7 +45,7 @@ class EventService:
             starts_at__date__gte=first_day,
             starts_at__date__lte=last_day
         )
-        if program_id:
+        if program_id is not None:
             qs = qs.filter(program_id=program_id)
         if query:
             qs = qs.filter(Q(name__icontains=query) | Q(program__name__icontains=query)).distinct()
