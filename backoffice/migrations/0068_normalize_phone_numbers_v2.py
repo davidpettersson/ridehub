@@ -7,7 +7,7 @@ def normalize_phone_numbers(apps, schema_editor):
     Registration = apps.get_model('backoffice', 'Registration')
 
     for model in [UserProfile, Registration]:
-        for obj in model.objects.exclude(phone='').exclude(phone__startswith='+'):
+        for obj in model.objects.exclude(phone=''):
             try:
                 parsed = phonenumbers.parse(str(obj.phone), 'CA')
                 if phonenumbers.is_valid_number(parsed):
