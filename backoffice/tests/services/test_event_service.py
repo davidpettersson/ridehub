@@ -349,18 +349,17 @@ class DuplicateEventTestCase(TestCase):
         self.assertEqual(new_event.requires_membership, True)
         self.assertEqual(new_event.organizer_email, "organizer@example.com")
 
-    def test_duplicate_event_sets_visible_true(self):
+    def test_duplicate_event_preserves_live_state(self):
         new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
         new_event = self.service.duplicate_event(
             self.source_event, "New Event", new_date
         )
 
-        self.assertTrue(new_event.visible)
+        self.assertEqual(new_event.state, Event.STATE_LIVE)
 
-    def test_duplicate_event_clears_cancelled_status(self):
-        self.source_event.cancel()
-        self.source_event.cancellation_reason = "Bad weather"
+    def test_duplicate_event_preserves_announced_state(self):
+        self.source_event.announce()
         self.source_event.save()
 
         new_date = self.base_start_time.date() + datetime.timedelta(days=7)
@@ -369,11 +368,35 @@ class DuplicateEventTestCase(TestCase):
             self.source_event, "New Event", new_date
         )
 
-        self.assertFalse(new_event.cancelled)
-        self.assertIsNone(new_event.cancelled_at)
-        self.assertEqual(new_event.cancellation_reason, "")
+        self.assertEqual(new_event.state, Event.STATE_ANNOUNCED)
 
-    def test_duplicate_event_does_not_copy_archived_fields(self):
+    def test_duplicate_event_preserves_draft_state(self):
+        self.source_event.draft()
+        self.source_event.save()
+
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
+
+        new_event = self.service.duplicate_event(
+            self.source_event, "New Event", new_date
+        )
+
+        self.assertEqual(new_event.state, Event.STATE_DRAFT)
+
+    def test_duplicate_event_defaults_cancelled_to_draft(self):
+        self.source_event.cancel()
+        self.source_event.save()
+
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
+
+        new_event = self.service.duplicate_event(
+            self.source_event, "New Event", new_date
+        )
+
+        self.assertEqual(new_event.state, Event.STATE_DRAFT)
+
+    def test_duplicate_event_defaults_archived_to_draft(self):
+        self.source_event.cancel()
+        self.source_event.save()
         self.source_event.archive()
         self.source_event.save()
 
@@ -383,8 +406,7 @@ class DuplicateEventTestCase(TestCase):
             self.source_event, "New Event", new_date
         )
 
-        self.assertFalse(new_event.archived)
-        self.assertIsNone(new_event.archived_at)
+        self.assertEqual(new_event.state, Event.STATE_DRAFT)
 
     def test_duplicate_event_inherits_same_times(self):
         new_date = self.base_start_time.date() + datetime.timedelta(days=7)

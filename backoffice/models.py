@@ -73,7 +73,7 @@ class Event(models.Model):
         default=STATE_LIVE,
         choices=STATE_CHOICES,
         protected=False,
-        help_text='Current state of the event in the lifecycle.'
+        help_text='Draft: not visible to public. Announced: visible but registration closed. Live: visible with registration open.'
     )
 
     location = models.CharField(
