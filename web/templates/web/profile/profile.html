@@ -1,5 +1,6 @@
 {% extends 'web/_base_bootstrap.html' %}
 {% load waffle_tags %}
+{% load phone_filters %}
 {% block title %}My profile{% endblock %}
 {% block content %}
 <div class="mb-4">
@@ -30,7 +31,7 @@
                     <div class="mb-2">
                         <div class="d-flex align-items-center">
                             <span class="fw-medium me-2">Phone:</span>
-                            <span>{% if user.profile.phone %}{{ user.profile.phone }}{% else %}Not provided{% endif %}</span>
+                            <span>{% if user.profile.phone %}{{ user.profile.phone|national_phone }}{% else %}Not provided{% endif %}</span>
                         </div>
                     </div>
 

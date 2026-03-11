@@ -1,4 +1,5 @@
 {% extends 'web/_base_bootstrap.html' %}
+{% load phone_filters %}
 {% block title %}Riders for {{ event.name }}{% endblock %}
 {% block content %}
 <style media="print">
@@ -239,7 +240,7 @@
                                 <div class="col-5 fw-medium">Phone:</div>
                                 <div class="col-7 text-muted">
                                     <a href="tel:{{ rider_reg.phone }}" class="text-primary">
-                                        {{ rider_reg.phone }}
+                                        {{ rider_reg.phone|national_phone }}
                                     </a>
                                 </div>
                             </div>
@@ -298,7 +299,7 @@
                                 </td>
                                 <td class="small text-muted">
                                     <a href="tel:{{ rider_reg.phone }}" class="text-primary">
-                                        {{ rider_reg.phone }}
+                                        {{ rider_reg.phone|national_phone }}
                                     </a>
                                 </td>
                                 <td class="emergency-info small text-muted">
