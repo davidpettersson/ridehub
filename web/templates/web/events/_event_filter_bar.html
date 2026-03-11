@@ -4,7 +4,7 @@
           hx-select="#events-container > *"
           hx-push-url="true"
           hx-trigger="filtertrigger"
-          x-data="{ query: '{{ active_query }}' }">
+          x-data="{ query: '{{ active_query|escapejs }}' }">
         <div class="position-relative">
             <i class="bi bi-search position-absolute text-muted" style="left: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none;"></i>
             <input type="text"
