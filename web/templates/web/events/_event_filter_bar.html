@@ -1,0 +1,42 @@
+<div x-data="{
+    activeProgram: '{{ active_program_id }}',
+    toggleProgram(id) {
+        this.activeProgram = this.activeProgram === id ? '' : id;
+        this.$nextTick(() => htmx.trigger(this.$refs.filterForm, 'filtertrigger'));
+    }
+}" class="mb-4">
+    <form x-ref="filterForm"
+          hx-get="{{ request.path }}"
+          hx-target="#events-container"
+          hx-select="#events-container"
+          hx-push-url="true"
+          hx-trigger="filtertrigger">
+        <input type="hidden" name="program" :value="activeProgram">
+        <div class="position-relative mb-2">
+            <i class="bi bi-search position-absolute text-muted" style="left: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none;"></i>
+            <input type="text"
+                   name="q"
+                   value="{{ active_query }}"
+                   placeholder="Search events..."
+                   class="form-control"
+                   style="padding-left: 2.25rem;"
+                   autocomplete="off"
+                   @input.debounce.400ms="htmx.trigger($refs.filterForm, 'filtertrigger')">
+        </div>
+        {% if programs %}
+        <div class="d-flex gap-2 pb-1" style="overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;">
+            {% for program in programs %}
+            <button type="button"
+                    data-color="{{ program.color|default:'#6c757d' }}"
+                    @click="toggleProgram('{{ program.id }}')"
+                    :style="activeProgram === '{{ program.id }}'
+                        ? 'background-color:' + $el.dataset.color + '; border-color:' + $el.dataset.color + '; color:white; white-space:nowrap;'
+                        : 'background-color:' + $el.dataset.color + '1A; border-color:transparent; white-space:nowrap;'"
+                    class="btn btn-sm rounded-pill flex-shrink-0">
+                {% if program.emoji %}{{ program.emoji }} {% endif %}{{ program.name }}
+            </button>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </form>
+</div>
