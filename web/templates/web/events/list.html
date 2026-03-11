@@ -64,7 +64,7 @@
         </div>
         {% empty %}
         <div class="py-5 text-center">
-            {% if active_query or active_program_id %}
+            {% if active_query %}
             <p class="text-muted mb-2">No events match your filters.</p>
             <a href="{% url 'upcoming' %}" class="btn btn-outline-secondary btn-sm">Clear filters</a>
             {% else %}

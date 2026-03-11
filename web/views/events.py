@@ -1,7 +1,6 @@
 import calendar
 from datetime import datetime, date, timedelta
 from itertools import groupby
-from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -11,7 +10,7 @@ from django.utils import timezone
 
 from waffle import flag_is_active
 
-from backoffice.models import Event, Registration, Program
+from backoffice.models import Event, Registration
 from backoffice.services.event_service import EventService
 from backoffice.services.registration_service import RegistrationService
 
@@ -154,30 +153,18 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 
 def _get_filter_params(request):
     if not flag_is_active(request, 'event_filter_and_search'):
-        return False, [], '', None, '', ''
+        return False, ''
 
     active_query = request.GET.get('q', '').strip()
-    raw = request.GET.get('program', '').strip()
-    program_id = int(raw) if raw.isdigit() else None
-    active_program_id = str(program_id) if program_id else ''
-    programs = list(Program.objects.filter(archived=False).order_by('name'))
-
-    params = {}
-    if active_query:
-        params['q'] = active_query
-    if program_id:
-        params['program'] = program_id
-    filter_query_string = ('?' + urlencode(params)) if params else ''
-
-    return True, programs, active_query, program_id, active_program_id, filter_query_string
+    return True, active_query
 
 
 def event_list(request: HttpRequest) -> HttpResponse:
     request.session['preferred_events_view'] = 'upcoming'
 
-    filter_enabled, programs, active_query, program_id, active_program_id, filter_query_string = _get_filter_params(request)
+    filter_enabled, active_query = _get_filter_params(request)
 
-    events = list(EventService().fetch_upcoming_events(program_id=program_id, query=active_query))
+    events = list(EventService().fetch_upcoming_events(query=active_query))
     starts_at_date = lambda event: timezone.localtime(event.starts_at).date()
 
     events_by_date = [
@@ -199,9 +186,7 @@ def event_list(request: HttpRequest) -> HttpResponse:
         'tomorrow': tomorrow,
         'registered_event_ids': registered_event_ids,
         'filter_enabled': filter_enabled,
-        'programs': programs,
         'active_query': active_query,
-        'active_program_id': active_program_id,
     }
 
     if flag_is_active(request, 'upcoming_dense_view'):
@@ -294,9 +279,9 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
     request.session['calendar_selected_year'] = year
     request.session['calendar_selected_month'] = month
 
-    filter_enabled, programs, active_query, program_id, active_program_id, filter_query_string = _get_filter_params(request)
+    filter_enabled, active_query = _get_filter_params(request)
 
-    events = list(EventService().fetch_events_for_month(year, month, program_id=program_id, query=active_query))
+    events = list(EventService().fetch_events_for_month(year, month, query=active_query))
 
     events_by_date = {}
     for event in events:
@@ -339,10 +324,7 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
         'today': date.today(),
         'registered_event_ids': registered_event_ids,
         'filter_enabled': filter_enabled,
-        'programs': programs,
         'active_query': active_query,
-        'active_program_id': active_program_id,
-        'filter_query_string': filter_query_string,
     }
 
     return render(request, 'web/events/calendar.html', context)
