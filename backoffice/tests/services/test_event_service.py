@@ -382,7 +382,7 @@ class DuplicateEventTestCase(TestCase):
 
         self.assertEqual(new_event.state, Event.STATE_DRAFT)
 
-    def test_duplicate_event_preserves_cancelled_state(self):
+    def test_duplicate_event_defaults_cancelled_to_draft(self):
         self.source_event.cancel()
         self.source_event.save()
 
@@ -392,7 +392,21 @@ class DuplicateEventTestCase(TestCase):
             self.source_event, "New Event", new_date
         )
 
-        self.assertEqual(new_event.state, Event.STATE_CANCELLED)
+        self.assertEqual(new_event.state, Event.STATE_DRAFT)
+
+    def test_duplicate_event_defaults_archived_to_draft(self):
+        self.source_event.cancel()
+        self.source_event.save()
+        self.source_event.archive()
+        self.source_event.save()
+
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
+
+        new_event = self.service.duplicate_event(
+            self.source_event, "New Event", new_date
+        )
+
+        self.assertEqual(new_event.state, Event.STATE_DRAFT)
 
     def test_duplicate_event_inherits_same_times(self):
         new_date = self.base_start_time.date() + datetime.timedelta(days=7)

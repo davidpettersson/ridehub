@@ -62,10 +62,15 @@ class EventService:
             else None
         )
 
+        if source_event.state in (Event.STATE_DRAFT, Event.STATE_ANNOUNCED, Event.STATE_LIVE):
+            new_state = source_event.state
+        else:
+            new_state = Event.STATE_DRAFT
+
         new_event = Event.objects.create(
             program=source_event.program,
             name=new_name,
-            state=source_event.state,
+            state=new_state,
             location=source_event.location,
             location_url=source_event.location_url,
             starts_at=new_starts_at,
