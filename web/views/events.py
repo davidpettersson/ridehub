@@ -153,16 +153,17 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 
 def _get_filter_params(request):
     if not flag_is_active(request, 'event_filter_and_search'):
-        return False, ''
+        return False, '', ''
 
     active_query = request.GET.get('q', '').strip()
-    return True, active_query
+    filter_query_string = ('?q=' + active_query) if active_query else ''
+    return True, active_query, filter_query_string
 
 
 def event_list(request: HttpRequest) -> HttpResponse:
     request.session['preferred_events_view'] = 'upcoming'
 
-    filter_enabled, active_query = _get_filter_params(request)
+    filter_enabled, active_query, _ = _get_filter_params(request)
 
     events = list(EventService().fetch_upcoming_events(query=active_query))
     starts_at_date = lambda event: timezone.localtime(event.starts_at).date()
@@ -279,7 +280,7 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
     request.session['calendar_selected_year'] = year
     request.session['calendar_selected_month'] = month
 
-    filter_enabled, active_query = _get_filter_params(request)
+    filter_enabled, active_query, filter_query_string = _get_filter_params(request)
 
     events = list(EventService().fetch_events_for_month(year, month, query=active_query))
 
@@ -325,6 +326,7 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
         'registered_event_ids': registered_event_ids,
         'filter_enabled': filter_enabled,
         'active_query': active_query,
+        'filter_query_string': filter_query_string,
     }
 
     return render(request, 'web/events/calendar.html', context)
