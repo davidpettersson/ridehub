@@ -18,7 +18,7 @@
             <button type="button"
                     x-show="query"
                     x-cloak
-                    @click="query = ''; htmx.trigger($el.closest('form'), 'filtertrigger')"
+                    @click="query = ''; $nextTick(() => htmx.trigger($el.closest('form'), 'filtertrigger'))"
                     class="btn position-absolute border-0 p-0 text-muted"
                     style="right: 0.75rem; top: 50%; transform: translateY(-50%);"
                     aria-label="Clear search">
