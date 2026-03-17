@@ -9,6 +9,7 @@ from web.views.profile import profile, registration_withdraw, profile_membership
 from web.views.registrations import registration_create, registration_submitted, membership_number_capture
 from web.views.rides import ride_speed_ranges
 from web.views.reviews import review_2025
+from web.views.robots import robots_txt
 
 urlpatterns = [
     path("login/", LoginFormView.as_view(), name="login_form"),
@@ -31,5 +32,6 @@ urlpatterns = [
     path('profile', profile, name='profile'),
     path('profile/membership-number', profile_membership_number, name='profile_membership_number'),
     path('reviews/2025', review_2025, name='review_2025'),
+    path('robots.txt', robots_txt, name='robots_txt'),
     path('', events_redirect, name='index'),
 ]
