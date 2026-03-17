@@ -28,4 +28,5 @@ dependencies = [
     "returns~=0.25.0",
     "sentry-sdk[django]~=2.50.0",
     "whitenoise~=6.11.0",
+    "nh3>=0.3.3",
 ]
