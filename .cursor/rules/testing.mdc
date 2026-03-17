@@ -1,7 +1,0 @@
----
-description: Guidance on when to add test cases
-globs: **/*.py
-alwaysApply: true
----
- - Use the arrange-act-assert pattern for all tests
- 

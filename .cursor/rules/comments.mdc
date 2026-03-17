@@ -1,7 +1,0 @@
----
-description: When and how to comment and create docstrings
-globs: **/*.*
-alwaysApply: true
----
-- Do not create docstrings
-- Do not add comments to the code

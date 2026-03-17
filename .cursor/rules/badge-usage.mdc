@@ -1,6 +1,0 @@
----
-description: When and how to use badges to convey information
-globs: **/*.html
-alwaysApply: true
----
- - There should be no badges in the application. 
