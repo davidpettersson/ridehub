@@ -7,6 +7,20 @@ from django.db import models
 from django.utils import timezone
 from django_fsm import FSMField, transition
 from django_prose_editor.fields import ProseEditorField
+
+PROSE_EDITOR_CONFIG = {
+    "extensions": {
+        "Bold": True,
+        "Italic": True,
+        "Link": True,
+        "Heading": {"levels": [1, 2, 3]},
+        "BulletList": True,
+        "OrderedList": True,
+        "ListItem": True,
+        "Blockquote": True,
+        "HorizontalRule": True,
+    }
+}
 from phonenumber_field.modelfields import PhoneNumberField
 
 
@@ -116,6 +130,8 @@ class Event(models.Model):
     )
 
     description = ProseEditorField(
+        config=PROSE_EDITOR_CONFIG,
+        sanitize=True,
         help_text='Description of the event to share with members.'
     )
 
@@ -348,6 +364,8 @@ class Ride(models.Model):
     )
 
     description = ProseEditorField(
+        config=PROSE_EDITOR_CONFIG,
+        sanitize=True,
         blank=True,
     )
 
@@ -623,6 +641,8 @@ class Announcement(models.Model):
         help_text='Name of the announcement. Will precede the body of the announcement.', )
 
     text = ProseEditorField(
+        config=PROSE_EDITOR_CONFIG,
+        sanitize=True,
         help_text='Body of the announcement. Keep formatting to a minimum as there is limited space on the page.'
     )
 
