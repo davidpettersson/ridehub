@@ -1,8 +1,8 @@
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.urls import reverse
 
 
-def robots_txt(request):
+def robots_txt(request: HttpRequest) -> HttpResponse:
     registrations_path = reverse("riders_list", kwargs={"event_id": 0})
     registrations_pattern = registrations_path.replace("0", "*")
 
