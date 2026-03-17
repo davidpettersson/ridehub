@@ -5,10 +5,10 @@ paths:
 
 # Testing Guidelines
 
-- Use the arrange-act-assert pattern for all tests
-  - Arrange: set up test data and conditions
-  - Act: execute the functionality being tested
-  - Assert: verify the expected outcomes
-- Follow consistent naming conventions for test methods
-- Group related tests in appropriate test classes
-- Ensure tests are independent and can run in any order
+- Use Django `TestCase` for all tests
+- Follow arrange-act-assert with explicit `# Arrange`, `# Act`, `# Assert` comments
+- Create test data with `Model.objects.create()` in `setUp()` — no factory libraries
+- Use base test classes with shared `setUp()` and `_create_*` helpers for common setup
+- Name methods `test_<descriptive_phrase>`, classes `<Feature>TestCase` or `<Feature>Tests`
+- Organize tests by layer: `models/`, `services/`, `views/`, `templates/`
+- Tests must be independent and runnable in any order

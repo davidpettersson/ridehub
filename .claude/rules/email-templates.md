@@ -5,8 +5,8 @@ paths:
 
 # Email Template Guidelines
 
-- Every email template in HTML has a corresponding .txt version
-- Edits must primarily be made to the HTML version, then update the adjacent .txt file
-- If an email has a hyperlink, always create a unit test to ensure it is correct
-- Ensure hyperlinks use a base URL — no relative URLs
-- Test email rendering in both HTML and text formats
+- Every HTML email template has a corresponding .txt version
+- Edit the HTML version first, then update the adjacent .txt file
+- HTML templates extend `email/_base_email.html` using blocks: `title`, `content`, `footer`, `extra_css`
+- Build all URLs with `{{ base_url }}{% url 'name' %}` — never use relative URLs
+- When adding a hyperlink, add a test in `web/tests/templates/test_email_templates.py` using the `assert_all_links_absolute` helper from `BaseEmailTestCase`
