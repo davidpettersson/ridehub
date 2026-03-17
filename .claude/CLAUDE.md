@@ -1,26 +1,27 @@
-# RideHub Project Guidelines
+# RideHub
 
-This directory contains project-specific guidelines and conventions for the RideHub application.
+Django web application for managing cycling events, deployed to Heroku.
 
-## Architecture & Code Organization
-- [Architecture Guidelines](architecture.md) - Service-oriented architecture and business logic organization
-- [Data Validation](data-validation.md) - Model validation requirements and data integrity
+## Architecture
+- All models and business logic belong in the `backoffice` application
+- Use service classes for business logic, not fat models
+- Services organized by domain (events, registrations, users, etc.)
+- Keep models lightweight and focused on data structure
+- Always create model validations to ensure data integrity
+- If the correct validation approach is unclear, ask the user
 
-## Development Standards
-- [Code Style](code-style.md) - Commenting, documentation, and UI design patterns
-- [Testing Guidelines](testing.md) - Test structure and organization patterns
+## Code Style
+- No comments in code
+- No docstrings
+- Keep code self-documenting through clear naming
+- No badges in UI templates
 
-## Frontend & User Experience  
-- [Frontend & Styling](frontend-styling.md) - CSS framework migration and mobile-first design principles
+## Development Environment
+- Development is on Windows; production is Linux on Heroku
+- Always use `uv` to run commands
+- Run tests: `uv run python manage.py test`
 
-## Environment & Templates
-- [Development Environment](development-environment.md) - Windows-focused development setup
-- [Email Templates](email-templates.md) - Email template maintenance and testing
-
-## Key Project Conventions
-- Business logic resides in the `backoffice` application
-- Use service classes instead of fat models
-- No comments or docstrings in code
-- Mobile-first responsive design
-- Arrange-act-assert testing pattern
-- Bootstrap CSS with global styling.css file
+## Frontend
+- Mobile-first responsive design for all pages
+- Bootstrap CSS with global stylesheet at `web/static/web/styling.css`
+- Migrating from Tailwind to Bootstrap; let them co-exist during transition
