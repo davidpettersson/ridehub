@@ -50,10 +50,11 @@ class RegistrationTable(tables.Table):
     def render_speed_range_preference(self, value):
         return format_html('<span class="small text-muted">{}</span>', value)
 
-    def render_ride_leader_preference(self, value):
+    def render_ride_leader_preference(self, value, record):
         if value == Registration.RideLeaderPreference.YES:
             return format_html('<span class="badge bg-primary">Yes</span>')
-        return format_html('<span class="small text-muted">{}</span>', value)
+        display = record.get_ride_leader_preference_display()
+        return format_html('<span class="small text-muted">{}</span>', display)
 
     def render_emergency_contact_name(self, value):
         return format_html('<span class="small text-muted">{}</span>', value)
