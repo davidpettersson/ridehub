@@ -15,15 +15,16 @@ def ride_speed_ranges(request: HttpRequest, ride_id: int) -> HttpResponse:
 
     ride = get_object_or_404(Ride, id=ride_id)
     speed_ranges = ride.speed_ranges.all()
+    selected = request.GET.get('selected', '')
 
-    # Create a select element with the speed ranges
     html = f'<select name="speed_range_preference" id="id_speed_range_preference" class="form-select">'
     if not speed_ranges:
         html += '<option value="">No speed ranges available</option>'
     else:
         html += '<option value="">Select a speed range</option>'
         for speed_range in speed_ranges:
-            html += f'<option value="{speed_range.id}">{speed_range}</option>'
+            is_selected = 'selected' if str(speed_range.id) == selected else ''
+            html += f'<option value="{speed_range.id}" {is_selected}>{speed_range}</option>'
     html += '</select>'
 
     return HttpResponse(html)

@@ -107,14 +107,19 @@
         const speedRangeContainer = document.getElementById('speed-range-container');
 
         if (rideSelect && speedRangeContainer) {
-            function loadSpeedRanges() {
+            const initialSpeedRange = '{{ form.speed_range_preference.value|default:"" }}';
+
+            function loadSpeedRanges(preserveSelection) {
                 const rideId = rideSelect.value || 0;
-                const url = '/rides/' + rideId + '/speed-ranges';
+                let url = '/rides/' + rideId + '/speed-ranges';
+                if (preserveSelection && initialSpeedRange) {
+                    url += '?selected=' + initialSpeedRange;
+                }
                 htmx.ajax('GET', url, {target: speedRangeContainer});
             }
 
-            rideSelect.addEventListener('change', loadSpeedRanges);
-            loadSpeedRanges();
+            rideSelect.addEventListener('change', function() { loadSpeedRanges(false); });
+            loadSpeedRanges(true);
         }
     });
 </script>
