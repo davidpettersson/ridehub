@@ -1,16 +1,38 @@
 {% extends 'web/_base_bootstrap.html' %}
 {% load django_tables2 %}
-{% block title %}Manage registrations — {{ event.name }}{% endblock %}
+{% block title %}Manage {{ event.name }}{% endblock %}
 {% block content %}
+<style>
+    .table thead th {
+        font-weight: 500;
+        font-size: 0.875rem;
+        border-bottom-width: 1px;
+    }
+    .table thead th a {
+        color: inherit;
+        text-decoration: none;
+    }
+    .table thead th a:hover {
+        color: inherit;
+    }
+    .table thead th.asc a::after {
+        content: " \2191";
+        opacity: 0.6;
+    }
+    .table thead th.desc a::after {
+        content: " \2193";
+        opacity: 0.6;
+    }
+    .table thead th.orderable:not(.asc):not(.desc) a::after {
+        content: " \2195";
+        opacity: 0.25;
+    }
+</style>
 <div class="mb-4">
     <div class="mb-4 d-flex flex-wrap gap-2 align-items-center">
-        <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
-            <i class="bi bi-arrow-left me-2"></i> Back to event
-        </a>
         <a href="{% url 'riders_list' event.id %}" class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
-            <i class="bi bi-people me-2"></i> Public rider list
+            <i class="bi bi-arrow-left me-2"></i> Back to event registrations
         </a>
-        <span class="text-muted mx-1">|</span>
         <a href="{% url 'staff_registration_add' event.id %}" class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center">
             <i class="bi bi-plus-circle me-2"></i> Add registration
         </a>
@@ -20,27 +42,8 @@
         <div class="text-muted small mb-2">
             {{ event.starts_at|date:"l, F j" }} · {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% endif %}
         </div>
-        <h1 class="fs-2 fw-bold mb-2">Manage registrations</h1>
+        <h1 class="fs-2 fw-bold mb-2">Manage {{ event.name }}</h1>
         <span class="badge fw-normal text-muted" style="font-size: 0.85rem; background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
-    </div>
-
-    <div class="d-flex flex-wrap gap-2 mb-3">
-        {% if all_emails %}
-        <button class="btn btn-outline-info btn-sm rounded-pill d-inline-flex align-items-center copy-emails-btn" data-emails="{{ all_emails }}" data-type="all">
-            <i class="bi bi-clipboard me-2"></i>
-            Copy all rider emails
-        </button>
-        {% endif %}
-        {% if ride_leader_emails %}
-        <button class="btn btn-outline-info btn-sm rounded-pill d-inline-flex align-items-center copy-emails-btn" data-emails="{{ ride_leader_emails }}" data-type="leaders">
-            <i class="bi bi-clipboard me-2"></i>
-            Copy ride leader emails
-        </button>
-        {% endif %}
-    </div>
-    <div id="copy-success-message" class="alert alert-success mb-3 small d-none" role="alert">
-        <i class="bi bi-check-circle me-2"></i>
-        <span id="copy-success-text"></span>
     </div>
 
     <div class="card shadow-sm mb-4">
@@ -60,11 +63,6 @@
         </div>
     </div>
 
-    <div class="d-flex gap-3 mb-3 small text-muted">
-        <span><strong>{{ confirmed_count }}</strong> confirmed</span>
-        <span><strong>{{ total_count }}</strong> total</span>
-    </div>
-
     <div class="card shadow-sm">
         <div class="p-3">
             <div class="overflow-auto">
@@ -73,21 +71,4 @@
         </div>
     </div>
 </div>
-
-<script>
-document.querySelectorAll('.copy-emails-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        var emails = this.getAttribute('data-emails');
-        var type = this.getAttribute('data-type');
-        navigator.clipboard.writeText(emails).then(function() {
-            var count = emails.split(',').length;
-            var label = type === 'leaders' ? 'ride leader' : 'rider';
-            var msg = document.getElementById('copy-success-message');
-            document.getElementById('copy-success-text').textContent = 'Copied ' + count + ' ' + label + ' email(s) to clipboard';
-            msg.classList.remove('d-none');
-            setTimeout(function() { msg.classList.add('d-none'); }, 3000);
-        });
-    });
-});
-</script>
 {% endblock %}

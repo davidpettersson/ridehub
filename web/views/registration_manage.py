@@ -1,6 +1,7 @@
 import logging
 
 from django.contrib.auth.decorators import login_required
+from django_tables2 import RequestConfig
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -27,7 +28,8 @@ def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpRespo
     event = get_object_or_404(Event, id=event_id)
 
     registrations = Registration.objects.filter(
-        event_id=event_id
+        event_id=event_id,
+        state=Registration.STATE_CONFIRMED,
     ).select_related(
         'ride', 'speed_range_preference', 'user'
     ).order_by(
@@ -40,27 +42,12 @@ def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpRespo
     )
 
     table = RegistrationTable(registration_filter.qs)
-    table.paginate(page=request.GET.get('page', 1), per_page=100)
-
-    confirmed = registration_filter.qs.filter(state=Registration.STATE_CONFIRMED)
-
-    all_emails = ', '.join(sorted(set(
-        r.email for r in confirmed if r.email
-    )))
-
-    ride_leader_emails = ', '.join(sorted(set(
-        r.email for r in confirmed
-        if r.email and r.ride_leader_preference == Registration.RideLeaderPreference.YES
-    )))
+    RequestConfig(request, paginate=False).configure(table)
 
     context = {
         'event': event,
         'table': table,
         'filter': registration_filter,
-        'all_emails': all_emails,
-        'ride_leader_emails': ride_leader_emails,
-        'confirmed_count': confirmed.count(),
-        'total_count': registration_filter.qs.count(),
     }
 
     return render(request, 'web/events/registrations_manage.html', context)

@@ -11,11 +11,6 @@ class RegistrationFilter(django_filters.FilterSet):
         label="Search",
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Name or email'}),
     )
-    state = django_filters.ChoiceFilter(
-        choices=Registration.STATE_CHOICES,
-        label="State",
-        widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
-    )
     ride = django_filters.ModelChoiceFilter(
         queryset=Ride.objects.none(),
         label="Ride",
@@ -29,7 +24,7 @@ class RegistrationFilter(django_filters.FilterSet):
 
     class Meta:
         model = Registration
-        fields = ['state', 'ride', 'ride_leader_preference']
+        fields = ['ride', 'ride_leader_preference']
 
     def __init__(self, *args, event=None, **kwargs):
         super().__init__(*args, **kwargs)

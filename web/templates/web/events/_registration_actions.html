@@ -1,13 +1,13 @@
 {% load django_tables2 %}
 <div class="d-flex gap-1">
-    <a href="{% url 'staff_registration_edit' record.event_id record.id %}" class="btn btn-outline-primary btn-sm rounded-pill">
-        <i class="bi bi-pencil"></i>
+    <a href="{% url 'staff_registration_edit' record.event_id record.id %}" class="text-primary" title="Edit">
+        <i class="bi bi-pencil-fill"></i>
     </a>
     {% if record.state == "confirmed" %}
     <form method="post" action="{% url 'staff_registration_withdraw' record.event_id record.id %}" style="display:inline" onsubmit="return confirm('Withdraw this registration?')">
         {% csrf_token %}
-        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill">
-            <i class="bi bi-x-circle"></i>
+        <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Withdraw">
+            <i class="bi bi-x-circle-fill"></i>
         </button>
     </form>
     {% endif %}

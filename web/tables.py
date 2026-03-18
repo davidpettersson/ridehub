@@ -2,16 +2,16 @@ import django_tables2 as tables
 from django.utils.html import format_html
 
 from backoffice.models import Registration
+from web.templatetags.phone_filters import national_phone
 
 
 class RegistrationTable(tables.Table):
     name = tables.Column(order_by=('last_name', 'first_name'))
-    email = tables.EmailColumn()
+    email = tables.Column()
     phone = tables.Column()
     ride = tables.Column()
     speed_range_preference = tables.Column(verbose_name="Speed")
     ride_leader_preference = tables.Column(verbose_name="Ride leader")
-    state = tables.Column()
     emergency_contact_name = tables.Column(verbose_name="Emergency contact")
     emergency_contact_phone = tables.Column(verbose_name="Emergency phone")
     actions = tables.TemplateColumn(
@@ -24,24 +24,40 @@ class RegistrationTable(tables.Table):
         model = Registration
         fields = (
             'name', 'email', 'phone', 'ride', 'speed_range_preference',
-            'ride_leader_preference', 'state', 'emergency_contact_name',
+            'ride_leader_preference', 'emergency_contact_name',
             'emergency_contact_phone', 'actions',
         )
         attrs = {
-            'class': 'table table-sm table-hover',
-            'thead': {'class': 'table-light'},
+            'class': 'table',
+            'th': {'class': 'small fw-medium'},
         }
+
+    def render_name(self, value, record):
+        return format_html(
+            '<span class="small fw-medium">{}</span>', value
+        )
+
+    def render_email(self, value):
+        return format_html('<span class="small text-muted">{}</span>', value)
+
+    def render_phone(self, value):
+        formatted = national_phone(value)
+        return format_html('<span class="small text-muted">{}</span>', formatted)
+
+    def render_ride(self, value):
+        return format_html('<span class="small text-muted">{}</span>', value)
+
+    def render_speed_range_preference(self, value):
+        return format_html('<span class="small text-muted">{}</span>', value)
 
     def render_ride_leader_preference(self, value):
         if value == Registration.RideLeaderPreference.YES:
             return format_html('<span class="badge bg-primary">Yes</span>')
-        return value
+        return format_html('<span class="small text-muted">{}</span>', value)
 
-    def render_state(self, value):
-        badge_classes = {
-            Registration.STATE_CONFIRMED: 'bg-success',
-            Registration.STATE_WITHDRAWN: 'bg-danger',
-            Registration.STATE_SUBMITTED: 'bg-warning text-dark',
-        }
-        css = badge_classes.get(value, 'bg-secondary')
-        return format_html('<span class="badge {}">{}</span>', css, value.title())
+    def render_emergency_contact_name(self, value):
+        return format_html('<span class="small text-muted">{}</span>', value)
+
+    def render_emergency_contact_phone(self, value):
+        formatted = national_phone(value)
+        return format_html('<span class="small text-muted">{}</span>', formatted)

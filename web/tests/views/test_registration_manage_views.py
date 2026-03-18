@@ -92,10 +92,10 @@ class ManagePageAccessTests(BaseManageTestCase):
         # Assert
         self.assertEqual(response.status_code, 302)
 
-    def test_manage_page_shows_all_registration_states(self):
+    def test_manage_page_shows_only_confirmed_registrations(self):
         # Arrange
         self.client.login(username='staff@example.com', password='password123')
-        confirmed_reg = self._create_confirmed_registration(
+        self._create_confirmed_registration(
             self.regular_user, self.ride, self.speed_range
         )
 
@@ -115,7 +115,7 @@ class ManagePageAccessTests(BaseManageTestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Regular')
-        self.assertContains(response, 'Withdrawn')
+        self.assertNotContains(response, 'Withdrawn')
 
 
 class StaffWithdrawTests(BaseManageTestCase):
