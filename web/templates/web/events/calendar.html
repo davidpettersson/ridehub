@@ -73,14 +73,20 @@
                                                         <a href="{% url 'event_detail' event.id %}" class="text-decoration-none">
                                                             {% if event.starts_at.date < today %}
                                                             <div class="p-1 bg-white border rounded text-muted calendar-event"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %} title="{{ event.name }} - {{ event.starts_at|date:'g:i A'|lower|cut:'.m.' }}{% if event.ends_at %} - {{ event.ends_at|date:'g:i A'|lower|cut:'.m.' }}{% endif %}">
+                                                                {% if user.is_authenticated and event.id in registered_event_ids %}
+                                                                <div class="registered-indicator registered-indicator-sm"><i class="bi bi-check-lg" aria-hidden="true"></i><span class="visually-hidden">Registered</span></div>
+                                                                {% endif %}
                                                                 <div class="fw-medium text-truncate" style="font-size: 0.65rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %}</div>
-                                                                <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}{% if user.is_authenticated and event.id in registered_event_ids %}<span class="text-success" style="font-size: 0.65rem;" aria-hidden="true">✓</span><span class="visually-hidden">Registered</span>{% endif %}</div>
+                                                                <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}</div>
                                                                 <div class="text-truncate"><span class="badge fw-normal text-muted" style="font-size: 0.6rem; background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}</span></div>
                                                             </div>
                                                             {% else %}
                                                             <div class="p-1 bg-white border rounded text-dark calendar-event"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %} title="{{ event.name }} - {{ event.starts_at|date:'g:i A'|lower|cut:'.m.' }}{% if event.ends_at %} - {{ event.ends_at|date:'g:i A'|lower|cut:'.m.' }}{% endif %}">
+                                                                {% if user.is_authenticated and event.id in registered_event_ids %}
+                                                                <div class="registered-indicator registered-indicator-sm"><i class="bi bi-check-lg" aria-hidden="true"></i><span class="visually-hidden">Registered</span></div>
+                                                                {% endif %}
                                                                 <div class="fw-medium text-truncate" style="font-size: 0.65rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %}</div>
-                                                                <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}{% if user.is_authenticated and event.id in registered_event_ids %}<span class="text-success" style="font-size: 0.65rem;" aria-hidden="true">✓</span><span class="visually-hidden">Registered</span>{% endif %}</div>
+                                                                <div class="text-truncate" style="font-size: 0.75rem;">{{ event.name }}</div>
                                                                 <div class="text-truncate"><span class="badge fw-normal text-muted" style="font-size: 0.6rem; background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}</span></div>
                                                             </div>
                                                             {% endif %}
@@ -122,16 +128,19 @@
             {% for event_date, events in events_by_date.items %}
             <div class="d-md-none" x-cloak x-show="selectedDay === {{ event_date.day }}">
                 {% for event in events %}
-                <a href="{% url 'event_detail' event.id %}" class="calendar-day-detail text-decoration-none d-flex align-items-center gap-2">
+                <a href="{% url 'event_detail' event.id %}" class="calendar-day-detail text-decoration-none d-flex align-items-center gap-2 position-relative overflow-hidden">
+                    {% if user.is_authenticated and event.id in registered_event_ids %}
+                    <div class="registered-indicator">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        <span class="visually-hidden">Registered</span>
+                    </div>
+                    {% endif %}
                     <span class="calendar-dot-detail" style="background-color: {{ event.program.color|default:'#6c757d' }};"></span>
                     <div class="flex-grow-1" style="min-width: 0;">
                         <div class="fw-medium{% if event_date < today %} text-muted{% else %} text-dark{% endif %}" style="font-size: 0.875rem;">{{ event.name }}</div>
                         <div class="text-muted" style="font-size: 0.75rem;">{{ event.starts_at|date:"g:i A"|lower|cut:".m." }}{% if event.ends_at %} – {{ event.ends_at|date:"g:i A"|lower|cut:".m." }}{% endif %} · {{ event.program.name }}</div>
                     </div>
-                    {% if user.is_authenticated and event.id in registered_event_ids %}
-                    <i class="bi bi-check-circle-fill text-success" aria-hidden="true"></i>
-                    <span class="visually-hidden">Registered</span>
-                    {% else %}
+                    {% if not user.is_authenticated or event.id not in registered_event_ids %}
                     <i class="bi bi-chevron-right text-muted" aria-hidden="true"></i>
                     {% endif %}
                 </a>
