@@ -1,10 +1,8 @@
-import logging
-
 from django.contrib.auth.decorators import login_required
-from django_tables2 import RequestConfig
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django_tables2 import RequestConfig
 
 from backoffice.models import Event, Registration
 from backoffice.services.registration_service import RegistrationDetail, RegistrationService
@@ -12,8 +10,6 @@ from backoffice.services.user_service import UserDetail
 from web.filters import RegistrationFilter
 from web.forms import StaffRegistrationForm
 from web.tables import RegistrationTable
-
-logger = logging.getLogger(__name__)
 
 
 def _require_staff(user):
