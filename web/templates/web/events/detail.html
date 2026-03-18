@@ -9,19 +9,12 @@
                 <i class="bi bi-arrow-left me-2"></i> Back to events
             </a>
             {% if user.is_staff %}
-            <a href="{% url 'admin:backoffice_event_change' event.id %}" class="btn btn-outline-primary btn-sm rounded-pill d-inline-flex align-items-center">
-                <i class="bi bi-pencil me-2"></i> Edit
+            <a href="{% url 'admin:backoffice_event_change' event.id %}" class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center">
+                <i class="bi bi-pencil me-2"></i> Edit event
             </a>
-            {% if not event.cancelled %}
-            <form method="post" action="{% url 'admin:backoffice_event_changelist' %}" class="d-inline">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="cancel_event">
-                <input type="hidden" name="_selected_action" value="{{ event.id }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill d-inline-flex align-items-center">
-                    <i class="bi bi-x-circle me-2"></i> Cancel
-                </button>
-            </form>
-            {% endif %}
+            <a href="{% url 'event_registrations_manage' event.id %}" class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center">
+                <i class="bi bi-people me-2"></i> Manage registrations
+            </a>
             {% endif %}
         </div>
 

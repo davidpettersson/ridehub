@@ -1,11 +1,15 @@
 from django.urls import path
 
 from web.views.events import event_detail, event_list, event_registrations, \
-    event_registrations_full, calendar_view, events_redirect
+    calendar_view, events_redirect
 from web.views.events_ical import EventFeed
 from web.views.helpers import changes_email_addresses
 from web.views.login import LoginFormView, logout_view, CustomLoginView
 from web.views.profile import profile, registration_withdraw, profile_membership_number
+from web.views.registration_manage import (
+    event_registrations_manage, staff_registration_add,
+    staff_registration_edit, staff_registration_withdraw,
+)
 from web.views.registrations import registration_create, registration_submitted, membership_number_capture
 from web.views.rides import ride_speed_ranges
 from web.views.reviews import review_2025
@@ -20,7 +24,10 @@ urlpatterns = [
     path('calendar/<int:year>/<int:month>', calendar_view, name='calendar_month'),
     path('upcoming', event_list, name='upcoming'),
     path('events', events_redirect, name='events'),
-    path('events/<int:event_id>/registrations/full', event_registrations_full, name='event_registrations_full'),
+    path('events/<int:event_id>/registrations/manage', event_registrations_manage, name='event_registrations_manage'),
+    path('events/<int:event_id>/registrations/add', staff_registration_add, name='staff_registration_add'),
+    path('events/<int:event_id>/registrations/<int:registration_id>/edit', staff_registration_edit, name='staff_registration_edit'),
+    path('events/<int:event_id>/registrations/<int:registration_id>/withdraw', staff_registration_withdraw, name='staff_registration_withdraw'),
     path('events/<int:event_id>/registrations', event_registrations, name='riders_list'),
     path('events/<int:event_id>/registration', registration_create, name='registration_create'),
     path('events/<int:event_id>', event_detail, name='event_detail'),

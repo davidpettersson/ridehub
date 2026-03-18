@@ -3,8 +3,6 @@ from datetime import datetime, date, timedelta
 from itertools import groupby
 from urllib.parse import urlencode
 
-from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
@@ -245,22 +243,6 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
 
     return render(request, 'web/events/registrations.html', context=context)
 
-
-@login_required
-def event_registrations_full(request: HttpRequest, event_id: int) -> HttpResponse:
-    if not request.user.is_staff:
-        raise PermissionDenied("You must be a staff member to access this page.")
-
-    event = get_object_or_404(Event, id=event_id)
-
-    registrations = Registration.objects.filter(event_id=event_id).order_by('submitted_at')
-
-    context = {
-        'event': event,
-        'registrations': registrations
-    }
-
-    return render(request, 'web/events/registrations_full.html', context)
 
 
 def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> HttpResponse:
