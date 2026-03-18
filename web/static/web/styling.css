@@ -247,6 +247,36 @@ body {
   z-index: 1;
 }
 
+.registered-indicator {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  background-color: #198754;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  z-index: 2;
+}
+
+.registered-indicator i {
+  position: absolute;
+  top: 5px;
+  right: 4px;
+  color: white;
+  font-size: 0.7rem;
+}
+
+.registered-indicator.registered-indicator-sm {
+  width: 20px;
+  height: 20px;
+}
+
+.registered-indicator-sm i {
+  top: 2px;
+  right: 2px;
+  font-size: 0.45rem;
+}
+
 .event-card:hover {
   background-color: #f8f9fa !important;
   border-color: #6c757d !important;
@@ -271,7 +301,7 @@ body {
   z-index: 0;
 }
 
-.calendar-event > div {
+.calendar-event > div:not(.registered-indicator) {
   position: relative;
   z-index: 1;
 }
