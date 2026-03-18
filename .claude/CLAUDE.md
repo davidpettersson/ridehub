@@ -16,6 +16,9 @@ Django web application for managing cycling events, deployed to Heroku.
 - Keep code self-documenting through clear naming
 - No badges in UI templates
 
+## Git
+- Branch names: `<YYYYMMDD>-<description>`, e.g. `20260317-branch-naming-skill`
+
 ## Development Environment
 - Development is on Windows; production is Linux on Heroku
 - Always use `uv` to run commands
