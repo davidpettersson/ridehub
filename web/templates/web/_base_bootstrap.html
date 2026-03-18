@@ -11,6 +11,14 @@
 
     <!-- Early scripts -->
     <script defer data-domain="obcrides.ca" src="https://plausible.io/js/script.js"></script>
+    <script>
+      window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) };
+      plausible.init({
+        customProperties: {
+          logged_in: "{% if user.is_authenticated %}true{% else %}false{% endif %}"
+        }
+      });
+    </script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js" integrity="sha384-Akqfrbj/HpNVo8k11SXBb6TlBWmXXlYQrCSqEWmyKJe+hDm3Z/B2WVG4smwBkRVm" crossorigin="anonymous"></script>
 
