@@ -8,14 +8,14 @@
 
     <!-- Early scripts -->
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-    <script defer data-domain="obcrides.ca" src="https://plausible.io/js/script.js"></script>
+    <script async src="https://plausible.io/js/pa-XujvMCTT79u83iuv0Levp.js"></script>
     <script>
-      window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) };
+      window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
       plausible.init({
         customProperties: {
           logged_in: "{% if user.is_authenticated %}true{% else %}false{% endif %}"
         }
-      });
+      })
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
