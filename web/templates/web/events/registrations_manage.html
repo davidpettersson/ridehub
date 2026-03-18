@@ -30,8 +30,8 @@
 </style>
 <div class="mb-4">
     <div class="mb-4 d-flex flex-wrap gap-2 align-items-center">
-        <a href="{% url 'riders_list' event.id %}" class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
-            <i class="bi bi-arrow-left me-2"></i> Back to event registrations
+        <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
+            <i class="bi bi-arrow-left me-2"></i> Back to event
         </a>
         <a href="{% url 'staff_registration_add' event.id %}" class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center">
             <i class="bi bi-plus-circle me-2"></i> Add registration
