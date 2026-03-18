@@ -124,6 +124,100 @@ class RegistrationForm(forms.Form):
         return cleaned_data
 
 
+class StaffRegistrationForm(forms.Form):
+    first_name = forms.CharField(
+        max_length=128,
+        required=True,
+        min_length=2,
+    )
+
+    last_name = forms.CharField(
+        max_length=128,
+        required=True,
+        min_length=2,
+    )
+
+    email = forms.EmailField(
+        max_length=128,
+        required=True,
+    )
+
+    phone = PhoneNumberField(
+        region='CA',
+        label="Phone number",
+    )
+
+    def __init__(self, *args, **kwargs):
+        event: Event = kwargs.pop('event', None)
+        super().__init__(*args, **kwargs)
+
+        assert event
+        self.event = event
+
+        registration_service = RegistrationService()
+        requirements = registration_service.get_event_requirements(event)
+        rides = registration_service.get_rides_for_event(event)
+
+        if rides.exists():
+            self.fields['ride'] = forms.ModelChoiceField(
+                queryset=rides,
+                label="Ride",
+                required=True,
+            )
+
+            self.fields['speed_range_preference'] = forms.ModelChoiceField(
+                queryset=SpeedRange.objects.all(),
+                label="Speed range preference",
+                required=False,
+            )
+
+        if requirements.requires_emergency_contact:
+            self.fields['emergency_contact_name'] = forms.CharField(
+                max_length=128,
+                min_length=2,
+                label="Emergency contact name",
+                required=True,
+            )
+            self.fields['emergency_contact_phone'] = forms.CharField(
+                max_length=128,
+                min_length=2,
+                label="Emergency contact phone",
+                required=True,
+                widget=forms.TextInput(attrs={'type': 'tel'}),
+            )
+
+        if requirements.ride_leaders_wanted:
+            self.fields['ride_leader_preference'] = forms.ChoiceField(
+                choices=[
+                    (Registration.RideLeaderPreference.YES, 'Yes'),
+                    (Registration.RideLeaderPreference.NO, 'No'),
+                ],
+                label="Ride leader",
+                widget=forms.RadioSelect(),
+                required=True,
+            )
+
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.Select) and not isinstance(field.widget, forms.RadioSelect):
+                field.widget.attrs['class'] = 'form-select'
+            elif not isinstance(field.widget, (forms.HiddenInput, forms.RadioSelect, forms.CheckboxInput)):
+                field.widget.attrs['class'] = 'form-control'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        ride = cleaned_data.get('ride')
+        speed_range_preference = cleaned_data.get('speed_range_preference')
+
+        registration_service = RegistrationService()
+        errors = registration_service.validate_registration_selections(
+            self.event, ride, speed_range_preference
+        )
+        for field, message in errors.items():
+            self.add_error(field, message)
+
+        return cleaned_data
+
+
 class MembershipNumberForm(forms.Form):
     membership_number = forms.CharField(
         max_length=32,

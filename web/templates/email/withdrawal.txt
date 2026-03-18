@@ -1,0 +1,7 @@
+Hello {{ registration.first_name }},
+
+Your registration for {{ registration.event.name }} on {{ registration.event.starts_at|date:"l, M j" }} has been withdrawn by the event organizer.
+
+If you believe this was done in error or have questions, please contact the ride director.
+
+Ottawa Bicycle Club

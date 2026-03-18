@@ -445,6 +445,18 @@ wheels = [
 ]
 
 [[package]]
+name = "django-filter"
+version = "25.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2c/e4/465d2699cd388c0005fb8d6ae6709f239917c6d8790ac35719676fffdcf3/django_filter-25.2.tar.gz", hash = "sha256:760e984a931f4468d096f5541787efb8998c61217b73006163bf2f9523fe8f23", size = 143818, upload-time = "2025-10-05T09:51:31.521Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c1/40/6a02495c5658beb1f31eb09952d8aa12ef3c2a66342331ce3a35f7132439/django_filter-25.2-py3-none-any.whl", hash = "sha256:9c0f8609057309bba611062fe1b720b4a873652541192d232dd28970383633e3", size = 94145, upload-time = "2025-10-05T09:51:29.728Z" },
+]
+
+[[package]]
 name = "django-fsm-2"
 version = "4.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -544,6 +556,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a7/97/5340660eff87af3e1eb318b483677eae9b30512eebede6fbe29b3b502713/django_sesame-3.2.3.tar.gz", hash = "sha256:09977a1c55bdbcce0a024c712c4d683e1a69543a217626ffa1d5f7ef7ebffc58", size = 17597, upload-time = "2025-05-02T19:06:42.124Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/09/b8/61d44649c57efc58ad6851192db0c3afed2b161a474bb1d010446d6d8637/django_sesame-3.2.3-py3-none-any.whl", hash = "sha256:5da0210a57a8f48dd61a6c8125e61121403042ed000c96187e4188a8241496d6", size = 20285, upload-time = "2025-05-02T19:06:40.814Z" },
+]
+
+[[package]]
+name = "django-tables2"
+version = "2.7.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/19/0f/497ebb829a0f6d93ac8ae720b114a413e6e3a6eb0682f15c7a8d59f69464/django_tables2-2.7.5.tar.gz", hash = "sha256:fb5dcaa09379cf3947598ec7e1bd5f26ed63aafdee3b23963446763bbeac37bf", size = 128618, upload-time = "2025-01-02T07:49:42.674Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/66/6d454db3edcd285b767caaa790c3e7a3969c91bb6f93601d9a879aab06f2/django_tables2-2.7.5-py3-none-any.whl", hash = "sha256:d9338937797207ffb6f481be2125c5ec3a0bb1858d409c672cc25fc5d654cb22", size = 95984, upload-time = "2025-01-02T07:49:39.752Z" },
 ]
 
 [[package]]
@@ -1032,12 +1056,14 @@ dependencies = [
     { name = "django-celery-beat" },
     { name = "django-colorfield" },
     { name = "django-cotton" },
+    { name = "django-filter" },
     { name = "django-fsm-2" },
     { name = "django-gravatar2" },
     { name = "django-ical" },
     { name = "django-phonenumber-field", extra = ["phonenumberslite"] },
     { name = "django-prose-editor" },
     { name = "django-sesame" },
+    { name = "django-tables2" },
     { name = "django-waffle" },
     { name = "gunicorn" },
     { name = "nh3" },
@@ -1061,12 +1087,14 @@ requires-dist = [
     { name = "django-celery-beat", specifier = "~=2.8.1" },
     { name = "django-colorfield", specifier = ">=0.14.0" },
     { name = "django-cotton", specifier = "~=2.0.3" },
+    { name = "django-filter", specifier = "~=25.1" },
     { name = "django-fsm-2", specifier = "~=4.0.0" },
     { name = "django-gravatar2", specifier = "~=1.4.5" },
     { name = "django-ical", specifier = "~=1.9.2" },
     { name = "django-phonenumber-field", extras = ["phonenumberslite"], specifier = "~=8.4.0" },
     { name = "django-prose-editor", specifier = "~=0.23.1" },
     { name = "django-sesame", specifier = "~=3.2.3" },
+    { name = "django-tables2", specifier = "~=2.7.5" },
     { name = "django-waffle", specifier = "~=5.0.0" },
     { name = "gunicorn", specifier = "~=24.1.1" },
     { name = "nh3", specifier = ">=0.3.3" },

@@ -197,6 +197,75 @@ class RegistrationService:
 
         return errors
 
+    def staff_withdraw(self, registration: Registration, staff_user) -> None:
+        registration.withdraw()
+        registration.save()
+
+        logger.info(
+            "Staff user %s (id=%d) withdrew registration %d for %s from event %s (id=%d)",
+            staff_user.email, staff_user.id, registration.id, registration.email,
+            registration.event.name, registration.event.id,
+        )
+
+        self._send_withdrawal_email(registration)
+
+    def staff_register(self, user_detail: UserDetail, registration_detail: RegistrationDetail,
+                       event: Event, staff_user) -> Registration | None:
+        user = self.user_service.find_by_email_or_create(user_detail)
+
+        existing = Registration.objects.filter(
+            user=user, event=event,
+            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED]
+        )
+
+        if existing.exists():
+            logger.info(
+                "Staff user %s (id=%d) attempted to register %s for event %s (id=%d) but active registration exists",
+                staff_user.email, staff_user.id, user.email, event.name, event.id,
+            )
+            return None
+
+        registration = self._create_registration(event, user, registration_detail)
+        registration.confirm()
+        registration.save()
+
+        logger.info(
+            "Staff user %s (id=%d) registered %s for event %s (id=%d)",
+            staff_user.email, staff_user.id, user.email, event.name, event.id,
+        )
+
+        self._send_confirmation_email(registration)
+        return registration
+
+    def staff_update_registration(self, registration: Registration, **fields) -> None:
+        for field_name, value in fields.items():
+            setattr(registration, field_name, value)
+
+        if 'first_name' in fields or 'last_name' in fields:
+            registration.name = f"{registration.first_name} {registration.last_name}"
+
+        registration.full_clean(exclude=['state'])
+        registration.save()
+
+        logger.info(
+            "Staff updated registration %d for %s (event %s, id=%d): %s",
+            registration.id, registration.email, registration.event.name,
+            registration.event.id, list(fields.keys()),
+        )
+
+    def _send_withdrawal_email(self, registration: Registration) -> None:
+        context = {
+            'base_url': f"https://{settings.WEB_HOST}",
+            'registration': registration,
+        }
+
+        self.email_service.send_email(
+            template_name='withdrawal',
+            context=context,
+            subject=f"Registration withdrawn for {registration.event.name}",
+            recipient_list=[registration.email],
+        )
+
     def is_registration_allowed(self, event: Event) -> tuple[bool, str | None]:
         if event.cancelled:
             return False, 'Event is cancelled.'

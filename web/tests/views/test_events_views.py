@@ -179,34 +179,6 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertNotContains(response, 'mailto:regular@example.com')  # Email links
 
 
-class EventRegistrationsFullViewTests(BaseEventViewTestCase):
-    """Tests for the event_registrations_full view."""
-
-    def setUp(self):
-        super().setUp()
-        self.url = reverse('event_registrations_full', kwargs={'event_id': self.event.id})
-
-    def test_staff_access(self):
-        # Arrange
-        self.client.login(username='staff_user', password='password123')
-
-        # Act
-        response = self.client.get(self.url)
-
-        # Assert
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'web/events/registrations_full.html')
-
-    def test_non_staff_denied(self):
-        # Arrange
-        self.client.login(username='regular_user', password='password123')
-
-        # Act
-        response = self.client.get(self.url)
-
-        # Assert
-        self.assertEqual(response.status_code, 403)  # Permission denied status code 
-
 
 class EventDetailViewTests(BaseEventViewTestCase):
     """Tests for the event_detail view."""

@@ -53,9 +53,9 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
 
     def links(self, obj):
         public_url = reverse('event_detail', args=[obj.id])
-        full_url = reverse('event_registrations_full', args=[obj.id])
-        return format_html('<a href="{}">Public event page</a>, <a href="{}">Full registration details</a>', public_url,
-                           full_url)
+        manage_url = reverse('event_registrations_manage', args=[obj.id])
+        return format_html('<a href="{}">Public event page</a>, <a href="{}">Manage registrations</a>', public_url,
+                           manage_url)
 
     links.short_description = 'Links'
 

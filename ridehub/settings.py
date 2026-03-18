@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'behave_django',
     'django_gravatar',
     'django_prose_editor',
+    'django_tables2',
+    'django_filters',
     'adminsortable2',
     'colorfield',
     'allauth',
@@ -90,6 +92,8 @@ if IS_HEROKU_APP:
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
     EMAIL_FROM = 'noreply@noreply'
+
+DJANGO_TABLES2_TEMPLATE = 'django_tables2/bootstrap5.html'
 
 ROOT_URLCONF = 'ridehub.urls'
 
