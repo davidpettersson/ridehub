@@ -198,6 +198,9 @@ class RegistrationService:
         return errors
 
     def staff_withdraw(self, registration: Registration, staff_user) -> None:
+        if registration.state != Registration.STATE_CONFIRMED:
+            raise ValueError(f"Cannot withdraw registration in state '{registration.state}'")
+
         registration.withdraw()
         registration.save()
 
