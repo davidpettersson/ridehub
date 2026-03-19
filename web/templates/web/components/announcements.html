@@ -1,5 +1,5 @@
 {% for announcement in announcements %}
-<div class="announcement {% if announcement.type == 'w' %}announcement-warning{% else %}announcement-info{% endif %} mb-3">
+<div class="announcement {% if announcement.type == 'w' %}announcement-warning{% else %}announcement-info{% endif %}{% if not forloop.last %} mb-3{% endif %}">
   <div class="d-flex align-items-start gap-2">
     <i class="bi {% if announcement.type == 'w' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} flex-shrink-0" style="line-height: 1.5;"></i>
     <div>
