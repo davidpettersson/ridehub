@@ -1,6 +1,7 @@
 {% extends 'web/_base_bootstrap.html' %}
 {% block title %}{{ month_name }} {{ year }}{% endblock %}
 {% block content %}
+    <div hx-get="{% url 'active_announcements' %}" hx-trigger="load" hx-swap="innerHTML"></div>
     <div class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div class="d-flex align-items-center gap-3">
