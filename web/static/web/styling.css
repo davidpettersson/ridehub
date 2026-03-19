@@ -6,6 +6,10 @@
   border-radius: 0 6px 6px 0;
 }
 
+.announcement p {
+  margin-bottom: 0.5rem;
+}
+
 .announcement p:last-child {
   margin-bottom: 0;
 }
