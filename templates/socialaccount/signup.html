@@ -1,11 +1,11 @@
-{% extends 'web/_base.html' %}
+{% extends 'web/_base_bootstrap.html' %}
 {% load form_filters %}
 {% block title %}Sign Up{% endblock %}
 {% block content %}
-<div class="max-w-md mx-auto">
-    <div class="card rounded-lg">
-        <div class="p-6">
-            <h1 class="text-2xl font-bold text-gray-900 mb-4">Sign Up</h1>
+<div class="mx-auto" style="max-width: 28rem;">
+    <div class="card rounded-3">
+        <div class="card-body p-4">
+            <h1 class="fs-3 fw-bold mb-4">Sign Up</h1>
             <p class="mb-4">
                 You are about to use your {{ account.get_provider.name }} account to log in.
                 As a final step, please complete the following form:
@@ -13,17 +13,17 @@
             <form action="{% url 'socialaccount_signup' %}" method="post">
                 {% csrf_token %}
                 {% for field in form.visible_fields %}
-                <div class="mb-4">
+                <div class="mb-3">
                     <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field|addclass:"form-input" }}
+                    {{ field|addclass:"form-control" }}
                     {% if field.errors %}
-                    <p class="mt-1 text-sm text-red-600">{{ field.errors.0 }}</p>
+                    <p class="mt-1 small text-danger">{{ field.errors.0 }}</p>
                     {% endif %}
                 </div>
                 {% endfor %}
                 {{ redirect_field }}
-                <div class="mt-6">
-                    <button type="submit" class="btn-primary w-full">
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary w-100">
                         Sign Up
                     </button>
                 </div>

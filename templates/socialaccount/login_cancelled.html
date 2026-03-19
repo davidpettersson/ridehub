@@ -1,15 +1,15 @@
-{% extends 'web/_base.html' %}
+{% extends 'web/_base_bootstrap.html' %}
 {% block title %}Login Cancelled{% endblock %}
 {% block content %}
-<div class="max-w-md mx-auto">
-    <div class="card rounded-lg">
-        <div class="p-6">
-            <h1 class="text-2xl font-bold text-gray-900 mb-4">Login Cancelled</h1>
+<div class="mx-auto" style="max-width: 28rem;">
+    <div class="card rounded-3">
+        <div class="card-body p-4">
+            <h1 class="fs-3 fw-bold mb-4">Login Cancelled</h1>
             <p class="mb-4">
                 You cancelled the login process. If this was a mistake, please try again.
             </p>
-            <div class="mt-6">
-                <a href="{% url 'login_form' %}" class="btn-primary w-full inline-block text-center">
+            <div class="mt-4">
+                <a href="{% url 'login_form' %}" class="btn btn-primary w-100">
                     Return to Login
                 </a>
             </div>
