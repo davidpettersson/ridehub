@@ -6,6 +6,10 @@
   border-radius: 0 6px 6px 0;
 }
 
+.announcement p:last-child {
+  margin-bottom: 0;
+}
+
 .announcement-info {
   border-left-color: var(--obc-blue);
   background-color: rgba(0, 85, 150, 0.06);
