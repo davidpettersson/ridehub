@@ -13,6 +13,7 @@ from web.views.registration_manage import (
 from web.views.registrations import registration_create, registration_submitted, membership_number_capture
 from web.views.rides import ride_speed_ranges
 from web.views.reviews import review_2025
+from web.views.announcements import active_announcements
 from web.views.robots import robots_txt
 
 urlpatterns = [
@@ -40,5 +41,6 @@ urlpatterns = [
     path('profile/membership-number', profile_membership_number, name='profile_membership_number'),
     path('reviews/2025', review_2025, name='review_2025'),
     path('robots.txt', robots_txt, name='robots_txt'),
+    path('announcements', active_announcements, name='active_announcements'),
     path('', events_redirect, name='index'),
 ]

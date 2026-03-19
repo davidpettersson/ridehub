@@ -30,7 +30,7 @@ class AnnouncementTagsTest(TestCase):
         # Assert
         self.assertIn("Test Announcement", rendered)
         self.assertIn("This is a test announcement", rendered)
-        self.assertIn("bg-blue-50", rendered)
+        self.assertIn("announcement-info", rendered)
 
     def test_active_announcements_tag_excludes_inactive_announcements(self):
         # Arrange
@@ -115,7 +115,7 @@ class AnnouncementTagsTest(TestCase):
         self.assertIn("<strong>Bold text</strong>", rendered)
         self.assertIn("<em>italic text</em>", rendered)
 
-    def test_information_announcement_has_blue_styling(self):
+    def test_information_announcement_has_info_styling(self):
         # Arrange
         Announcement.objects.create(
             title="Information Announcement",
@@ -131,16 +131,13 @@ class AnnouncementTagsTest(TestCase):
         rendered = template.render(Context())
 
         # Assert
-        self.assertIn("bg-blue-50", rendered)
-        self.assertIn("border-blue-400", rendered)
-        self.assertIn("text-blue-900", rendered)
-        self.assertIn("text-blue-800", rendered)
+        self.assertIn("announcement-info", rendered)
 
-    def test_warning_announcement_has_yellow_styling(self):
+    def test_warning_announcement_has_warning_styling(self):
         # Arrange
         Announcement.objects.create(
             title="Warning Announcement",
-            text="This is a warning announcement", 
+            text="This is a warning announcement",
             type=Announcement.TYPE_WARNING,
             begin_at=self.one_hour_ago,
             end_at=self.one_hour_from_now,
@@ -152,10 +149,7 @@ class AnnouncementTagsTest(TestCase):
         rendered = template.render(Context())
 
         # Assert
-        self.assertIn("bg-yellow-50", rendered)
-        self.assertIn("border-yellow-400", rendered)
-        self.assertIn("text-yellow-900", rendered)
-        self.assertIn("text-yellow-800", rendered)
+        self.assertIn("announcement-warning", rendered)
 
     def test_mixed_announcement_types_render_correctly(self):
         # Arrange
@@ -181,7 +175,7 @@ class AnnouncementTagsTest(TestCase):
         rendered = template.render(Context())
 
         # Assert
-        self.assertIn("bg-blue-50", rendered)
-        self.assertIn("bg-yellow-50", rendered)
+        self.assertIn("announcement-info", rendered)
+        self.assertIn("announcement-warning", rendered)
         self.assertIn("Information text", rendered)
-        self.assertIn("Warning text", rendered) 
+        self.assertIn("Warning text", rendered)

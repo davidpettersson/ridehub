@@ -1,14 +1,11 @@
-{% if announcements %}
-<div class="mb-6">
 {% for announcement in announcements %}
-<div class="{% if announcement.type == 'w' %}bg-yellow-50 border-l-4 border-yellow-400{% else %}bg-blue-50 border-l-4 border-blue-400{% endif %} p-4 {% if not forloop.last %}mb-3{% endif %}">
-  <div class="w-full">
-    <h4 class="{% if announcement.type == 'w' %}text-yellow-900{% else %}text-blue-900{% endif %} font-semibold text-sm mb-2">{{ announcement.title }}</h4>
-    <div class="prose prose-sm max-w-none {% if announcement.type == 'w' %}text-yellow-800{% else %}text-blue-800{% endif %}">
-      {{ announcement.text|safe }}
+<div class="announcement {% if announcement.type == 'w' %}announcement-warning{% else %}announcement-info{% endif %}{% if not forloop.last %} mb-3{% endif %}">
+  <div class="d-flex align-items-start gap-2">
+    <i class="bi {% if announcement.type == 'w' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} flex-shrink-0" style="line-height: 1.5;"></i>
+    <div>
+      <div class="fw-semibold">{{ announcement.title }}</div>
+      <div class="small mt-1">{{ announcement.text|safe }}</div>
     </div>
   </div>
 </div>
 {% endfor %}
-</div>
-{% endif %} 
