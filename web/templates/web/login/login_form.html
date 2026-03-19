@@ -23,7 +23,7 @@
             <form action="{{ request.path }}" method="POST">
                 {% csrf_token %}
                 <div class="mb-4">
-                    <label class="form-label">{{ form.email.label }}</label>
+                    <label class="form-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
                     {{ form.email|addclass:"form-control" }}
                 </div>
                 <div class="mt-4">
