@@ -1,5 +1,31 @@
 /* Global styling */
 
+.announcement {
+  padding: 12px 16px;
+  border-left: 4px solid;
+  border-radius: 0 6px 6px 0;
+}
+
+.announcement-info {
+  border-left-color: var(--obc-blue);
+  background-color: rgba(0, 85, 150, 0.06);
+  color: #1a3a5c;
+}
+
+.announcement-info i {
+  color: var(--obc-blue);
+}
+
+.announcement-warning {
+  border-left-color: #d97706;
+  background-color: rgba(217, 119, 6, 0.06);
+  color: #78350f;
+}
+
+.announcement-warning i {
+  color: #d97706;
+}
+
 :root {
   --obc-blue: rgb(0, 85, 150);
   --bs-primary: #2563eb;

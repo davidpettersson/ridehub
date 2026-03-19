@@ -30,7 +30,7 @@ class AnnouncementTagsTest(TestCase):
         # Assert
         self.assertIn("Test Announcement", rendered)
         self.assertIn("This is a test announcement", rendered)
-        self.assertIn("alert-info", rendered)
+        self.assertIn("announcement-info", rendered)
 
     def test_active_announcements_tag_excludes_inactive_announcements(self):
         # Arrange
@@ -131,7 +131,7 @@ class AnnouncementTagsTest(TestCase):
         rendered = template.render(Context())
 
         # Assert
-        self.assertIn("alert-info", rendered)
+        self.assertIn("announcement-info", rendered)
 
     def test_warning_announcement_has_warning_styling(self):
         # Arrange
@@ -149,7 +149,7 @@ class AnnouncementTagsTest(TestCase):
         rendered = template.render(Context())
 
         # Assert
-        self.assertIn("alert-warning", rendered)
+        self.assertIn("announcement-warning", rendered)
 
     def test_mixed_announcement_types_render_correctly(self):
         # Arrange
@@ -175,7 +175,7 @@ class AnnouncementTagsTest(TestCase):
         rendered = template.render(Context())
 
         # Assert
-        self.assertIn("alert-info", rendered)
-        self.assertIn("alert-warning", rendered)
+        self.assertIn("announcement-info", rendered)
+        self.assertIn("announcement-warning", rendered)
         self.assertIn("Information text", rendered)
         self.assertIn("Warning text", rendered)

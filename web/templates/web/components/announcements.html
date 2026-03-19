@@ -1,8 +1,11 @@
 {% for announcement in announcements %}
-<div class="alert {% if announcement.type == 'w' %}alert-warning{% else %}alert-info{% endif %} border-start border-4 d-flex align-items-start" role="alert">
-  <div class="w-100">
-    <h4 class="alert-heading fs-6 fw-semibold mb-1">{{ announcement.title }}</h4>
-    <div class="prose-content small">{{ announcement.text|safe }}</div>
+<div class="announcement {% if announcement.type == 'w' %}announcement-warning{% else %}announcement-info{% endif %} mb-3">
+  <div class="d-flex align-items-start gap-2">
+    <i class="bi {% if announcement.type == 'w' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} flex-shrink-0" style="line-height: 1.5;"></i>
+    <div>
+      <div class="fw-semibold">{{ announcement.title }}</div>
+      <div class="small mt-1">{{ announcement.text|safe }}</div>
+    </div>
   </div>
 </div>
 {% endfor %}
