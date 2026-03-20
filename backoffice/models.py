@@ -87,7 +87,7 @@ class Event(models.Model):
         default=STATE_LIVE,
         choices=STATE_CHOICES,
         protected=False,
-        help_text='Draft: not visible. Announced: visible, but cannot register. Live: visible and can register. Cancelled: visible as cancelled. Archived: not visible.'
+        help_text='Draft: not visible. Announced: visible, but cannot register. Live: visible and can register.'
     )
 
     location = models.CharField(
