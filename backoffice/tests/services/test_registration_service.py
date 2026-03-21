@@ -290,46 +290,6 @@ class FetchCurrentRegistrationsTestCase(TestCase):
         for reg in current_registrations_for_self_user:
             self.assertEqual(reg.user, self.user)
 
-    def test_fetch_current_registrations_excludes_archived_events(self):
-        # Arrange
-        # Non-archived event and registration (should be included)
-        event_not_archived = Event.objects.create(
-            name="Current Event Not Archived",
-            program=self.program,
-            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
-            registration_closes_at=self.test_today_datetime_noon,
-            state=Event.STATE_LIVE
-        )
-        reg_not_archived = Registration.objects.create(
-            user=self.user,
-            event=event_not_archived,
-            name=self.user.username,
-            email=self.user.email
-        )
-
-        # Archived event and registration (should be excluded)
-        event_archived = Event.objects.create(
-            name="Current Event Archived",
-            program=self.program,
-            starts_at=self.test_today_datetime_noon + datetime.timedelta(days=2),
-            registration_closes_at=self.test_today_datetime_noon + datetime.timedelta(days=1),
-            state=Event.STATE_ARCHIVED
-        )
-        Registration.objects.create(
-            user=self.user,
-            event=event_archived,
-            name=self.user.username,
-            email=self.user.email
-        )
-
-        # Act
-        current_registrations = self.service.fetch_current_registrations(self.user)
-
-        # Assert
-        self.assertEqual(len(current_registrations), 1)
-        self.assertIn(reg_not_archived, current_registrations)
-        self.assertEqual(current_registrations[0], reg_not_archived)
-
     def test_fetch_current_registrations_gets_latest_for_multiple_on_same_event(self):
         # Arrange
         # Event for which user will have multiple registrations
@@ -1539,20 +1499,6 @@ class IsRegistrationAllowedTestCase(TestCase):
 
         self.assertFalse(allowed)
         self.assertEqual(reason, 'Event is cancelled.')
-
-    def test_registration_not_allowed_for_archived_event(self):
-        event = Event.objects.create(
-            program=self.program,
-            name="Archived Event",
-            starts_at=timezone.now() + timezone.timedelta(days=7),
-            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
-            state=Event.STATE_ARCHIVED,
-        )
-
-        allowed, reason = self.service.is_registration_allowed(event)
-
-        self.assertFalse(allowed)
-        self.assertEqual(reason, 'Event is archived.')
 
     def test_registration_not_allowed_when_closed(self):
         event = Event.objects.create(

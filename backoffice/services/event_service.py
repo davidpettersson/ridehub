@@ -7,11 +7,8 @@ from backoffice.models import Event, Ride
 
 
 class EventService:
-    def fetch_events(self, include_archived: bool = False, only_visible: bool = True) -> QuerySet[Event]:
+    def fetch_events(self, only_visible: bool = True) -> QuerySet[Event]:
         queryset = Event.objects.all()
-
-        if not include_archived:
-            queryset = queryset.exclude(state=Event.STATE_ARCHIVED)
 
         if only_visible:
             queryset = queryset.filter(
@@ -20,18 +17,18 @@ class EventService:
 
         return queryset.order_by('starts_at')
 
-    def fetch_upcoming_events(self, include_archived: bool = False, only_visible: bool = True,
+    def fetch_upcoming_events(self, only_visible: bool = True,
                               current_date: date | None = None, program_id: int | None = None,
                               query: str | None = None) -> QuerySet[Event]:
         current_date = current_date or timezone.now().date()
-        qs = self.fetch_events(include_archived, only_visible).filter(starts_at__date__gte=current_date)
+        qs = self.fetch_events(only_visible).filter(starts_at__date__gte=current_date)
         if program_id is not None:
             qs = qs.filter(program_id=program_id)
         if query:
             qs = qs.filter(Q(name__icontains=query) | Q(program__name__icontains=query)).distinct()
         return qs
 
-    def fetch_events_for_month(self, year: int, month: int, include_archived: bool = False,
+    def fetch_events_for_month(self, year: int, month: int,
                                only_visible: bool = True, program_id: int | None = None,
                                query: str | None = None) -> QuerySet[Event]:
         from datetime import date
@@ -41,7 +38,7 @@ class EventService:
         _, last_day_of_month = calendar.monthrange(year, month)
         last_day = date(year, month, last_day_of_month)
 
-        qs = self.fetch_events(include_archived, only_visible).filter(
+        qs = self.fetch_events(only_visible).filter(
             starts_at__date__gte=first_day,
             starts_at__date__lte=last_day
         )
