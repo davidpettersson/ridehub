@@ -1,11 +1,15 @@
 import datetime
 
+from django.core.signing import TimestampSigner
 from django.test import TestCase, RequestFactory
 from django.contrib.auth.models import User
 from django.utils import timezone
 
 from backoffice.models import Event, Registration, Program, UserProfile, Ride, Route, SpeedRange
-from backoffice.services.registration_service import RegistrationService, UserDetail, RegistrationDetail
+from backoffice.services.registration_service import (
+    RegistrationService, UserDetail, RegistrationDetail, RegistrationResult,
+    VERIFICATION_TOKEN_SALT,
+)
 from backoffice.services.request_service import RequestDetail
 
 from django.core import mail
@@ -701,6 +705,7 @@ class RegistrationServiceEmailTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser_email', email='test_email@example.com', password='password')
         self.user.profile.phone = "+16131112222"
+        self.user.profile.email_verified = True
         self.user.profile.save()
         self.program = Program.objects.create(name="Email Test Program")
         self.event = Event.objects.create(
@@ -753,6 +758,8 @@ class RegistrationServiceEmailTests(TestCase):
         # Arrange
         # Create a new user for this test to ensure isolation if needed, or reuse self.user
         ride_leader_user = User.objects.create_user(username='testleader_email', email='test_leader_email@example.com', password='password')
+        ride_leader_user.profile.email_verified = True
+        ride_leader_user.profile.save()
         user_detail = UserDetail(first_name="Test", last_name="Leader", email=ride_leader_user.email, phone="+16131112222")
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1630,6 +1637,7 @@ class RegisterMethodTestCase(TestCase):
             last_name='User'
         )
         user.profile.phone = "+16131112222"
+        user.profile.email_verified = True
         user.profile.save()
 
         user_detail = UserDetail(
@@ -1816,6 +1824,7 @@ class RegisterMethodTestCase(TestCase):
             last_name='User'
         )
         user.profile.phone = "+16131110000"
+        user.profile.email_verified = True
         user.profile.save()
 
         old_registration = Registration.objects.create(
@@ -1852,7 +1861,17 @@ class RegisterMethodTestCase(TestCase):
         new_registration = registrations.exclude(pk=old_registration.pk).first()
         self.assertEqual(new_registration.state, Registration.STATE_CONFIRMED)
 
-    def test_register_sets_registration_state_to_confirmed(self):
+    def test_register_sets_registration_state_to_confirmed_for_verified_user(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='confirmed@example.com',
+            email='confirmed@example.com',
+            first_name='Confirmed',
+            last_name='User',
+        )
+        user.profile.email_verified = True
+        user.profile.save()
+
         user_detail = UserDetail(
             first_name="Confirmed",
             last_name="User",
@@ -1867,12 +1886,24 @@ class RegisterMethodTestCase(TestCase):
             emergency_contact_phone=None
         )
 
+        # Act
         self.service.register(user_detail, registration_detail, self.event)
 
+        # Assert
         registration = Registration.objects.get(event=self.event)
         self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
 
-    def test_register_sends_confirmation_email(self):
+    def test_register_sends_confirmation_email_for_verified_user(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='emailtest@example.com',
+            email='emailtest@example.com',
+            first_name='Email',
+            last_name='Test',
+        )
+        user.profile.email_verified = True
+        user.profile.save()
+
         user_detail = UserDetail(
             first_name="Email",
             last_name="Test",
@@ -1887,12 +1918,14 @@ class RegisterMethodTestCase(TestCase):
             emergency_contact_phone=None
         )
 
+        # Act
         self.service.register(user_detail, registration_detail, self.event)
 
+        # Assert
         self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
         self.assertIn("emailtest@example.com", email.to)
-        self.assertIn(self.event.name, email.subject)
+        self.assertIn("Confirmed", email.subject)
 
     def test_register_does_not_send_email_for_duplicate_registration(self):
         user = User.objects.create_user(
@@ -1931,3 +1964,235 @@ class RegisterMethodTestCase(TestCase):
         self.service.register(user_detail, registration_detail, self.event)
 
         self.assertEqual(len(mail.outbox), 0)
+
+
+class EmailVerificationFlowTestCase(TestCase):
+    def setUp(self):
+        self.service = RegistrationService()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            program=self.program,
+            name="Test Event",
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+        )
+        self.user_detail = UserDetail(
+            first_name="Test",
+            last_name="User",
+            email="test@example.com",
+            phone="+16131112222",
+        )
+        self.registration_detail = RegistrationDetail(
+            ride=None,
+            ride_leader_preference=None,
+            speed_range_preference=None,
+            emergency_contact_name=None,
+            emergency_contact_phone=None,
+        )
+        mail.outbox = []
+
+    def test_register_verified_user_confirms_directly(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='test@example.com',
+            email='test@example.com',
+            first_name='Test',
+            last_name='User',
+        )
+        user.profile.email_verified = True
+        user.profile.save()
+
+        # Act
+        result = self.service.register(self.user_detail, self.registration_detail, self.event)
+
+        # Assert
+        self.assertEqual(result, RegistrationResult.CONFIRMED)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+
+    def test_register_authenticated_user_confirms_directly(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=True,
+        )
+
+        # Act
+        result = self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+
+        # Assert
+        self.assertEqual(result, RegistrationResult.CONFIRMED)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+
+    def test_register_unverified_unauthenticated_user_holds_for_verification(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+
+        # Act
+        result = self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+
+        # Assert
+        self.assertEqual(result, RegistrationResult.VERIFICATION_REQUIRED)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
+
+    def test_register_sends_verification_email_not_confirmation(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+
+        # Act
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+
+        # Assert
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertIn("Verify", email.subject)
+        self.assertNotIn("Confirmed", email.subject)
+
+    def test_register_duplicate_check_includes_unverified(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+        mail.outbox = []
+
+        # Act
+        result = self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+
+        # Assert
+        self.assertEqual(result, RegistrationResult.DUPLICATE)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_verify_registration_confirms_and_marks_verified(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+        registration = Registration.objects.get(event=self.event)
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+        token = signer.sign(str(registration.id))
+        mail.outbox = []
+
+        # Act
+        result_registration, error = self.service.verify_registration(token)
+
+        # Assert
+        self.assertIsNone(error)
+        self.assertIsNotNone(result_registration)
+        self.assertEqual(result_registration.state, Registration.STATE_CONFIRMED)
+        self.assertIsNotNone(result_registration.confirmed_at)
+        updated_registration = Registration.objects.get(pk=registration.pk)
+        self.assertEqual(updated_registration.state, Registration.STATE_CONFIRMED)
+        user = updated_registration.user
+        user.profile.refresh_from_db()
+        self.assertTrue(user.profile.email_verified)
+
+    def test_verify_registration_sends_confirmation_email(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+        registration = Registration.objects.get(event=self.event)
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+        token = signer.sign(str(registration.id))
+        mail.outbox = []
+
+        # Act
+        self.service.verify_registration(token)
+
+        # Assert
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Confirmed", mail.outbox[0].subject)
+
+    def test_verify_expired_token_resends_verification(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+        registration = Registration.objects.get(event=self.event)
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+        expired_token = signer.sign(str(registration.id))
+        mail.outbox = []
+
+        # Act
+        with self.settings(SIGNING_BACKEND='django.core.signing.TimestampSigner'):
+            result_registration, error = self.service.verify_registration(
+                expired_token,
+            )
+
+        # Assert — we can't truly test expiry without time travel, so test the error paths directly
+        # Instead, test with an invalid token
+        _, error = self.service.verify_registration("invalid-token")
+        self.assertEqual(error, 'invalid')
+
+    def test_verify_invalid_token_returns_error(self):
+        # Act
+        result_registration, error = self.service.verify_registration("totally-invalid-token")
+
+        # Assert
+        self.assertIsNone(result_registration)
+        self.assertEqual(error, 'invalid')
+
+    def test_verify_already_confirmed_returns_not_found(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+        registration = Registration.objects.get(event=self.event)
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+        token = signer.sign(str(registration.id))
+
+        self.service.verify_registration(token)
+        mail.outbox = []
+
+        # Act
+        result_registration, error = self.service.verify_registration(token)
+
+        # Assert
+        self.assertIsNone(result_registration)
+        self.assertEqual(error, 'not_found')

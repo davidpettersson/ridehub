@@ -25,7 +25,7 @@ def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpRespo
 
     registrations = Registration.objects.filter(
         event_id=event_id,
-        state=Registration.STATE_CONFIRMED,
+        state__in=[Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
     ).select_related(
         'ride', 'speed_range_preference', 'user'
     ).order_by(

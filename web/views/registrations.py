@@ -1,5 +1,6 @@
 import logging
 
+from django.contrib.auth import login
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect, HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404, redirect
@@ -7,7 +8,7 @@ from waffle import flag_is_active
 
 from backoffice.models import Event
 from backoffice.services.membership_service import MembershipService
-from backoffice.services.registration_service import RegistrationService, RegistrationDetail
+from backoffice.services.registration_service import RegistrationService, RegistrationDetail, RegistrationResult
 from backoffice.services.request_service import RequestService
 from backoffice.services.user_service import UserDetail, UserService
 from web.forms import RegistrationForm, MembershipNumberForm
@@ -17,6 +18,27 @@ logger = logging.getLogger(__name__)
 
 def registration_submitted(request: HttpRequest) -> HttpResponse:
     return render(request, 'web/registrations/submitted.html')
+
+
+def registration_verification_sent(request: HttpRequest) -> HttpResponse:
+    return render(request, 'web/registrations/verification_sent.html')
+
+
+def registration_verify(request: HttpRequest) -> HttpResponse:
+    token = request.GET.get('token')
+    if not token:
+        return render(request, 'web/registrations/verification_failed.html', {'reason': 'invalid'})
+
+    service = RegistrationService()
+    registration, error = service.verify_registration(token)
+
+    if error:
+        return render(request, 'web/registrations/verification_failed.html', {'reason': error})
+
+    login(request, registration.user, backend='django.contrib.auth.backends.ModelBackend')
+    return render(request, 'web/registrations/verification_success.html', {
+        'registration': registration,
+    })
 
 
 def _get_registration_detail(form: RegistrationForm) -> RegistrationDetail:
@@ -66,16 +88,17 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         if form.is_valid():
             request_detail = request_service.extract_details(request)
             user_detail = _get_user_details(form)
-            registration_service.register(
+            result = registration_service.register(
                 user_detail=user_detail,
                 registration_detail=_get_registration_detail(form),
                 event=event,
                 request_detail=request_detail)
 
+            if result == RegistrationResult.VERIFICATION_REQUIRED:
+                return redirect('registration_verification_sent')
+
             if (flag_is_active(request, 'capture_membership_number')
                     and event.requires_membership):
-                # Look up the user that register() created/found so we can
-                # store their ID in the session for the interstitial page.
                 user_service = UserService()
                 registered_user = user_service.find_by_email(user_detail.email).unwrap()
                 membership_service = MembershipService()

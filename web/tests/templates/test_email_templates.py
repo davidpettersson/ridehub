@@ -161,6 +161,71 @@ class TestLoginLinkEmail(BaseEmailTestCase):
         self.assert_all_links_absolute(html_content)
 
 
+class TestVerificationEmail(BaseEmailTestCase):
+    def setUp(self):
+        super().setUp()
+        self.user = User.objects.create_user(
+            username='testuser_verify',
+            email='verify@example.com',
+            first_name='Test',
+            last_name='User'
+        )
+        self.program = Program.objects.create(name="Test Program")
+
+        event_start = datetime(2024, 12, 25, 10, 0, tzinfo=timezone.utc)
+        self.event = Event.objects.create(
+            name="Test Event",
+            starts_at=event_start,
+            registration_closes_at=event_start - timedelta(hours=1),
+            program=self.program,
+        )
+        self.registration = Registration.objects.create(
+            event=self.event,
+            user=self.user,
+            first_name=self.user.first_name,
+            last_name=self.user.last_name,
+            name=f"{self.user.first_name} {self.user.last_name}",
+            email=self.user.email,
+        )
+        self.context = {
+            'registration': self.registration,
+            'base_url': self.base_url,
+            'verification_url': f"{self.base_url}/registrations/verify?token=test-token",
+        }
+
+    def test_links_are_absolute(self):
+        # Act
+        html_content = render_to_string('email/verification.html', self.context)
+
+        # Assert
+        self.assert_all_links_absolute(html_content)
+
+    def test_text_version_has_absolute_urls(self):
+        # Act
+        text_content = render_to_string('email/verification.txt', self.context)
+
+        # Assert
+        self.assert_text_contains_absolute_urls(text_content)
+
+    def test_contains_event_name(self):
+        # Act
+        html_content = render_to_string('email/verification.html', self.context)
+        text_content = render_to_string('email/verification.txt', self.context)
+
+        # Assert
+        self.assertIn(self.event.name, html_content)
+        self.assertIn(self.event.name, text_content)
+
+    def test_contains_not_registered_warning(self):
+        # Act
+        html_content = render_to_string('email/verification.html', self.context)
+        text_content = render_to_string('email/verification.txt', self.context)
+
+        # Assert
+        self.assertIn('not registered', html_content.lower())
+        self.assertIn('not registered', text_content.lower())
+
+
 class TestEventCancelledEmail(BaseEmailTestCase):
     def setUp(self):
         super().setUp()

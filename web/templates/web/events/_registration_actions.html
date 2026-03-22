@@ -3,7 +3,7 @@
     <a href="{% url 'staff_registration_edit' record.event_id record.id %}" class="text-secondary small" title="Edit">
         <i class="bi bi-pencil-fill"></i>
     </a>
-    {% if record.state == "confirmed" %}
+    {% if record.state == "confirmed" or record.state == "unverified" %}
     <form method="post" action="{% url 'staff_registration_withdraw' record.event_id record.id %}" style="display:inline" onsubmit="return confirm('Withdraw this registration?')">
         {% csrf_token %}
         <button type="submit" class="btn btn-link text-secondary small p-0 border-0" title="Withdraw">

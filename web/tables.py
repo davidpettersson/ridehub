@@ -33,6 +33,13 @@ class RegistrationTable(tables.Table):
         }
 
     def render_name(self, value, record):
+        if record.state == Registration.STATE_UNVERIFIED:
+            return format_html(
+                '<span class="small fw-medium">{}</span> '
+                '<span class="badge bg-warning text-dark" '
+                'title="This user has not verified their email address">Unverified</span>',
+                value,
+            )
         return format_html(
             '<span class="small fw-medium">{}</span>', value
         )

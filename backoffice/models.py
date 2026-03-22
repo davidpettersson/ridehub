@@ -433,6 +433,10 @@ class UserProfile(models.Model):
         help_text='Indicates that this is a legacy profile imported from WebScorer'
     )
 
+    email_verified = models.BooleanField(
+        default=False,
+    )
+
     def __str__(self):
         return str(self.user)
 
@@ -515,11 +519,13 @@ class Registration(models.Model):
     )
 
     STATE_SUBMITTED = 'submitted'
+    STATE_UNVERIFIED = 'unverified'
     STATE_CONFIRMED = 'confirmed'
     STATE_WITHDRAWN = 'withdrawn'
 
     STATE_CHOICES = [
         (STATE_SUBMITTED, 'Submitted'),
+        (STATE_UNVERIFIED, 'Unverified'),
         (STATE_CONFIRMED, 'Confirmed'),
         (STATE_WITHDRAWN, 'Withdrawn'),
     ]
@@ -568,7 +574,11 @@ class Registration(models.Model):
         help_text='Generated legacy identifier based on event ID, email and registration timestamp'
     )
 
-    @transition(field=state, source=STATE_SUBMITTED, target=STATE_CONFIRMED)
+    @transition(field=state, source=STATE_SUBMITTED, target=STATE_UNVERIFIED)
+    def hold_for_verification(self):
+        pass
+
+    @transition(field=state, source=[STATE_SUBMITTED, STATE_UNVERIFIED], target=STATE_CONFIRMED)
     def confirm(self):
         self.confirmed_at = timezone.now()
 
@@ -576,7 +586,7 @@ class Registration(models.Model):
     def is_ride_leader(self):
         return self.ride_leader_preference == Registration.RideLeaderPreference.YES
 
-    @transition(field=state, source=STATE_CONFIRMED, target=STATE_WITHDRAWN)
+    @transition(field=state, source=[STATE_CONFIRMED, STATE_UNVERIFIED], target=STATE_WITHDRAWN)
     def withdraw(self):
         self.withdrawn_at = timezone.now()
 
