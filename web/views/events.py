@@ -138,7 +138,7 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
         user_is_registered = Registration.objects.filter(
             event_id=event_id,
             user=request.user,
-            state=Registration.STATE_CONFIRMED
+            state=Registration.STATE_CONFIRMED,
         ).exists()
 
     context = {

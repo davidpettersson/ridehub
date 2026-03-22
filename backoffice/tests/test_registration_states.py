@@ -110,6 +110,65 @@ class RegistrationStatesTestCase(TestCase):
         self.registration.withdraw()
         self.registration.save()
         self.assertEqual(self.registration.state, Registration.STATE_WITHDRAWN)
-        
+
         with self.assertRaises(Exception):
-            self.registration.confirm() 
+            self.registration.confirm()
+
+    def test_hold_for_verification(self):
+        # Arrange
+        self.assertEqual(self.registration.state, Registration.STATE_SUBMITTED)
+
+        # Act
+        self.registration.hold_for_verification()
+        self.registration.save()
+
+        # Assert
+        self.assertEqual(self.registration.state, Registration.STATE_UNVERIFIED)
+
+    def test_confirm_from_unverified(self):
+        # Arrange
+        self.registration.hold_for_verification()
+        self.registration.save()
+        self.assertEqual(self.registration.state, Registration.STATE_UNVERIFIED)
+
+        # Act
+        self.registration.confirm()
+        self.registration.save()
+
+        # Assert
+        self.assertEqual(self.registration.state, Registration.STATE_CONFIRMED)
+        self.assertIsNotNone(self.registration.confirmed_at)
+
+    def test_withdraw_from_unverified(self):
+        # Arrange
+        self.registration.hold_for_verification()
+        self.registration.save()
+        self.assertEqual(self.registration.state, Registration.STATE_UNVERIFIED)
+
+        # Act
+        self.registration.withdraw()
+        self.registration.save()
+
+        # Assert
+        self.assertEqual(self.registration.state, Registration.STATE_WITHDRAWN)
+        self.assertIsNotNone(self.registration.withdrawn_at)
+
+    def test_cannot_hold_for_verification_from_confirmed(self):
+        # Arrange
+        self.registration.confirm()
+        self.registration.save()
+        self.assertEqual(self.registration.state, Registration.STATE_CONFIRMED)
+
+        # Act / Assert
+        with self.assertRaises(Exception):
+            self.registration.hold_for_verification()
+
+    def test_cannot_hold_for_verification_from_unverified(self):
+        # Arrange
+        self.registration.hold_for_verification()
+        self.registration.save()
+        self.assertEqual(self.registration.state, Registration.STATE_UNVERIFIED)
+
+        # Act / Assert
+        with self.assertRaises(Exception):
+            self.registration.hold_for_verification()

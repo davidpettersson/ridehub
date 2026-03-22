@@ -1,7 +1,9 @@
 import logging
 from dataclasses import dataclass
+from enum import Enum
 
 from django.contrib.auth.models import User
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.db.models import QuerySet, Subquery, OuterRef
 from django.utils import timezone
 
@@ -12,6 +14,15 @@ from backoffice.services.user_service import UserService, UserDetail
 from ridehub import settings
 
 logger = logging.getLogger(__name__)
+
+VERIFICATION_TOKEN_MAX_AGE = 86400
+VERIFICATION_TOKEN_SALT = 'email-verification'
+
+
+class RegistrationResult(Enum):
+    CONFIRMED = 'confirmed'
+    VERIFICATION_REQUIRED = 'verification_required'
+    DUPLICATE = 'duplicate'
 
 
 @dataclass
@@ -80,26 +91,101 @@ class RegistrationService:
             recipient_list=[registration.email],
         )
 
+    def _should_skip_verification(self, user: User, request_detail: RequestDetail | None) -> bool:
+        if request_detail and request_detail.authenticated:
+            if not user.profile.email_verified:
+                user.profile.email_verified = True
+                user.profile.save(update_fields=['email_verified'])
+            return True
+        return user.profile.email_verified
+
+    def _send_verification_email(self, registration: Registration) -> None:
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+        token = signer.sign(str(registration.id))
+
+        context = {
+            'base_url': f"https://{settings.WEB_HOST}",
+            'registration': registration,
+            'verification_url': f"https://{settings.WEB_HOST}/registrations/verify?token={token}",
+        }
+
+        self.email_service.send_email(
+            template_name='verification',
+            context=context,
+            subject=f"Verify your email for {registration.event.name}",
+            recipient_list=[registration.email],
+        )
+
+    def verify_registration(self, token: str) -> tuple[Registration | None, str | None]:
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+
+        try:
+            registration_id = signer.unsign(token, max_age=VERIFICATION_TOKEN_MAX_AGE)
+        except SignatureExpired:
+            try:
+                registration_id = signer.unsign(token)
+            except BadSignature:
+                return None, 'invalid'
+
+            try:
+                registration = Registration.objects.select_related('user', 'user__profile').get(
+                    id=int(registration_id),
+                    state=Registration.STATE_UNVERIFIED,
+                )
+            except Registration.DoesNotExist:
+                return None, 'not_found'
+
+            self._send_verification_email(registration)
+            return None, 'expired'
+        except BadSignature:
+            return None, 'invalid'
+
+        try:
+            registration = Registration.objects.select_related('user', 'user__profile').get(
+                id=int(registration_id),
+                state=Registration.STATE_UNVERIFIED,
+            )
+        except Registration.DoesNotExist:
+            return None, 'not_found'
+
+        registration.confirm()
+        registration.save()
+
+        user = registration.user
+        user.profile.email_verified = True
+        user.profile.save()
+
+        self._send_confirmation_email(registration)
+
+        return registration, None
+
     def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event,
-                 request_detail: RequestDetail | None = None) -> None:
+                 request_detail: RequestDetail | None = None) -> RegistrationResult:
         user = self.user_service.find_by_email_or_create(user_detail)
 
-        registrations_submitted_or_confirmed = \
-            Registration.objects.filter(user=user, event=event,
-                                        state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED])
+        active_registrations = Registration.objects.filter(
+            user=user, event=event,
+            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
+        )
 
-        if registrations_submitted_or_confirmed.exists():
-            # Do nothing, mostly because we don't want to reveal that they are registered already.
-            # Log that a user attempted to register for an event they're already registered for.
+        if active_registrations.exists():
             logger.info(
                 f"User {user.email} (id={user.id}) attempted to register for event {event.name} (id={event.id}) but already has an active registration"
             )
-        else:
-            # OK, so either no registration exists, or it is withdrawn. Create a new one.
-            registration = self._create_registration(event, user, registration_detail, request_detail)
+            return RegistrationResult.DUPLICATE
+
+        registration = self._create_registration(event, user, registration_detail, request_detail)
+
+        if self._should_skip_verification(user, request_detail):
             self._send_confirmation_email(registration)
             registration.confirm()
             registration.save()
+            return RegistrationResult.CONFIRMED
+
+        registration.hold_for_verification()
+        registration.save()
+        self._send_verification_email(registration)
+        return RegistrationResult.VERIFICATION_REQUIRED
 
     def fetch_confirmed_event_ids(self, user: User, event_ids: list[int]) -> set[int]:
         return set(
@@ -198,8 +284,10 @@ class RegistrationService:
         return errors
 
     def staff_withdraw(self, registration: Registration, staff_user) -> None:
-        if registration.state != Registration.STATE_CONFIRMED:
+        if registration.state not in [Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED]:
             raise ValueError(f"Cannot withdraw registration in state '{registration.state}'")
+
+        was_confirmed = registration.state == Registration.STATE_CONFIRMED
 
         registration.withdraw()
         registration.save()
@@ -210,7 +298,8 @@ class RegistrationService:
             registration.event.name, registration.event.id,
         )
 
-        self._send_withdrawal_email(registration)
+        if was_confirmed:
+            self._send_withdrawal_email(registration)
 
     def staff_register(self, user_detail: UserDetail, registration_detail: RegistrationDetail,
                        event: Event, staff_user) -> Registration | None:
@@ -218,7 +307,7 @@ class RegistrationService:
 
         existing = Registration.objects.filter(
             user=user, event=event,
-            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED]
+            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED]
         )
 
         if existing.exists():

@@ -1,3 +1,4 @@
+from django.core.signing import TimestampSigner
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -5,6 +6,7 @@ from django.urls import reverse
 from django.core import mail
 
 from backoffice.models import Event, Program, UserProfile, Registration, Ride, Route, SpeedRange
+from backoffice.services.registration_service import VERIFICATION_TOKEN_SALT
 
 
 class RegistrationViewPhoneTests(TestCase):
@@ -432,7 +434,7 @@ class RegistrationFullFlowTests(TestCase):
         self.route = Route.objects.create(name="Test Route")
         mail.outbox = []
 
-    def test_basic_registration_flow(self):
+    def test_basic_registration_flow_anonymous_requires_verification(self):
         event = Event.objects.create(
             name="Simple Event",
             program=self.program,
@@ -453,15 +455,17 @@ class RegistrationFullFlowTests(TestCase):
         response = self.client.post(reverse('registration_create', args=[event.id]), form_data)
 
         self.assertEqual(response.status_code, 302)
+        self.assertIn('verification-sent', response.url)
 
         registration = Registration.objects.get(event=event)
         self.assertEqual(registration.first_name, 'Test')
         self.assertEqual(registration.last_name, 'User')
         self.assertEqual(registration.email, 'testuser@example.com')
-        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn('testuser@example.com', mail.outbox[0].to)
+        self.assertIn('Verify', mail.outbox[0].subject)
+        self.assertEqual(mail.outbox[0].to, ['testuser@example.com'])
 
     def test_registration_with_ride_and_speed_range(self):
         event = Event.objects.create(
@@ -493,7 +497,7 @@ class RegistrationFullFlowTests(TestCase):
         registration = Registration.objects.get(event=event)
         self.assertEqual(registration.ride, ride)
         self.assertEqual(registration.speed_range_preference, speed_range)
-        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
 
     def test_registration_with_emergency_contact(self):
         event = Event.objects.create(
@@ -522,7 +526,7 @@ class RegistrationFullFlowTests(TestCase):
         registration = Registration.objects.get(event=event)
         self.assertEqual(registration.emergency_contact_name, 'John Doe')
         self.assertEqual(registration.emergency_contact_phone, '+9876543210')
-        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
 
     def test_registration_with_ride_leader_preference(self):
         event = Event.objects.create(
@@ -549,7 +553,7 @@ class RegistrationFullFlowTests(TestCase):
 
         registration = Registration.objects.get(event=event)
         self.assertEqual(registration.ride_leader_preference, Registration.RideLeaderPreference.YES)
-        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
 
     def test_registration_with_all_options(self):
         event = Event.objects.create(
@@ -590,7 +594,7 @@ class RegistrationFullFlowTests(TestCase):
         self.assertEqual(registration.emergency_contact_name, 'Emergency Person')
         self.assertEqual(registration.emergency_contact_phone, '+9999999999')
         self.assertEqual(registration.ride_leader_preference, Registration.RideLeaderPreference.YES)
-        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
 
         self.assertEqual(len(mail.outbox), 1)
 
@@ -668,7 +672,7 @@ class RegistrationFullFlowTests(TestCase):
         registration = Registration.objects.get(event=event)
         self.assertEqual(registration.user, user)
 
-    def test_registration_redirects_to_success_page(self):
+    def test_anonymous_registration_redirects_to_verification_sent(self):
         event = Event.objects.create(
             name="Redirect Event",
             program=self.program,
@@ -689,4 +693,124 @@ class RegistrationFullFlowTests(TestCase):
         response = self.client.post(reverse('registration_create', args=[event.id]), form_data)
 
         self.assertEqual(response.status_code, 302)
+        self.assertIn('verification-sent', response.url)
+
+    def test_verified_user_redirects_to_submitted(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='verified@example.com',
+            email='verified@example.com',
+            first_name='Verified',
+            last_name='User',
+        )
+        user.profile.email_verified = True
+        user.profile.save()
+
+        event = Event.objects.create(
+            name="Verified Event",
+            program=self.program,
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+        )
+
+        form_data = {
+            'first_name': 'Verified',
+            'last_name': 'User',
+            'email': 'verified@example.com',
+            'phone': '+16135550100',
+        }
+
+        # Act
+        response = self.client.post(reverse('registration_create', args=[event.id]), form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
         self.assertIn('submitted', response.url)
+
+
+class RegistrationVerifyViewTests(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Test Event",
+            program=self.program,
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+        )
+        self.user = User.objects.create_user(
+            username='verify@example.com',
+            email='verify@example.com',
+            first_name='Verify',
+            last_name='User',
+        )
+        self.registration = Registration.objects.create(
+            event=self.event,
+            user=self.user,
+            name="Verify User",
+            first_name="Verify",
+            last_name="User",
+            email="verify@example.com",
+        )
+        self.registration.hold_for_verification()
+        self.registration.save()
+        mail.outbox = []
+
+    def test_verify_valid_token_confirms_and_logs_in(self):
+        # Arrange
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+        token = signer.sign(str(self.registration.id))
+
+        # Act
+        response = self.client.get(reverse('registration_verify') + f'?token={token}')
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/registrations/verification_success.html')
+        updated = Registration.objects.get(pk=self.registration.pk)
+        self.assertEqual(updated.state, Registration.STATE_CONFIRMED)
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.user.pk)
+
+    def test_verify_invalid_token_shows_error(self):
+        # Act
+        response = self.client.get(reverse('registration_verify') + '?token=invalid-token')
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/registrations/verification_failed.html')
+        self.assertEqual(response.context['reason'], 'invalid')
+
+    def test_verify_missing_token_shows_error(self):
+        # Act
+        response = self.client.get(reverse('registration_verify'))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/registrations/verification_failed.html')
+
+    def test_verify_already_confirmed_shows_not_found(self):
+        # Arrange
+        self.registration.confirm()
+        self.registration.save()
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+        token = signer.sign(str(self.registration.id))
+
+        # Act
+        response = self.client.get(reverse('registration_verify') + f'?token={token}')
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/registrations/verification_failed.html')
+        self.assertEqual(response.context['reason'], 'not_found')
+
+    def test_verification_sent_page_renders(self):
+        # Act
+        response = self.client.get(reverse('registration_verification_sent'))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/registrations/verification_sent.html')

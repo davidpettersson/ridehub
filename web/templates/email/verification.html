@@ -1,0 +1,19 @@
+{% extends 'email/_base_email.html' %}
+
+{% block title %}Verify your email{% endblock %}
+
+{% block content %}
+    <h1>Almost there!</h1>
+
+    <p>Please verify your email to complete your registration for <strong>{{ registration.event.name }}</strong> on <strong>{{ registration.event.starts_at|date:"l, M j" }}</strong> at <strong>{{ registration.event.starts_at|date:"g:i A" }}</strong>.</p>
+
+    <p>You are <strong>not registered</strong> until you click the link below.</p>
+
+    <p><a href="{{ verification_url }}" class="button">Verify my email</a></p>
+
+    <p>This link is valid for 24 hours.</p>
+{% endblock %}
+
+{% block footer %}
+    {{ block.super }}
+{% endblock %}

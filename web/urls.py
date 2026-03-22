@@ -10,7 +10,10 @@ from web.views.registration_manage import (
     event_registrations_manage, staff_registration_add,
     staff_registration_edit, staff_registration_withdraw,
 )
-from web.views.registrations import registration_create, registration_submitted, membership_number_capture
+from web.views.registrations import (
+    registration_create, registration_submitted, membership_number_capture,
+    registration_verification_sent, registration_verify,
+)
 from web.views.rides import ride_speed_ranges
 from web.views.reviews import review_2025
 from web.views.announcements import active_announcements
@@ -35,6 +38,8 @@ urlpatterns = [
     path('events.ics', EventFeed(), name='event_feed'),
     path('registrations/<int:registration_id>/withdraw', registration_withdraw, name='registration_withdraw'),
     path('registrations/submitted', registration_submitted, name='registration_submitted'),
+    path('registrations/verify', registration_verify, name='registration_verify'),
+    path('registrations/verification-sent', registration_verification_sent, name='registration_verification_sent'),
     path('rides/<int:ride_id>/speed-ranges', ride_speed_ranges, name='get_speed_ranges'),
     path('events/<int:event_id>/membership-number', membership_number_capture, name='membership_number_capture'),
     path('profile', profile, name='profile'),

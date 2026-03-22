@@ -1,0 +1,29 @@
+{% extends 'web/_base_bootstrap.html' %}
+{% block title %}Verify Your Email{% endblock %}
+{% block content %}
+    <div class="row justify-content-center py-5">
+        <div class="col-12 col-sm-8 col-md-6 col-lg-5">
+            <div class="card">
+                <div class="card-body p-4 text-center">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-warning bg-opacity-10 mb-4" style="width: 64px; height: 64px;">
+                        <i class="bi bi-envelope-check text-warning fs-2"></i>
+                    </div>
+
+                    <h1 class="fs-4 fw-bold mb-3">Almost there!</h1>
+
+                    <p class="text-secondary mb-3">
+                        We've sent a verification email to your address. Please click the link in the email to complete your registration.
+                    </p>
+
+                    <p class="text-secondary fw-medium mb-3">
+                        You are <strong>not registered</strong> until you verify your email.
+                    </p>
+
+                    <p class="text-secondary small mb-0">
+                        The link is valid for 24 hours. If you don't see the email, please check your spam folder.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

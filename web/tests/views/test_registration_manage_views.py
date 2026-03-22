@@ -92,7 +92,7 @@ class ManagePageAccessTests(BaseManageTestCase):
         # Assert
         self.assertEqual(response.status_code, 302)
 
-    def test_manage_page_shows_only_confirmed_registrations(self):
+    def test_manage_page_shows_confirmed_and_unverified_registrations(self):
         # Arrange
         self.client.login(username='staff@example.com', password='password123')
         self._create_confirmed_registration(
@@ -116,6 +116,34 @@ class ManagePageAccessTests(BaseManageTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Regular')
         self.assertNotContains(response, 'Withdrawn')
+
+    def test_manage_page_includes_unverified_registrations(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+
+        unverified_user = User.objects.create_user(
+            username='unverified@example.com', email='unverified@example.com',
+            password='password123', first_name='Unverified', last_name='Person',
+        )
+        reg = Registration.objects.create(
+            event=self.event,
+            user=unverified_user,
+            name='Unverified Person',
+            first_name='Unverified',
+            last_name='Person',
+            email='unverified@example.com',
+            ride=self.ride,
+            speed_range_preference=self.speed_range,
+        )
+        reg.hold_for_verification()
+        reg.save()
+
+        # Act
+        response = self.client.get(reverse('event_registrations_manage', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Unverified')
 
 
 class StaffWithdrawTests(BaseManageTestCase):
@@ -161,6 +189,39 @@ class StaffWithdrawTests(BaseManageTestCase):
         # Assert
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('withdrawn', mail.outbox[0].subject.lower())
+
+    def test_staff_can_withdraw_unverified_registration(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+        unverified_user = User.objects.create_user(
+            username='unverified@example.com', email='unverified@example.com',
+            password='password123', first_name='Unverified', last_name='User',
+        )
+        reg = Registration.objects.create(
+            event=self.event,
+            user=unverified_user,
+            name='Unverified User',
+            first_name='Unverified',
+            last_name='User',
+            email='unverified@example.com',
+            phone='+16135550100',
+            ride=self.ride,
+            speed_range_preference=self.speed_range,
+        )
+        reg.hold_for_verification()
+        reg.save()
+
+        # Act
+        from django.core import mail
+        response = self.client.post(
+            reverse('staff_registration_withdraw', args=[self.event.id, reg.id])
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        reg = Registration.objects.get(id=reg.id)
+        self.assertEqual(reg.state, Registration.STATE_WITHDRAWN)
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_get_request_redirects(self):
         # Arrange

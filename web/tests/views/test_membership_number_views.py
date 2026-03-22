@@ -30,6 +30,17 @@ class MembershipNumberRegistrationFlowTests(TestCase):
 
     @override_flag('capture_membership_number', active=False)
     def test_flag_off_redirects_to_submitted(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='testflow@example.com',
+            email='testflow@example.com',
+            first_name='Test',
+            last_name='User',
+        )
+        user.profile.email_verified = True
+        user.profile.save()
+        self.client.force_login(user)
+
         # Act
         response = self.client.post(
             reverse('registration_create', args=[self.event.id]),
@@ -41,7 +52,30 @@ class MembershipNumberRegistrationFlowTests(TestCase):
         self.assertIn('submitted', response.url)
 
     @override_flag('capture_membership_number', active=True)
-    def test_flag_on_anonymous_user_redirects_to_interstitial(self):
+    def test_flag_on_anonymous_user_redirects_to_verification_sent(self):
+        # Act
+        response = self.client.post(
+            reverse('registration_create', args=[self.event.id]),
+            self.form_data,
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('verification-sent', response.url)
+
+    @override_flag('capture_membership_number', active=True)
+    def test_flag_on_authenticated_user_redirects_to_interstitial(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='testflow@example.com',
+            email='testflow@example.com',
+            first_name='Test',
+            last_name='User',
+        )
+        user.profile.phone = '+16135550100'
+        user.profile.save()
+        self.client.force_login(user)
+
         # Act
         response = self.client.post(
             reverse('registration_create', args=[self.event.id]),
@@ -104,6 +138,16 @@ class MembershipNumberRegistrationFlowTests(TestCase):
     @override_flag('capture_membership_number', active=True)
     def test_flag_on_event_not_requiring_membership_redirects_to_submitted(self):
         # Arrange
+        user = User.objects.create_user(
+            username='nomembership@example.com',
+            email='nomembership@example.com',
+            first_name='Test',
+            last_name='User',
+        )
+        user.profile.email_verified = True
+        user.profile.save()
+        self.client.force_login(user)
+
         event = Event.objects.create(
             name="No Membership Event",
             program=self.program,
