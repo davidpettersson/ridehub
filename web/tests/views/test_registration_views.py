@@ -465,6 +465,7 @@ class RegistrationFullFlowTests(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('Verify', mail.outbox[0].subject)
+        self.assertEqual(mail.outbox[0].to, ['testuser@example.com'])
 
     def test_registration_with_ride_and_speed_range(self):
         event = Event.objects.create(

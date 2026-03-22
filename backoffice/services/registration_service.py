@@ -93,6 +93,9 @@ class RegistrationService:
 
     def _should_skip_verification(self, user: User, request_detail: RequestDetail | None) -> bool:
         if request_detail and request_detail.authenticated:
+            if not user.profile.email_verified:
+                user.profile.email_verified = True
+                user.profile.save(update_fields=['email_verified'])
             return True
         return user.profile.email_verified
 

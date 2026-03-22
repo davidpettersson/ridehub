@@ -1,4 +1,6 @@
 import datetime
+import time
+from unittest.mock import patch
 
 from django.core.signing import TimestampSigner
 from django.test import TestCase, RequestFactory
@@ -2030,6 +2032,24 @@ class EmailVerificationFlowTestCase(TestCase):
         registration = Registration.objects.get(event=self.event)
         self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
 
+    def test_register_authenticated_user_sets_email_verified(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=True,
+        )
+
+        # Act
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+
+        # Assert
+        user = User.objects.get(email='test@example.com')
+        user.profile.refresh_from_db()
+        self.assertTrue(user.profile.email_verified)
+
     def test_register_unverified_unauthenticated_user_holds_for_verification(self):
         # Arrange
         request_detail = RequestDetail(
@@ -2151,19 +2171,19 @@ class EmailVerificationFlowTestCase(TestCase):
         )
         registration = Registration.objects.get(event=self.event)
         signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
-        expired_token = signer.sign(str(registration.id))
+        token = signer.sign(str(registration.id))
         mail.outbox = []
 
         # Act
-        with self.settings(SIGNING_BACKEND='django.core.signing.TimestampSigner'):
-            result_registration, error = self.service.verify_registration(
-                expired_token,
-            )
+        future_time = time.time() + 86401
+        with patch('django.core.signing.time.time', return_value=future_time):
+            result_registration, error = self.service.verify_registration(token)
 
-        # Assert — we can't truly test expiry without time travel, so test the error paths directly
-        # Instead, test with an invalid token
-        _, error = self.service.verify_registration("invalid-token")
-        self.assertEqual(error, 'invalid')
+        # Assert
+        self.assertIsNone(result_registration)
+        self.assertEqual(error, 'expired')
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Verify', mail.outbox[0].subject)
 
     def test_verify_invalid_token_returns_error(self):
         # Act

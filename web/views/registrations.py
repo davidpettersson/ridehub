@@ -97,6 +97,11 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
             if result == RegistrationResult.VERIFICATION_REQUIRED:
                 return redirect('registration_verification_sent')
 
+            if result == RegistrationResult.DUPLICATE:
+                if request.user.is_authenticated:
+                    return redirect('registration_submitted')
+                return redirect('registration_verification_sent')
+
             if (flag_is_active(request, 'capture_membership_number')
                     and event.requires_membership):
                 user_service = UserService()
