@@ -63,6 +63,68 @@ class BaseManageTestCase(TestCase):
         return reg
 
 
+class ManagePageAvailabilityTests(BaseManageTestCase):
+    def _make_event_old(self):
+        self.event.starts_at = timezone.now() - timezone.timedelta(hours=80)
+        self.event.ends_at = timezone.now() - timezone.timedelta(hours=78)
+        self.event.registration_closes_at = timezone.now() - timezone.timedelta(hours=81)
+        self.event.save()
+
+    def test_manage_page_shows_unavailable_for_old_event(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+        self._make_event_old()
+
+        # Act
+        response = self.client.get(reverse('event_registrations_manage', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['registrations_available'])
+        self.assertContains(response, 'Registration details are no longer available')
+
+    def test_staff_add_redirects_for_old_event(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+        self._make_event_old()
+
+        # Act
+        response = self.client.get(reverse('staff_registration_add', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+
+    def test_staff_edit_redirects_for_old_event(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+        reg = self._create_confirmed_registration(self.regular_user, self.ride, self.speed_range)
+        self._make_event_old()
+
+        # Act
+        response = self.client.get(
+            reverse('staff_registration_edit', args=[self.event.id, reg.id])
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+
+    def test_staff_withdraw_redirects_for_old_event(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+        reg = self._create_confirmed_registration(self.regular_user, self.ride, self.speed_range)
+        self._make_event_old()
+
+        # Act
+        response = self.client.post(
+            reverse('staff_registration_withdraw', args=[self.event.id, reg.id])
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        updated_reg = Registration.objects.get(id=reg.id)
+        self.assertEqual(updated_reg.state, Registration.STATE_CONFIRMED)
+
+
 class ManagePageAccessTests(BaseManageTestCase):
     def test_staff_can_access_manage_page(self):
         # Arrange

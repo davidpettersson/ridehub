@@ -33,9 +33,11 @@
         <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
             <i class="bi bi-arrow-left me-2"></i> Back to event
         </a>
+        {% if registrations_available %}
         <a href="{% url 'staff_registration_add' event.id %}" class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center">
             <i class="bi bi-plus-circle me-2"></i> Add registration
         </a>
+        {% endif %}
     </div>
 
     <div class="mb-4">
@@ -46,6 +48,12 @@
         <span class="badge fw-normal text-muted" style="font-size: 0.85rem; background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
     </div>
 
+    {% if not registrations_available %}
+    <div class="py-5 text-center card">
+        <p class="text-muted">Registration details are no longer available for this event.</p>
+        <p class="text-muted small">Total registrations: {{ registration_count }}</p>
+    </div>
+    {% else %}
     <div class="card shadow-sm mb-4">
         <div class="card-body p-3">
             <form method="get" class="row g-2 align-items-end">
@@ -70,5 +78,6 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}

@@ -131,7 +131,10 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
         Event,
         id=event_id)
 
-    rides = _get_rides_with_riders_for_event(event_id)
+    if event.registrations_available:
+        rides = _get_rides_with_riders_for_event(event_id)
+    else:
+        rides = {}
 
     user_is_registered = False
     if request.user.is_authenticated:
@@ -143,8 +146,9 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 
     context = {
         'event': event,
-        'rides': rides,  # Renamed from 'rides_with_riders'
+        'rides': rides,
         'user_is_registered': user_is_registered,
+        'registrations_available': event.registrations_available,
     }
 
     return render(request, 'web/events/detail.html', context)
@@ -197,6 +201,19 @@ def event_list(request: HttpRequest) -> HttpResponse:
 def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
+    if not event.registrations_available:
+        context = {
+            'event': event,
+            'all_riders': Registration.objects.none(),
+            'is_ride_leader': False,
+            'can_access_rider_contacts': False,
+            'all_emails': '',
+            'ride_leader_emails': '',
+            'registrations_available': False,
+            'registration_count': event.registration_count,
+        }
+        return render(request, 'web/events/registrations.html', context=context)
+
     is_ride_leader = False
 
     if request.user.is_authenticated:
@@ -239,6 +256,7 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
         'can_access_rider_contacts': can_access_rider_contacts,
         'all_emails': all_emails,
         'ride_leader_emails': ride_leader_emails,
+        'registrations_available': True,
     }
 
     return render(request, 'web/events/registrations.html', context=context)
