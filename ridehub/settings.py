@@ -28,6 +28,8 @@ WAFFLE_OVERRIDE = True
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 
+REGISTRATION_VISIBILITY_HOURS = 72
+
 INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',
     'django.contrib.admin',

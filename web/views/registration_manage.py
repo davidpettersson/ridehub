@@ -23,6 +23,18 @@ def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpRespo
 
     event = get_object_or_404(Event, id=event_id)
 
+    if not event.registrations_available:
+        registration_count = Registration.objects.filter(
+            event_id=event_id,
+            state__in=[Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
+        ).count()
+        context = {
+            'event': event,
+            'registrations_available': False,
+            'registration_count': registration_count,
+        }
+        return render(request, 'web/events/registrations_manage.html', context)
+
     registrations = Registration.objects.filter(
         event_id=event_id,
         state__in=[Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
@@ -44,6 +56,7 @@ def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpRespo
         'event': event,
         'table': table,
         'filter': registration_filter,
+        'registrations_available': True,
     }
 
     return render(request, 'web/events/registrations_manage.html', context)
@@ -54,6 +67,9 @@ def staff_registration_add(request: HttpRequest, event_id: int) -> HttpResponse:
     _require_staff(request.user)
 
     event = get_object_or_404(Event, id=event_id)
+
+    if not event.registrations_available:
+        return redirect('event_registrations_manage', event_id=event.id)
 
     if request.method == 'POST':
         form = StaffRegistrationForm(request.POST, event=event)
@@ -98,6 +114,10 @@ def staff_registration_edit(request: HttpRequest, event_id: int, registration_id
     _require_staff(request.user)
 
     event = get_object_or_404(Event, id=event_id)
+
+    if not event.registrations_available:
+        return redirect('event_registrations_manage', event_id=event.id)
+
     registration = get_object_or_404(Registration, id=registration_id, event=event)
 
     if request.method == 'POST':
@@ -158,6 +178,9 @@ def staff_registration_withdraw(request: HttpRequest, event_id: int, registratio
         return redirect('event_registrations_manage', event_id=event_id)
 
     event = get_object_or_404(Event, id=event_id)
+
+    if not event.registrations_available:
+        return redirect('event_registrations_manage', event_id=event.id)
     registration = get_object_or_404(Registration, id=registration_id, event=event)
 
     service = RegistrationService()

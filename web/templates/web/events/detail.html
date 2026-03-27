@@ -162,6 +162,11 @@
                         </a>
                     </div>
 
+                    {% if not registrations_available %}
+                    <div class="mt-4">
+                        <p class="text-muted small">Registration details are no longer available for this event.</p>
+                    </div>
+                    {% else %}
                     {% with ride_id=ride.id|stringformat:"s" %}
                     {% if rides and ride_id in rides %}
                     <div class="mt-4">
@@ -211,6 +216,7 @@
                         <p class="text-muted">No speed ranges configured for this ride.</p>
                     {% endif %}
                     {% endwith %}
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}

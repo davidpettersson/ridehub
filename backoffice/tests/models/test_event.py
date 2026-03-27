@@ -249,6 +249,93 @@ class EventTimeValidationTestCase(TestCase):
         event.full_clean()
 
 
+class EventRegistrationsAvailableTestCase(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.now = timezone.now()
+
+    def test_future_event_registrations_available(self):
+        # Arrange
+        event = Event.objects.create(
+            program=self.program,
+            name="Future Event",
+            starts_at=self.now + timedelta(days=1),
+            ends_at=self.now + timedelta(days=1, hours=2),
+            registration_closes_at=self.now,
+        )
+
+        # Act / Assert
+        self.assertTrue(event.registrations_available)
+
+    def test_recently_ended_event_registrations_available(self):
+        # Arrange
+        event = Event.objects.create(
+            program=self.program,
+            name="Recent Event",
+            starts_at=self.now - timedelta(hours=71),
+            ends_at=self.now - timedelta(hours=69),
+            registration_closes_at=self.now - timedelta(hours=72),
+        )
+
+        # Act / Assert
+        self.assertTrue(event.registrations_available)
+
+    def test_event_ended_beyond_threshold_registrations_unavailable(self):
+        # Arrange
+        event = Event.objects.create(
+            program=self.program,
+            name="Old Event",
+            starts_at=self.now - timedelta(hours=80),
+            ends_at=self.now - timedelta(hours=78),
+            registration_closes_at=self.now - timedelta(hours=81),
+        )
+
+        # Act / Assert
+        self.assertFalse(event.registrations_available)
+
+    def test_event_without_ends_at_uses_starts_at(self):
+        # Arrange
+        event = Event.objects.create(
+            program=self.program,
+            name="No End Time",
+            starts_at=self.now - timedelta(hours=80),
+            registration_closes_at=self.now - timedelta(hours=81),
+            external_registration_url='https://example.com/register',
+        )
+
+        # Act / Assert
+        self.assertFalse(event.registrations_available)
+
+    def test_event_just_inside_threshold_registrations_available(self):
+        # Arrange
+        event = Event.objects.create(
+            program=self.program,
+            name="Boundary Event",
+            starts_at=self.now - timedelta(hours=73),
+            ends_at=self.now - timedelta(hours=71),
+            registration_closes_at=self.now - timedelta(hours=74),
+        )
+
+        # Act / Assert
+        self.assertTrue(event.registrations_available)
+
+    def test_custom_threshold_from_settings(self):
+        # Arrange
+        event = Event.objects.create(
+            program=self.program,
+            name="Custom Threshold",
+            starts_at=self.now - timedelta(hours=50),
+            ends_at=self.now - timedelta(hours=48),
+            registration_closes_at=self.now - timedelta(hours=51),
+        )
+
+        # Act / Assert
+        with self.settings(REGISTRATION_VISIBILITY_HOURS=24):
+            self.assertFalse(event.registrations_available)
+        with self.settings(REGISTRATION_VISIBILITY_HOURS=72):
+            self.assertTrue(event.registrations_available)
+
+
 class EventRegistrationOpenTestCase(TestCase):
     def setUp(self):
         self.program = Program.objects.create(name="Test Program")

@@ -201,7 +201,12 @@
     </div>
     {% endif %}
 
-    {% if all_riders %}
+    {% if not registrations_available %}
+    <h2 class="fs-5 fw-medium mb-3">Registered riders ({{ registration_count }})</h2>
+    <div class="py-5 text-center card">
+        <p class="text-muted">Registration details are no longer available for this event.</p>
+    </div>
+    {% elif all_riders %}
     <h2 class="fs-5 fw-medium mb-3">Registered riders ({{ all_riders|length }})</h2>
         <!-- Mobile view (card-based layout) -->
         <div class="d-md-none">

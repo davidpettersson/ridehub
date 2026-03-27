@@ -314,6 +314,136 @@ class RegistrationWithdrawAccessControlTests(TestCase):
         self.assertEqual(updated_registration.state, 'confirmed')
 
 
+class RidersListAvailabilityTests(TestCase):
+    def setUp(self):
+        self.now = timezone.now()
+        self.program = Program.objects.create(name="Test Program")
+        self.route = Route.objects.create(name="Test Route")
+
+    def _create_event_with_registration(self, ends_at):
+        event = Event.objects.create(
+            name="Test Event",
+            program=self.program,
+            starts_at=ends_at - timezone.timedelta(hours=2),
+            ends_at=ends_at,
+            registration_closes_at=ends_at - timezone.timedelta(hours=3),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+        )
+        ride = Ride.objects.create(event=event, route=self.route, ordering=1)
+        user = User.objects.create_user(
+            username='rider@example.com',
+            email='rider@example.com',
+            first_name='Test',
+            last_name='Rider',
+        )
+        reg = Registration.objects.create(
+            event=event,
+            user=user,
+            name='Test Rider',
+            first_name='Test',
+            last_name='Rider',
+            email='rider@example.com',
+            ride=ride,
+        )
+        reg.confirm()
+        reg.save()
+        return event
+
+    def test_riders_list_shows_riders_for_recent_event(self):
+        # Arrange
+        event = self._create_event_with_registration(
+            ends_at=self.now - timezone.timedelta(hours=24)
+        )
+
+        # Act
+        response = self.client.get(reverse('riders_list', args=[event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['registrations_available'])
+        self.assertEqual(len(response.context['all_riders']), 1)
+
+    def test_riders_list_hides_riders_for_old_event(self):
+        # Arrange
+        event = self._create_event_with_registration(
+            ends_at=self.now - timezone.timedelta(hours=80)
+        )
+
+        # Act
+        response = self.client.get(reverse('riders_list', args=[event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['registrations_available'])
+        self.assertEqual(len(response.context['all_riders']), 0)
+        self.assertEqual(response.context['registration_count'], 1)
+
+    def test_riders_list_shows_unavailability_message_for_old_event(self):
+        # Arrange
+        event = self._create_event_with_registration(
+            ends_at=self.now - timezone.timedelta(hours=80)
+        )
+
+        # Act
+        response = self.client.get(reverse('riders_list', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, 'Registration details are no longer available')
+
+
+class EventDetailAvailabilityTests(TestCase):
+    def setUp(self):
+        self.now = timezone.now()
+        self.program = Program.objects.create(name="Test Program")
+        self.route = Route.objects.create(name="Test Route")
+
+    def _create_event_with_ride(self, ends_at):
+        event = Event.objects.create(
+            name="Test Event",
+            program=self.program,
+            starts_at=ends_at - timezone.timedelta(hours=2),
+            ends_at=ends_at,
+            registration_closes_at=ends_at - timezone.timedelta(hours=3),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+        )
+        Ride.objects.create(event=event, route=self.route, ordering=1)
+        speed_range = SpeedRange.objects.create(lower_limit=25, upper_limit=30)
+        event.ride_set.first().speed_ranges.add(speed_range)
+        return event
+
+    def test_event_detail_shows_rides_for_recent_event(self):
+        # Arrange
+        event = self._create_event_with_ride(
+            ends_at=self.now - timezone.timedelta(hours=24)
+        )
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['registrations_available'])
+        self.assertTrue(len(response.context['rides']) > 0)
+
+    def test_event_detail_hides_rides_for_old_event(self):
+        # Arrange
+        event = self._create_event_with_ride(
+            ends_at=self.now - timezone.timedelta(hours=80)
+        )
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['registrations_available'])
+        self.assertEqual(len(response.context['rides']), 0)
+
+
 class RegistrationCreateErrorCaseTests(TestCase):
     def setUp(self):
         self.program = Program.objects.create(name="Test Program")

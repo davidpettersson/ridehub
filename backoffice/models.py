@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from colorfield.fields import ColorField
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -246,6 +247,14 @@ class Event(models.Model):
             return False
         closes_at = self.registration_closes_at or self.starts_at
         return timezone.now() < closes_at
+
+    @property
+    def registrations_available(self) -> bool:
+        reference_time = self.ends_at or self.starts_at
+        if reference_time is None:
+            return True
+        cutoff = reference_time + timedelta(hours=settings.REGISTRATION_VISIBILITY_HOURS)
+        return timezone.now() <= cutoff
 
     def __str__(self):
         return self.name
