@@ -24,10 +24,14 @@ def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpRespo
     event = get_object_or_404(Event, id=event_id)
 
     if not event.registrations_available:
+        registration_count = Registration.objects.filter(
+            event_id=event_id,
+            state__in=[Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
+        ).count()
         context = {
             'event': event,
             'registrations_available': False,
-            'registration_count': event.registration_count,
+            'registration_count': registration_count,
         }
         return render(request, 'web/events/registrations_manage.html', context)
 
