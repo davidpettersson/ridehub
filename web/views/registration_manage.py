@@ -187,13 +187,13 @@ def staff_registration_edit(request: HttpRequest, event_id: int, registration_id
 def staff_registration_withdraw(request: HttpRequest, event_id: int, registration_id: int) -> HttpResponse:
     _require_staff(request.user)
 
-    if request.method != 'POST':
-        return redirect('event_registrations_manage', event_id=event_id)
-
     event = get_object_or_404(Event, id=event_id)
 
     if event.external_registration_url:
         return redirect('event_detail', event_id=event.id)
+
+    if request.method != 'POST':
+        return redirect('event_registrations_manage', event_id=event_id)
 
     if not event.registrations_available:
         return redirect('event_registrations_manage', event_id=event.id)
