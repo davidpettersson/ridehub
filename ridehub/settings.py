@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -208,3 +209,6 @@ SOCIALACCOUNT_PROVIDERS = {
 
 AZURE_AD_STAFF_DOMAIN = '@ottawabicycleclub.ca'
 AZURE_AD_STAFF_GROUP = 'Ride Administrators'
+
+if 'test' in sys.argv:
+    PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
