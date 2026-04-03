@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django_tables2 import RequestConfig
 
 from backoffice.models import Event, Registration
@@ -56,6 +57,7 @@ def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpRespo
         'event': event,
         'table': table,
         'filter': registration_filter,
+        'filter_clear_url': reverse('event_registrations_manage', args=[event_id]),
         'registrations_available': True,
     }
 

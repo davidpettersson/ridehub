@@ -180,6 +180,184 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
 
 
 
+class EventRegistrationsFilterTests(BaseEventViewTestCase):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('riders_list', kwargs={'event_id': self.event.id})
+
+        self.ride.speed_ranges.add(self.speed_range)
+
+        self.ride_b = Ride.objects.create(
+            name='Ride B', event=self.event, route=self.route, ordering=2
+        )
+        self.speed_range_b = SpeedRange.objects.create(lower_limit=35, upper_limit=40)
+        self.ride_b.speed_ranges.add(self.speed_range_b)
+
+        self.rider_b = User.objects.create_user(
+            username='rider_b', email='riderb@example.com', password='password123',
+            first_name='Rider', last_name='B',
+        )
+        self.reg_ride_b = Registration.objects.create(
+            first_name='Rider', last_name='B', name='Rider B',
+            email='riderb@example.com', event=self.event,
+            ride=self.ride_b, speed_range_preference=self.speed_range_b,
+            ride_leader_preference=Registration.RideLeaderPreference.NO,
+            emergency_contact_name='EC B', emergency_contact_phone='555-0001',
+            user=self.rider_b, state=Registration.STATE_CONFIRMED,
+        )
+
+    def test_filter_by_ride(self):
+        # Act
+        response = self.client.get(self.url, {'ride': self.ride.id})
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        filtered = list(response.context['filtered_riders'])
+        filtered_ids = [r.id for r in filtered]
+        self.assertIn(self.regular_registration.id, filtered_ids)
+        self.assertIn(self.leader_registration.id, filtered_ids)
+        self.assertNotIn(self.reg_ride_b.id, filtered_ids)
+
+    def test_filter_by_speed_range(self):
+        # Act
+        response = self.client.get(self.url, {'speed_range_preference': self.speed_range.id})
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        filtered = list(response.context['filtered_riders'])
+        filtered_ids = [r.id for r in filtered]
+        self.assertIn(self.regular_registration.id, filtered_ids)
+        self.assertNotIn(self.reg_ride_b.id, filtered_ids)
+
+    def test_filter_by_ride_leader(self):
+        # Act
+        response = self.client.get(self.url, {'ride_leader_preference': 'y'})
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        filtered = list(response.context['filtered_riders'])
+        filtered_ids = [r.id for r in filtered]
+        self.assertIn(self.leader_registration.id, filtered_ids)
+        self.assertNotIn(self.regular_registration.id, filtered_ids)
+        self.assertNotIn(self.reg_ride_b.id, filtered_ids)
+
+    def test_combined_filters(self):
+        # Act
+        response = self.client.get(self.url, {
+            'ride': self.ride.id, 'ride_leader_preference': 'y',
+        })
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        filtered = list(response.context['filtered_riders'])
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered[0].id, self.leader_registration.id)
+
+    def test_no_filters_shows_all(self):
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        filtered = list(response.context['filtered_riders'])
+        self.assertEqual(len(filtered), 3)
+
+    def test_filter_preserves_contact_visibility_for_staff(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url, {'ride_leader_preference': 'y'})
+
+        # Assert
+        self.assertTrue(response.context['can_access_rider_contacts'])
+        self.assertContains(response, 'mailto:leader@example.com')
+
+    def test_filter_preserves_contact_hidden_for_anonymous(self):
+        # Act
+        response = self.client.get(self.url, {'ride_leader_preference': 'y'})
+
+        # Assert
+        self.assertFalse(response.context['can_access_rider_contacts'])
+        self.assertNotContains(response, 'mailto:leader@example.com')
+
+    def test_filter_card_visible_on_page(self):
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'name="ride"')
+        self.assertContains(response, 'name="ride_leader_preference"')
+        self.assertContains(response, 'name="speed_range_preference"')
+
+
+class EventRegistrationsSortTests(BaseEventViewTestCase):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('riders_list', kwargs={'event_id': self.event.id})
+
+    def test_sort_by_name(self):
+        # Act
+        response = self.client.get(self.url, {'sort': 'name'})
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('table', response.context)
+
+    def test_sort_by_ride(self):
+        # Act
+        response = self.client.get(self.url, {'sort': 'ride'})
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+
+    def test_sort_descending(self):
+        # Act
+        response = self.client.get(self.url, {'sort': '-name'})
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+
+
+class EventRegistrationsColumnTests(BaseEventViewTestCase):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('riders_list', kwargs={'event_id': self.event.id})
+
+    def test_anonymous_user_no_email_column(self):
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertNotContains(response, 'mailto:regular@example.com')
+
+    def test_staff_user_sees_email_column(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'mailto:regular@example.com')
+
+    def test_ride_leader_column_present_for_all_users(self):
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'Ride leader')
+
+    def test_mobile_view_shows_ride_leader_as_row(self):
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        content = response.content.decode()
+        self.assertIn('Ride leader:', content)
+        self.assertNotIn('badge bg-primary ms-2', content)
+
+
 class EventDetailViewTests(BaseEventViewTestCase):
     """Tests for the event_detail view."""
 

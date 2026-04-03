@@ -5,13 +5,17 @@ from urllib.parse import urlencode
 
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
+from django.urls import reverse
 from django.utils import timezone
 
+from django_tables2 import RequestConfig
 from waffle import flag_is_active
 
 from backoffice.models import Event, Registration
 from backoffice.services.event_service import EventService
 from backoffice.services.registration_service import RegistrationService
+from web.filters import PublicRegistrationFilter
+from web.tables import PublicRegistrationTable
 
 
 def _create_ride_structure(ride):
@@ -249,9 +253,24 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
         if rider.email and rider.ride_leader_preference == Registration.RideLeaderPreference.YES
     )))
 
+    registration_filter = PublicRegistrationFilter(
+        request.GET, queryset=all_riders, event=event
+    )
+
+    exclude_columns = ()
+    if not can_access_rider_contacts:
+        exclude_columns = ('email', 'phone', 'emergency_contact_name', 'emergency_contact_phone')
+
+    table = PublicRegistrationTable(registration_filter.qs, exclude=exclude_columns)
+    RequestConfig(request, paginate=False).configure(table)
+
     context = {
         'event': event,
         'all_riders': all_riders,
+        'filtered_riders': registration_filter.qs,
+        'table': table,
+        'filter': registration_filter,
+        'filter_clear_url': reverse('riders_list', args=[event_id]),
         'is_ride_leader': is_ride_leader,
         'can_access_rider_contacts': can_access_rider_contacts,
         'all_emails': all_emails,
