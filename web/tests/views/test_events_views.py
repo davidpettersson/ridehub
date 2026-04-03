@@ -756,3 +756,75 @@ class CalendarMonthPreservationTests(TestCase):
         # Assert - Should redirect to upcoming, not calendar
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('upcoming'))
+
+
+class AnnouncedEventDashedBorderTests(TestCase):
+
+    def setUp(self):
+        self.program = Program.objects.create(name='Test Program', color='#3498db')
+        self.client = Client()
+
+        now = timezone.now()
+        future_date = now + timedelta(days=7)
+
+        self.announced_event = Event.objects.create(
+            program=self.program,
+            name='Announced Event',
+            description='An announced event',
+            starts_at=future_date,
+            registration_closes_at=future_date - timedelta(days=1),
+            state=Event.STATE_ANNOUNCED,
+        )
+
+        self.live_event = Event.objects.create(
+            program=self.program,
+            name='Live Event',
+            description='A live event',
+            starts_at=future_date + timedelta(hours=2),
+            registration_closes_at=future_date - timedelta(days=1),
+            state=Event.STATE_LIVE,
+        )
+
+    def test_upcoming_view_announced_event_has_dashed_border_class(self):
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertContains(response, 'event-card-announced')
+
+    def test_upcoming_view_live_event_does_not_have_dashed_border_class(self):
+        # Arrange
+        self.announced_event.delete()
+
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertNotContains(response, 'event-card-announced')
+
+    def test_calendar_view_announced_event_has_dashed_border_class(self):
+        # Arrange
+        event_date = self.announced_event.starts_at
+
+        # Act
+        response = self.client.get(reverse('calendar_month', kwargs={
+            'year': event_date.year,
+            'month': event_date.month,
+        }))
+
+        # Assert
+        self.assertContains(response, 'calendar-event-announced')
+
+    def test_calendar_view_live_event_does_not_have_dashed_border_class(self):
+        # Arrange
+        self.announced_event.delete()
+        event_date = self.live_event.starts_at
+
+        # Act
+        response = self.client.get(reverse('calendar_month', kwargs={
+            'year': event_date.year,
+            'month': event_date.month,
+        }))
+
+        # Assert
+        self.assertNotContains(response, 'calendar-event-announced')

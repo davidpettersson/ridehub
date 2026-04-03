@@ -311,6 +311,10 @@ body {
   font-size: 0.45rem;
 }
 
+.event-card-announced {
+  border-style: dashed !important;
+}
+
 .event-card:hover {
   background-color: #f8f9fa !important;
   border-color: #6c757d !important;
@@ -342,6 +346,10 @@ body {
 
 .calendar-event {
   transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.calendar-event-announced {
+  border-style: dashed !important;
 }
 
 .calendar-event:hover {

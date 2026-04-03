@@ -203,6 +203,7 @@ class Command(BaseCommand):
 
             has_rides = 'rides' in template
             location = random.choice(LOCATIONS)
+            state = Event.STATE_ANNOUNCED if day_offset >= 6 else Event.STATE_LIVE
 
             event, created = Event.objects.get_or_create(
                 name=f"{template['name']} — {starts_at.strftime('%b %d')}",
@@ -212,7 +213,7 @@ class Command(BaseCommand):
                     'ends_at': ends_at,
                     'registration_closes_at': registration_closes_at,
                     'location': location,
-                    'state': Event.STATE_LIVE,
+                    'state': state,
                     'description': f"Join us for {template['name']}!",
                     'ride_leaders_wanted': has_rides,
                     'requires_emergency_contact': has_rides,
