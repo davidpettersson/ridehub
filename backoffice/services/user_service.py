@@ -12,6 +12,8 @@ class UserDetail:
     last_name: str
     email: str
     phone: str
+    emergency_contact_name: str = ''
+    emergency_contact_phone: str = ''
 
 
 class UserService(object):
@@ -39,6 +41,10 @@ class UserService(object):
                 user.save()
 
                 user.profile.phone = user_detail.phone
+                if user_detail.emergency_contact_name:
+                    user.profile.emergency_contact_name = user_detail.emergency_contact_name
+                if user_detail.emergency_contact_phone:
+                    user.profile.emergency_contact_phone = user_detail.emergency_contact_phone
                 user.profile.save()
 
                 return user
@@ -54,6 +60,10 @@ class UserService(object):
                 user.save()
 
                 user.profile.phone = user_detail.phone
+                if user_detail.emergency_contact_name:
+                    user.profile.emergency_contact_name = user_detail.emergency_contact_name
+                if user_detail.emergency_contact_phone:
+                    user.profile.emergency_contact_phone = user_detail.emergency_contact_phone
                 user.profile.save()
 
                 return user

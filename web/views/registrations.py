@@ -57,6 +57,8 @@ def _get_user_details(form: RegistrationForm) -> UserDetail:
         last_name=form.cleaned_data['last_name'],
         email=form.cleaned_data['email'],
         phone=form.cleaned_data['phone'],
+        emergency_contact_name=form.cleaned_data.get('emergency_contact_name', ''),
+        emergency_contact_phone=form.cleaned_data.get('emergency_contact_phone', ''),
     )
 
 
@@ -80,6 +82,8 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
             'last_name': user.last_name,
             'email': user.email,
             'phone': user.profile.phone,
+            'emergency_contact_name': user.profile.emergency_contact_name,
+            'emergency_contact_phone': user.profile.emergency_contact_phone,
         }
 
     form = RegistrationForm(request.POST or None, event=event, initial=initial_data)

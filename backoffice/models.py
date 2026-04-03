@@ -424,6 +424,16 @@ class UserProfile(models.Model):
         blank=True
     )
 
+    emergency_contact_name = models.CharField(
+        max_length=128,
+        blank=True,
+    )
+
+    emergency_contact_phone = models.CharField(
+        max_length=128,
+        blank=True,
+    )
+
     gender_identity = models.CharField(
         max_length=2,
         choices=GenderIdentity,
