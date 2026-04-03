@@ -24,6 +24,9 @@ def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpRespo
 
     event = get_object_or_404(Event, id=event_id)
 
+    if event.external_registration_url:
+        return redirect('event_detail', event_id=event.id)
+
     if not event.registrations_available:
         registration_count = Registration.objects.filter(
             event_id=event_id,
@@ -69,6 +72,9 @@ def staff_registration_add(request: HttpRequest, event_id: int) -> HttpResponse:
     _require_staff(request.user)
 
     event = get_object_or_404(Event, id=event_id)
+
+    if event.external_registration_url:
+        return redirect('event_detail', event_id=event.id)
 
     if not event.registrations_available:
         return redirect('event_registrations_manage', event_id=event.id)
@@ -118,6 +124,9 @@ def staff_registration_edit(request: HttpRequest, event_id: int, registration_id
     _require_staff(request.user)
 
     event = get_object_or_404(Event, id=event_id)
+
+    if event.external_registration_url:
+        return redirect('event_detail', event_id=event.id)
 
     if not event.registrations_available:
         return redirect('event_registrations_manage', event_id=event.id)
@@ -182,6 +191,9 @@ def staff_registration_withdraw(request: HttpRequest, event_id: int, registratio
         return redirect('event_registrations_manage', event_id=event_id)
 
     event = get_object_or_404(Event, id=event_id)
+
+    if event.external_registration_url:
+        return redirect('event_detail', event_id=event.id)
 
     if not event.registrations_available:
         return redirect('event_registrations_manage', event_id=event.id)

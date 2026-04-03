@@ -12,9 +12,11 @@
             <a href="{% url 'admin:backoffice_event_change' event.id %}" class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center">
                 <i class="bi bi-pencil me-2"></i> Edit event
             </a>
+            {% if not event.external_registration_url %}
             <a href="{% url 'event_registrations_manage' event.id %}" class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center">
                 <i class="bi bi-people me-2"></i> Manage registrations
             </a>
+            {% endif %}
             {% endif %}
         </div>
 
