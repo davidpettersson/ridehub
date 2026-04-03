@@ -24,7 +24,10 @@
             <div class="d-flex flex-column gap-2">
                 {% for event in events %}
                 <a href="{% url 'event_detail' event.id %}" class="text-decoration-none">
-                    <div class="card shadow-sm border h-100 event-card"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %}>
+                    <div class="card shadow-sm border h-100 event-card{% if event.state == "announced" %} event-card-announced{% endif %}"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %}>
+                        {% if event.state == "announced" %}
+                        <span class="visually-hidden">Announced — registration coming soon</span>
+                        {% endif %}
                         {% if user.is_authenticated and event.id in registered_event_ids %}
                         <div class="registered-indicator">
                             <i class="bi bi-check-lg" aria-hidden="true"></i>
