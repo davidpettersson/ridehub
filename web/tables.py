@@ -96,10 +96,10 @@ class PublicRegistrationTable(tables.Table):
         return format_html('<span class="small fw-medium">{}</span>', value)
 
     def render_ride(self, value):
-        return format_html('<span class="small text-muted">{}</span>', value)
+        return format_html('<span class="small text-muted">{}</span>', value or 'N/A')
 
     def render_speed_range_preference(self, value):
-        return format_html('<span class="small text-muted">{}</span>', value)
+        return format_html('<span class="small text-muted">{}</span>', value or 'N/A')
 
     def render_ride_leader_preference(self, value, record):
         if value == Registration.RideLeaderPreference.YES:

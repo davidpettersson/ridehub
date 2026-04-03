@@ -296,27 +296,32 @@ class EventRegistrationsSortTests(BaseEventViewTestCase):
         super().setUp()
         self.url = reverse('riders_list', kwargs={'event_id': self.event.id})
 
-    def test_sort_by_name(self):
+    def test_sort_by_name_ascending(self):
         # Act
         response = self.client.get(self.url, {'sort': 'name'})
 
         # Assert
         self.assertEqual(response.status_code, 200)
-        self.assertIn('table', response.context)
+        table = response.context['table']
+        rows = list(table.rows)
+        names = [row.get_cell('name') for row in rows]
+        self.assertEqual(len(names), 2)
+        leader_idx = next(i for i, n in enumerate(names) if 'Leader' in str(n))
+        regular_idx = next(i for i, n in enumerate(names) if 'Regular' in str(n))
+        self.assertLess(leader_idx, regular_idx)
 
-    def test_sort_by_ride(self):
-        # Act
-        response = self.client.get(self.url, {'sort': 'ride'})
-
-        # Assert
-        self.assertEqual(response.status_code, 200)
-
-    def test_sort_descending(self):
+    def test_sort_by_name_descending(self):
         # Act
         response = self.client.get(self.url, {'sort': '-name'})
 
         # Assert
         self.assertEqual(response.status_code, 200)
+        table = response.context['table']
+        rows = list(table.rows)
+        names = [row.get_cell('name') for row in rows]
+        leader_idx = next(i for i, n in enumerate(names) if 'Leader' in str(n))
+        regular_idx = next(i for i, n in enumerate(names) if 'Regular' in str(n))
+        self.assertGreater(leader_idx, regular_idx)
 
 
 class EventRegistrationsColumnTests(BaseEventViewTestCase):

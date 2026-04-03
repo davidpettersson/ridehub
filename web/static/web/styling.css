@@ -370,18 +370,16 @@ body {
 }
 
 /* Sortable table column headers (django-tables2) */
-.table thead th {
-  font-weight: 500;
-  font-size: 0.875rem;
-  border-bottom-width: 1px;
-}
-
-.table thead th a {
+.table thead th.orderable a,
+.table thead th.asc a,
+.table thead th.desc a {
   color: inherit;
   text-decoration: none;
 }
 
-.table thead th a:hover {
+.table thead th.orderable a:hover,
+.table thead th.asc a:hover,
+.table thead th.desc a:hover {
   color: inherit;
 }
 
