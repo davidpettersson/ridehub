@@ -346,6 +346,7 @@ body {
 
 .calendar-event {
   transition: background-color 0.2s ease, border-color 0.2s ease;
+  border-color: #adb5bd;
 }
 
 .calendar-event-announced {
