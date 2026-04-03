@@ -628,3 +628,61 @@ class StaffAddValidationWithEventRequirementsTests(TestCase):
         reg = Registration.objects.get(email='newrider@example.com')
         self.assertEqual(reg.state, Registration.STATE_CONFIRMED)
         self.assertEqual(reg.emergency_contact_name, 'Emergency Contact')
+
+
+class ExternalRegistrationBlocksManageTests(BaseManageTestCase):
+    def setUp(self):
+        super().setUp()
+        self.event.external_registration_url = 'https://example.com/register'
+        self.event.save(update_fields=['external_registration_url'])
+
+    def _event_detail_url(self):
+        return reverse('event_detail', args=[self.event.id])
+
+    def test_manage_page_redirects_for_external_registration(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.get(reverse('event_registrations_manage', args=[self.event.id]))
+
+        # Assert
+        self.assertRedirects(response, self._event_detail_url())
+
+    def test_add_redirects_for_external_registration(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.get(reverse('staff_registration_add', args=[self.event.id]))
+
+        # Assert
+        self.assertRedirects(response, self._event_detail_url())
+
+    def test_edit_redirects_for_external_registration(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+        reg = self._create_confirmed_registration(self.staff_user, self.ride, self.speed_range)
+
+        # Act
+        response = self.client.get(
+            reverse('staff_registration_edit', args=[self.event.id, reg.id])
+        )
+
+        # Assert
+        self.assertRedirects(response, self._event_detail_url())
+
+    def test_withdraw_redirects_for_external_registration(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+        reg = self._create_confirmed_registration(self.staff_user, self.ride, self.speed_range)
+
+        # Act
+        response = self.client.post(
+            reverse('staff_registration_withdraw', args=[self.event.id, reg.id])
+        )
+
+        # Assert
+        self.assertRedirects(response, self._event_detail_url())
+        updated_reg = Registration.objects.get(id=reg.id)
+        self.assertEqual(updated_reg.state, Registration.STATE_CONFIRMED)
