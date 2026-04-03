@@ -231,16 +231,100 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         # Profile is automatically created by signals, just update the phone
         user.profile.phone = "+16139999999"
         user.profile.save()
-        
+
         staff_detail_mixed = UserDetail("New", "Staff", "StaffCasing@Example.com", "+16131112222")
-        
+
         # Act
         found_staff = self.service.find_by_email_or_create(staff_detail_mixed)
-        
+
         # Assert
         self.assertEqual(found_staff.email, self.staff_casing_email)
         self.assertEqual(found_staff.first_name, "New") # Should be updated
         self.assertEqual(found_staff.last_name, "Staff") # Should be updated
         self.assertTrue(found_staff.is_staff)
         profile = UserProfile.objects.get(user=found_staff)
-        self.assertEqual(profile.phone, "+16131112222") 
+        self.assertEqual(profile.phone, "+16131112222")
+
+    def test_find_by_email_or_create_saves_emergency_contact_to_new_profile(self):
+        # Arrange
+        user_detail = UserDetail(
+            first_name="New",
+            last_name="User",
+            email="newemergency@example.com",
+            phone="+16131231234",
+            emergency_contact_name="Jane Doe",
+            emergency_contact_phone="613-555-0199",
+        )
+
+        # Act
+        user = self.service.find_by_email_or_create(user_detail)
+
+        # Assert
+        profile = UserProfile.objects.get(user=user)
+        self.assertEqual(profile.emergency_contact_name, "Jane Doe")
+        self.assertEqual(profile.emergency_contact_phone, "613-555-0199")
+
+    def test_find_by_email_or_create_saves_emergency_contact_to_existing_profile(self):
+        # Arrange
+        user_detail = UserDetail(
+            first_name="Test",
+            last_name="User",
+            email=self.non_staff_email,
+            phone="+16131112222",
+            emergency_contact_name="John Smith",
+            emergency_contact_phone="613-555-0200",
+        )
+
+        # Act
+        user = self.service.find_by_email_or_create(user_detail)
+
+        # Assert
+        profile = UserProfile.objects.get(user=user)
+        self.assertEqual(profile.emergency_contact_name, "John Smith")
+        self.assertEqual(profile.emergency_contact_phone, "613-555-0200")
+
+    def test_find_by_email_or_create_does_not_overwrite_emergency_contact_with_empty(self):
+        # Arrange
+        user = User.objects.get(email=self.non_staff_email)
+        user.profile.emergency_contact_name = "Existing Contact"
+        user.profile.emergency_contact_phone = "613-555-0100"
+        user.profile.save()
+
+        user_detail = UserDetail(
+            first_name="Test",
+            last_name="User",
+            email=self.non_staff_email,
+            phone="+16131112222",
+        )
+
+        # Act
+        self.service.find_by_email_or_create(user_detail)
+
+        # Assert
+        user.profile.refresh_from_db()
+        self.assertEqual(user.profile.emergency_contact_name, "Existing Contact")
+        self.assertEqual(user.profile.emergency_contact_phone, "613-555-0100")
+
+    def test_find_by_email_or_create_updates_emergency_contact_when_provided(self):
+        # Arrange
+        user = User.objects.get(email=self.non_staff_email)
+        user.profile.emergency_contact_name = "Old Contact"
+        user.profile.emergency_contact_phone = "613-555-0100"
+        user.profile.save()
+
+        user_detail = UserDetail(
+            first_name="Test",
+            last_name="User",
+            email=self.non_staff_email,
+            phone="+16131112222",
+            emergency_contact_name="New Contact",
+            emergency_contact_phone="613-555-0200",
+        )
+
+        # Act
+        self.service.find_by_email_or_create(user_detail)
+
+        # Assert
+        user.profile.refresh_from_db()
+        self.assertEqual(user.profile.emergency_contact_name, "New Contact")
+        self.assertEqual(user.profile.emergency_contact_phone, "613-555-0200") 

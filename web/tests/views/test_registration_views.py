@@ -210,6 +210,118 @@ class RegistrationViewPhoneTests(TestCase):
         self.assertEqual(str(user.profile.phone), '+16135559876')
 
 
+class RegistrationEmergencyContactTests(TestCase):
+    def setUp(self):
+        now = timezone.now()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Test Event",
+            program=self.program,
+            starts_at=now + timezone.timedelta(days=3),
+            registration_closes_at=now + timezone.timedelta(days=2),
+            requires_emergency_contact=True,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+        )
+        self.event_no_ec = Event.objects.create(
+            name="No EC Event",
+            program=self.program,
+            starts_at=now + timezone.timedelta(days=3),
+            registration_closes_at=now + timezone.timedelta(days=2),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+        )
+
+    def test_registration_form_prefills_emergency_contact_from_profile(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='ecuser@example.com',
+            email='ecuser@example.com',
+            first_name='Test',
+            last_name='User',
+        )
+        user.profile.emergency_contact_name = 'Jane Doe'
+        user.profile.emergency_contact_phone = '613-555-0199'
+        user.profile.save()
+        self.client.force_login(user)
+
+        # Act
+        response = self.client.get(reverse('registration_create', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertEqual(form.initial['emergency_contact_name'], 'Jane Doe')
+        self.assertEqual(form.initial['emergency_contact_phone'], '613-555-0199')
+
+    def test_registration_form_no_emergency_contact_prefill_for_anonymous_user(self):
+        # Act
+        response = self.client.get(reverse('registration_create', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertNotIn('emergency_contact_name', form.initial)
+
+    def test_registration_saves_emergency_contact_to_profile(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='ecsave@example.com',
+            email='ecsave@example.com',
+            first_name='Test',
+            last_name='User',
+        )
+        self.client.force_login(user)
+
+        form_data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'ecsave@example.com',
+            'phone': '+16135551234',
+            'emergency_contact_name': 'John Smith',
+            'emergency_contact_phone': '613-555-0200',
+        }
+
+        # Act
+        response = self.client.post(reverse('registration_create', args=[self.event.id]), form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        user.profile.refresh_from_db()
+        self.assertEqual(user.profile.emergency_contact_name, 'John Smith')
+        self.assertEqual(user.profile.emergency_contact_phone, '613-555-0200')
+
+    def test_registration_without_emergency_contact_does_not_wipe_profile(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='eckeep@example.com',
+            email='eckeep@example.com',
+            first_name='Test',
+            last_name='User',
+        )
+        user.profile.emergency_contact_name = 'Existing Contact'
+        user.profile.emergency_contact_phone = '613-555-0100'
+        user.profile.save()
+        self.client.force_login(user)
+
+        form_data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'eckeep@example.com',
+            'phone': '+16135551234',
+        }
+
+        # Act
+        response = self.client.post(reverse('registration_create', args=[self.event_no_ec.id]), form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        user.profile.refresh_from_db()
+        self.assertEqual(user.profile.emergency_contact_name, 'Existing Contact')
+        self.assertEqual(user.profile.emergency_contact_phone, '613-555-0100')
+
+
 class RegistrationWithdrawAccessControlTests(TestCase):
     def setUp(self):
         now = timezone.now()

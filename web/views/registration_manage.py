@@ -82,6 +82,8 @@ def staff_registration_add(request: HttpRequest, event_id: int) -> HttpResponse:
                 last_name=data['last_name'],
                 email=data['email'],
                 phone=str(data['phone']),
+                emergency_contact_name=data.get('emergency_contact_name', ''),
+                emergency_contact_phone=data.get('emergency_contact_phone', ''),
             )
 
             registration_detail = RegistrationDetail(
