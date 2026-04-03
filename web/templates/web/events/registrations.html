@@ -151,6 +151,11 @@
         <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
             <i class="bi bi-arrow-left me-2"></i> Back to event details
         </a>
+        {% if user.is_staff %}
+        <a href="{% url 'event_registrations_manage' event.id %}" class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center">
+            <i class="bi bi-people me-2"></i> Manage registrations
+        </a>
+        {% endif %}
         {% if can_access_rider_contacts %}
         <button class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center copy-emails-btn" data-emails="{{ all_emails }}" data-type="all">
             <i class="bi bi-clipboard me-2"></i>
