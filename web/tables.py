@@ -69,3 +69,60 @@ class RegistrationTable(tables.Table):
     def render_emergency_contact_phone(self, value):
         formatted = national_phone(value)
         return format_html('<span class="small text-muted">{}</span>', formatted)
+
+
+class PublicRegistrationTable(tables.Table):
+    name = tables.Column(order_by=('last_name', 'first_name'))
+    ride = tables.Column()
+    speed_range_preference = tables.Column(verbose_name="Speed group")
+    ride_leader_preference = tables.Column(verbose_name="Ride leader")
+    email = tables.Column()
+    phone = tables.Column()
+    emergency_contact_name = tables.Column(verbose_name="Emergency contact")
+    emergency_contact_phone = tables.Column(verbose_name="Emergency phone")
+
+    class Meta:
+        model = Registration
+        fields = (
+            'name', 'ride', 'speed_range_preference', 'ride_leader_preference',
+            'email', 'phone', 'emergency_contact_name', 'emergency_contact_phone',
+        )
+        attrs = {
+            'class': 'table',
+            'th': {'class': 'small fw-medium'},
+        }
+
+    def render_name(self, value):
+        return format_html('<span class="small fw-medium">{}</span>', value)
+
+    def render_ride(self, value):
+        return format_html('<span class="small text-muted">{}</span>', value or 'N/A')
+
+    def render_speed_range_preference(self, value):
+        return format_html('<span class="small text-muted">{}</span>', value or 'N/A')
+
+    def render_ride_leader_preference(self, value, record):
+        if value == Registration.RideLeaderPreference.YES:
+            return format_html('<span class="badge bg-primary">Yes</span>')
+        display = record.get_ride_leader_preference_display()
+        return format_html('<span class="small text-muted">{}</span>', display)
+
+    def render_email(self, value):
+        return format_html(
+            '<a href="mailto:{}" class="small text-primary">{}</a>', value, value
+        )
+
+    def render_phone(self, value):
+        formatted = national_phone(value)
+        return format_html(
+            '<a href="tel:{}" class="small text-primary">{}</a>', value, formatted
+        )
+
+    def render_emergency_contact_name(self, value):
+        return format_html('<span class="small text-muted">{}</span>', value)
+
+    def render_emergency_contact_phone(self, value):
+        formatted = national_phone(value)
+        return format_html(
+            '<a href="tel:{}" class="small text-primary">{}</a>', value, formatted
+        )

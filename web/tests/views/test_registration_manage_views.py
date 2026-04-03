@@ -208,6 +208,49 @@ class ManagePageAccessTests(BaseManageTestCase):
         self.assertContains(response, 'Unverified')
 
 
+class ManagePageFilterAndSortRegressionTests(BaseManageTestCase):
+    def test_manage_page_filter_card_present(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+        self._create_confirmed_registration(
+            self.staff_user, ride=self.ride, speed_range=self.speed_range,
+        )
+
+        # Act
+        response = self.client.get(reverse('event_registrations_manage', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="search"')
+        self.assertContains(response, 'name="ride"')
+        self.assertContains(response, 'name="ride_leader_preference"')
+
+    def test_manage_page_sorting_still_works(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+        self._create_confirmed_registration(
+            self.staff_user, ride=self.ride, speed_range=self.speed_range,
+        )
+        self._create_confirmed_registration(
+            self.regular_user, ride=self.ride, speed_range=self.speed_range,
+        )
+
+        # Act
+        response = self.client.get(
+            reverse('event_registrations_manage', args=[self.event.id]),
+            {'sort': 'name'},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        table = response.context['table']
+        rows = list(table.rows)
+        names = [str(row.get_cell('name')) for row in rows]
+        self.assertEqual(len(names), 2)
+        self.assertIn('Regular', names[0])
+        self.assertIn('Staff', names[1])
+
+
 class StaffWithdrawTests(BaseManageTestCase):
     def test_staff_can_withdraw_confirmed_registration(self):
         # Arrange
