@@ -34,9 +34,6 @@ class EventStatesTestCase(TestCase):
         elif state == Event.STATE_CANCELLED:
             event.cancel()
             event.save()
-        elif state == Event.STATE_ARCHIVED:
-            event.archive()
-            event.save()
 
         return event
 
@@ -124,30 +121,6 @@ class EventStatesTestCase(TestCase):
         self.assertTrue(event.cancelled)
         self.assertIsNotNone(event.cancelled_at)
 
-    def test_archive_from_live(self):
-        event = self.create_event(state=Event.STATE_LIVE)
-        self.assertEqual(event.state, Event.STATE_LIVE)
-        self.assertFalse(event.archived)
-        self.assertIsNone(event.archived_at)
-
-        event.archive()
-        event.save()
-
-        self.assertEqual(event.state, Event.STATE_ARCHIVED)
-        self.assertTrue(event.archived)
-        self.assertIsNotNone(event.archived_at)
-
-    def test_archive_from_cancelled(self):
-        event = self.create_event(state=Event.STATE_CANCELLED)
-        self.assertEqual(event.state, Event.STATE_CANCELLED)
-
-        event.archive()
-        event.save()
-
-        self.assertEqual(event.state, Event.STATE_ARCHIVED)
-        self.assertTrue(event.archived)
-        self.assertIsNotNone(event.archived_at)
-
     def test_cannot_live_from_cancelled(self):
         event = self.create_event(state=Event.STATE_CANCELLED)
         self.assertEqual(event.state, Event.STATE_CANCELLED)
@@ -161,34 +134,6 @@ class EventStatesTestCase(TestCase):
 
         with self.assertRaises(TransitionNotAllowed):
             event.cancel()
-
-    def test_cannot_cancel_from_archived(self):
-        event = self.create_event(state=Event.STATE_ARCHIVED)
-        self.assertEqual(event.state, Event.STATE_ARCHIVED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            event.cancel()
-
-    def test_cannot_archive_from_draft(self):
-        event = self.create_event(state=Event.STATE_DRAFT)
-        self.assertEqual(event.state, Event.STATE_DRAFT)
-
-        with self.assertRaises(TransitionNotAllowed):
-            event.archive()
-
-    def test_cannot_archive_from_announced(self):
-        event = self.create_event(state=Event.STATE_ANNOUNCED)
-        self.assertEqual(event.state, Event.STATE_ANNOUNCED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            event.archive()
-
-    def test_cannot_live_from_archived(self):
-        event = self.create_event(state=Event.STATE_ARCHIVED)
-        self.assertEqual(event.state, Event.STATE_ARCHIVED)
-
-        with self.assertRaises(TransitionNotAllowed):
-            event.live()
 
     def test_cannot_cancel_from_announced(self):
         event = self.create_event(state=Event.STATE_ANNOUNCED)
@@ -251,7 +196,6 @@ class EventStatesTestCase(TestCase):
             (Event.STATE_ANNOUNCED, True),
             (Event.STATE_LIVE, True),
             (Event.STATE_CANCELLED, True),
-            (Event.STATE_ARCHIVED, False),
         ]:
             event = self.create_event(state=state)
             self.assertEqual(event.visible, expected, f"visible should be {expected} for state {state}")
@@ -262,25 +206,13 @@ class EventStatesTestCase(TestCase):
             (Event.STATE_ANNOUNCED, False),
             (Event.STATE_LIVE, False),
             (Event.STATE_CANCELLED, True),
-            (Event.STATE_ARCHIVED, False),
         ]:
             event = self.create_event(state=state)
             self.assertEqual(event.cancelled, expected, f"cancelled should be {expected} for state {state}")
 
-    def test_archived_property_by_state(self):
-        for state, expected in [
-            (Event.STATE_DRAFT, False),
-            (Event.STATE_ANNOUNCED, False),
-            (Event.STATE_LIVE, False),
-            (Event.STATE_CANCELLED, False),
-            (Event.STATE_ARCHIVED, True),
-        ]:
-            event = self.create_event(state=state)
-            self.assertEqual(event.archived, expected, f"archived should be {expected} for state {state}")
-
     def test_registration_open_only_in_live_state(self):
         future_close = self.now + timedelta(hours=12)
-        for state in [Event.STATE_DRAFT, Event.STATE_ANNOUNCED, Event.STATE_CANCELLED, Event.STATE_ARCHIVED]:
+        for state in [Event.STATE_DRAFT, Event.STATE_ANNOUNCED, Event.STATE_CANCELLED]:
             event = self.create_event(state=state, registration_closes_at=future_close)
             self.assertFalse(event.registration_open, f"registration_open should be False for state {state}")
 

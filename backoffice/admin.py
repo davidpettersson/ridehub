@@ -33,7 +33,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
     list_filter = ('starts_at', 'program', 'state',)
     search_fields = ('name',)
     actions = [cancel_event, duplicate_event]
-    readonly_fields = ('cancelled_at', 'cancellation_reason', 'archived_at')
+    readonly_fields = ('cancelled_at', 'cancellation_reason')
     form = EventAdminForm
 
     def get_queryset(self, request):

@@ -16,7 +16,6 @@ Rules:
  - All fields from the existing event are copied over to the new event, with exceptions:
    - A new event must never carry over any cancellation status.
    - A new event starts as visible by default.
-   - A new event must never carry over archived status.
    - A new event must never carry over legacy import fields.
  - Linked records may sometimes be deep copied, sometimes not.
    - Ride records must be duplicated.
@@ -56,7 +55,6 @@ Flow:
 | registration_closes_at | Inherit time from source, shift date by same offset as starts_at |
 | visible | Set to `True` |
 | cancelled, cancelled_at, cancellation_reason | Reset to defaults |
-| archived, archived_at | Do not copy (use defaults) |
 | legacy, legacy_event_id | Do not copy (use defaults) |
 
 ## Ride copying
