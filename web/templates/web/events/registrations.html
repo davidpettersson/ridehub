@@ -1,6 +1,4 @@
 {% extends 'web/_base_bootstrap.html' %}
-{% load phone_filters %}
-{% load django_tables2 %}
 {% block title %}Riders for {{ event.name }}{% endblock %}
 {% block content %}
 <style media="print">
@@ -169,6 +167,15 @@
         </button>
         {% endif %}
         {% endif %}
+        {% if can_reveal_contacts and not contacts_revealed %}
+        <button class="btn btn-danger btn-sm rounded-pill d-inline-flex align-items-center"
+                hx-get="{% url 'event_emergency_contacts' event.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
+                hx-target="#registrations-content"
+                hx-swap="innerHTML"
+                hx-on::after-request="this.disabled=true; this.classList.remove('btn-danger'); this.classList.add('btn-outline-secondary')">
+            <i class="bi bi-shield-exclamation me-2"></i> Reveal contact details
+        </button>
+        {% endif %}
     </div>
     {% if can_access_rider_contacts %}
     <div id="copy-success-message" class="alert alert-success mb-3 small d-none d-print-none" role="alert">
@@ -212,108 +219,34 @@
     <div class="py-5 text-center card">
         <p class="text-muted">Registration details are no longer available for this event.</p>
     </div>
-    {% elif all_riders %}
-    <h2 class="fs-5 fw-medium mb-3">Registered riders ({{ filtered_riders|length }})</h2>
-
-    {% include 'web/events/_registration_filter.html' %}
-
-        <!-- Mobile view (card-based layout) -->
-        <div class="d-md-none">
-            {% for rider_reg in filtered_riders %}
-                <div class="card mb-3 p-4">
-                    <div class="d-flex flex-column align-items-start mb-2">
-                        <div class="d-flex align-items-center">
-                            <h4 class="fw-medium fs-5 mb-0">{{ rider_reg.first_name }} {{ rider_reg.last_name }}</h4>
-                        </div>
-                    </div>
-                    <div class="small">
-                        <div class="row mb-1">
-                            <div class="col-5 fw-medium">Ride:</div>
-                            <div class="col-7 text-muted">{{ rider_reg.ride.name|default:"N/A" }}</div>
-                        </div>
-                        <div class="row mb-1">
-                            <div class="col-5 fw-medium">Speed group:</div>
-                            <div class="col-7 text-muted">{{ rider_reg.speed_range_preference.range|default:"N/A" }}</div>
-                        </div>
-                        <div class="row mb-1">
-                            <div class="col-5 fw-medium">Ride leader:</div>
-                            <div class="col-7 text-muted">{{ rider_reg.get_ride_leader_preference_display }}</div>
-                        </div>
-
-                        {% if can_access_rider_contacts %}
-                        <div class="mt-3 border-top border-danger-subtle pt-2 w-100">
-                            <div class="row mb-1">
-                                <div class="col-5 fw-medium">Email:</div>
-                                <div class="col-7 text-muted">
-                                    <a href="mailto:{{ rider_reg.email }}" class="text-primary">
-                                        {{ rider_reg.email }}
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="row mb-1">
-                                <div class="col-5 fw-medium">Phone:</div>
-                                <div class="col-7 text-muted">
-                                    <a href="tel:{{ rider_reg.phone }}" class="text-primary">
-                                        {{ rider_reg.phone|national_phone }}
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="row mb-1">
-                                <div class="col-5 fw-medium">Emergency:</div>
-                                <div class="col-7 text-muted">{{ rider_reg.emergency_contact_name }}</div>
-                            </div>
-                            <div class="row mb-1">
-                                <div class="col-5 fw-medium">Emergency phone:</div>
-                                <div class="col-7 text-muted">
-                                    <a href="tel:{{ rider_reg.emergency_contact_phone }}" class="text-primary">
-                                        {{ rider_reg.emergency_contact_phone }}
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-
-        <!-- Desktop view (table-based layout) -->
-        <div class="d-none d-md-block card shadow-sm">
-            <div class="p-4">
-                <div class="overflow-auto">
-                    {% render_table table %}
-                </div>
-            </div>
-        </div>
     {% else %}
-    <h2 class="fs-5 fw-medium mb-3">Registered riders (0)</h2>
-    <div class="py-5 text-center card">
-        <p class="text-muted">No riders found for this event.</p>
+    <div id="registrations-content">
+        {% include 'web/events/_registrations_list.html' %}
     </div>
     {% endif %}
 </div>
 
 {% if can_access_rider_contacts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const copyButtons = document.querySelectorAll('.copy-emails-btn');
-    const successMessage = document.getElementById('copy-success-message');
-    const successText = document.getElementById('copy-success-text');
+(function() {
+    var copyButtons = document.querySelectorAll('.copy-emails-btn');
+    var successMessage = document.getElementById('copy-success-message');
+    var successText = document.getElementById('copy-success-text');
 
-    copyButtons.forEach(button => {
+    copyButtons.forEach(function(button) {
         button.addEventListener('click', async function() {
-            const emails = this.getAttribute('data-emails');
-            const type = this.getAttribute('data-type');
+            var emails = this.getAttribute('data-emails');
+            var type = this.getAttribute('data-type');
 
             try {
                 await navigator.clipboard.writeText(emails);
 
-                const count = emails ? emails.split(',').length : 0;
-                const label = type === 'all' ? 'rider' : 'ride leader';
-                successText.textContent = `Copied ${count} ${label} email${count !== 1 ? 's' : ''} to clipboard!`;
+                var count = emails ? emails.split(',').length : 0;
+                var label = type === 'all' ? 'rider' : 'ride leader';
+                successText.textContent = 'Copied ' + count + ' ' + label + ' email' + (count !== 1 ? 's' : '') + ' to clipboard!';
                 successMessage.classList.remove('d-none');
 
-                setTimeout(() => {
+                setTimeout(function() {
                     successMessage.classList.add('d-none');
                 }, 3000);
             } catch (err) {
@@ -321,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-});
+})();
 </script>
 {% endif %}
 

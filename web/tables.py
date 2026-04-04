@@ -91,6 +91,16 @@ class PublicRegistrationTable(tables.Table):
             'class': 'table',
             'th': {'class': 'small fw-medium'},
         }
+        row_attrs = {
+            'data-registration-id': lambda record: record.id,
+        }
+
+    def __init__(self, *args, contacts_hidden=False, **kwargs):
+        self.contacts_hidden = contacts_hidden
+        super().__init__(*args, **kwargs)
+
+    def _hidden_placeholder(self):
+        return format_html('<span class="small text-muted fst-italic">(hidden)</span>')
 
     def render_name(self, value):
         return format_html('<span class="small fw-medium">{}</span>', value)
@@ -108,20 +118,28 @@ class PublicRegistrationTable(tables.Table):
         return format_html('<span class="small text-muted">{}</span>', display)
 
     def render_email(self, value):
+        if self.contacts_hidden:
+            return self._hidden_placeholder()
         return format_html(
             '<a href="mailto:{}" class="small text-primary">{}</a>', value, value
         )
 
     def render_phone(self, value):
+        if self.contacts_hidden:
+            return self._hidden_placeholder()
         formatted = national_phone(value)
         return format_html(
             '<a href="tel:{}" class="small text-primary">{}</a>', value, formatted
         )
 
     def render_emergency_contact_name(self, value):
+        if self.contacts_hidden:
+            return self._hidden_placeholder()
         return format_html('<span class="small text-muted">{}</span>', value)
 
     def render_emergency_contact_phone(self, value):
+        if self.contacts_hidden:
+            return self._hidden_placeholder()
         formatted = national_phone(value)
         return format_html(
             '<a href="tel:{}" class="small text-primary">{}</a>', value, formatted
