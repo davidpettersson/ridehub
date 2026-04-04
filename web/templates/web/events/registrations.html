@@ -169,7 +169,7 @@
         {% endif %}
         {% if can_reveal_contacts and not contacts_revealed %}
         <button class="btn btn-danger btn-sm rounded-pill d-inline-flex align-items-center"
-                hx-get="{% url 'event_emergency_contacts' event.id %}"
+                hx-get="{% url 'event_emergency_contacts' event.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
                 hx-target="#registrations-content"
                 hx-swap="innerHTML"
                 hx-on::after-request="this.disabled=true; this.classList.remove('btn-danger'); this.classList.add('btn-outline-secondary')">
