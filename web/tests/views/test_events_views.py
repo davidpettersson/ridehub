@@ -122,10 +122,13 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertTemplateUsed(response, 'web/events/registrations.html')
         self.assertTrue(response.context['is_ride_leader'])
         self.assertTrue(response.context['can_access_rider_contacts'])
-        # Check that private data is visible to ride leaders
-        self.assertContains(response, 'Emergency Contact')  # The actual emergency contact name
-        self.assertContains(response, '123-456-7890')  # The actual emergency contact phone
-        self.assertContains(response, 'mailto:regular@example.com')  # Email links
+        self.assertTrue(response.context['can_reveal_contacts'])
+        self.assertFalse(response.context['contacts_revealed'])
+        self.assertNotContains(response, 'Emergency Contact')
+        self.assertNotContains(response, '123-456-7890')
+        self.assertNotContains(response, 'mailto:regular@example.com')
+        self.assertContains(response, '(hidden)')
+        self.assertContains(response, 'Reveal contact details')
 
     def test_staff_user_access(self):
         # Arrange
@@ -139,10 +142,13 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertTemplateUsed(response, 'web/events/registrations.html')
         self.assertFalse(response.context['is_ride_leader'])
         self.assertTrue(response.context['can_access_rider_contacts'])
-        # Check that private data is visible to staff users
-        self.assertContains(response, 'Emergency Contact')  # The actual emergency contact name
-        self.assertContains(response, '123-456-7890')  # The actual emergency contact phone
-        self.assertContains(response, 'mailto:regular@example.com')  # Email links
+        self.assertTrue(response.context['can_reveal_contacts'])
+        self.assertFalse(response.context['contacts_revealed'])
+        self.assertNotContains(response, 'Emergency Contact')
+        self.assertNotContains(response, '123-456-7890')
+        self.assertNotContains(response, 'mailto:regular@example.com')
+        self.assertContains(response, '(hidden)')
+        self.assertContains(response, 'Reveal contact details')
 
     def test_regular_user_access(self):
         # Arrange
@@ -178,6 +184,72 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertNotContains(response, '123-456-7890')  # The actual emergency contact phone
         self.assertNotContains(response, 'mailto:regular@example.com')  # Email links
 
+
+
+class EventEmergencyContactsViewTests(BaseEventViewTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('event_emergency_contacts', kwargs={'event_id': self.event.id})
+
+    def test_ride_leader_htmx_reveals_contacts(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url, HTTP_HX_REQUEST='true')
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/events/_registrations_list.html')
+        self.assertTrue(response.context['contacts_revealed'])
+        self.assertContains(response, 'Emergency Contact')
+        self.assertContains(response, '123-456-7890')
+        self.assertContains(response, 'mailto:regular@example.com')
+        self.assertNotContains(response, 'Reveal contact details')
+
+    def test_staff_htmx_reveals_contacts(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url, HTTP_HX_REQUEST='true')
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Emergency Contact')
+
+    def test_regular_user_denied(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url, HTTP_HX_REQUEST='true')
+
+        # Assert
+        self.assertEqual(response.status_code, 403)
+
+    def test_anonymous_user_redirected_to_login(self):
+        # Arrange
+        client = Client()
+
+        # Act
+        response = client.get(self.url, HTTP_HX_REQUEST='true')
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login', response.url)
+
+    def test_non_htmx_request_redirects(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('riders_list', kwargs={'event_id': self.event.id}))
 
 
 class EventRegistrationsFilterTests(BaseEventViewTestCase):
@@ -262,7 +334,7 @@ class EventRegistrationsFilterTests(BaseEventViewTestCase):
         filtered = list(response.context['filtered_riders'])
         self.assertEqual(len(filtered), 3)
 
-    def test_filter_preserves_contact_visibility_for_staff(self):
+    def test_filter_preserves_contact_hidden_for_staff(self):
         # Arrange
         self.client.login(username='staff_user', password='password123')
 
@@ -271,7 +343,9 @@ class EventRegistrationsFilterTests(BaseEventViewTestCase):
 
         # Assert
         self.assertTrue(response.context['can_access_rider_contacts'])
-        self.assertContains(response, 'mailto:leader@example.com')
+        self.assertFalse(response.context['contacts_revealed'])
+        self.assertNotContains(response, 'mailto:leader@example.com')
+        self.assertContains(response, '(hidden)')
 
     def test_filter_preserves_contact_hidden_for_anonymous(self):
         # Act
@@ -336,7 +410,7 @@ class EventRegistrationsColumnTests(BaseEventViewTestCase):
         # Assert
         self.assertNotContains(response, 'mailto:regular@example.com')
 
-    def test_staff_user_sees_email_column(self):
+    def test_staff_user_sees_hidden_email_column(self):
         # Arrange
         self.client.login(username='staff_user', password='password123')
 
@@ -344,7 +418,8 @@ class EventRegistrationsColumnTests(BaseEventViewTestCase):
         response = self.client.get(self.url)
 
         # Assert
-        self.assertContains(response, 'mailto:regular@example.com')
+        self.assertNotContains(response, 'mailto:regular@example.com')
+        self.assertContains(response, '(hidden)')
 
     def test_ride_leader_column_present_for_all_users(self):
         # Act

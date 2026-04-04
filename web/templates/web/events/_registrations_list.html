@@ -1,0 +1,102 @@
+{% load phone_filters %}
+{% load django_tables2 %}
+
+{% if all_riders %}
+<h2 class="fs-5 fw-medium mb-3">Registered riders ({{ filtered_riders|length }})</h2>
+
+{% include 'web/events/_registration_filter.html' %}
+
+    <!-- Mobile view (card-based layout) -->
+    <div class="d-md-none">
+        {% for rider_reg in filtered_riders %}
+            <div class="card mb-3 p-4" data-registration-id="{{ rider_reg.id }}">
+                <div class="d-flex flex-column align-items-start mb-2">
+                    <div class="d-flex align-items-center">
+                        <h4 class="fw-medium fs-5 mb-0">{{ rider_reg.first_name }} {{ rider_reg.last_name }}</h4>
+                    </div>
+                </div>
+                <div class="small">
+                    <div class="row mb-1">
+                        <div class="col-5 fw-medium">Ride:</div>
+                        <div class="col-7 text-muted">{{ rider_reg.ride.name|default:"N/A" }}</div>
+                    </div>
+                    <div class="row mb-1">
+                        <div class="col-5 fw-medium">Speed group:</div>
+                        <div class="col-7 text-muted">{{ rider_reg.speed_range_preference.range|default:"N/A" }}</div>
+                    </div>
+                    <div class="row mb-1">
+                        <div class="col-5 fw-medium">Ride leader:</div>
+                        <div class="col-7 text-muted">{{ rider_reg.get_ride_leader_preference_display }}</div>
+                    </div>
+
+                    {% if can_access_rider_contacts %}
+                    <div class="mt-3 border-top border-danger-subtle pt-2 w-100">
+                        {% if contacts_revealed %}
+                        <div class="row mb-1">
+                            <div class="col-5 fw-medium">Email:</div>
+                            <div class="col-7 text-muted">
+                                <a href="mailto:{{ rider_reg.email }}" class="text-primary">
+                                    {{ rider_reg.email }}
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row mb-1">
+                            <div class="col-5 fw-medium">Phone:</div>
+                            <div class="col-7 text-muted">
+                                <a href="tel:{{ rider_reg.phone }}" class="text-primary">
+                                    {{ rider_reg.phone|national_phone }}
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row mb-1">
+                            <div class="col-5 fw-medium">Emergency:</div>
+                            <div class="col-7 text-muted">{{ rider_reg.emergency_contact_name }}</div>
+                        </div>
+                        <div class="row mb-1">
+                            <div class="col-5 fw-medium">Emergency phone:</div>
+                            <div class="col-7 text-muted">
+                                <a href="tel:{{ rider_reg.emergency_contact_phone }}" class="text-primary">
+                                    {{ rider_reg.emergency_contact_phone }}
+                                </a>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="row mb-1">
+                            <div class="col-5 fw-medium">Email:</div>
+                            <div class="col-7 text-muted fst-italic">(hidden)</div>
+                        </div>
+                        <div class="row mb-1">
+                            <div class="col-5 fw-medium">Phone:</div>
+                            <div class="col-7 text-muted fst-italic">(hidden)</div>
+                        </div>
+                        <div class="row mb-1">
+                            <div class="col-5 fw-medium">Emergency:</div>
+                            <div class="col-7 text-muted fst-italic">(hidden)</div>
+                        </div>
+                        <div class="row mb-1">
+                            <div class="col-5 fw-medium">Emergency phone:</div>
+                            <div class="col-7 text-muted fst-italic">(hidden)</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Desktop view (table-based layout) -->
+    <div class="d-none d-md-block card shadow-sm">
+        <div class="p-4">
+            <div class="overflow-auto">
+                {% render_table table %}
+            </div>
+        </div>
+    </div>
+{% else %}
+<h2 class="fs-5 fw-medium mb-3">Registered riders (0)</h2>
+<div class="py-5 text-center card">
+    <p class="text-muted">No riders found for this event.</p>
+</div>
+{% endif %}
+
