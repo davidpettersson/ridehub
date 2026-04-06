@@ -43,7 +43,7 @@ class EventAdminForm(forms.ModelForm):
             self.fields['state'].choices = [
                 (value, label)
                 for value, label in self.fields['state'].choices
-                if value not in (Event.STATE_CANCELLED, Event.STATE_ARCHIVED)
+                if value != Event.STATE_CANCELLED
             ]
 
     def _find_transition_method(self, old_state, new_state):

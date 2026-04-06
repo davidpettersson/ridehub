@@ -283,9 +283,7 @@ class Command(BaseCommand):
             description='Legacy event imported from WebScorer',
             legacy=True,
             legacy_event_id=event_id,
-            visible=False,
-            archived=True,
-            archived_at=timezone.now(),
+            state=Event.STATE_DRAFT,
         )
         self.operations.add_event(event, existing=False)
         events_cache[cache_key] = event

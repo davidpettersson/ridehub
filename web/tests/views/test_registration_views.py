@@ -575,21 +575,6 @@ class RegistrationCreateErrorCaseTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn(b'Event is cancelled', response.content)
 
-    def test_registration_returns_400_for_archived_event(self):
-        event = Event.objects.create(
-            name="Archived Event",
-            program=self.program,
-            starts_at=timezone.now() + timezone.timedelta(days=7),
-            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
-        )
-        event.archive()
-        event.save()
-
-        response = self.client.get(reverse('registration_create', args=[event.id]))
-
-        self.assertEqual(response.status_code, 400)
-        self.assertIn(b'Event is archived', response.content)
-
     def test_registration_returns_400_when_registration_closed(self):
         event = Event.objects.create(
             name="Closed Event",

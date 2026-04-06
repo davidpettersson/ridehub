@@ -362,9 +362,6 @@ class RegistrationService:
         if event.cancelled:
             return False, 'Event is cancelled.'
 
-        if event.archived:
-            return False, 'Event is archived.'
-
         if not event.registration_open:
             return False, 'Registration is closed.'
 

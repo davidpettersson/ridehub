@@ -38,9 +38,6 @@ class EventAdminFormTestCase(TestCase):
         elif state == Event.STATE_CANCELLED:
             event.cancel()
             event.save()
-        elif state == Event.STATE_ARCHIVED:
-            event.archive()
-            event.save()
         return event
 
     def _get_form_data(self, event, **overrides):
@@ -118,12 +115,6 @@ class EventAdminFormTestCase(TestCase):
         form = TestEventAdminForm(instance=event)
         state_values = [value for value, _ in form.fields['state'].choices]
         self.assertNotIn(Event.STATE_CANCELLED, state_values)
-
-    def test_archived_not_in_state_choices(self):
-        event = self.create_event(state=Event.STATE_LIVE)
-        form = TestEventAdminForm(instance=event)
-        state_values = [value for value, _ in form.fields['state'].choices]
-        self.assertNotIn(Event.STATE_ARCHIVED, state_values)
 
     def test_no_state_change_saves_normally(self):
         event = self.create_event(state=Event.STATE_LIVE)

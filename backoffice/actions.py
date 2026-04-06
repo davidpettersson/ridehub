@@ -129,35 +129,3 @@ def duplicate_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet
 
 
 duplicate_event.short_description = "Duplicate selected events"
-
-def archive_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
-    archive_count = 0
-    skipped = []
-
-    for event in query_set:
-        try:
-            event.archive()
-            event.save()
-        except TransitionNotAllowed:
-            skipped.append(event.name)
-            continue
-
-        archive_count += 1
-
-    if skipped:
-        admin.message_user(
-            request,
-            f"Could not archive: {', '.join(skipped)}. Only live or cancelled events can be archived.",
-            messages.ERROR,
-        )
-
-    if archive_count == 1:
-        message = "1 event was successfully archived."
-    elif archive_count > 1:
-        message = f"{archive_count} events were successfully archived."
-    else:
-        return
-
-    admin.message_user(request, message, messages.SUCCESS)
-
-archive_event.short_description = "Archive selected events"

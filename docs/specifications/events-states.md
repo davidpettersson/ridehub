@@ -1,10 +1,10 @@
 # Event State Machine
 
-This document describes the event lifecycle state machine. The `state` field is the single source of truth for event visibility, cancellation, and archival status.
+This document describes the event lifecycle state machine. The `state` field is the single source of truth for event visibility and cancellation status.
 
 ## States
 
-The Event model has five possible states, defined as class constants (e.g., `Event.STATE_LIVE`):
+The Event model has four possible states, defined as class constants (e.g., `Event.STATE_LIVE`):
 
 | State       | Description                                    | Visibility | Registration |
 |-------------|------------------------------------------------|------------|--------------|
@@ -12,7 +12,6 @@ The Event model has five possible states, defined as class constants (e.g., `Eve
 | `announced` | Event is visible but not open for registration | Public     | Closed       |
 | `live`      | Event is live and accepting registrations      | Public     | Open         |
 | `cancelled` | Event has been cancelled                       | Public     | Closed       |
-| `archived`  | Event has been removed/deleted                 | Admin-only | Closed       |
 
 ## Computed Properties
 
@@ -22,7 +21,6 @@ The model provides computed properties derived from `state`:
 |-------------|---------------------------------------------|
 | `visible`   | `announced`, `live`, `cancelled`            |
 | `cancelled` | `cancelled`                                 |
-| `archived`  | `archived`                                  |
 
 ## State Transitions
 
@@ -38,12 +36,10 @@ The model provides computed properties derived from `state`:
       | announced |<------------->|   live    |
       +-----------+               +-----+-----+
                                         |
-                          +-------------+-------------+
-                          |                           |
-                          v                           v
-                    +-----------+               +-----------+
-                    | cancelled |-------------->|  archived |
-                    +-----------+               +-----------+
+                                        v
+                                  +-----------+
+                                  | cancelled |
+                                  +-----------+
 ```
 
 ### Available Transitions
@@ -54,9 +50,8 @@ The model provides computed properties derived from `state`:
 | `announce()` | draft, live      | announced    | None                  | No confirmed registrations*     |
 | `draft()`    | announced, live  | draft        | None                  | No confirmed registrations*     |
 | `cancel()`   | live             | cancelled    | Sets `cancelled_at`   | None                            |
-| `archive()`  | live, cancelled  | archived     | Sets `archived_at`    | No confirmed registrations*     |
 
-*Guard only applies when transitioning from `live` state. Transitioning from other source states (e.g., `cancelled` to `archived`) is always allowed.
+*Guard only applies when transitioning from `live` state.
 
 ## Admin Interface
 

@@ -74,14 +74,12 @@ class Event(models.Model):
     STATE_ANNOUNCED = 'announced'
     STATE_LIVE = 'live'
     STATE_CANCELLED = 'cancelled'
-    STATE_ARCHIVED = 'archived'
 
     STATE_CHOICES = [
         (STATE_DRAFT, 'Draft'),
         (STATE_ANNOUNCED, 'Announced'),
         (STATE_LIVE, 'Live'),
         (STATE_CANCELLED, 'Cancelled'),
-        (STATE_ARCHIVED, 'Archived'),
     ]
 
     state = FSMField(
@@ -167,12 +165,6 @@ class Event(models.Model):
         help_text='Reason for cancellation.'
     )
 
-    archived_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text='When the event was archived.'
-    )
-
     organizer_email = models.EmailField(
         blank=True,
         help_text='When set, members will be able to reach out to the organizer at this email.'
@@ -196,10 +188,6 @@ class Event(models.Model):
     @property
     def cancelled(self) -> bool:
         return self.state == self.STATE_CANCELLED
-
-    @property
-    def archived(self) -> bool:
-        return self.state == self.STATE_ARCHIVED
 
     @property
     def duration(self) -> timedelta:
@@ -300,9 +288,6 @@ class Event(models.Model):
     def cancel(self):
         self.cancelled_at = timezone.now()
 
-    @transition(field=state, source=[STATE_LIVE, STATE_CANCELLED], target=STATE_ARCHIVED)
-    def archive(self):
-        self.archived_at = timezone.now()
 
 
 class Route(models.Model):

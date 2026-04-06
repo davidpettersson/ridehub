@@ -184,16 +184,6 @@ class FetchEventsForMonthTests(BaseEventServiceTest):
             state=Event.STATE_DRAFT,
         )
 
-        # Archived event in January
-        Event.objects.create(
-            program=self.program,
-            name="January Archived",
-            starts_at=timezone.make_aware(datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
-            registration_closes_at=timezone.make_aware(
-                datetime.datetime.combine(jan_middle, datetime.datetime.min.time())),
-            state=Event.STATE_ARCHIVED,
-        )
-
     def test_fetch_events_for_month_with_only_visible(self):
         # Arrange
         # (Setup is done in setUp method)
@@ -209,7 +199,6 @@ class FetchEventsForMonthTests(BaseEventServiceTest):
         self.assertIn("January Middle", event_names)
         self.assertNotIn("February First", event_names)
         self.assertNotIn("January Hidden", event_names)
-        self.assertNotIn("January Archived", event_names)
 
     def test_fetch_events_for_month_with_all_visibility(self):
         # Arrange
@@ -220,30 +209,12 @@ class FetchEventsForMonthTests(BaseEventServiceTest):
 
         # Assert
         self.assertEqual(4, result.count(),
-                         "Should return all non-archived events for January 2024 regardless of visibility")
+                         "Should return all events for January 2024 regardless of visibility")
         event_names = [event.name for event in result]
         self.assertIn("January First", event_names)
         self.assertIn("January Last", event_names)
         self.assertIn("January Middle", event_names)
         self.assertIn("January Hidden", event_names)
-        self.assertNotIn("February First", event_names)
-        self.assertNotIn("January Archived", event_names)
-
-    def test_fetch_events_for_month_with_archived(self):
-        # Arrange
-        # (Setup is done in setUp method)
-
-        # Act
-        result = self.service.fetch_events_for_month(2024, 1, include_archived=True, only_visible=False)
-
-        # Assert
-        self.assertEqual(5, result.count(), "Should return all events for January 2024 including archived")
-        event_names = [event.name for event in result]
-        self.assertIn("January First", event_names)
-        self.assertIn("January Last", event_names)
-        self.assertIn("January Middle", event_names)
-        self.assertIn("January Hidden", event_names)
-        self.assertIn("January Archived", event_names)
         self.assertNotIn("February First", event_names)
 
     def test_fetch_events_for_month_leap_year_february(self):
@@ -384,20 +355,6 @@ class DuplicateEventTestCase(TestCase):
 
     def test_duplicate_event_defaults_cancelled_to_draft(self):
         self.source_event.cancel()
-        self.source_event.save()
-
-        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
-
-        new_event = self.service.duplicate_event(
-            self.source_event, "New Event", new_date
-        )
-
-        self.assertEqual(new_event.state, Event.STATE_DRAFT)
-
-    def test_duplicate_event_defaults_archived_to_draft(self):
-        self.source_event.cancel()
-        self.source_event.save()
-        self.source_event.archive()
         self.source_event.save()
 
         new_date = self.base_start_time.date() + datetime.timedelta(days=7)
