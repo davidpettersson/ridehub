@@ -20,6 +20,12 @@ from web.filters import PublicRegistrationFilter
 from web.tables import PublicRegistrationTable
 
 
+def _registrations_visible(event, user):
+    if event.registrations_available:
+        return True
+    return user.is_authenticated and user.is_staff
+
+
 def _create_ride_structure(ride):
     return {
         'ride': ride,
@@ -137,7 +143,7 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
         Event,
         id=event_id)
 
-    if event.registrations_available:
+    if _registrations_visible(event, request.user):
         rides = _get_rides_with_riders_for_event(event_id)
     else:
         rides = {}
@@ -154,7 +160,7 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
         'event': event,
         'rides': rides,
         'user_is_registered': user_is_registered,
-        'registrations_available': event.registrations_available,
+        'registrations_available': _registrations_visible(event, request.user),
     }
 
     return render(request, 'web/events/detail.html', context)
@@ -278,7 +284,7 @@ def _build_registrations_context(request, event, contacts_revealed):
 def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
-    if not event.registrations_available:
+    if not _registrations_visible(event, request.user):
         context = {
             'event': event,
             'all_riders': Registration.objects.none(),
@@ -301,7 +307,7 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
 def event_emergency_contacts(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
-    if not event.registrations_available:
+    if not _registrations_visible(event, request.user):
         return redirect('riders_list', event_id=event_id)
 
     is_ride_leader = Registration.objects.filter(

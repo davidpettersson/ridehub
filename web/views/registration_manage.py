@@ -27,18 +27,6 @@ def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpRespo
     if event.external_registration_url:
         return redirect('event_detail', event_id=event.id)
 
-    if not event.registrations_available:
-        registration_count = Registration.objects.filter(
-            event_id=event_id,
-            state__in=[Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
-        ).count()
-        context = {
-            'event': event,
-            'registrations_available': False,
-            'registration_count': registration_count,
-        }
-        return render(request, 'web/events/registrations_manage.html', context)
-
     registrations = Registration.objects.filter(
         event_id=event_id,
         state__in=[Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
@@ -75,9 +63,6 @@ def staff_registration_add(request: HttpRequest, event_id: int) -> HttpResponse:
 
     if event.external_registration_url:
         return redirect('event_detail', event_id=event.id)
-
-    if not event.registrations_available:
-        return redirect('event_registrations_manage', event_id=event.id)
 
     if request.method == 'POST':
         form = StaffRegistrationForm(request.POST, event=event)
@@ -127,9 +112,6 @@ def staff_registration_edit(request: HttpRequest, event_id: int, registration_id
 
     if event.external_registration_url:
         return redirect('event_detail', event_id=event.id)
-
-    if not event.registrations_available:
-        return redirect('event_registrations_manage', event_id=event.id)
 
     registration = get_object_or_404(Registration, id=registration_id, event=event)
 
@@ -195,8 +177,6 @@ def staff_registration_withdraw(request: HttpRequest, event_id: int, registratio
     if request.method != 'POST':
         return redirect('event_registrations_manage', event_id=event_id)
 
-    if not event.registrations_available:
-        return redirect('event_registrations_manage', event_id=event.id)
     registration = get_object_or_404(Registration, id=registration_id, event=event)
 
     service = RegistrationService()
