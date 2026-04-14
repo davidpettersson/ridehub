@@ -186,6 +186,134 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
 
 
 
+class PastEventRegistrationsVisibilityTests(BaseEventViewTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('riders_list', kwargs={'event_id': self.event.id})
+
+    def _make_event_old(self):
+        self.event.starts_at = timezone.now() - timedelta(hours=80)
+        self.event.ends_at = timezone.now() - timedelta(hours=78)
+        self.event.registration_closes_at = timezone.now() - timedelta(hours=81)
+        self.event.save()
+
+    def test_staff_can_see_registrations_for_old_event(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+        self._make_event_old()
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['registrations_available'])
+        self.assertContains(response, 'Regular')
+        self.assertContains(response, 'Leader')
+
+    def test_regular_user_cannot_see_registrations_for_old_event(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+        self._make_event_old()
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['registrations_available'])
+        self.assertNotContains(response, 'Leader User')
+
+    def test_anonymous_user_cannot_see_registrations_for_old_event(self):
+        # Arrange
+        self._make_event_old()
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['registrations_available'])
+        self.assertNotContains(response, 'Leader User')
+
+
+class PastEventDetailVisibilityTests(BaseEventViewTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('event_detail', kwargs={'event_id': self.event.id})
+        self.ride.speed_ranges.add(self.speed_range)
+
+    def _make_event_old(self):
+        self.event.starts_at = timezone.now() - timedelta(hours=80)
+        self.event.ends_at = timezone.now() - timedelta(hours=78)
+        self.event.registration_closes_at = timezone.now() - timedelta(hours=81)
+        self.event.save()
+
+    def test_staff_sees_rides_for_old_event(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+        self._make_event_old()
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['registrations_available'])
+        self.assertTrue(len(response.context['rides']) > 0)
+
+    def test_regular_user_does_not_see_rides_for_old_event(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+        self._make_event_old()
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['registrations_available'])
+        self.assertEqual(response.context['rides'], {})
+
+
+class PastEventEmergencyContactsVisibilityTests(BaseEventViewTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('event_emergency_contacts', kwargs={'event_id': self.event.id})
+
+    def _make_event_old(self):
+        self.event.starts_at = timezone.now() - timedelta(hours=80)
+        self.event.ends_at = timezone.now() - timedelta(hours=78)
+        self.event.registration_closes_at = timezone.now() - timedelta(hours=81)
+        self.event.save()
+
+    def test_staff_can_access_emergency_contacts_for_old_event(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+        self._make_event_old()
+
+        # Act
+        response = self.client.get(self.url, HTTP_HX_REQUEST='true')
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['contacts_revealed'])
+
+    def test_ride_leader_cannot_access_emergency_contacts_for_old_event(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+        self._make_event_old()
+
+        # Act
+        response = self.client.get(self.url, HTTP_HX_REQUEST='true')
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+
+
 class EventEmergencyContactsViewTests(BaseEventViewTestCase):
 
     def setUp(self):

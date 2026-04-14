@@ -70,9 +70,10 @@ class ManagePageAvailabilityTests(BaseManageTestCase):
         self.event.registration_closes_at = timezone.now() - timezone.timedelta(hours=81)
         self.event.save()
 
-    def test_manage_page_shows_unavailable_for_old_event(self):
+    def test_staff_can_view_manage_page_for_old_event(self):
         # Arrange
         self.client.login(username='staff@example.com', password='password123')
+        self._create_confirmed_registration(self.regular_user, self.ride, self.speed_range)
         self._make_event_old()
 
         # Act
@@ -80,10 +81,10 @@ class ManagePageAvailabilityTests(BaseManageTestCase):
 
         # Assert
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(response.context['registrations_available'])
-        self.assertContains(response, 'Registration details are no longer available')
+        self.assertTrue(response.context['registrations_available'])
+        self.assertContains(response, 'Regular')
 
-    def test_staff_add_redirects_for_old_event(self):
+    def test_staff_can_access_add_form_for_old_event(self):
         # Arrange
         self.client.login(username='staff@example.com', password='password123')
         self._make_event_old()
@@ -92,9 +93,9 @@ class ManagePageAvailabilityTests(BaseManageTestCase):
         response = self.client.get(reverse('staff_registration_add', args=[self.event.id]))
 
         # Assert
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
 
-    def test_staff_edit_redirects_for_old_event(self):
+    def test_staff_can_access_edit_form_for_old_event(self):
         # Arrange
         self.client.login(username='staff@example.com', password='password123')
         reg = self._create_confirmed_registration(self.regular_user, self.ride, self.speed_range)
@@ -106,9 +107,9 @@ class ManagePageAvailabilityTests(BaseManageTestCase):
         )
 
         # Assert
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
 
-    def test_staff_withdraw_redirects_for_old_event(self):
+    def test_staff_can_withdraw_registration_for_old_event(self):
         # Arrange
         self.client.login(username='staff@example.com', password='password123')
         reg = self._create_confirmed_registration(self.regular_user, self.ride, self.speed_range)
@@ -122,7 +123,7 @@ class ManagePageAvailabilityTests(BaseManageTestCase):
         # Assert
         self.assertEqual(response.status_code, 302)
         updated_reg = Registration.objects.get(id=reg.id)
-        self.assertEqual(updated_reg.state, Registration.STATE_CONFIRMED)
+        self.assertEqual(updated_reg.state, Registration.STATE_WITHDRAWN)
 
 
 class ManagePageAccessTests(BaseManageTestCase):
