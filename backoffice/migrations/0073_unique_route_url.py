@@ -4,30 +4,49 @@ from django.db.models import Count
 
 def empty_url_to_null(apps, schema_editor):
     Route = apps.get_model('backoffice', 'Route')
-    Route.objects.filter(url='').update(url=None)
+    affected = Route.objects.filter(url='').update(url=None)
+    print(f'[0073] empty_url_to_null: normalized {affected} blank URL(s) to NULL')
 
 
 def null_url_to_empty(apps, schema_editor):
     Route = apps.get_model('backoffice', 'Route')
-    Route.objects.filter(url__isnull=True).update(url='')
+    affected = Route.objects.filter(url__isnull=True).update(url='')
+    print(f'[0073] null_url_to_empty: restored {affected} NULL URL(s) to blank')
 
 
-def check_duplicate_urls(apps, schema_editor):
+def merge_duplicate_urls(apps, schema_editor):
     Route = apps.get_model('backoffice', 'Route')
-    duplicates = (
+    Ride = apps.get_model('backoffice', 'Ride')
+    dupe_urls = list(
         Route.objects.exclude(url__isnull=True)
         .values('url')
         .annotate(c=Count('id'))
         .filter(c__gt=1)
+        .values_list('url', flat=True)
     )
-    duplicates = list(duplicates)
-    if duplicates:
-        details = ', '.join(f"{d['url']} ({d['c']})" for d in duplicates)
-        raise RuntimeError(
-            f"Cannot apply unique constraint on Route.url; duplicates found: {details}. "
-            "Merge or remove duplicates in the admin (or via a one-off SQL UPDATE) "
-            "before re-running migrate."
+    if not dupe_urls:
+        print('[0073] merge_duplicate_urls: no duplicates found')
+        return
+    print(f'[0073] merge_duplicate_urls: {len(dupe_urls)} duplicate URL group(s) to merge')
+    total_repointed = 0
+    total_deleted = 0
+    for url in dupe_urls:
+        routes = list(Route.objects.filter(url=url).order_by('id'))
+        canonical = routes[0]
+        dupe_ids = [r.id for r in routes[1:]]
+        repointed = Ride.objects.filter(route_id__in=dupe_ids).update(route_id=canonical.id)
+        deleted, _ = Route.objects.filter(id__in=dupe_ids).delete()
+        total_repointed += repointed
+        total_deleted += deleted
+        print(
+            f'[0073]   {url}: keeping Route id={canonical.id}, '
+            f'merging {len(dupe_ids)} dupe(s) {dupe_ids}, '
+            f'repointed {repointed} Ride(s), deleted {deleted} Route row(s)'
         )
+    print(
+        f'[0073] merge_duplicate_urls: total {total_repointed} Ride(s) repointed, '
+        f'{total_deleted} Route row(s) deleted'
+    )
 
 
 class Migration(migrations.Migration):
@@ -48,7 +67,7 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.RunPython(empty_url_to_null, null_url_to_empty),
-        migrations.RunPython(check_duplicate_urls, migrations.RunPython.noop),
+        migrations.RunPython(merge_duplicate_urls, migrations.RunPython.noop),
         migrations.AlterField(
             model_name='route',
             name='url',
