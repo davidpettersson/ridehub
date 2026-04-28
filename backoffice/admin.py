@@ -92,7 +92,8 @@ class SpeedRangeAdmin(admin.ModelAdmin):
 
 
 class RouteAdmin(admin.ModelAdmin):
-    list_display = ('name', 'url', 'updated_at',)
+    list_display = ('name', 'url', 'updated_at', 'archived', 'deleted',)
+    list_filter = ('archived', 'deleted',)
     search_fields = ('name',)
 
 
