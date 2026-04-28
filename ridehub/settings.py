@@ -16,6 +16,8 @@ IS_HEROKU_APP = "DYNO" in os.environ and "CI" not in os.environ
 
 WEB_HOST = os.environ.get('WEB_HOST', 'obcrides.ca')
 
+RWGPS_ORG_SLUG = os.environ.get('RWGPS_ORG_SLUG', '3471-ottawa-bicycle-club')
+
 if IS_HEROKU_APP:
     ALLOWED_HOSTS = ["*"]
     SECURE_SSL_REDIRECT = True

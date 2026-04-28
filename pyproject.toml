@@ -27,6 +27,7 @@ dependencies = [
     "psycopg~=3.2.13",
     "recordlinkage>=0.16",
     "redis~=5.2.1",
+    "requests~=2.32.5",
     "returns~=0.25.0",
     "sentry-sdk[django]~=2.50.0",
     "whitenoise~=6.11.0",

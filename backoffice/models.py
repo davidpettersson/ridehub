@@ -314,6 +314,8 @@ class Route(models.Model):
     url = models.URLField(
         verbose_name="Ride With GPS URL",
         blank=True,
+        null=True,
+        unique=True,
         help_text='Ride with GPS URL. If this is set, then whenever an import from Ride with GPS happens other fields will be overwritten for this route.'
     )
 
@@ -338,6 +340,16 @@ class Route(models.Model):
         null=True,
         blank=True,
         help_text='When this route was last imported into the backoffice.'
+    )
+
+    archived = models.BooleanField(
+        default=False,
+        help_text='Marked archived in Ride with GPS.'
+    )
+
+    deleted = models.BooleanField(
+        default=False,
+        help_text='No longer present in Ride with GPS feed.'
     )
 
     def ride_with_gps_id(self):
