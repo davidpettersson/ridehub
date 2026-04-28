@@ -37,6 +37,16 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AlterField(
+            model_name='route',
+            name='url',
+            field=models.URLField(
+                blank=True,
+                null=True,
+                help_text='Ride with GPS URL. If this is set, then whenever an import from Ride with GPS happens other fields will be overwritten for this route.',
+                verbose_name='Ride With GPS URL',
+            ),
+        ),
         migrations.RunPython(empty_url_to_null, null_url_to_empty),
         migrations.RunPython(check_duplicate_urls, migrations.RunPython.noop),
         migrations.AlterField(
