@@ -269,3 +269,96 @@ class RouteImportServiceTests(TestCase):
         self.assertEqual(seen, [CONFLICT_DELETE])
         self.assertEqual(stats.deleted, 1)
         self.assertTrue(Route.objects.get(url=url).deleted)
+
+    def test_skipped_invalid_rows_are_counted(self):
+        # Arrange
+        csv_text = make_csv(
+            csv_row(url='', name='No URL'),
+            csv_row(url='https://ridewithgps.com/routes/16', name=''),
+            csv_row(url='https://ridewithgps.com/routes/17', name='Valid', distance='50', elevation='10'),
+        )
+
+        # Act
+        stats = self.service.import_from_csv_text(csv_text)
+
+        # Assert
+        self.assertEqual(stats.skipped_invalid, 2)
+        self.assertEqual(stats.imported, 1)
+
+    def test_empty_csv_does_not_mark_routes_deleted(self):
+        # Arrange
+        ts = timezone.now() - timedelta(days=1)
+        self._create_route(url='https://ridewithgps.com/routes/18', last_imported_at=ts)
+        self._create_route(url='https://ridewithgps.com/routes/19', last_imported_at=ts)
+        csv_text = CSV_HEADER + '\n'
+
+        # Act
+        stats = self.service.import_from_csv_text(csv_text)
+
+        # Assert
+        self.assertEqual(stats.deleted, 0)
+        self.assertEqual(Route.objects.filter(deleted=True).count(), 0)
+        self.assertTrue(any('skipping deletion phase' in w for w in stats.warnings))
+
+    def test_invalid_action_for_update_conflict_raises(self):
+        # Arrange
+        url = 'https://ridewithgps.com/routes/20'
+        old = timezone.now() - timedelta(days=10)
+        self._create_route(url=url, name='Manually Renamed', last_imported_at=old)
+        Route.objects.filter(url=url).update(updated_at=timezone.now())
+        csv_text = make_csv(csv_row(url=url, name='Server Name', distance='100', elevation='200'))
+
+        # Act / Assert
+        with self.assertRaises(ValueError):
+            self.service.import_from_csv_text(csv_text, on_conflict=lambda *_: ACTION_DELETE)
+
+    def test_invalid_action_for_delete_conflict_raises(self):
+        # Arrange
+        url = 'https://ridewithgps.com/routes/21'
+        old = timezone.now() - timedelta(days=10)
+        self._create_route(url=url, name='Locally Edited', last_imported_at=old)
+        Route.objects.filter(url=url).update(updated_at=timezone.now())
+        csv_text = make_csv(csv_row(
+            url='https://ridewithgps.com/routes/other', name='Other',
+            distance='100', elevation='200',
+        ))
+
+        # Act / Assert
+        with self.assertRaises(ValueError):
+            self.service.import_from_csv_text(csv_text, on_conflict=lambda *_: ACTION_OVERWRITE)
+
+    def test_callback_receives_distinct_conflict_types_in_one_run(self):
+        # Arrange
+        update_url = 'https://ridewithgps.com/routes/22'
+        delete_url = 'https://ridewithgps.com/routes/23'
+        old = timezone.now() - timedelta(days=10)
+        self._create_route(url=update_url, name='Locally Edited', last_imported_at=old)
+        self._create_route(url=delete_url, name='Locally Edited', last_imported_at=old)
+        Route.objects.filter(url__in=[update_url, delete_url]).update(updated_at=timezone.now())
+        csv_text = make_csv(csv_row(url=update_url, name='Server Name', distance='100', elevation='200'))
+
+        def cb(route, row, conflict_type):
+            return ACTION_OVERWRITE if conflict_type == CONFLICT_UPDATE else ACTION_DELETE
+
+        # Act
+        stats = self.service.import_from_csv_text(csv_text, on_conflict=cb)
+
+        # Assert
+        self.assertEqual(stats.updated, 1)
+        self.assertEqual(stats.deleted, 1)
+        self.assertEqual(Route.objects.get(url=update_url).name, 'Server Name')
+        self.assertTrue(Route.objects.get(url=delete_url).deleted)
+
+    def test_save_updates_updated_at_so_future_manual_edit_detection_works(self):
+        # Arrange
+        url = 'https://ridewithgps.com/routes/24'
+        csv_text = make_csv(csv_row(url=url, name='New', distance='50', elevation='10'))
+
+        # Act
+        self.service.import_from_csv_text(csv_text)
+
+        # Assert
+        route = Route.objects.get(url=url)
+        self.assertIsNotNone(route.updated_at)
+        self.assertIsNotNone(route.last_imported_at)
+        self.assertFalse(self.service._is_manually_edited(route))

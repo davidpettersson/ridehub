@@ -5,9 +5,9 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from backoffice.services.route_service import (
+    ACTION_DELETE,
     ACTION_OVERWRITE,
     ACTION_SKIP,
-    ACTION_DELETE,
     CONFLICT_DELETE,
     CONFLICT_UPDATE,
     RouteImportService,
@@ -23,7 +23,6 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', action='store_true')
-        parser.add_argument('--debug', action='store_true')
         parser.add_argument('--non-interactive', action='store_true',
                             help='Skip routes with manual-edit conflicts instead of prompting.')
         parser.add_argument('--url', type=str, default=None,
@@ -41,23 +40,30 @@ class Command(BaseCommand):
         except requests.RequestException as exc:
             raise CommandError(f'Failed to fetch CSV: {exc}')
 
+        content_type = response.headers.get('Content-Type', '').lower()
+        if 'html' in content_type:
+            raise CommandError(
+                f'Expected CSV but got Content-Type {content_type!r}. '
+                'RWGPS may have returned an HTML page; aborting to avoid corrupting data.'
+            )
+
         text = response.content.decode('utf-8-sig')
 
-        bulk_decision = {'value': None}
+        bulk_decisions: dict[str, str] = {}
 
         def on_conflict(route, csv_row, conflict_type):
             if non_interactive:
                 return ACTION_SKIP
-            if bulk_decision['value'] is not None:
-                return bulk_decision['value']
-            return self._prompt(route, csv_row, conflict_type, bulk_decision)
+            if conflict_type in bulk_decisions:
+                return bulk_decisions[conflict_type]
+            return self._prompt(route, csv_row, conflict_type, bulk_decisions)
 
         service = RouteImportService()
         stats = service.import_from_csv_text(text, on_conflict=on_conflict, dry_run=dry_run)
 
         self._print_summary(stats, dry_run)
 
-    def _prompt(self, route, csv_row, conflict_type, bulk_decision):
+    def _prompt(self, route, csv_row, conflict_type, bulk_decisions):
         self.stdout.write('')
         self.stdout.write(self.style.WARNING(
             f'Conflict: route "{route.name}" ({route.url}) was manually edited '
@@ -86,7 +92,7 @@ class Command(BaseCommand):
             self.stdout.flush()
             answer = sys.stdin.readline().strip()
             if answer in bulk:
-                bulk_decision['value'] = bulk[answer]
+                bulk_decisions[conflict_type] = bulk[answer]
                 return bulk[answer]
             if answer in mapping:
                 return mapping[answer]
@@ -98,11 +104,12 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Sync complete:'))
         self.stdout.write(f'  Imported:           {stats.imported}')
         self.stdout.write(f'  Updated:            {stats.updated}')
-        self.stdout.write(f'  Archived (delta):   {stats.archived}')
+        self.stdout.write(f'  Archived:           {stats.archived}')
         self.stdout.write(f'  Unarchived:         {stats.unarchived}')
         self.stdout.write(f'  Deleted:            {stats.deleted}')
         self.stdout.write(f'  Undeleted:          {stats.undeleted}')
         self.stdout.write(f'  Unchanged:          {stats.unchanged}')
+        self.stdout.write(f'  Skipped invalid:    {stats.skipped_invalid}')
         self.stdout.write(f'  Conflicts resolved: {stats.conflicts_resolved}')
         self.stdout.write(f'  Conflicts skipped:  {stats.conflicts_skipped}')
         for warning in stats.warnings:

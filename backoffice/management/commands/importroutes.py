@@ -11,7 +11,6 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('csv_file', type=str)
         parser.add_argument('--dry-run', action='store_true')
-        parser.add_argument('--debug', action='store_true')
 
     def handle(self, *args, **options):
         path = options['csv_file']
@@ -37,9 +36,12 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Import complete:'))
         self.stdout.write(f'  Imported:           {stats.imported}')
         self.stdout.write(f'  Updated:            {stats.updated}')
-        self.stdout.write(f'  Archived (delta):   {stats.archived}')
+        self.stdout.write(f'  Archived:           {stats.archived}')
         self.stdout.write(f'  Unarchived:         {stats.unarchived}')
         self.stdout.write(f'  Deleted:            {stats.deleted}')
         self.stdout.write(f'  Undeleted:          {stats.undeleted}')
         self.stdout.write(f'  Unchanged:          {stats.unchanged}')
+        self.stdout.write(f'  Skipped invalid:    {stats.skipped_invalid}')
         self.stdout.write(f'  Conflicts skipped:  {stats.conflicts_skipped}')
+        for warning in stats.warnings:
+            self.stdout.write(self.style.WARNING(f'  ! {warning}'))

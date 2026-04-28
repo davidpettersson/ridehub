@@ -352,7 +352,14 @@ class Route(models.Model):
         help_text='No longer present in Ride with GPS feed.'
     )
 
+    def save(self, *args, **kwargs):
+        if self.url == '':
+            self.url = None
+        super().save(*args, **kwargs)
+
     def ride_with_gps_id(self):
+        if not self.url:
+            return None
         parts = self.url.split('/')
         return parts[-1] if len(parts) > 0 else None
 

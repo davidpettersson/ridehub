@@ -25,7 +25,8 @@ def check_duplicate_urls(apps, schema_editor):
         details = ', '.join(f"{d['url']} ({d['c']})" for d in duplicates)
         raise RuntimeError(
             f"Cannot apply unique constraint on Route.url; duplicates found: {details}. "
-            "Resolve duplicates manually before re-running migration."
+            "Merge or remove duplicates in the admin (or via a one-off SQL UPDATE) "
+            "before re-running migrate."
         )
 
 

@@ -17,6 +17,11 @@ ACTION_OVERWRITE = 'overwrite'
 ACTION_SKIP = 'skip'
 ACTION_DELETE = 'delete'
 
+ALLOWED_ACTIONS_BY_CONFLICT = {
+    CONFLICT_UPDATE: frozenset({ACTION_OVERWRITE, ACTION_SKIP}),
+    CONFLICT_DELETE: frozenset({ACTION_DELETE, ACTION_SKIP}),
+}
+
 MANUAL_EDIT_TOLERANCE = timedelta(seconds=5)
 
 
@@ -55,16 +60,18 @@ class RouteImportService:
         on_conflict: Optional[ConflictCallback] = None,
         dry_run: bool = False,
     ) -> ImportStats:
-        rows = self._parse_csv(text)
-        return self._apply(rows, on_conflict=on_conflict, dry_run=dry_run)
+        stats = ImportStats()
+        rows = self._parse_csv(text, stats)
+        return self._apply(rows, stats=stats, on_conflict=on_conflict, dry_run=dry_run)
 
-    def _parse_csv(self, text: str) -> list[CsvRow]:
+    def _parse_csv(self, text: str, stats: ImportStats) -> list[CsvRow]:
         reader = csv.DictReader(StringIO(text))
         rows: list[CsvRow] = []
         for raw in reader:
             name = (raw.get('Route name') or '').strip()
             url = (raw.get('Route URL') or '').strip()
             if not name or not url:
+                stats.skipped_invalid += 1
                 continue
             rows.append(
                 CsvRow(
@@ -110,19 +117,40 @@ class RouteImportService:
         self,
         rows: list[CsvRow],
         *,
+        stats: ImportStats,
         on_conflict: Optional[ConflictCallback],
         dry_run: bool,
     ) -> ImportStats:
-        stats = ImportStats()
         now = timezone.now()
-        csv_urls = {row.url for row in rows}
+        creates, updates = self._collect_creates_and_updates(rows, stats, on_conflict, now)
+        deletes = self._collect_missing_deletes(rows, stats, on_conflict)
 
+        if dry_run:
+            return stats
+
+        with transaction.atomic():
+            for route in creates:
+                route.save()
+            for route in updates:
+                route.save()
+            for route in deletes:
+                route.save()
+
+        return stats
+
+    def _collect_creates_and_updates(
+        self,
+        rows: list[CsvRow],
+        stats: ImportStats,
+        on_conflict: Optional[ConflictCallback],
+        now,
+    ) -> tuple[list[Route], list[Route]]:
+        csv_urls = {row.url for row in rows}
         existing_by_url = {
             r.url: r for r in Route.objects.filter(url__in=csv_urls)
         }
-
         creates: list[Route] = []
-        updates: list[tuple[Route, list[str]]] = []
+        updates: list[Route] = []
 
         for row in rows:
             existing = existing_by_url.get(row.url)
@@ -159,13 +187,10 @@ class RouteImportService:
 
             was_archived = existing.archived
             was_deleted = existing.deleted
-            updated_fields = []
             for attr, value in changes.items():
                 setattr(existing, attr, value)
-                updated_fields.append(attr)
             existing.last_imported_at = now
-            updated_fields.append('last_imported_at')
-            updates.append((existing, updated_fields))
+            updates.append(existing)
 
             stats.updated += 1
             if not was_archived and existing.archived:
@@ -175,13 +200,28 @@ class RouteImportService:
             if was_deleted and not existing.deleted:
                 stats.undeleted += 1
 
+        return creates, updates
+
+    def _collect_missing_deletes(
+        self,
+        rows: list[CsvRow],
+        stats: ImportStats,
+        on_conflict: Optional[ConflictCallback],
+    ) -> list[Route]:
+        if not rows:
+            stats.warnings.append(
+                'CSV contained no valid rows; skipping deletion phase to avoid mass-deleting routes.'
+            )
+            return []
+
+        csv_urls = {row.url for row in rows}
         missing_qs = (
             Route.objects.exclude(url__in=csv_urls)
             .exclude(url__isnull=True)
             .exclude(url='')
             .exclude(deleted=True)
         )
-        deletes: list[tuple[Route, list[str]]] = []
+        deletes: list[Route] = []
         for route in missing_qs:
             if self._is_manually_edited(route):
                 action = self._resolve_conflict(
@@ -192,19 +232,9 @@ class RouteImportService:
                     continue
                 stats.conflicts_resolved += 1
             route.deleted = True
-            deletes.append((route, ['deleted']))
+            deletes.append(route)
             stats.deleted += 1
-
-        if dry_run:
-            return stats
-
-        with transaction.atomic():
-            if creates:
-                Route.objects.bulk_create(creates)
-            for route, fields_ in updates + deletes:
-                route.save(update_fields=fields_)
-
-        return stats
+        return deletes
 
     @staticmethod
     def _resolve_conflict(
@@ -215,9 +245,13 @@ class RouteImportService:
         *,
         default: str,
     ) -> str:
+        allowed = ALLOWED_ACTIONS_BY_CONFLICT[conflict_type]
         if callback is None:
             return default
         result = callback(route, row, conflict_type)
-        if result not in (ACTION_OVERWRITE, ACTION_SKIP, ACTION_DELETE):
-            return default
+        if result not in allowed:
+            raise ValueError(
+                f'on_conflict callback returned {result!r} for {conflict_type}; '
+                f'expected one of {sorted(allowed)}'
+            )
         return result

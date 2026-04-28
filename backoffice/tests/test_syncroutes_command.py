@@ -2,6 +2,7 @@ from io import StringIO
 from unittest.mock import patch
 
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase
 
 from backoffice.models import Route
@@ -17,8 +18,9 @@ CSV_TEXT = (
 
 
 class FakeResponse:
-    def __init__(self, text):
+    def __init__(self, text, content_type='text/plain'):
         self.content = text.encode('utf-8')
+        self.headers = {'Content-Type': content_type}
 
     def raise_for_status(self):
         pass
@@ -65,3 +67,12 @@ class SyncRoutesCommandTests(TestCase):
         # Assert
         called_url = mock_get.call_args[0][0]
         self.assertEqual(called_url, 'https://example.test/x.csv')
+
+    @patch('backoffice.management.commands.syncroutes.requests.get')
+    def test_html_response_aborts_with_command_error(self, mock_get):
+        # Arrange
+        mock_get.return_value = FakeResponse('<html>login</html>', content_type='text/html; charset=utf-8')
+
+        # Act / Assert
+        with self.assertRaises(CommandError):
+            call_command('syncroutes', '--non-interactive', stdout=StringIO())
