@@ -49,6 +49,12 @@ def merge_duplicate_urls(apps, schema_editor):
     )
 
 
+def flush_deferred_constraints(apps, schema_editor):
+    if schema_editor.connection.vendor == 'postgresql':
+        schema_editor.execute('SET CONSTRAINTS ALL IMMEDIATE')
+        print('[0073] flush_deferred_constraints: fired pending FK triggers')
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -68,6 +74,7 @@ class Migration(migrations.Migration):
         ),
         migrations.RunPython(empty_url_to_null, null_url_to_empty),
         migrations.RunPython(merge_duplicate_urls, migrations.RunPython.noop),
+        migrations.RunPython(flush_deferred_constraints, migrations.RunPython.noop),
         migrations.AlterField(
             model_name='route',
             name='url',
