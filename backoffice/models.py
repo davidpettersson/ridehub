@@ -157,7 +157,10 @@ class Event(models.Model):
     )
 
     registration_enabled = models.BooleanField(default=True)
-    all_day = models.BooleanField(default=False)
+    all_day = models.BooleanField(
+        default=False,
+        help_text='Mark as all day if event spans multiple days. Start/end times will be ignored.'
+    )
 
     cancelled_at = models.DateTimeField(
         null=True,
