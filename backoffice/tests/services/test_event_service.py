@@ -276,6 +276,46 @@ class FetchEventsForMonthTests(BaseEventServiceTest):
         # Assert
         self.assertEqual(0, result.count(), "Should return no events for empty month")
 
+    def test_fetch_events_for_month_includes_all_day_event_spanning_into_month(self):
+        # Arrange - all-day event starts Jan 30, ends Feb 2
+        Event.objects.create(
+            program=self.program,
+            name="Cross Month All Day",
+            all_day=True,
+            starts_at=timezone.make_aware(datetime.datetime(2024, 1, 30, 0, 0, 0)),
+            ends_at=timezone.make_aware(datetime.datetime(2024, 2, 2, 23, 59, 59)),
+            registration_enabled=False,
+            state=Event.STATE_LIVE,
+        )
+
+        # Act
+        result = self.service.fetch_events_for_month(2024, 2)
+
+        # Assert
+        event_names = [event.name for event in result]
+        self.assertIn("Cross Month All Day", event_names,
+                      "All-day event spanning previous month should appear in target month")
+
+    def test_fetch_events_for_month_excludes_timed_event_starting_previous_month(self):
+        # Arrange - non-all-day event with ends_at extending into Feb
+        Event.objects.create(
+            program=self.program,
+            name="Cross Month Timed",
+            all_day=False,
+            starts_at=timezone.make_aware(datetime.datetime(2024, 1, 30, 22, 0, 0)),
+            ends_at=timezone.make_aware(datetime.datetime(2024, 2, 1, 2, 0, 0)),
+            registration_closes_at=timezone.make_aware(datetime.datetime(2024, 1, 30, 22, 0, 0)),
+            state=Event.STATE_LIVE,
+        )
+
+        # Act
+        result = self.service.fetch_events_for_month(2024, 2)
+
+        # Assert
+        event_names = [event.name for event in result]
+        self.assertNotIn("Cross Month Timed", event_names,
+                         "Timed events are not expanded across days; should only appear in start month")
+
 
 class DuplicateEventTestCase(TestCase):
     def setUp(self):
