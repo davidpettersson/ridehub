@@ -350,13 +350,35 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
 
     events = list(EventService().fetch_events_for_month(year, month, query=active_query))
 
+    month_start = date(year, month, 1)
+    if month == 12:
+        month_end = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        month_end = date(year, month + 1, 1) - timedelta(days=1)
+
     events_by_date = {}
     for event in events:
         local_starts_at = timezone.localtime(event.starts_at)
-        event_date = local_starts_at.date()
-        if event_date not in events_by_date:
-            events_by_date[event_date] = []
-        events_by_date[event_date].append(event)
+        start_date = local_starts_at.date()
+        if event.all_day and event.ends_at:
+            local_ends_at = timezone.localtime(event.ends_at)
+            end_date = local_ends_at.date()
+            total = (end_date - start_date).days + 1
+            for i, d in enumerate(
+                start_date + timedelta(days=n) for n in range(total)
+            ):
+                if month_start <= d <= month_end:
+                    if d not in events_by_date:
+                        events_by_date[d] = []
+                    events_by_date[d].append({"event": event, "day_index": i + 1, "total_days": total})
+        else:
+            if month_start <= start_date <= month_end:
+                if start_date not in events_by_date:
+                    events_by_date[start_date] = []
+                events_by_date[start_date].append({"event": event, "day_index": None, "total_days": None})
+
+    for d in events_by_date:
+        events_by_date[d].sort(key=lambda e: (0 if e["event"].all_day else 1, e["event"].starts_at))
 
     registered_event_ids = set()
     if request.user.is_authenticated:

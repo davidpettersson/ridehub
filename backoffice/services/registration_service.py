@@ -359,6 +359,9 @@ class RegistrationService:
         )
 
     def is_registration_allowed(self, event: Event) -> tuple[bool, str | None]:
+        if not event.registration_enabled:
+            return False, 'Registration is not available for this event.'
+
         if event.cancelled:
             return False, 'Event is cancelled.'
 

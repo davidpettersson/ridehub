@@ -364,3 +364,151 @@ class EventRegistrationOpenTestCase(TestCase):
 
         self.assertFalse(event.registration_open)
 
+
+class EventAllDayTestCase(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.now = timezone.now()
+        self.tomorrow = self.now + timedelta(days=1)
+        self.day_after = self.now + timedelta(days=2)
+
+    def test_clean_all_day_requires_ends_at(self):
+        # Arrange
+        event = Event(
+            program=self.program,
+            name="All Day Event",
+            starts_at=self.tomorrow,
+            ends_at=None,
+            all_day=True,
+            registration_closes_at=self.now,
+        )
+
+        # Act / Assert
+        with self.assertRaises(ValidationError) as context:
+            event.clean()
+        self.assertIn('ends_at', context.exception.message_dict)
+
+    def test_clean_all_day_coerces_times(self):
+        # Arrange
+        import datetime
+        arbitrary_start = timezone.make_aware(datetime.datetime(2026, 6, 15, 14, 30, 0))
+        arbitrary_end = timezone.make_aware(datetime.datetime(2026, 6, 17, 9, 45, 0))
+        event = Event(
+            program=self.program,
+            name="All Day Event",
+            starts_at=arbitrary_start,
+            ends_at=arbitrary_end,
+            all_day=True,
+            registration_closes_at=self.now,
+        )
+
+        # Act
+        event.clean()
+
+        # Assert
+        local_start = timezone.localtime(event.starts_at)
+        local_end = timezone.localtime(event.ends_at)
+        self.assertEqual(local_start.hour, 0)
+        self.assertEqual(local_start.minute, 0)
+        self.assertEqual(local_start.second, 0)
+        self.assertEqual(local_end.hour, 23)
+        self.assertEqual(local_end.minute, 59)
+        self.assertEqual(local_end.second, 59)
+
+    def test_save_all_day_coerces_times(self):
+        # Arrange
+        import datetime
+        arbitrary_start = timezone.make_aware(datetime.datetime(2026, 6, 15, 14, 30, 0))
+        arbitrary_end = timezone.make_aware(datetime.datetime(2026, 6, 17, 9, 45, 0))
+
+        # Act
+        event = Event.objects.create(
+            program=self.program,
+            name="All Day Event",
+            starts_at=arbitrary_start,
+            ends_at=arbitrary_end,
+            all_day=True,
+            registration_closes_at=self.now,
+        )
+
+        # Assert
+        local_start = timezone.localtime(event.starts_at)
+        local_end = timezone.localtime(event.ends_at)
+        self.assertEqual(local_start.hour, 0)
+        self.assertEqual(local_start.minute, 0)
+        self.assertEqual(local_start.second, 0)
+        self.assertEqual(local_end.hour, 23)
+        self.assertEqual(local_end.minute, 59)
+        self.assertEqual(local_end.second, 59)
+
+    def test_registration_closes_at_not_required_when_disabled(self):
+        # Arrange
+        event = Event(
+            program=self.program,
+            name="No Registration Event",
+            starts_at=self.tomorrow,
+            ends_at=self.day_after,
+            registration_enabled=False,
+            registration_closes_at=None,
+        )
+
+        # Act / Assert (should not raise)
+        event.clean()
+
+    def test_day_span_single_day_when_not_all_day(self):
+        # Arrange
+        event = Event(
+            program=self.program,
+            name="Regular Event",
+            starts_at=self.tomorrow,
+            ends_at=self.day_after,
+            all_day=False,
+        )
+
+        # Act / Assert
+        self.assertEqual(event.day_span, 1)
+
+    def test_day_span_counts_inclusive_dates(self):
+        # Arrange
+        import datetime
+        start = timezone.make_aware(datetime.datetime(2026, 6, 15, 0, 0, 0))
+        end = timezone.make_aware(datetime.datetime(2026, 6, 17, 23, 59, 59))
+        event = Event(
+            program=self.program,
+            name="Three Day Event",
+            starts_at=start,
+            ends_at=end,
+            all_day=True,
+        )
+
+        # Act / Assert
+        self.assertEqual(event.day_span, 3)
+
+    def test_registration_open_false_when_disabled(self):
+        # Arrange
+        event = Event.objects.create(
+            program=self.program,
+            name="No Reg Event",
+            starts_at=self.tomorrow,
+            ends_at=self.day_after,
+            registration_closes_at=self.now,
+            registration_enabled=False,
+        )
+
+        # Act / Assert
+        self.assertFalse(event.registration_open)
+
+    def test_registrations_available_false_when_disabled(self):
+        # Arrange
+        event = Event.objects.create(
+            program=self.program,
+            name="No Reg Event",
+            starts_at=self.tomorrow,
+            ends_at=self.day_after,
+            registration_closes_at=self.now,
+            registration_enabled=False,
+        )
+
+        # Act / Assert
+        self.assertFalse(event.registrations_available)
+

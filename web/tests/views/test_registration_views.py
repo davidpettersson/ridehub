@@ -1056,3 +1056,41 @@ class RegistrationVerifyViewTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'web/registrations/verification_sent.html')
+
+
+class RegistrationDisabledTests(TestCase):
+    def setUp(self):
+        now = timezone.now()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="No Registration Event",
+            program=self.program,
+            starts_at=now + timezone.timedelta(days=3),
+            registration_enabled=False,
+            registration_closes_at=None,
+        )
+
+    def test_registration_create_blocked_when_disabled(self):
+        # Arrange
+        url = reverse('registration_create', args=[self.event.id])
+
+        # Act
+        response = self.client.post(url, {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com',
+            'phone': '+16135550100',
+        })
+
+        # Assert
+        self.assertEqual(response.status_code, 400)
+
+    def test_registration_create_get_blocked_when_disabled(self):
+        # Arrange
+        url = reverse('registration_create', args=[self.event.id])
+
+        # Act
+        response = self.client.get(url)
+
+        # Assert
+        self.assertEqual(response.status_code, 400)

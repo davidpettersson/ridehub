@@ -42,8 +42,10 @@ class EventService:
         last_day = date(year, month, last_day_of_month)
 
         qs = self.fetch_events(include_archived, only_visible).filter(
-            starts_at__date__gte=first_day,
             starts_at__date__lte=last_day
+        ).filter(
+            Q(starts_at__date__gte=first_day)
+            | Q(all_day=True, ends_at__date__gte=first_day)
         )
         if program_id is not None:
             qs = qs.filter(program_id=program_id)

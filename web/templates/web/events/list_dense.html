@@ -36,7 +36,15 @@
                         {% endif %}
                         <div class="card-body py-2 px-3">
                             <div class="small text-muted" style="font-size: 0.8rem;">
-                                {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% endif %}
+                                {% if event.all_day %}
+                                  {% if event.ends_at and event.ends_at|date:"Y-m-d" != event.starts_at|date:"Y-m-d" %}
+                                    {{ event.starts_at|date:"M j" }} – {{ event.ends_at|date:"M j" }} · All day
+                                  {% else %}
+                                    All day
+                                  {% endif %}
+                                {% else %}
+                                  {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% endif %}
+                                {% endif %}
                             </div>
                             <div class="fs-6 fw-medium text-dark">
                                 {% if event.cancelled %}<span class="text-decoration-line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
