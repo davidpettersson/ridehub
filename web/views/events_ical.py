@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.urls import reverse
+from django.utils import timezone
 from django_ical.views import ICalFeed
 
 from backoffice.models import Event
@@ -23,9 +24,14 @@ class EventFeed(ICalFeed):
         return item.description
 
     def item_start_datetime(self, item: Event):
+        if item.all_day:
+            return timezone.localtime(item.starts_at).date()
         return item.starts_at
 
     def item_end_datetime(self, item: Event):
+        if item.all_day:
+            end_source = item.ends_at or item.starts_at
+            return timezone.localtime(end_source).date() + timedelta(days=1)
         if item.ends_at:
             return item.ends_at
         else:

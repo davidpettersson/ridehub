@@ -388,7 +388,7 @@ class EventAllDayTestCase(TestCase):
             event.clean()
         self.assertIn('ends_at', context.exception.message_dict)
 
-    def test_clean_all_day_coerces_times(self):
+    def test_clean_all_day_preserves_times(self):
         # Arrange
         import datetime
         arbitrary_start = timezone.make_aware(datetime.datetime(2026, 6, 15, 14, 30, 0))
@@ -406,16 +406,10 @@ class EventAllDayTestCase(TestCase):
         event.clean()
 
         # Assert
-        local_start = timezone.localtime(event.starts_at)
-        local_end = timezone.localtime(event.ends_at)
-        self.assertEqual(local_start.hour, 0)
-        self.assertEqual(local_start.minute, 0)
-        self.assertEqual(local_start.second, 0)
-        self.assertEqual(local_end.hour, 23)
-        self.assertEqual(local_end.minute, 59)
-        self.assertEqual(local_end.second, 59)
+        self.assertEqual(event.starts_at, arbitrary_start)
+        self.assertEqual(event.ends_at, arbitrary_end)
 
-    def test_save_all_day_coerces_times(self):
+    def test_save_all_day_preserves_times(self):
         # Arrange
         import datetime
         arbitrary_start = timezone.make_aware(datetime.datetime(2026, 6, 15, 14, 30, 0))
@@ -432,14 +426,44 @@ class EventAllDayTestCase(TestCase):
         )
 
         # Assert
-        local_start = timezone.localtime(event.starts_at)
-        local_end = timezone.localtime(event.ends_at)
-        self.assertEqual(local_start.hour, 0)
-        self.assertEqual(local_start.minute, 0)
-        self.assertEqual(local_start.second, 0)
-        self.assertEqual(local_end.hour, 23)
-        self.assertEqual(local_end.minute, 59)
-        self.assertEqual(local_end.second, 59)
+        self.assertEqual(event.starts_at, arbitrary_start)
+        self.assertEqual(event.ends_at, arbitrary_end)
+
+    def test_clean_all_day_end_date_before_start_date_raises(self):
+        # Arrange
+        import datetime
+        start = timezone.make_aware(datetime.datetime(2026, 6, 17, 14, 30, 0))
+        end = timezone.make_aware(datetime.datetime(2026, 6, 15, 9, 45, 0))
+        event = Event(
+            program=self.program,
+            name="All Day Event",
+            starts_at=start,
+            ends_at=end,
+            all_day=True,
+            registration_closes_at=self.now,
+        )
+
+        # Act / Assert
+        with self.assertRaises(ValidationError) as context:
+            event.clean()
+        self.assertIn('ends_at', context.exception.message_dict)
+
+    def test_clean_all_day_same_day_with_end_time_before_start_time_is_valid(self):
+        # Arrange
+        import datetime
+        start = timezone.make_aware(datetime.datetime(2026, 6, 15, 14, 30, 0))
+        end = timezone.make_aware(datetime.datetime(2026, 6, 15, 9, 45, 0))
+        event = Event(
+            program=self.program,
+            name="All Day Event",
+            starts_at=start,
+            ends_at=end,
+            all_day=True,
+            registration_closes_at=self.now,
+        )
+
+        # Act / Assert (times ignored for all-day; same date is valid)
+        event.clean()
 
     def test_registration_closes_at_not_required_when_disabled(self):
         # Arrange
