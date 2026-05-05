@@ -1615,6 +1615,23 @@ class IsRegistrationAllowedTestCase(TestCase):
         self.assertFalse(allowed)
         self.assertEqual(reason, 'Event has reached capacity.')
 
+    def test_is_registration_allowed_blocks_disabled(self):
+        # Arrange
+        event = Event.objects.create(
+            program=self.program,
+            name="Disabled Registration Event",
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            registration_enabled=False,
+        )
+
+        # Act
+        allowed, reason = self.service.is_registration_allowed(event)
+
+        # Assert
+        self.assertFalse(allowed)
+        self.assertIsNotNone(reason)
+
 
 class RegisterMethodTestCase(TestCase):
     def setUp(self):

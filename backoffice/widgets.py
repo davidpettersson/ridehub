@@ -72,13 +72,28 @@ class RegistrationClosesAtWidget(AdminSplitDateTime):
             </select>
         </div>
         '''
-        
+
         return mark_safe(widget_html + dropdown_html)
-    
+
     @property
     def media(self):
         base_media = super().media
         custom_js = forms.Media(js=(
             'backoffice/js/time_calculator.js',
+        ))
+        return base_media + custom_js
+
+
+class AllDayWidget(forms.CheckboxInput):
+    def render(self, name, value, attrs=None, renderer=None):
+        attrs = attrs or {}
+        attrs.setdefault('onchange', "setAllDayTimes('id_starts_at', 'id_ends_at', this.checked)")
+        return super().render(name, value, attrs, renderer)
+
+    @property
+    def media(self):
+        base_media = super().media
+        custom_js = forms.Media(js=(
+            'backoffice/js/all_day_toggle.js',
         ))
         return base_media + custom_js 

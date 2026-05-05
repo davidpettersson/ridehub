@@ -12,7 +12,15 @@
 
         <div class="mb-4">
             <div class="text-muted small mb-2">
-                {{ event.starts_at|date:"l, F j" }} · {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% if event.starts_at|date:"Y-m-d" != event.ends_at|date:"Y-m-d" %}<sup>+1</sup>{% endif %}{% endif %}
+                {% if event.all_day %}
+                  {% if event.ends_at and event.ends_at|date:"Y-m-d" != event.starts_at|date:"Y-m-d" %}
+                    {{ event.starts_at|date:"l, F j" }} – {{ event.ends_at|date:"l, F j" }} · All day
+                  {% else %}
+                    {{ event.starts_at|date:"l, F j" }} · All day
+                  {% endif %}
+                {% else %}
+                  {{ event.starts_at|date:"l, F j" }} · {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% if event.starts_at|date:"Y-m-d" != event.ends_at|date:"Y-m-d" %}<sup>+1</sup>{% endif %}{% endif %}
+                {% endif %}
             </div>
             <h1 class="fs-2 fw-bold mb-2">
                 {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}

@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django_fsm import TransitionNotAllowed
 
 from .models import Event
-from .widgets import EndsAtWidget, RegistrationClosesAtWidget
+from .widgets import AllDayWidget, EndsAtWidget, RegistrationClosesAtWidget
 
 
 class EventDuplicationForm(forms.Form):
@@ -27,6 +27,7 @@ class EventAdminForm(forms.ModelForm):
         model = Event
         fields = '__all__'
         widgets = {
+            'all_day': AllDayWidget(),
             'ends_at': EndsAtWidget(),
             'registration_closes_at': RegistrationClosesAtWidget(),
         }

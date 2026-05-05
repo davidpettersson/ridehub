@@ -769,14 +769,14 @@ class EventViewTimezoneTests(TestCase):
         event_date = date(future_date.year, future_date.month, future_date.day)
         self.assertIn(event_date, events_by_date)
         self.assertEqual(len(events_by_date[event_date]), 1)
-        self.assertEqual(events_by_date[event_date][0].name, 'Evening Event')
+        self.assertEqual(events_by_date[event_date][0]["event"].name, 'Evening Event')
 
         # Ensure it's NOT on the next day (which would be the UTC date)
         next_day = future_date + timedelta(days=1)
         wrong_date = date(next_day.year, next_day.month, next_day.day)
         if wrong_date in events_by_date:
             # If the date exists, it should not contain our evening event
-            event_names = [e.name for e in events_by_date[wrong_date]]
+            event_names = [e["event"].name for e in events_by_date[wrong_date]]
             self.assertNotIn('Evening Event', event_names)
     
     def test_event_list_view_timezone_handling(self):
@@ -1031,3 +1031,151 @@ class AnnouncedEventDashedBorderTests(TestCase):
 
         # Assert
         self.assertNotContains(response, 'calendar-event-announced')
+
+
+class AllDayEventViewTests(TestCase):
+
+    def setUp(self):
+        self.program = Program.objects.create(name='Test Program')
+        self.client = Client()
+
+        self.now = timezone.now()
+
+    def _make_all_day_event(self, name, start_date, end_date, **kwargs):
+        import datetime
+        starts_at = timezone.make_aware(datetime.datetime(start_date.year, start_date.month, start_date.day, 0, 0, 0))
+        ends_at = timezone.make_aware(datetime.datetime(end_date.year, end_date.month, end_date.day, 23, 59, 59))
+        return Event.objects.create(
+            program=self.program,
+            name=name,
+            starts_at=starts_at,
+            ends_at=ends_at,
+            all_day=True,
+            registration_enabled=False,
+            **kwargs,
+        )
+
+    def test_upcoming_renders_all_day_label(self):
+        # Arrange
+        from datetime import date
+        import datetime
+        future_date = (self.now + timedelta(days=7)).date()
+        event = self._make_all_day_event('All Day Event', future_date, future_date)
+
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'All day')
+
+    def test_calendar_expands_multi_day_all_day_event(self):
+        # Arrange
+        from datetime import date
+        import datetime
+        future = self.now + timedelta(days=5)
+        start_date = future.date()
+        end_date = (future + timedelta(days=2)).date()
+        event = self._make_all_day_event('Multi Day Event', start_date, end_date)
+
+        # Act
+        response = self.client.get(reverse('calendar_month', kwargs={
+            'year': start_date.year,
+            'month': start_date.month,
+        }))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        events_by_date = response.context['events_by_date']
+        days_with_event = [
+            d for d, entries in events_by_date.items()
+            if any(e['event'].id == event.id for e in entries)
+        ]
+        self.assertEqual(len(days_with_event), 3)
+
+    def test_calendar_all_day_title_has_day_suffix(self):
+        # Arrange
+        from datetime import date
+        import datetime
+        future = self.now + timedelta(days=5)
+        start_date = future.date()
+        end_date = (future + timedelta(days=2)).date()
+        event = self._make_all_day_event('Multi Day Event', start_date, end_date)
+
+        # Act
+        response = self.client.get(reverse('calendar_month', kwargs={
+            'year': start_date.year,
+            'month': start_date.month,
+        }))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'day 2/3')
+
+    def test_calendar_all_day_sorts_first_within_day(self):
+        # Arrange
+        from datetime import date
+        import datetime
+        future = self.now + timedelta(days=5)
+        event_date = future.date()
+
+        all_day_event = self._make_all_day_event('All Day Event', event_date, event_date)
+
+        timed_starts = timezone.make_aware(datetime.datetime(event_date.year, event_date.month, event_date.day, 8, 0, 0))
+        timed_event = Event.objects.create(
+            program=self.program,
+            name='Timed Event',
+            starts_at=timed_starts,
+            ends_at=timed_starts + timedelta(hours=2),
+            registration_enabled=False,
+        )
+
+        # Act
+        response = self.client.get(reverse('calendar_month', kwargs={
+            'year': event_date.year,
+            'month': event_date.month,
+        }))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        all_day_pos = content.find('All Day Event')
+        timed_pos = content.find('Timed Event')
+        self.assertGreater(all_day_pos, 0)
+        self.assertGreater(timed_pos, 0)
+        self.assertLess(all_day_pos, timed_pos)
+
+    def test_detail_hides_registration_block_when_disabled(self):
+        # Arrange
+        from datetime import date
+        import datetime
+        future_date = (self.now + timedelta(days=7)).date()
+        event = Event.objects.create(
+            program=self.program,
+            name='No Reg Event',
+            starts_at=timezone.make_aware(datetime.datetime(future_date.year, future_date.month, future_date.day, 10, 0, 0)),
+            ends_at=timezone.make_aware(datetime.datetime(future_date.year, future_date.month, future_date.day, 12, 0, 0)),
+            registration_enabled=False,
+            registration_closes_at=None,
+        )
+
+        # Act
+        response = self.client.get(reverse('event_detail', kwargs={'event_id': event.id}))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Register')
+
+    def test_detail_shows_all_day_label(self):
+        # Arrange
+        from datetime import date
+        import datetime
+        future_date = (self.now + timedelta(days=7)).date()
+        event = self._make_all_day_event('All Day Label Event', future_date, future_date)
+
+        # Act
+        response = self.client.get(reverse('event_detail', kwargs={'event_id': event.id}))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'All day')
