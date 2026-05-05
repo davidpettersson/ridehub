@@ -157,7 +157,10 @@ class Event(models.Model):
     )
 
     registration_enabled = models.BooleanField(default=True)
-    all_day = models.BooleanField(default=False)
+    all_day = models.BooleanField(
+        default=False,
+        help_text='Mark as all day if event spans multiple days. Start/end times will be ignored.'
+    )
 
     cancelled_at = models.DateTimeField(
         null=True,
@@ -274,28 +277,26 @@ class Event(models.Model):
     def __str__(self):
         return self.name
 
-    def _coerce_all_day_times(self):
-        if self.all_day and self.starts_at:
-            local_start = timezone.localtime(self.starts_at)
-            self.starts_at = local_start.replace(hour=0, minute=0, second=0, microsecond=0)
-        if self.all_day and self.ends_at:
-            local_end = timezone.localtime(self.ends_at)
-            self.ends_at = local_end.replace(hour=23, minute=59, second=59, microsecond=0)
-
     def clean(self):
         super().clean()
 
-        if self.all_day:
-            if not self.ends_at:
-                raise ValidationError({
-                    'ends_at': 'End date is required for all-day events.'
-                })
-            self._coerce_all_day_times()
+        if self.all_day and not self.ends_at:
+            raise ValidationError({
+                'ends_at': 'End date is required for all-day events.'
+            })
 
-        if self.starts_at and self.ends_at:
+        if self.starts_at and self.ends_at and not self.all_day:
             if self.ends_at < self.starts_at:
                 raise ValidationError({
                     'ends_at': 'End time cannot be before the start time.'
+                })
+
+        if self.starts_at and self.ends_at and self.all_day:
+            start_date = timezone.localtime(self.starts_at).date()
+            end_date = timezone.localtime(self.ends_at).date()
+            if end_date < start_date:
+                raise ValidationError({
+                    'ends_at': 'End date cannot be before the start date.'
                 })
 
         if not self.registration_closes_at and not self.external_registration_url and self.registration_enabled:
@@ -308,10 +309,6 @@ class Event(models.Model):
                 raise ValidationError({
                     'registration_closes_at': 'Registration cannot close after the event starts.'
                 })
-
-    def save(self, *args, **kwargs):
-        self._coerce_all_day_times()
-        super().save(*args, **kwargs)
 
     def has_no_confirmed_registrations(self):
         return self.registration_count == 0

@@ -62,8 +62,9 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
     def get_fieldsets(self, request, obj=None):
         fieldsets = [
             (None, {
-                'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'location', 'location_url',
-                           'organizer_email', 'virtual', 'all_day',
+                'fields': ('program', 'name', 'description', 'starts_at', 'ends_at', 'all_day',
+                           'location', 'location_url',
+                           'organizer_email', 'virtual',
                            'state',)
             }),
             ('Registration options', {
