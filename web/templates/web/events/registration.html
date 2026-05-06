@@ -67,18 +67,13 @@
                         {% for field in form %}
                             {% if field.name == 'event' %}
                                 {{ field }} <!-- Hidden field, no need for label -->
-                            {% elif field.name == 'ride_leader_preference' %}
+                            {% elif field.name == 'ride_leader_preference' or field.name == 'first_time_attendee' %}
                                 <div class="mb-3">
-                                    <label class="form-label fw-medium">{{ field.label }}</label>
-                                    <div>
-                                        {% for radio in field %}
-                                            <div class="form-check">
-                                                {{ radio.tag }}
-                                                <label class="form-check-label" for="{{ radio.id_for_label }}">
-                                                    {{ radio.choice_label }}
-                                                </label>
-                                            </div>
-                                        {% endfor %}
+                                    <div class="form-check">
+                                        {{ field }}
+                                        <label class="form-check-label" for="{{ field.id_for_label }}">
+                                            {{ field.label }}
+                                        </label>
                                     </div>
                                     {% if field.errors %}
                                         <div class="small text-danger mt-1">{{ field.errors }}</div>

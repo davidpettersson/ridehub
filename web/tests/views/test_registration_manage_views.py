@@ -586,8 +586,8 @@ class StaffAddValidationWithEventRequirementsTests(TestCase):
         form = response.context['form']
         self.assertTrue(form.errors.get('emergency_contact_name'))
 
-    def test_staff_add_without_ride_leader_preference_rejected(self):
-        # Arrange
+    def test_staff_add_without_ride_leader_checkbox_checked_succeeds(self):
+        # Arrange: ride_leader_preference is now a checkbox; omitting it means unchecked (NO), which is valid
         self.client.login(username='staff@example.com', password='password123')
 
         # Act
@@ -603,9 +603,7 @@ class StaffAddValidationWithEventRequirementsTests(TestCase):
         })
 
         # Assert
-        self.assertEqual(response.status_code, 200)
-        form = response.context['form']
-        self.assertTrue(form.errors.get('ride_leader_preference'))
+        self.assertEqual(response.status_code, 302)
 
     def test_staff_add_with_all_required_fields_succeeds(self):
         # Arrange

@@ -255,9 +255,11 @@ def _build_registrations_context(request, event, contacts_revealed):
     )
 
     contacts_hidden = can_reveal_contacts and not contacts_revealed
-    exclude_columns = ()
+    exclude_columns = []
     if not can_access_rider_contacts:
-        exclude_columns = ('email', 'phone', 'emergency_contact_name', 'emergency_contact_phone')
+        exclude_columns = ['email', 'phone', 'emergency_contact_name', 'emergency_contact_phone', 'first_time_attendee']
+    elif not event.ask_first_time_attendee:
+        exclude_columns = ['first_time_attendee']
 
     table = PublicRegistrationTable(
         registration_filter.qs, exclude=exclude_columns, contacts_hidden=contacts_hidden
