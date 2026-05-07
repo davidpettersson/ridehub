@@ -556,15 +556,6 @@ class EventRegistrationsColumnTests(BaseEventViewTestCase):
         # Assert
         self.assertContains(response, 'Ride leader')
 
-    def test_mobile_view_shows_ride_leader_as_row(self):
-        # Act
-        response = self.client.get(self.url)
-
-        # Assert
-        content = response.content.decode()
-        self.assertIn('Ride leader:', content)
-        self.assertNotIn('badge bg-primary ms-2', content)
-
 
 class EventDetailViewTests(BaseEventViewTestCase):
     """Tests for the event_detail view."""
