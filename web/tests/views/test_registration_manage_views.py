@@ -586,8 +586,8 @@ class StaffAddValidationWithEventRequirementsTests(TestCase):
         form = response.context['form']
         self.assertTrue(form.errors.get('emergency_contact_name'))
 
-    def test_staff_add_without_ride_leader_preference_rejected(self):
-        # Arrange
+    def test_staff_add_without_ride_leader_checkbox_checked_stores_no(self):
+        # Arrange: ride_leader_preference is now a checkbox; omitting it means unchecked (NO), which is valid
         self.client.login(username='staff@example.com', password='password123')
 
         # Act
@@ -603,9 +603,9 @@ class StaffAddValidationWithEventRequirementsTests(TestCase):
         })
 
         # Assert
-        self.assertEqual(response.status_code, 200)
-        form = response.context['form']
-        self.assertTrue(form.errors.get('ride_leader_preference'))
+        self.assertEqual(response.status_code, 302)
+        reg = Registration.objects.get(email='newrider@example.com')
+        self.assertEqual(reg.ride_leader_preference, Registration.RideLeaderPreference.NO)
 
     def test_staff_add_with_all_required_fields_succeeds(self):
         # Arrange
@@ -629,6 +629,155 @@ class StaffAddValidationWithEventRequirementsTests(TestCase):
         reg = Registration.objects.get(email='newrider@example.com')
         self.assertEqual(reg.state, Registration.STATE_CONFIRMED)
         self.assertEqual(reg.emergency_contact_name, 'Emergency Contact')
+
+
+class StaffFirstTimeAttendeeTests(TestCase):
+    def setUp(self):
+        # Arrange
+        now = timezone.now()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Event with first-time question",
+            program=self.program,
+            starts_at=now + timezone.timedelta(days=7),
+            ends_at=now + timezone.timedelta(days=7, hours=4),
+            registration_closes_at=now + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+            ask_first_time_attendee=True,
+        )
+        self.route = Route.objects.create(name="Test Route")
+        self.ride = Ride.objects.create(event=self.event, route=self.route, ordering=1)
+        self.staff_user = User.objects.create_user(
+            username='staff@example.com', email='staff@example.com',
+            password='password123', is_staff=True,
+        )
+        self.regular_user = User.objects.create_user(
+            username='regular@example.com', email='regular@example.com',
+            password='password123', first_name='Reg', last_name='User',
+        )
+
+    def _create_registration(self, first_time_value):
+        reg = Registration.objects.create(
+            event=self.event,
+            user=self.regular_user,
+            name=self.regular_user.get_full_name(),
+            first_name=self.regular_user.first_name,
+            last_name=self.regular_user.last_name,
+            email=self.regular_user.email,
+            phone='+16135550100',
+            ride=self.ride,
+            first_time_attendee=first_time_value,
+        )
+        reg.confirm()
+        reg.save()
+        return reg
+
+    def test_staff_add_persists_first_time_attendee_yes_when_checked(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.post(reverse('staff_registration_add', args=[self.event.id]), {
+            'first_name': 'New', 'last_name': 'Rider',
+            'email': 'newrider@example.com', 'phone': '+16135550200',
+            'ride': self.ride.id,
+            'first_time_attendee': 'on',
+        })
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        reg = Registration.objects.get(email='newrider@example.com')
+        self.assertEqual(reg.first_time_attendee, Registration.FirstTimeAttendee.YES)
+
+    def test_staff_add_persists_first_time_attendee_no_when_unchecked(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.post(reverse('staff_registration_add', args=[self.event.id]), {
+            'first_name': 'New', 'last_name': 'Rider',
+            'email': 'newrider@example.com', 'phone': '+16135550200',
+            'ride': self.ride.id,
+        })
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        reg = Registration.objects.get(email='newrider@example.com')
+        self.assertEqual(reg.first_time_attendee, Registration.FirstTimeAttendee.NO)
+
+    def test_staff_edit_resolves_legacy_not_applicable_to_no_when_unchecked(self):
+        # Arrange: legacy registration (NOT_APPLICABLE on an event that now asks the question).
+        # Editing without checking the box resolves it to NO, matching the form's displayed state.
+        reg = self._create_registration(Registration.FirstTimeAttendee.NOT_APPLICABLE)
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.post(
+            reverse('staff_registration_edit', args=[self.event.id, reg.id]),
+            {
+                'first_name': reg.first_name, 'last_name': reg.last_name,
+                'email': reg.email, 'phone': reg.phone,
+                'ride': self.ride.id,
+            },
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        reloaded = Registration.objects.get(id=reg.id)
+        self.assertEqual(reloaded.first_time_attendee, Registration.FirstTimeAttendee.NO)
+
+    def test_staff_edit_writes_yes_when_checkbox_checked(self):
+        # Arrange
+        reg = self._create_registration(Registration.FirstTimeAttendee.NO)
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.post(
+            reverse('staff_registration_edit', args=[self.event.id, reg.id]),
+            {
+                'first_name': reg.first_name, 'last_name': reg.last_name,
+                'email': reg.email, 'phone': reg.phone,
+                'ride': self.ride.id,
+                'first_time_attendee': 'on',
+            },
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        reloaded = Registration.objects.get(id=reg.id)
+        self.assertEqual(reloaded.first_time_attendee, Registration.FirstTimeAttendee.YES)
+
+    def test_first_time_column_visible_on_manage_when_event_asks(self):
+        # Arrange
+        self._create_registration(Registration.FirstTimeAttendee.YES)
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.get(reverse('event_registrations_manage', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        table = response.context['table']
+        column_names = [col.name for col in table.columns]
+        self.assertIn('first_time_attendee', column_names)
+
+    def test_first_time_column_hidden_on_manage_when_event_does_not_ask(self):
+        # Arrange
+        self.event.ask_first_time_attendee = False
+        self.event.save(update_fields=['ask_first_time_attendee'])
+        self._create_registration(Registration.FirstTimeAttendee.NOT_APPLICABLE)
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.get(reverse('event_registrations_manage', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        table = response.context['table']
+        column_names = [col.name for col in table.columns]
+        self.assertNotIn('first_time_attendee', column_names)
 
 
 class ExternalRegistrationBlocksManageTests(BaseManageTestCase):

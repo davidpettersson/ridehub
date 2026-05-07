@@ -181,3 +181,68 @@ class RegistrationCleanTestCase(TestCase):
         )
 
         registration.clean()
+
+    def test_clean_raises_error_when_first_time_attendee_missing_but_required(self):
+        # Arrange
+        self.event.ask_first_time_attendee = True
+        self.event.requires_emergency_contact = False
+        self.event.ride_leaders_wanted = False
+        self.event.save()
+        ride = Ride.objects.create(name="Test Ride", event=self.event, route=self.route)
+        registration = Registration(
+            user=self.user,
+            event=self.event,
+            ride=ride,
+            name="Test User",
+            first_name="Test",
+            last_name="User",
+            email="test@example.com",
+            first_time_attendee=Registration.FirstTimeAttendee.NOT_APPLICABLE,
+        )
+
+        # Act & Assert
+        with self.assertRaises(ValidationError) as context:
+            registration.clean()
+        self.assertIn('first_time_attendee', context.exception.message_dict)
+
+    def test_clean_passes_when_first_time_attendee_provided(self):
+        # Arrange
+        self.event.ask_first_time_attendee = True
+        self.event.requires_emergency_contact = False
+        self.event.ride_leaders_wanted = False
+        self.event.save()
+        ride = Ride.objects.create(name="Test Ride", event=self.event, route=self.route)
+        registration = Registration(
+            user=self.user,
+            event=self.event,
+            ride=ride,
+            name="Test User",
+            first_name="Test",
+            last_name="User",
+            email="test@example.com",
+            first_time_attendee=Registration.FirstTimeAttendee.YES,
+        )
+
+        # Act & Assert (no exception)
+        registration.clean()
+
+    def test_clean_enforces_first_time_attendee_even_when_event_has_no_rides(self):
+        # Arrange
+        self.event.ask_first_time_attendee = True
+        self.event.requires_emergency_contact = False
+        self.event.ride_leaders_wanted = False
+        self.event.save()
+        registration = Registration(
+            user=self.user,
+            event=self.event,
+            name="Test User",
+            first_name="Test",
+            last_name="User",
+            email="test@example.com",
+            first_time_attendee=Registration.FirstTimeAttendee.NOT_APPLICABLE,
+        )
+
+        # Act & Assert
+        with self.assertRaises(ValidationError) as context:
+            registration.clean()
+        self.assertIn('first_time_attendee', context.exception.message_dict)

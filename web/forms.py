@@ -5,6 +5,12 @@ from backoffice.models import Registration, Event, Ride, SpeedRange
 from backoffice.services.registration_service import RegistrationService
 
 
+def bool_to_yes_no(value, choices_class):
+    if value is None:
+        return None
+    return choices_class.YES if value else choices_class.NO
+
+
 class RegistrationForm(forms.Form):
     first_name = forms.CharField(
         max_length=128,
@@ -83,14 +89,9 @@ class RegistrationForm(forms.Form):
             )
 
         if requirements.ride_leaders_wanted:
-            self.fields['ride_leader_preference'] = forms.ChoiceField(
-                choices=[
-                    (Registration.RideLeaderPreference.YES, 'Yes'),
-                    (Registration.RideLeaderPreference.NO, 'No')
-                ],
-                label="Would you like to be a ride leader?",
-                widget=forms.RadioSelect(),
-                required=True
+            self.fields['ride_leader_preference'] = forms.BooleanField(
+                label="Willing to be a ride leader",
+                required=False,
             )
 
         if requirements.requires_membership:
@@ -100,6 +101,12 @@ class RegistrationForm(forms.Form):
                 error_messages={
                     'required': 'You must confirm that you are a current OBC member to register for this event.'
                 }
+            )
+
+        if requirements.ask_first_time_attendee:
+            self.fields['first_time_attendee'] = forms.BooleanField(
+                label="First time attending this kind of event",
+                required=False,
             )
 
         # Add Bootstrap classes to all fields
@@ -187,14 +194,15 @@ class StaffRegistrationForm(forms.Form):
             )
 
         if requirements.ride_leaders_wanted:
-            self.fields['ride_leader_preference'] = forms.ChoiceField(
-                choices=[
-                    (Registration.RideLeaderPreference.YES, 'Yes'),
-                    (Registration.RideLeaderPreference.NO, 'No'),
-                ],
-                label="Ride leader",
-                widget=forms.RadioSelect(),
-                required=True,
+            self.fields['ride_leader_preference'] = forms.BooleanField(
+                label="Willing to be a ride leader",
+                required=False,
+            )
+
+        if requirements.ask_first_time_attendee:
+            self.fields['first_time_attendee'] = forms.BooleanField(
+                label="First time attending this kind of event",
+                required=False,
             )
 
         for field_name, field in self.fields.items():

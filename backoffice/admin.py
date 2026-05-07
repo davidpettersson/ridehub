@@ -72,7 +72,7 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
                 'description': 'Configure when registration closes and/or provide an external registration URL.'
             }),
             ('Registration form settings', {
-                'fields': ('ride_leaders_wanted', 'requires_emergency_contact', 'requires_membership'),
+                'fields': ('ride_leaders_wanted', 'requires_emergency_contact', 'requires_membership', 'ask_first_time_attendee'),
                 'description': 'Configure what information is collected during registration.'
             }),
         ]

@@ -156,6 +156,11 @@ class Event(models.Model):
         help_text='Check if you want to require users to confirm that they are members.'
     )
 
+    ask_first_time_attendee = models.BooleanField(
+        default=False,
+        help_text='Check if you want to ask registrants whether they are new to this type of event.'
+    )
+
     registration_enabled = models.BooleanField(default=True)
     all_day = models.BooleanField(
         default=False,
@@ -534,6 +539,11 @@ class Registration(models.Model):
         NO = 'n', 'No'
         NOT_APPLICABLE = 'na', 'N/A'
 
+    class FirstTimeAttendee(models.TextChoices):
+        YES = 'y', 'Yes'
+        NO = 'n', 'No'
+        NOT_APPLICABLE = 'na', 'N/A'
+
     name = models.CharField(
         max_length=128
     )
@@ -575,6 +585,12 @@ class Registration(models.Model):
         max_length=2,
         choices=RideLeaderPreference,
         default=RideLeaderPreference.NOT_APPLICABLE
+    )
+
+    first_time_attendee = models.CharField(
+        max_length=2,
+        choices=FirstTimeAttendee,
+        default=FirstTimeAttendee.NOT_APPLICABLE
     )
 
     emergency_contact_name = models.CharField(
@@ -667,6 +683,12 @@ class Registration(models.Model):
             raise ValidationError({
                 'ride': f"The ride '{self.ride}' does not belong to this event."
             })
+
+        if self.event.ask_first_time_attendee:
+            if self.first_time_attendee == Registration.FirstTimeAttendee.NOT_APPLICABLE:
+                raise ValidationError({
+                    'first_time_attendee': "This field is required as the event asks about first-time attendance."
+                })
 
         if not self.event.ride_set.exists():
             return

@@ -6,12 +6,12 @@ from django.http import HttpResponse, HttpRequest, HttpResponseRedirect, HttpRes
 from django.shortcuts import render, get_object_or_404, redirect
 from waffle import flag_is_active
 
-from backoffice.models import Event
+from backoffice.models import Event, Registration
 from backoffice.services.membership_service import MembershipService
 from backoffice.services.registration_service import RegistrationService, RegistrationDetail, RegistrationResult
 from backoffice.services.request_service import RequestService
 from backoffice.services.user_service import UserDetail, UserService
-from web.forms import RegistrationForm, MembershipNumberForm
+from web.forms import RegistrationForm, MembershipNumberForm, bool_to_yes_no
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +42,17 @@ def registration_verify(request: HttpRequest) -> HttpResponse:
 
 
 def _get_registration_detail(form: RegistrationForm) -> RegistrationDetail:
+    ride_leader_raw = form.cleaned_data.get('ride_leader_preference')
+    first_time_raw = form.cleaned_data.get('first_time_attendee')
     return RegistrationDetail(
         ride=form.cleaned_data.get('ride'),
         speed_range_preference=form.cleaned_data.get('speed_range_preference'),
         emergency_contact_name=form.cleaned_data.get('emergency_contact_name'),
         emergency_contact_phone=form.cleaned_data.get('emergency_contact_phone'),
-        ride_leader_preference=form.cleaned_data.get('ride_leader_preference'),
+        ride_leader_preference=bool_to_yes_no(ride_leader_raw, Registration.RideLeaderPreference)
+        if 'ride_leader_preference' in form.cleaned_data else None,
+        first_time_attendee=bool_to_yes_no(first_time_raw, Registration.FirstTimeAttendee)
+        if 'first_time_attendee' in form.cleaned_data else None,
     )
 
 

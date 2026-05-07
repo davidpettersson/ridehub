@@ -74,7 +74,7 @@ class TestUserServiceFindByEmail(TestCase):
         # Arrange
         user = User.objects.get(email=self.test_email)
         # Profile is automatically created by signals, just update the phone
-        user.profile.phone = "+16131112222"
+        user.profile.phone = "+16135552222"
         user.profile.save()
         initial_count = UserProfile.objects.count()
 
@@ -85,14 +85,14 @@ class TestUserServiceFindByEmail(TestCase):
         self.assertIsInstance(result, Some)
         self.assertEqual(UserProfile.objects.count(), initial_count)
         profile = UserProfile.objects.get(user=user)
-        self.assertEqual(profile.phone, "+16131112222")
+        self.assertEqual(profile.phone, "+16135552222")
 
 
 class TestUserServiceFindByEmailOrCreate(TestCase):
     def setUp(self):
         self.service = UserService()
         self.test_email = "test@example.com"
-        self.test_phone = "+16131231234"
+        self.test_phone = "+16135551234"
         self.test_user_detail = UserDetail(
             first_name="Test",
             last_name="User",
@@ -111,7 +111,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         non_staff_user.set_unusable_password()
         non_staff_user.save()
         # Profile is automatically created by signals, just update the phone
-        non_staff_user.profile.phone = "+16139998888"
+        non_staff_user.profile.phone = "+16135558888"
         non_staff_user.profile.save()
         
         # User for staff no-update test
@@ -135,7 +135,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
             last_name="Staff"
         )
         # Profile is automatically created by signals, just update the phone
-        non_staff_casing_user.profile.phone = "+16139997777"
+        non_staff_casing_user.profile.phone = "+16135557777"
         non_staff_casing_user.profile.save()
 
         self.staff_casing_email = "staffcasing@example.com"
@@ -169,7 +169,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
             first_name="Test",
             last_name="User",
             email="NONSTAFFUPDATE@EXAMPLE.COM", # Upper case email
-            phone="+16131112222"
+            phone="+16135552222"
         )
 
         # Act
@@ -182,20 +182,20 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         self.assertFalse(user.has_usable_password())
         self.assertFalse(user.is_staff)
         profile = UserProfile.objects.get(user=user)
-        self.assertEqual(profile.phone, "+16131112222")
+        self.assertEqual(profile.phone, "+16135552222")
 
     def test_find_by_email_or_create_when_staff_user_exists(self):
         # Arrange
         user = User.objects.get(email=self.staff_email)
         # Profile is automatically created by signals, just update the phone
-        user.profile.phone = "+16139999999"
+        user.profile.phone = "+16135559999"
         user.profile.save()
         
         user_detail_mixed = UserDetail(
             first_name="Test",
             last_name="User",
             email="StaffNoUpdate@Example.com", # Mixed case email
-            phone="+16131112222"
+            phone="+16135552222"
         )
         
         # Act
@@ -208,11 +208,11 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         self.assertFalse(user.has_usable_password())
         self.assertTrue(user.is_staff)
         profile = UserProfile.objects.get(user=user)
-        self.assertEqual(profile.phone, "+16131112222")
+        self.assertEqual(profile.phone, "+16135552222")
 
     def test_find_by_email_or_create_with_different_casing_updates_non_staff(self):
         # Arrange
-        non_staff_detail_upper = UserDetail("NewNon", "Staff", "NONSTAFFCASING@EXAMPLE.COM", "+16131112222")
+        non_staff_detail_upper = UserDetail("NewNon", "Staff", "NONSTAFFCASING@EXAMPLE.COM", "+16135552222")
         
         # Act
         updated_non_staff = self.service.find_by_email_or_create(non_staff_detail_upper)
@@ -223,16 +223,16 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         self.assertEqual(updated_non_staff.last_name, "Staff") # Updated
         self.assertFalse(updated_non_staff.is_staff)
         profile = UserProfile.objects.get(user=updated_non_staff)
-        self.assertEqual(profile.phone, "+16131112222")
+        self.assertEqual(profile.phone, "+16135552222")
 
     def test_find_by_email_or_create_with_different_casing_updates_staff(self):
         # Arrange
         user = User.objects.get(email=self.staff_casing_email)
         # Profile is automatically created by signals, just update the phone
-        user.profile.phone = "+16139999999"
+        user.profile.phone = "+16135559999"
         user.profile.save()
 
-        staff_detail_mixed = UserDetail("New", "Staff", "StaffCasing@Example.com", "+16131112222")
+        staff_detail_mixed = UserDetail("New", "Staff", "StaffCasing@Example.com", "+16135552222")
 
         # Act
         found_staff = self.service.find_by_email_or_create(staff_detail_mixed)
@@ -243,7 +243,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         self.assertEqual(found_staff.last_name, "Staff") # Should be updated
         self.assertTrue(found_staff.is_staff)
         profile = UserProfile.objects.get(user=found_staff)
-        self.assertEqual(profile.phone, "+16131112222")
+        self.assertEqual(profile.phone, "+16135552222")
 
     def test_find_by_email_or_create_saves_emergency_contact_to_new_profile(self):
         # Arrange
@@ -251,7 +251,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
             first_name="New",
             last_name="User",
             email="newemergency@example.com",
-            phone="+16131231234",
+            phone="+16135551234",
             emergency_contact_name="Jane Doe",
             emergency_contact_phone="613-555-0199",
         )
@@ -270,7 +270,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
             first_name="Test",
             last_name="User",
             email=self.non_staff_email,
-            phone="+16131112222",
+            phone="+16135552222",
             emergency_contact_name="John Smith",
             emergency_contact_phone="613-555-0200",
         )
@@ -294,7 +294,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
             first_name="Test",
             last_name="User",
             email=self.non_staff_email,
-            phone="+16131112222",
+            phone="+16135552222",
         )
 
         # Act
@@ -316,7 +316,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
             first_name="Test",
             last_name="User",
             email=self.non_staff_email,
-            phone="+16131112222",
+            phone="+16135552222",
             emergency_contact_name="New Contact",
             emergency_contact_phone="613-555-0200",
         )

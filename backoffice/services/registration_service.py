@@ -32,6 +32,7 @@ class RegistrationDetail:
     speed_range_preference: SpeedRange | None
     emergency_contact_name: str | None
     emergency_contact_phone: str | None
+    first_time_attendee: str | None = None
 
 
 @dataclass
@@ -40,6 +41,7 @@ class EventRequirements:
     requires_emergency_contact: bool
     requires_membership: bool
     ride_leaders_wanted: bool
+    ask_first_time_attendee: bool
 
 
 class RegistrationService:
@@ -70,11 +72,19 @@ class RegistrationService:
             registration.emergency_contact_name = registration_detail.emergency_contact_name
             registration.emergency_contact_phone = registration_detail.emergency_contact_phone
 
+        if event.ask_first_time_attendee:
+            if registration_detail.first_time_attendee is None:
+                raise ValueError(
+                    "first_time_attendee must be provided when event.ask_first_time_attendee is True"
+                )
+            registration.first_time_attendee = registration_detail.first_time_attendee
+
         if request_detail:
             registration.ip_address = request_detail.ip_address
             registration.user_agent = request_detail.user_agent
             registration.authenticated = request_detail.authenticated
 
+        registration.full_clean(exclude=['state'])
         registration.save()
         return registration
 
@@ -263,6 +273,7 @@ class RegistrationService:
             requires_emergency_contact=event.requires_emergency_contact,
             requires_membership=event.requires_membership,
             ride_leaders_wanted=event.ride_leaders_wanted,
+            ask_first_time_attendee=event.ask_first_time_attendee,
         )
 
     def validate_registration_selections(self, event: Event, ride: Ride | None, speed_range: SpeedRange | None) -> dict:
