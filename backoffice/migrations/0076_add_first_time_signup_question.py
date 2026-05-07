@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             name="ask_first_time_attendee",
             field=models.BooleanField(
                 default=False,
-                help_text="Check if you want to ask registrants whether this is their first time at this kind of event.",
+                help_text="Check if you want to ask registrants whether they are new to this type of event.",
             ),
         ),
         migrations.AddField(

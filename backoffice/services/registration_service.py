@@ -73,6 +73,10 @@ class RegistrationService:
             registration.emergency_contact_phone = registration_detail.emergency_contact_phone
 
         if event.ask_first_time_attendee:
+            if registration_detail.first_time_attendee is None:
+                raise ValueError(
+                    "first_time_attendee must be provided when event.ask_first_time_attendee is True"
+                )
             registration.first_time_attendee = registration_detail.first_time_attendee
 
         if request_detail:
@@ -80,6 +84,7 @@ class RegistrationService:
             registration.user_agent = request_detail.user_agent
             registration.authenticated = request_detail.authenticated
 
+        registration.full_clean(exclude=['state'])
         registration.save()
         return registration
 
