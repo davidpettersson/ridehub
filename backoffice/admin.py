@@ -111,6 +111,7 @@ class RegistrationAdmin(admin.ModelAdmin):
         'ride',
         'speed_range_preference',
         'ride_leader_preference',
+        'first_time_attendee',
         'first_name',
         'last_name',
         'email',
