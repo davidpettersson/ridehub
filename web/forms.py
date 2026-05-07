@@ -96,7 +96,7 @@ class RegistrationForm(forms.Form):
 
         if requirements.ask_first_time_attendee:
             self.fields['first_time_attendee'] = forms.BooleanField(
-                label="First time attending this kind of event",
+                label=f"First time attending {event.program.get_article_display()} {event.program.name} event",
                 required=False,
             )
 
@@ -202,7 +202,7 @@ class StaffRegistrationForm(forms.Form):
 
         if requirements.ask_first_time_attendee:
             self.fields['first_time_attendee'] = forms.BooleanField(
-                label="First time attending this kind of event",
+                label=f"First time attending {event.program.get_article_display()} {event.program.name} event",
                 required=False,
             )
 
