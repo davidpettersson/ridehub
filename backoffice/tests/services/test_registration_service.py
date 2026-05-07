@@ -706,7 +706,7 @@ class FetchConfirmedEventIdsTestCase(TestCase):
 class RegistrationServiceEmailTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser_email', email='test_email@example.com', password='password')
-        self.user.profile.phone = "+16131112222"
+        self.user.profile.phone = "+16135552222"
         self.user.profile.email_verified = True
         self.user.profile.save()
         self.program = Program.objects.create(name="Email Test Program")
@@ -723,7 +723,7 @@ class RegistrationServiceEmailTests(TestCase):
 
     def test_confirmation_email_links_for_regular_user(self):
         # Arrange
-        user_detail = UserDetail(first_name="Test", last_name="User", email=self.user.email, phone="+16131112222")
+        user_detail = UserDetail(first_name="Test", last_name="User", email=self.user.email, phone="+16135552222")
         registration_detail = RegistrationDetail(
             ride=None, 
             ride_leader_preference=Registration.RideLeaderPreference.NO,
@@ -762,7 +762,7 @@ class RegistrationServiceEmailTests(TestCase):
         ride_leader_user = User.objects.create_user(username='testleader_email', email='test_leader_email@example.com', password='password')
         ride_leader_user.profile.email_verified = True
         ride_leader_user.profile.save()
-        user_detail = UserDetail(first_name="Test", last_name="Leader", email=ride_leader_user.email, phone="+16131112222")
+        user_detail = UserDetail(first_name="Test", last_name="Leader", email=ride_leader_user.email, phone="+16135552222")
         registration_detail = RegistrationDetail(
             ride=None,
             ride_leader_preference=Registration.RideLeaderPreference.YES,
@@ -1197,7 +1197,7 @@ class RegistrationTrackingTestCase(TestCase):
             email='test@example.com',
             password='password'
         )
-        self.user.profile.phone = "+16131112222"
+        self.user.profile.phone = "+16135552222"
         self.user.profile.save()
         self.program = Program.objects.create(name="Test Program")
         self.event = Event.objects.create(
@@ -1215,7 +1215,7 @@ class RegistrationTrackingTestCase(TestCase):
             first_name="Test",
             last_name="User",
             email=self.user.email,
-            phone="+16131112222"
+            phone="+16135552222"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1240,7 +1240,7 @@ class RegistrationTrackingTestCase(TestCase):
             first_name="Test",
             last_name="User",
             email=self.user.email,
-            phone="+16131112222"
+            phone="+16135552222"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1265,7 +1265,7 @@ class RegistrationTrackingTestCase(TestCase):
             first_name="Test",
             last_name="User",
             email=self.user.email,
-            phone="+16131112222"
+            phone="+16135552222"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1291,7 +1291,7 @@ class RegistrationTrackingTestCase(TestCase):
             first_name="New",
             last_name="User",
             email=new_user_email,
-            phone="+16131113333"
+            phone="+16135553333"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1316,7 +1316,7 @@ class RegistrationTrackingTestCase(TestCase):
             first_name="Test",
             last_name="User",
             email=self.user.email,
-            phone="+16131112222"
+            phone="+16135552222"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1655,7 +1655,7 @@ class RegisterMethodTestCase(TestCase):
             first_name='Existing',
             last_name='User'
         )
-        user.profile.phone = "+16131112222"
+        user.profile.phone = "+16135552222"
         user.profile.email_verified = True
         user.profile.save()
 
@@ -1663,7 +1663,7 @@ class RegisterMethodTestCase(TestCase):
             first_name="Existing",
             last_name="User",
             email="existing@example.com",
-            phone="+16131112222"
+            phone="+16135552222"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1684,7 +1684,7 @@ class RegisterMethodTestCase(TestCase):
             first_name="New",
             last_name="User",
             email="newuser@example.com",
-            phone="+16131113333"
+            phone="+16135553333"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1705,7 +1705,7 @@ class RegisterMethodTestCase(TestCase):
             first_name="Test",
             last_name="Person",
             email="testperson@example.com",
-            phone="+16131114444"
+            phone="+16135554444"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1721,7 +1721,7 @@ class RegisterMethodTestCase(TestCase):
         self.assertEqual(registration.first_name, "Test")
         self.assertEqual(registration.last_name, "Person")
         self.assertEqual(registration.email, "testperson@example.com")
-        self.assertEqual(registration.phone, "+16131114444")
+        self.assertEqual(registration.phone, "+16135554444")
         self.assertEqual(registration.name, "Test Person")
 
     def test_register_saves_ride_and_speed_range_for_event_with_rides(self):
@@ -1733,7 +1733,7 @@ class RegisterMethodTestCase(TestCase):
             first_name="Rider",
             last_name="Test",
             email="rider@example.com",
-            phone="+16131115555"
+            phone="+16135555555"
         )
         registration_detail = RegistrationDetail(
             ride=ride,
@@ -1757,21 +1757,21 @@ class RegisterMethodTestCase(TestCase):
             first_name="Emergency",
             last_name="Contact",
             email="emergency@example.com",
-            phone="+16131116666"
+            phone="+16135556666"
         )
         registration_detail = RegistrationDetail(
             ride=None,
             ride_leader_preference=None,
             speed_range_preference=None,
             emergency_contact_name="John Doe",
-            emergency_contact_phone="+16131117777"
+            emergency_contact_phone="+16135557777"
         )
 
         self.service.register(user_detail, registration_detail, self.event)
 
         registration = Registration.objects.get(event=self.event)
         self.assertEqual(registration.emergency_contact_name, "John Doe")
-        self.assertEqual(registration.emergency_contact_phone, "+16131117777")
+        self.assertEqual(registration.emergency_contact_phone, "+16135557777")
 
     def test_register_saves_ride_leader_preference_when_wanted(self):
         self.event.ride_leaders_wanted = True
@@ -1781,7 +1781,7 @@ class RegisterMethodTestCase(TestCase):
             first_name="Leader",
             last_name="Test",
             email="leader@example.com",
-            phone="+16131118888"
+            phone="+16135558888"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1803,7 +1803,7 @@ class RegisterMethodTestCase(TestCase):
             first_name='Already',
             last_name='Registered'
         )
-        user.profile.phone = "+16131119999"
+        user.profile.phone = "+16135559999"
         user.profile.save()
 
         Registration.objects.create(
@@ -1820,7 +1820,7 @@ class RegisterMethodTestCase(TestCase):
             first_name="Already",
             last_name="Registered",
             email="already@example.com",
-            phone="+16131119999"
+            phone="+16135559999"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1842,7 +1842,7 @@ class RegisterMethodTestCase(TestCase):
             first_name='Withdrawn',
             last_name='User'
         )
-        user.profile.phone = "+16131110000"
+        user.profile.phone = "+16135550000"
         user.profile.email_verified = True
         user.profile.save()
 
@@ -1863,7 +1863,7 @@ class RegisterMethodTestCase(TestCase):
             first_name="Withdrawn",
             last_name="User",
             email="withdrawn@example.com",
-            phone="+16131110000"
+            phone="+16135550000"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1895,7 +1895,7 @@ class RegisterMethodTestCase(TestCase):
             first_name="Confirmed",
             last_name="User",
             email="confirmed@example.com",
-            phone="+16131111111"
+            phone="+16135551111"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1927,7 +1927,7 @@ class RegisterMethodTestCase(TestCase):
             first_name="Email",
             last_name="Test",
             email="emailtest@example.com",
-            phone="+16131112222"
+            phone="+16135552222"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -1953,7 +1953,7 @@ class RegisterMethodTestCase(TestCase):
             first_name='No',
             last_name='Email'
         )
-        user.profile.phone = "+16131113333"
+        user.profile.phone = "+16135553333"
         user.profile.save()
 
         Registration.objects.create(
@@ -1970,7 +1970,7 @@ class RegisterMethodTestCase(TestCase):
             first_name="No",
             last_name="Email",
             email="noemail@example.com",
-            phone="+16131113333"
+            phone="+16135553333"
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -2001,7 +2001,7 @@ class EmailVerificationFlowTestCase(TestCase):
             first_name="Test",
             last_name="User",
             email="test@example.com",
-            phone="+16131112222",
+            phone="+16135552222",
         )
         self.registration_detail = RegistrationDetail(
             ride=None,
@@ -2233,3 +2233,61 @@ class EmailVerificationFlowTestCase(TestCase):
         # Assert
         self.assertIsNone(result_registration)
         self.assertEqual(error, 'not_found')
+
+
+class FirstTimeAttendeeServiceTests(TestCase):
+    def setUp(self):
+        # Arrange
+        self.service = RegistrationService()
+        self.user = User.objects.create_user(
+            username='ftauser', email='fta@example.com', password='pw',
+            first_name='FTA', last_name='User',
+        )
+        self.user.profile.phone = '+16135552222'
+        self.user.profile.email_verified = True
+        self.user.profile.save()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            program=self.program,
+            name="Event asks first time",
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            ask_first_time_attendee=True,
+        )
+
+    def test_register_persists_first_time_attendee_yes(self):
+        # Arrange
+        user_detail = UserDetail(
+            first_name=self.user.first_name, last_name=self.user.last_name,
+            email=self.user.email, phone='+16135552222',
+        )
+        registration_detail = RegistrationDetail(
+            ride=None, ride_leader_preference=None, speed_range_preference=None,
+            emergency_contact_name=None, emergency_contact_phone=None,
+            first_time_attendee=Registration.FirstTimeAttendee.YES,
+        )
+
+        # Act
+        self.service.register(user_detail, registration_detail, self.event)
+
+        # Assert
+        registration = Registration.objects.get(user=self.user, event=self.event)
+        self.assertEqual(registration.first_time_attendee, Registration.FirstTimeAttendee.YES)
+
+    def test_register_raises_value_error_when_first_time_attendee_missing(self):
+        # Arrange
+        user_detail = UserDetail(
+            first_name=self.user.first_name, last_name=self.user.last_name,
+            email=self.user.email, phone='+16135552222',
+        )
+        registration_detail = RegistrationDetail(
+            ride=None, ride_leader_preference=None, speed_range_preference=None,
+            emergency_contact_name=None, emergency_contact_phone=None,
+            first_time_attendee=None,
+        )
+
+        # Act & Assert
+        with self.assertRaises(ValueError):
+            self.service.register(user_detail, registration_detail, self.event)

@@ -11,7 +11,7 @@ from backoffice.services.membership_service import MembershipService
 from backoffice.services.registration_service import RegistrationService, RegistrationDetail, RegistrationResult
 from backoffice.services.request_service import RequestService
 from backoffice.services.user_service import UserDetail, UserService
-from web.forms import RegistrationForm, MembershipNumberForm
+from web.forms import RegistrationForm, MembershipNumberForm, bool_to_yes_no
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +41,6 @@ def registration_verify(request: HttpRequest) -> HttpResponse:
     })
 
 
-def _bool_to_yes_no(value, choices_class):
-    if value is None:
-        return None
-    return choices_class.YES if value else choices_class.NO
-
-
 def _get_registration_detail(form: RegistrationForm) -> RegistrationDetail:
     ride_leader_raw = form.cleaned_data.get('ride_leader_preference')
     first_time_raw = form.cleaned_data.get('first_time_attendee')
@@ -55,9 +49,9 @@ def _get_registration_detail(form: RegistrationForm) -> RegistrationDetail:
         speed_range_preference=form.cleaned_data.get('speed_range_preference'),
         emergency_contact_name=form.cleaned_data.get('emergency_contact_name'),
         emergency_contact_phone=form.cleaned_data.get('emergency_contact_phone'),
-        ride_leader_preference=_bool_to_yes_no(ride_leader_raw, Registration.RideLeaderPreference)
+        ride_leader_preference=bool_to_yes_no(ride_leader_raw, Registration.RideLeaderPreference)
         if 'ride_leader_preference' in form.cleaned_data else None,
-        first_time_attendee=_bool_to_yes_no(first_time_raw, Registration.FirstTimeAttendee)
+        first_time_attendee=bool_to_yes_no(first_time_raw, Registration.FirstTimeAttendee)
         if 'first_time_attendee' in form.cleaned_data else None,
     )
 

@@ -6,15 +6,10 @@ from django.urls import reverse
 from django_tables2 import RequestConfig
 
 from backoffice.models import Event, Registration
-
-def _bool_to_yes_no(value, choices_class):
-    if value is None:
-        return None
-    return choices_class.YES if value else choices_class.NO
 from backoffice.services.registration_service import RegistrationDetail, RegistrationService
 from backoffice.services.user_service import UserDetail
 from web.filters import RegistrationFilter
-from web.forms import StaffRegistrationForm
+from web.forms import StaffRegistrationForm, bool_to_yes_no
 from web.tables import RegistrationTable
 
 
@@ -46,7 +41,7 @@ def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpRespo
         request.GET, queryset=registrations, event=event
     )
 
-    exclude_columns = [] if event.ask_first_time_attendee else ['first_time_attendee']
+    exclude_columns = () if event.ask_first_time_attendee else ('first_time_attendee',)
     table = RegistrationTable(registration_filter.qs, exclude=exclude_columns)
     RequestConfig(request, paginate=False).configure(table)
 
@@ -87,12 +82,12 @@ def staff_registration_add(request: HttpRequest, event_id: int) -> HttpResponse:
 
             registration_detail = RegistrationDetail(
                 ride=data.get('ride'),
-                ride_leader_preference=_bool_to_yes_no(data.get('ride_leader_preference'), Registration.RideLeaderPreference)
+                ride_leader_preference=bool_to_yes_no(data.get('ride_leader_preference'), Registration.RideLeaderPreference)
                 if 'ride_leader_preference' in data else None,
                 speed_range_preference=data.get('speed_range_preference'),
                 emergency_contact_name=data.get('emergency_contact_name', ''),
                 emergency_contact_phone=data.get('emergency_contact_phone', ''),
-                first_time_attendee=_bool_to_yes_no(data.get('first_time_attendee'), Registration.FirstTimeAttendee)
+                first_time_attendee=bool_to_yes_no(data.get('first_time_attendee'), Registration.FirstTimeAttendee)
                 if 'first_time_attendee' in data else None,
             )
 
@@ -142,9 +137,9 @@ def staff_registration_edit(request: HttpRequest, event_id: int, registration_id
             if 'speed_range_preference' in data:
                 fields['speed_range_preference'] = data['speed_range_preference']
             if 'ride_leader_preference' in data:
-                fields['ride_leader_preference'] = _bool_to_yes_no(data['ride_leader_preference'], Registration.RideLeaderPreference)
+                fields['ride_leader_preference'] = bool_to_yes_no(data['ride_leader_preference'], Registration.RideLeaderPreference)
             if 'first_time_attendee' in data:
-                fields['first_time_attendee'] = _bool_to_yes_no(data['first_time_attendee'], Registration.FirstTimeAttendee)
+                fields['first_time_attendee'] = bool_to_yes_no(data['first_time_attendee'], Registration.FirstTimeAttendee)
             if 'emergency_contact_name' in data:
                 fields['emergency_contact_name'] = data['emergency_contact_name']
             if 'emergency_contact_phone' in data:
@@ -160,11 +155,13 @@ def staff_registration_edit(request: HttpRequest, event_id: int, registration_id
             'phone': registration.phone,
             'ride': registration.ride_id,
             'speed_range_preference': registration.speed_range_preference_id,
-            'ride_leader_preference': registration.ride_leader_preference == Registration.RideLeaderPreference.YES,
-            'first_time_attendee': registration.first_time_attendee == Registration.FirstTimeAttendee.YES,
             'emergency_contact_name': registration.emergency_contact_name,
             'emergency_contact_phone': registration.emergency_contact_phone,
         }
+        if event.ride_leaders_wanted:
+            initial['ride_leader_preference'] = registration.ride_leader_preference == Registration.RideLeaderPreference.YES
+        if event.ask_first_time_attendee:
+            initial['first_time_attendee'] = registration.first_time_attendee == Registration.FirstTimeAttendee.YES
         form = StaffRegistrationForm(initial=initial, event=event)
 
     context = {

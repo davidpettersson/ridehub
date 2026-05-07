@@ -417,6 +417,52 @@ class RegistrationFormTest(TestCase):
         self.assertNotIn('speed_range_preference', form.errors)
 
 
+class FirstTimeAttendeeFormTests(TestCase):
+    def setUp(self):
+        # Arrange
+        now = timezone.now()
+        program = Program.objects.create(name="Test Program")
+        self.route = Route.objects.create(name="Test Route")
+
+        self.event_asks_first_time = Event.objects.create(
+            name="Event asks first time",
+            program=program,
+            starts_at=now,
+            ends_at=now,
+            registration_closes_at=now,
+            ask_first_time_attendee=True,
+        )
+        Ride.objects.create(
+            event=self.event_asks_first_time, name="R", route=self.route,
+        )
+
+        self.event_does_not_ask = Event.objects.create(
+            name="Event does not ask",
+            program=program,
+            starts_at=now,
+            ends_at=now,
+            registration_closes_at=now,
+            ask_first_time_attendee=False,
+        )
+        Ride.objects.create(
+            event=self.event_does_not_ask, name="R", route=self.route,
+        )
+
+    def test_form_has_first_time_attendee_when_event_asks(self):
+        # Act
+        form = RegistrationForm(event=self.event_asks_first_time)
+
+        # Assert
+        self.assertIn('first_time_attendee', form.fields)
+
+    def test_form_does_not_have_first_time_attendee_when_event_does_not_ask(self):
+        # Act
+        form = RegistrationForm(event=self.event_does_not_ask)
+
+        # Assert
+        self.assertNotIn('first_time_attendee', form.fields)
+
+
 class EmailLoginFormTest(TestCase):
     def test_form_has_email_field(self):
         # Arrange

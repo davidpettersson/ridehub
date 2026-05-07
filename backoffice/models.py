@@ -158,7 +158,7 @@ class Event(models.Model):
 
     ask_first_time_attendee = models.BooleanField(
         default=False,
-        help_text='Check if you want to ask registrants whether this is their first time at this kind of event.'
+        help_text='Check if you want to ask registrants whether they are new to this type of event.'
     )
 
     registration_enabled = models.BooleanField(default=True)
@@ -684,6 +684,12 @@ class Registration(models.Model):
                 'ride': f"The ride '{self.ride}' does not belong to this event."
             })
 
+        if self.event.ask_first_time_attendee:
+            if self.first_time_attendee == Registration.FirstTimeAttendee.NOT_APPLICABLE:
+                raise ValidationError({
+                    'first_time_attendee': "This field is required as the event asks about first-time attendance."
+                })
+
         if not self.event.ride_set.exists():
             return
 
@@ -704,12 +710,6 @@ class Registration(models.Model):
             if self.ride_leader_preference == Registration.RideLeaderPreference.NOT_APPLICABLE:
                 raise ValidationError({
                     'ride_leader_preference': "This field is required as the event requires a ride leader preference."
-                })
-
-        if self.event.ask_first_time_attendee:
-            if self.first_time_attendee == Registration.FirstTimeAttendee.NOT_APPLICABLE:
-                raise ValidationError({
-                    'first_time_attendee': "This field is required as the event asks about first-time attendance."
                 })
 
 

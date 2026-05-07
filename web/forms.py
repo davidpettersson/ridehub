@@ -5,6 +5,12 @@ from backoffice.models import Registration, Event, Ride, SpeedRange
 from backoffice.services.registration_service import RegistrationService
 
 
+def bool_to_yes_no(value, choices_class):
+    if value is None:
+        return None
+    return choices_class.YES if value else choices_class.NO
+
+
 class RegistrationForm(forms.Form):
     first_name = forms.CharField(
         max_length=128,
@@ -84,7 +90,7 @@ class RegistrationForm(forms.Form):
 
         if requirements.ride_leaders_wanted:
             self.fields['ride_leader_preference'] = forms.BooleanField(
-                label="I am willing to be a ride leader",
+                label="Willing to be a ride leader",
                 required=False,
             )
 
@@ -99,7 +105,7 @@ class RegistrationForm(forms.Form):
 
         if requirements.ask_first_time_attendee:
             self.fields['first_time_attendee'] = forms.BooleanField(
-                label="This is my first time attending this kind of event",
+                label="First time attending this kind of event",
                 required=False,
             )
 

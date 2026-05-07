@@ -67,8 +67,7 @@ class RegistrationTable(tables.Table):
     def render_first_time_attendee(self, value, record):
         if value == Registration.FirstTimeAttendee.YES:
             return format_html('<span class="badge bg-info">First time</span>')
-        display = record.get_first_time_attendee_display()
-        return format_html('<span class="small text-muted">{}</span>', display)
+        return format_html('')
 
     def render_emergency_contact_name(self, value):
         return format_html('<span class="small text-muted">{}</span>', value)
