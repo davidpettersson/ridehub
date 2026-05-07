@@ -94,6 +94,12 @@ class RegistrationForm(forms.Form):
                 required=False,
             )
 
+        if requirements.ask_first_time_attendee:
+            self.fields['first_time_attendee'] = forms.BooleanField(
+                label="First time attending this kind of event",
+                required=False,
+            )
+
         if requirements.requires_membership:
             self.fields['membership_confirmation'] = forms.BooleanField(
                 required=True,
@@ -103,17 +109,12 @@ class RegistrationForm(forms.Form):
                 }
             )
 
-        if requirements.ask_first_time_attendee:
-            self.fields['first_time_attendee'] = forms.BooleanField(
-                label="First time attending this kind of event",
-                required=False,
-            )
-
-        # Add Bootstrap classes to all fields
         for field_name, field in self.fields.items():
-            if isinstance(field.widget, forms.Select) and not isinstance(field.widget, forms.RadioSelect):
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs['class'] = 'form-check-input'
+            elif isinstance(field.widget, forms.Select) and not isinstance(field.widget, forms.RadioSelect):
                 field.widget.attrs['class'] = 'form-select'
-            elif not isinstance(field.widget, (forms.HiddenInput, forms.RadioSelect, forms.CheckboxInput)):
+            elif not isinstance(field.widget, (forms.HiddenInput, forms.RadioSelect)):
                 field.widget.attrs['class'] = 'form-control'
 
     def clean(self):
@@ -206,9 +207,11 @@ class StaffRegistrationForm(forms.Form):
             )
 
         for field_name, field in self.fields.items():
-            if isinstance(field.widget, forms.Select) and not isinstance(field.widget, forms.RadioSelect):
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs['class'] = 'form-check-input'
+            elif isinstance(field.widget, forms.Select) and not isinstance(field.widget, forms.RadioSelect):
                 field.widget.attrs['class'] = 'form-select'
-            elif not isinstance(field.widget, (forms.HiddenInput, forms.RadioSelect, forms.CheckboxInput)):
+            elif not isinstance(field.widget, (forms.HiddenInput, forms.RadioSelect)):
                 field.widget.attrs['class'] = 'form-control'
 
     def clean(self):
