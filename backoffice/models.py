@@ -26,9 +26,20 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 
 class Program(models.Model):
+    class Article(models.TextChoices):
+        A = 'a', 'a'
+        AN = 'an', 'an'
+
     name = models.CharField(
         max_length=128,
         help_text='Name of the program'
+    )
+
+    article = models.CharField(
+        max_length=2,
+        choices=Article,
+        default=Article.A,
+        help_text='Indefinite article to use before the program name in sentences (e.g. "a Coffee Club event", "an OBC Tour event").'
     )
 
     description = models.CharField(
@@ -158,7 +169,7 @@ class Event(models.Model):
 
     ask_first_time_attendee = models.BooleanField(
         default=False,
-        help_text='Check if you want to ask registrants whether they are new to this type of event.'
+        help_text='Check if you want to ask registrants whether this is their first time attending an event from this program.'
     )
 
     registration_enabled = models.BooleanField(default=True)
