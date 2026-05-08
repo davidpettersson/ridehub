@@ -66,8 +66,9 @@ class RegistrationTable(tables.Table):
 
     def render_first_time_attendee(self, value, record):
         if value == Registration.FirstTimeAttendee.YES:
-            return format_html('<span class="badge bg-info">First time</span>')
-        return format_html('')
+            return format_html('<span class="badge bg-primary">Yes</span>')
+        display = record.get_first_time_attendee_display()
+        return format_html('<span class="small text-muted">{}</span>', display)
 
     def render_emergency_contact_name(self, value):
         return format_html('<span class="small text-muted">{}</span>', value)
@@ -119,15 +120,12 @@ class PublicRegistrationTable(tables.Table):
         return format_html('<span class="small text-muted">{}</span>', value or 'N/A')
 
     def render_ride_leader_preference(self, value, record):
-        if value == Registration.RideLeaderPreference.YES:
-            return format_html('<span class="badge bg-primary">Yes</span>')
         display = record.get_ride_leader_preference_display()
         return format_html('<span class="small text-muted">{}</span>', display)
 
     def render_first_time_attendee(self, value, record):
-        if value == Registration.FirstTimeAttendee.YES:
-            return format_html('<span class="badge bg-info">First time</span>')
-        return format_html('')
+        display = record.get_first_time_attendee_display()
+        return format_html('<span class="small text-muted">{}</span>', display)
 
     def render_email(self, value):
         if self.contacts_hidden:
