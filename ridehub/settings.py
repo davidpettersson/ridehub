@@ -19,7 +19,7 @@ WEB_HOST = os.environ.get('WEB_HOST', 'obcrides.ca')
 RWGPS_ORG_SLUG = os.environ.get('RWGPS_ORG_SLUG', '3471-ottawa-bicycle-club')
 
 if IS_HEROKU_APP:
-    ALLOWED_HOSTS = ["*"]
+    ALLOWED_HOSTS = [WEB_HOST, f'www.{WEB_HOST}']
     SECURE_SSL_REDIRECT = True
     DEBUG = False
     assert SECRET_KEY != SECRET_KEY_FOR_DEVELOPMENT
