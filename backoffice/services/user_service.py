@@ -28,24 +28,27 @@ class UserService(object):
         else:
             return Nothing
 
-    def find_by_email_or_create(self, user_detail: UserDetail) -> User:
+    def find_by_email_or_create(
+        self,
+        user_detail: UserDetail,
+        *,
+        update_existing_profile: bool = False,
+    ) -> User:
         lowercase_email = lower_email(user_detail.email)
 
         match self.find_by_email(lowercase_email):
             case Some(user):
-                if not user.is_staff:
-                    user.set_unusable_password()
+                if update_existing_profile:
+                    user.first_name = user_detail.first_name
+                    user.last_name = user_detail.last_name
+                    user.save()
 
-                user.first_name = user_detail.first_name
-                user.last_name = user_detail.last_name
-                user.save()
-
-                user.profile.phone = user_detail.phone
-                if user_detail.emergency_contact_name:
-                    user.profile.emergency_contact_name = user_detail.emergency_contact_name
-                if user_detail.emergency_contact_phone:
-                    user.profile.emergency_contact_phone = user_detail.emergency_contact_phone
-                user.profile.save()
+                    user.profile.phone = user_detail.phone
+                    if user_detail.emergency_contact_name:
+                        user.profile.emergency_contact_name = user_detail.emergency_contact_name
+                    if user_detail.emergency_contact_phone:
+                        user.profile.emergency_contact_phone = user_detail.emergency_contact_phone
+                    user.profile.save()
 
                 return user
             case _:

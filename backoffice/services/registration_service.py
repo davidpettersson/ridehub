@@ -11,6 +11,7 @@ from backoffice.models import Event, Registration, SpeedRange, Ride
 from backoffice.services.email_service import EmailService
 from backoffice.services.request_service import RequestDetail
 from backoffice.services.user_service import UserService, UserDetail
+from backoffice.utils import lower_email
 from ridehub import settings
 
 logger = logging.getLogger(__name__)
@@ -101,13 +102,22 @@ class RegistrationService:
             recipient_list=[registration.email],
         )
 
-    def _should_skip_verification(self, user: User, request_detail: RequestDetail | None) -> bool:
-        if request_detail and request_detail.authenticated:
+    def _is_self_registration(
+        self, user_detail: UserDetail, request_detail: RequestDetail | None
+    ) -> bool:
+        if request_detail is None or not request_detail.authenticated:
+            return False
+        if request_detail.user_email is None:
+            return False
+        return lower_email(user_detail.email) == request_detail.user_email
+
+    def _should_skip_verification(self, user: User, is_self_registration: bool) -> bool:
+        if is_self_registration:
             if not user.profile.email_verified:
                 user.profile.email_verified = True
                 user.profile.save(update_fields=['email_verified'])
             return True
-        return user.profile.email_verified
+        return False
 
     def _send_verification_email(self, registration: Registration) -> None:
         signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
@@ -171,7 +181,11 @@ class RegistrationService:
 
     def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event,
                  request_detail: RequestDetail | None = None) -> RegistrationResult:
-        user = self.user_service.find_by_email_or_create(user_detail)
+        is_self_registration = self._is_self_registration(user_detail, request_detail)
+
+        user = self.user_service.find_by_email_or_create(
+            user_detail, update_existing_profile=is_self_registration
+        )
 
         active_registrations = Registration.objects.filter(
             user=user, event=event,
@@ -186,7 +200,7 @@ class RegistrationService:
 
         registration = self._create_registration(event, user, registration_detail, request_detail)
 
-        if self._should_skip_verification(user, request_detail):
+        if self._should_skip_verification(user, is_self_registration):
             self._send_confirmation_email(registration)
             registration.confirm()
             registration.save()
@@ -314,7 +328,9 @@ class RegistrationService:
 
     def staff_register(self, user_detail: UserDetail, registration_detail: RegistrationDetail,
                        event: Event, staff_user) -> Registration | None:
-        user = self.user_service.find_by_email_or_create(user_detail)
+        user = self.user_service.find_by_email_or_create(
+            user_detail, update_existing_profile=True
+        )
 
         existing = Registration.objects.filter(
             user=user, event=event,

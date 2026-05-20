@@ -937,7 +937,7 @@ class RegistrationFullFlowTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn('verification-sent', response.url)
 
-    def test_verified_user_redirects_to_submitted(self):
+    def test_authenticated_self_registration_redirects_to_submitted(self):
         # Arrange
         user = User.objects.create_user(
             username='verified@example.com',
@@ -945,8 +945,6 @@ class RegistrationFullFlowTests(TestCase):
             first_name='Verified',
             last_name='User',
         )
-        user.profile.email_verified = True
-        user.profile.save()
 
         event = Event.objects.create(
             name="Verified Event",
@@ -957,6 +955,8 @@ class RegistrationFullFlowTests(TestCase):
             ride_leaders_wanted=False,
             requires_membership=False,
         )
+
+        self.client.force_login(user)
 
         form_data = {
             'first_name': 'Verified',
@@ -971,6 +971,40 @@ class RegistrationFullFlowTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 302)
         self.assertIn('submitted', response.url)
+
+    def test_authenticated_registration_for_other_email_redirects_to_verification(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='actor@example.com',
+            email='actor@example.com',
+            first_name='Actor',
+            last_name='User',
+        )
+        event = Event.objects.create(
+            name="Other Email Event",
+            program=self.program,
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+        )
+
+        self.client.force_login(user)
+
+        form_data = {
+            'first_name': 'Someone',
+            'last_name': 'Else',
+            'email': 'someoneelse@example.com',
+            'phone': '+16135550100',
+        }
+
+        # Act
+        response = self.client.post(reverse('registration_create', args=[event.id]), form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('verification-sent', response.url)
 
 
 class RegistrationVerifyViewTests(TestCase):
