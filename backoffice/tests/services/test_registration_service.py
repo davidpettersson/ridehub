@@ -2324,7 +2324,7 @@ class EmailVerificationFlowTestCase(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("Confirmed", mail.outbox[0].subject)
 
-    def test_verify_expired_token_resends_verification(self):
+    def test_verify_expired_token_does_not_resend_email(self):
         # Arrange
         request_detail = RequestDetail(
             ip_address='127.0.0.1',
@@ -2347,8 +2347,7 @@ class EmailVerificationFlowTestCase(TestCase):
         # Assert
         self.assertIsNone(result_registration)
         self.assertEqual(error, 'expired')
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertIn('Verify', mail.outbox[0].subject)
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_verify_invalid_token_returns_error(self):
         # Act

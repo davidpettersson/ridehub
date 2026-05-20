@@ -142,20 +142,6 @@ class RegistrationService:
         try:
             registration_id = signer.unsign(token, max_age=VERIFICATION_TOKEN_MAX_AGE)
         except SignatureExpired:
-            try:
-                registration_id = signer.unsign(token)
-            except BadSignature:
-                return None, 'invalid'
-
-            try:
-                registration = Registration.objects.select_related('user', 'user__profile').get(
-                    id=int(registration_id),
-                    state=Registration.STATE_UNVERIFIED,
-                )
-            except Registration.DoesNotExist:
-                return None, 'not_found'
-
-            self._send_verification_email(registration)
             return None, 'expired'
         except BadSignature:
             return None, 'invalid'
