@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin import ModelAdmin
 from django.db.models import QuerySet
@@ -34,7 +35,7 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
                     'event': event,
                     'registration': registration,
                     'cancellation_reason': cancellation_reason,
-                    'base_url': f"https://{request.get_host()}"
+                    'base_url': f"https://{settings.WEB_HOST}",
                 }
 
                 EmailService().send_email(

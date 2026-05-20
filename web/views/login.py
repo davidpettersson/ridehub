@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
@@ -29,15 +30,14 @@ class LoginFormView(FormView):
             return None
 
     def _create_link(self, user: User) -> str:
-        link = reverse("login")
-        link = self.request.build_absolute_uri(link)
+        path = reverse("login")
+        link = f"https://{settings.WEB_HOST}{path}"
         link += get_query_string(user)
         return link
 
     def _send_email(self, user: User, link: str) -> None:
-        # Build base URL from the request
-        base_url = self.request.build_absolute_uri('/').rstrip('/')
-        
+        base_url = f"https://{settings.WEB_HOST}"
+
         context = {
             'login_link': link,
             'base_url': base_url,
