@@ -31,5 +31,5 @@ class RequestService:
     def _get_client_ip(self, request) -> str | None:
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
-            return x_forwarded_for.split(',')[0].strip()
+            return x_forwarded_for.rsplit(',', 1)[-1].strip()
         return request.META.get('REMOTE_ADDR')

@@ -40,7 +40,7 @@ class RequestServiceTestCase(TestCase):
         self.assertEqual(details.user_agent, 'Mozilla/5.0')
         self.assertFalse(details.authenticated)
 
-    def test_extract_details_with_x_forwarded_for(self):
+    def test_extract_details_with_x_forwarded_for_uses_rightmost_ip(self):
         request = self.factory.post('/register')
         request.META['HTTP_X_FORWARDED_FOR'] = '203.0.113.42, 198.51.100.17'
         request.META['REMOTE_ADDR'] = '192.168.1.100'
@@ -49,7 +49,7 @@ class RequestServiceTestCase(TestCase):
 
         details = self.service.extract_details(request)
 
-        self.assertEqual(details.ip_address, '203.0.113.42')
+        self.assertEqual(details.ip_address, '198.51.100.17')
 
     def test_extract_details_with_x_forwarded_for_single_ip(self):
         request = self.factory.post('/register')
@@ -64,8 +64,22 @@ class RequestServiceTestCase(TestCase):
 
     def test_extract_details_strips_whitespace_from_ip(self):
         request = self.factory.post('/register')
-        request.META['HTTP_X_FORWARDED_FOR'] = '  203.0.113.42  , 198.51.100.17'
+        request.META['HTTP_X_FORWARDED_FOR'] = '  203.0.113.42  ,  198.51.100.17  '
         request.META['REMOTE_ADDR'] = '192.168.1.100'
+        request.META['HTTP_USER_AGENT'] = 'Mozilla/5.0'
+        request.user = self.user
+
+        details = self.service.extract_details(request)
+
+        self.assertEqual(details.ip_address, '198.51.100.17')
+
+    def test_extract_details_ignores_client_supplied_forwarded_for(self):
+        # The client supplies a forged X-Forwarded-For entry. The Heroku
+        # router appends the real client IP at the rightmost position, so
+        # the right-hand entry is the one we should trust.
+        request = self.factory.post('/register')
+        request.META['HTTP_X_FORWARDED_FOR'] = '1.2.3.4, 203.0.113.42'
+        request.META['REMOTE_ADDR'] = '10.0.0.1'
         request.META['HTTP_USER_AGENT'] = 'Mozilla/5.0'
         request.user = self.user
 
