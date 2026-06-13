@@ -4,7 +4,7 @@ from enum import Enum
 
 from django.contrib.auth.models import User
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
-from django.db.models import QuerySet, Subquery, OuterRef
+from django.db.models import QuerySet, Subquery, OuterRef, Count
 from django.utils import timezone
 
 from backoffice.models import Event, Registration, SpeedRange, Ride
@@ -196,6 +196,17 @@ class RegistrationService:
         registration.save()
         self._send_verification_email(registration)
         return RegistrationResult.VERIFICATION_REQUIRED
+
+    def fetch_ride_counts(self, user_ids: list[int]) -> dict[int, int]:
+        rows = (
+            Registration.objects.filter(
+                user_id__in=user_ids,
+                state=Registration.STATE_CONFIRMED,
+            )
+            .values('user_id')
+            .annotate(count=Count('event', distinct=True))
+        )
+        return {row['user_id']: row['count'] for row in rows}
 
     def fetch_confirmed_event_ids(self, user: User, event_ids: list[int]) -> set[int]:
         return set(

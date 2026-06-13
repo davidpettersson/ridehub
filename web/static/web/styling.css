@@ -406,3 +406,23 @@ body {
   content: " \2195";
   opacity: 0.25;
 }
+
+.badge-ride-count-1 {
+  background-color: #2563eb;
+  color: #fff;
+}
+
+.badge-ride-count-2 {
+  background-color: #6b93ec;
+  color: #fff;
+}
+
+.badge-ride-count-3 {
+  background-color: #aac3f4;
+  color: #fff;
+}
+
+.badge-ride-leader {
+  background-color: #0d9488;
+  color: #fff;
+}

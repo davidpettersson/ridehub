@@ -261,8 +261,14 @@ def _build_registrations_context(request, event, contacts_revealed):
     elif not event.ask_first_time_attendee:
         exclude_columns = ('first_time_attendee',)
 
+    ride_counts = {}
+    if can_access_rider_contacts:
+        user_ids = [r.user_id for r in registration_filter.qs if r.user_id]
+        ride_counts = RegistrationService().fetch_ride_counts(user_ids)
+
     table = PublicRegistrationTable(
-        registration_filter.qs, exclude=exclude_columns, contacts_hidden=contacts_hidden
+        registration_filter.qs, exclude=exclude_columns,
+        contacts_hidden=contacts_hidden, ride_counts=ride_counts,
     )
     RequestConfig(request, paginate=False).configure(table)
 

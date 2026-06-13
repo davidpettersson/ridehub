@@ -79,10 +79,11 @@ class RegistrationTable(tables.Table):
 
 
 class PublicRegistrationTable(tables.Table):
+    RIDE_COUNT_LABELS = {1: '1st', 2: '2nd', 3: '3rd'}
+
     name = tables.Column(order_by=('last_name', 'first_name'))
     ride = tables.Column()
     speed_range_preference = tables.Column(verbose_name="Speed group")
-    ride_leader_preference = tables.Column(verbose_name="Ride leader")
     first_time_attendee = tables.Column(verbose_name="First time")
     email = tables.Column()
     phone = tables.Column()
@@ -92,7 +93,7 @@ class PublicRegistrationTable(tables.Table):
     class Meta:
         model = Registration
         fields = (
-            'name', 'ride', 'speed_range_preference', 'ride_leader_preference',
+            'name', 'ride', 'speed_range_preference',
             'first_time_attendee', 'email', 'phone', 'emergency_contact_name', 'emergency_contact_phone',
         )
         attrs = {
@@ -103,25 +104,36 @@ class PublicRegistrationTable(tables.Table):
             'data-registration-id': lambda record: record.id,
         }
 
-    def __init__(self, *args, contacts_hidden=False, **kwargs):
+    def __init__(self, *args, contacts_hidden=False, ride_counts=None, **kwargs):
         self.contacts_hidden = contacts_hidden
+        self.ride_counts = ride_counts or {}
         super().__init__(*args, **kwargs)
 
     def _hidden_placeholder(self):
         return format_html('<span class="small text-muted fst-italic">(hidden)</span>')
 
-    def render_name(self, value):
-        return format_html('<span class="small fw-medium">{}</span>', value)
+    def render_name(self, value, record):
+        html = format_html('<span class="small fw-medium">{}</span>', value)
+
+        if record.ride_leader_preference == Registration.RideLeaderPreference.YES:
+            html = format_html(
+                '{} <span class="badge badge-ride-leader">Leader</span>', html
+            )
+
+        count = self.ride_counts.get(record.user_id)
+        if count in self.RIDE_COUNT_LABELS:
+            html = format_html(
+                '{} <span class="badge badge-ride-count-{}">{} ride</span>',
+                html, count, self.RIDE_COUNT_LABELS[count]
+            )
+
+        return html
 
     def render_ride(self, value):
         return format_html('<span class="small text-muted">{}</span>', value or 'N/A')
 
     def render_speed_range_preference(self, value):
         return format_html('<span class="small text-muted">{}</span>', value or 'N/A')
-
-    def render_ride_leader_preference(self, value, record):
-        display = record.get_ride_leader_preference_display()
-        return format_html('<span class="small text-muted">{}</span>', display)
 
     def render_first_time_attendee(self, value, record):
         display = record.get_first_time_attendee_display()
