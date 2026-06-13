@@ -184,6 +184,83 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertNotContains(response, '123-456-7890')  # The actual emergency contact phone
         self.assertNotContains(response, 'mailto:regular@example.com')  # Email links
 
+    def _add_confirmed_registration(self, user, days_offset):
+        event = Event.objects.create(
+            program=self.program,
+            name=f'Extra Event {days_offset}',
+            starts_at=self.event_starts_at + timedelta(days=days_offset),
+            registration_closes_at=self.registration_closes_at_time + timedelta(days=days_offset),
+        )
+        return Registration.objects.create(
+            first_name=user.first_name, last_name='User', name=user.get_full_name(),
+            email=user.email, event=event, user=user,
+            ride_leader_preference=Registration.RideLeaderPreference.NO,
+            state=Registration.STATE_CONFIRMED,
+        )
+
+    def test_staff_sees_ride_leader_badge(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'badge-ride-leader')
+
+    def test_staff_sees_first_ride_badge(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'badge-ride-count-1')
+        self.assertContains(response, '1st ride')
+
+    def test_ride_leader_sees_ride_count_badge(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'badge-ride-count-1')
+
+    def test_count_badge_reflects_prior_confirmed_registrations(self):
+        # Arrange
+        self._add_confirmed_registration(self.user, days_offset=30)
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'badge-ride-count-2')
+        self.assertContains(response, '2nd ride')
+
+    def test_regular_user_does_not_see_ride_count_badge(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertNotContains(response, 'badge-ride-count-1')
+        self.assertNotContains(response, '1st ride')
+
+    def test_ride_leader_column_removed(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertNotContains(response, 'sort=ride_leader_preference')
 
 
 class PastEventRegistrationsVisibilityTests(BaseEventViewTestCase):

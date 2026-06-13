@@ -538,6 +538,94 @@ class FetchCurrentRegistrationsTestCase(TestCase):
         self.assertIn(registrations_for_event[0].state, [Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED])
 
 
+class FetchRideCountsTestCase(TestCase):
+    def setUp(self):
+        self.service = RegistrationService()
+        self.user = User.objects.create_user(
+            username='counted', email='counted@example.com', password='password'
+        )
+        self.other_user = User.objects.create_user(
+            username='other', email='other@example.com', password='password'
+        )
+        self.program = Program.objects.create(name="Test Program")
+        self.now = timezone.now()
+
+    def _create_event(self, name, offset_days):
+        return Event.objects.create(
+            name=name,
+            program=self.program,
+            starts_at=self.now + datetime.timedelta(days=offset_days),
+            registration_closes_at=self.now + datetime.timedelta(days=offset_days - 1),
+        )
+
+    def _create_confirmed(self, user, event):
+        reg = Registration.objects.create(
+            user=user, event=event, name=user.username, email=user.email,
+            state=Registration.STATE_SUBMITTED,
+        )
+        reg.confirm()
+        reg.save()
+        return reg
+
+    def test_counts_confirmed_registrations_across_events(self):
+        # Arrange
+        for i in range(3):
+            self._create_confirmed(self.user, self._create_event(f"Event {i}", i + 1))
+
+        # Act
+        result = self.service.fetch_ride_counts([self.user.id])
+
+        # Assert
+        self.assertEqual(result, {self.user.id: 3})
+
+    def test_excludes_non_confirmed_registrations(self):
+        # Arrange
+        confirmed_event = self._create_event("Confirmed", 1)
+        self._create_confirmed(self.user, confirmed_event)
+
+        submitted_event = self._create_event("Submitted", 2)
+        Registration.objects.create(
+            user=self.user, event=submitted_event, name=self.user.username,
+            email=self.user.email, state=Registration.STATE_SUBMITTED,
+        )
+
+        withdrawn_event = self._create_event("Withdrawn", 3)
+        reg_w = Registration.objects.create(
+            user=self.user, event=withdrawn_event, name=self.user.username,
+            email=self.user.email, state=Registration.STATE_SUBMITTED,
+        )
+        reg_w.confirm()
+        reg_w.withdraw()
+        reg_w.save()
+
+        # Act
+        result = self.service.fetch_ride_counts([self.user.id])
+
+        # Assert
+        self.assertEqual(result, {self.user.id: 1})
+
+    def test_counts_are_per_user(self):
+        # Arrange
+        event_one = self._create_event("Event One", 1)
+        event_two = self._create_event("Event Two", 2)
+        self._create_confirmed(self.user, event_one)
+        self._create_confirmed(self.user, event_two)
+        self._create_confirmed(self.other_user, event_one)
+
+        # Act
+        result = self.service.fetch_ride_counts([self.user.id, self.other_user.id])
+
+        # Assert
+        self.assertEqual(result, {self.user.id: 2, self.other_user.id: 1})
+
+    def test_user_with_no_confirmed_registrations_absent(self):
+        # Act
+        result = self.service.fetch_ride_counts([self.user.id])
+
+        # Assert
+        self.assertEqual(result, {})
+
+
 class FetchConfirmedEventIdsTestCase(TestCase):
     def setUp(self):
         self.service = RegistrationService()
