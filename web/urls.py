@@ -5,6 +5,7 @@ from web.views.events import event_detail, event_list, event_registrations, \
 from web.views.events_ical import EventFeed
 from web.views.helpers import changes_email_addresses
 from web.views.login import LoginFormView, logout_view, CustomLoginView
+from web.views.pages import page_detail
 from web.views.profile import profile, registration_withdraw, profile_membership_number
 from web.views.registration_manage import (
     event_registrations_manage, staff_registration_add,
@@ -48,5 +49,8 @@ urlpatterns = [
     path('reviews/2025', review_2025, name='review_2025'),
     path('robots.txt', robots_txt, name='robots_txt'),
     path('announcements', active_announcements, name='active_announcements'),
+    path('help', page_detail, {'slug': 'help'}, name='help'),
+    path('emergency', page_detail, {'slug': 'emergency'}, name='emergency'),
+    path('pages/<slug:slug>', page_detail, name='page_detail'),
     path('', events_redirect, name='index'),
 ]

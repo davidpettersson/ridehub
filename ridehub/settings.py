@@ -52,12 +52,14 @@ INSTALLED_APPS = [
     'django_filters',
     'adminsortable2',
     'colorfield',
+    'markdownx',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.microsoft',
     'backoffice',
     'membership',
+    'content',
     'web',
 ]
 

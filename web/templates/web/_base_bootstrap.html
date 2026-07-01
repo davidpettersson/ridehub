@@ -48,6 +48,8 @@
             <div class="d-flex align-items-center nav-links">
               <a href="{% url 'upcoming' %}" class="nav-link-obc{% if request.resolver_match.url_name == 'upcoming' %} active{% endif %}">Upcoming</a>
               <a href="{% url 'calendar' %}" class="nav-link-obc{% if request.resolver_match.url_name == 'calendar' or request.resolver_match.url_name == 'calendar_month' %} active{% endif %}">Calendar</a>
+              <a href="{% url 'help' %}" class="nav-link-obc{% if request.resolver_match.url_name == 'help' %} active{% endif %}">Help</a>
+              <a href="{% url 'emergency' %}" class="nav-link-obc{% if request.resolver_match.url_name == 'emergency' %} active{% endif %}">Emergency</a>
               {% if user.is_staff %}
               <a href="{% url 'admin:index' %}" class="nav-link-obc">Admin</a>
               {% endif %}
@@ -127,6 +129,8 @@
         <div class="container mobile-nav-menu">
           <a href="{% url 'upcoming' %}" class="mobile-nav-link{% if request.resolver_match.url_name == 'upcoming' %} active{% endif %}">Upcoming</a>
           <a href="{% url 'calendar' %}" class="mobile-nav-link{% if request.resolver_match.url_name == 'calendar' or request.resolver_match.url_name == 'calendar_month' %} active{% endif %}">Calendar</a>
+          <a href="{% url 'help' %}" class="mobile-nav-link{% if request.resolver_match.url_name == 'help' %} active{% endif %}">Help</a>
+          <a href="{% url 'emergency' %}" class="mobile-nav-link{% if request.resolver_match.url_name == 'emergency' %} active{% endif %}">Emergency</a>
           {% if user.is_staff %}
           <a href="{% url 'admin:index' %}" class="mobile-nav-link">Admin</a>
           {% endif %}
