@@ -390,9 +390,8 @@ class EventAllDayTestCase(TestCase):
 
     def test_clean_all_day_preserves_times(self):
         # Arrange
-        import datetime
-        arbitrary_start = timezone.make_aware(datetime.datetime(2026, 6, 15, 14, 30, 0))
-        arbitrary_end = timezone.make_aware(datetime.datetime(2026, 6, 17, 9, 45, 0))
+        arbitrary_start = self.tomorrow.replace(hour=14, minute=30, second=0, microsecond=0)
+        arbitrary_end = self.day_after.replace(hour=9, minute=45, second=0, microsecond=0)
         event = Event(
             program=self.program,
             name="All Day Event",
@@ -450,9 +449,8 @@ class EventAllDayTestCase(TestCase):
 
     def test_clean_all_day_same_day_with_end_time_before_start_time_is_valid(self):
         # Arrange
-        import datetime
-        start = timezone.make_aware(datetime.datetime(2026, 6, 15, 14, 30, 0))
-        end = timezone.make_aware(datetime.datetime(2026, 6, 15, 9, 45, 0))
+        start = self.tomorrow.replace(hour=14, minute=30, second=0, microsecond=0)
+        end = self.tomorrow.replace(hour=9, minute=45, second=0, microsecond=0)
         event = Event(
             program=self.program,
             name="All Day Event",
