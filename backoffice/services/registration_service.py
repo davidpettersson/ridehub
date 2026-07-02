@@ -10,6 +10,7 @@ from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.db.models import QuerySet, Subquery, OuterRef, Count
 from django.utils import timezone
 
+from audit.services import AuditService
 from backoffice.models import Event, Registration, SpeedRange, Ride, UserProfile
 from backoffice.services.email_service import EmailService
 from backoffice.services.request_service import RequestDetail
@@ -79,6 +80,7 @@ class RegistrationService:
     def __init__(self):
         self.user_service = UserService()
         self.email_service = EmailService()
+        self.audit_service = AuditService()
 
     def _create_registration(self, event: Event, user: User, registration_detail: RegistrationDetail,
                              request_detail: RequestDetail | None = None) -> Registration:
@@ -379,6 +381,8 @@ class RegistrationService:
             registration.event.name, registration.event.id,
         )
 
+        self.audit_service.log(staff_user, 'withdrawn', target=registration)
+
         if was_confirmed:
             self._send_withdrawal_email(registration)
 
@@ -407,10 +411,12 @@ class RegistrationService:
             staff_user.email, staff_user.id, user.email, event.name, event.id,
         )
 
+        self.audit_service.log(staff_user, 'registered', target=registration)
+
         self._send_confirmation_email(registration)
         return registration
 
-    def staff_update_registration(self, registration: Registration, **fields) -> None:
+    def staff_update_registration(self, registration: Registration, staff_user, **fields) -> None:
         for field_name, value in fields.items():
             setattr(registration, field_name, value)
 
@@ -425,6 +431,8 @@ class RegistrationService:
             registration.id, registration.email, registration.event.name,
             registration.event.id, list(fields.keys()),
         )
+
+        self.audit_service.log(staff_user, 'updated', target=registration)
 
     def _send_withdrawal_email(self, registration: Registration) -> None:
         context = {

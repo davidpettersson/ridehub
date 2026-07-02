@@ -7,6 +7,7 @@ from typing import Callable, Optional
 from django.db import transaction
 from django.utils import timezone
 
+from audit.services import AuditService
 from backoffice.models import Route
 
 
@@ -59,10 +60,11 @@ class RouteImportService:
         *,
         on_conflict: Optional[ConflictCallback] = None,
         dry_run: bool = False,
+        actor=None,
     ) -> ImportStats:
         stats = ImportStats()
         rows = self._parse_csv(text, stats)
-        return self._apply(rows, stats=stats, on_conflict=on_conflict, dry_run=dry_run)
+        return self._apply(rows, stats=stats, on_conflict=on_conflict, dry_run=dry_run, actor=actor)
 
     def _parse_csv(self, text: str, stats: ImportStats) -> list[CsvRow]:
         reader = csv.DictReader(StringIO(text))
@@ -120,6 +122,7 @@ class RouteImportService:
         stats: ImportStats,
         on_conflict: Optional[ConflictCallback],
         dry_run: bool,
+        actor=None,
     ) -> ImportStats:
         now = timezone.now()
         creates, updates = self._collect_creates_and_updates(rows, stats, on_conflict, now)
@@ -128,13 +131,21 @@ class RouteImportService:
         if dry_run:
             return stats
 
+        audit_service = AuditService()
+
         with transaction.atomic():
             for route in creates:
                 route.save()
+                if actor is not None:
+                    audit_service.log(actor, 'created', target=route)
             for route in updates:
                 route.save()
+                if actor is not None:
+                    audit_service.log(actor, 'updated', target=route)
             for route in deletes:
                 route.save()
+                if actor is not None:
+                    audit_service.log(actor, 'deleted', target=route)
 
         return stats
 

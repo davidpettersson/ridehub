@@ -6,6 +6,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
 
+from audit.models import AuditEvent
 from backoffice.models import Event, Program, Registration, Ride, SpeedRange, Route
 
 
@@ -455,6 +456,42 @@ class EventEmergencyContactsViewTests(BaseEventViewTestCase):
         # Assert
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('riders_list', kwargs={'event_id': self.event.id}))
+
+    def test_ride_leader_reveal_logs_audit_event(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        self.client.get(self.url, HTTP_HX_REQUEST='true')
+
+        # Assert
+        self.assertEqual(AuditEvent.objects.count(), 1)
+        audit_event = AuditEvent.objects.get()
+        self.assertEqual(audit_event.action, 'revealed')
+        self.assertEqual(audit_event.target, self.event)
+
+    def test_staff_reveal_logs_audit_event(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        self.client.get(self.url, HTTP_HX_REQUEST='true')
+
+        # Assert
+        self.assertEqual(AuditEvent.objects.count(), 1)
+        audit_event = AuditEvent.objects.get()
+        self.assertEqual(audit_event.action, 'revealed')
+        self.assertEqual(audit_event.target, self.event)
+
+    def test_regular_user_denied_logs_no_audit_event(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        self.client.get(self.url, HTTP_HX_REQUEST='true')
+
+        # Assert
+        self.assertEqual(AuditEvent.objects.count(), 0)
 
 
 class EventRegistrationsFilterTests(BaseEventViewTestCase):

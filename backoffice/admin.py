@@ -4,9 +4,24 @@ from django.db.models import Count, Q
 from django.urls import reverse
 from django.utils.html import format_html
 
+from audit.context import actor
 from backoffice.actions import cancel_event, duplicate_event
 from backoffice.models import Ride, Route, Event, Program, SpeedRange, Registration, Announcement, UserProfile, UserMembershipNumber
 from .forms import EventAdminForm
+
+
+class AuditedAdminMixin:
+    def save_model(self, request, obj, form, change):
+        with actor(request.user):
+            super().save_model(request, obj, form, change)
+
+    def delete_model(self, request, obj):
+        with actor(request.user):
+            super().delete_model(request, obj)
+
+    def save_formset(self, request, form, formset, change):
+        with actor(request.user):
+            super().save_formset(request, form, formset, change)
 
 
 class RideInline(SortableStackedInline):
@@ -24,7 +39,7 @@ class RegistrationInline(admin.TabularInline):
     max_num = 0
 
 
-class EventAdmin(SortableAdminBase, admin.ModelAdmin):
+class EventAdmin(AuditedAdminMixin, SortableAdminBase, admin.ModelAdmin):
     list_display = ('starts_at', 'name', 'state', 'admin_registration_count', 'links',)
     list_display_links = ['name', ]
     inlines = [RideInline, ]
@@ -88,17 +103,17 @@ class EventAdmin(SortableAdminBase, admin.ModelAdmin):
         return fieldsets
 
 
-class SpeedRangeAdmin(admin.ModelAdmin):
+class SpeedRangeAdmin(AuditedAdminMixin, admin.ModelAdmin):
     list_display = ('range', 'lower_limit', 'upper_limit',)
 
 
-class RouteAdmin(admin.ModelAdmin):
+class RouteAdmin(AuditedAdminMixin, admin.ModelAdmin):
     list_display = ('name', 'url', 'updated_at', 'archived', 'deleted',)
     list_filter = ('archived', 'deleted',)
     search_fields = ('name',)
 
 
-class RegistrationAdmin(admin.ModelAdmin):
+class RegistrationAdmin(AuditedAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'state', 'submitted_at', 'username', 'event', 'ride', 'speed_range_preference')
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'event__name',)
     autocomplete_fields = ('user', 'event')
@@ -144,28 +159,32 @@ class RegistrationAdmin(admin.ModelAdmin):
         return obj.user
 
 
-class AnnouncementAdmin(admin.ModelAdmin):
+class AnnouncementAdmin(AuditedAdminMixin, admin.ModelAdmin):
     list_display = ('title', 'type', 'begin_at', 'end_at',)
     search_fields = ('title', 'text',)
     list_filter = ('type',)
     ordering = ('-end_at',)
 
 
-class ProgramAdmin(admin.ModelAdmin):
+class ProgramAdmin(AuditedAdminMixin, admin.ModelAdmin):
     list_display = ('emoji', 'name', 'description', 'archived',)
     list_display_links = ('name',)
     list_filter = ('archived',)
     ordering = ('name',)
 
 
-class UserMembershipNumberAdmin(admin.ModelAdmin):
+class UserMembershipNumberAdmin(AuditedAdminMixin, admin.ModelAdmin):
     list_display = ('user', 'number', 'year', 'created_at', 'updated_at')
     list_filter = ('year',)
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'number')
 
 
+class UserProfileAdmin(AuditedAdminMixin, admin.ModelAdmin):
+    pass
+
+
 admin.site.register(Program, ProgramAdmin)
-admin.site.register(UserProfile)
+admin.site.register(UserProfile, UserProfileAdmin)
 admin.site.register(Route, RouteAdmin)
 admin.site.register(SpeedRange, SpeedRangeAdmin)
 admin.site.register(Event, EventAdmin)

@@ -13,6 +13,7 @@ from django.utils import timezone
 from django_tables2 import RequestConfig
 from waffle import flag_is_active
 
+from audit.services import AuditService
 from backoffice.models import Event, Registration
 from backoffice.services.event_service import EventService
 from backoffice.services.registration_service import RegistrationService
@@ -352,6 +353,8 @@ def event_emergency_contacts(request: HttpRequest, event_id: int) -> HttpRespons
 
     if not request.headers.get('HX-Request'):
         return redirect('riders_list', event_id=event_id)
+
+    AuditService().log(request.user, 'revealed', target=event)
 
     context = _build_registrations_context(request, event, contacts_revealed=True)
     return render(request, 'web/events/_registrations_list.html', context=context)

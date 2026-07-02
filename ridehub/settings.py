@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'backoffice',
     'membership',
     'content',
+    'audit',
     'web',
 ]
 

@@ -1,8 +1,20 @@
 from django.contrib.auth.models import User
-from django.db.models.signals import post_save
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from .models import UserProfile
+from audit.context import get_actor
+from audit.services import AuditService
+from .models import (
+    Announcement,
+    Event,
+    Program,
+    Registration,
+    Ride,
+    Route,
+    SpeedRange,
+    UserMembershipNumber,
+    UserProfile,
+)
 
 
 @receiver(post_save, sender=User)
@@ -20,4 +32,36 @@ def ensure_user_profile(sender, instance, created, **kwargs):
             instance.profile
         except UserProfile.DoesNotExist:
             # Profile doesn't exist, create it
-            UserProfile.objects.create(user=instance) 
+            UserProfile.objects.create(user=instance)
+
+
+AUDITED_MODELS = (
+    Program,
+    Event,
+    Route,
+    SpeedRange,
+    Ride,
+    UserProfile,
+    UserMembershipNumber,
+    Registration,
+    Announcement,
+)
+
+
+def log_audited_save(sender, instance, created, **kwargs):
+    actor = get_actor()
+    if actor is None:
+        return
+    AuditService().log(actor, 'created' if created else 'updated', target=instance)
+
+
+def log_audited_delete(sender, instance, **kwargs):
+    actor = get_actor()
+    if actor is None:
+        return
+    AuditService().log(actor, 'deleted', target=instance)
+
+
+for model in AUDITED_MODELS:
+    post_save.connect(log_audited_save, sender=model)
+    post_delete.connect(log_audited_delete, sender=model)
