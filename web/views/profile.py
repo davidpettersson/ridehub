@@ -16,12 +16,10 @@ def profile(request: HttpRequest) -> HttpResponse:
     registration_service = RegistrationService()
     registrations = registration_service.fetch_current_registrations(request.user)
     past_registrations = registration_service.fetch_past_registrations(request.user)
-    statistics = registration_service.fetch_user_statistics(request.user)
 
     context = {
         'registrations': registrations,
         'past_registrations': past_registrations,
-        'statistics': statistics,
         'name_visibility': request.user.profile.name_visibility,
         'name_visibility_choices': UserProfile.NameVisibility.choices,
         'registration_visibility_hours': settings.REGISTRATION_VISIBILITY_HOURS,
