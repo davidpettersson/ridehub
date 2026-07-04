@@ -4,14 +4,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 
-class StandardAction(models.TextChoices):
-    CREATED = 'created', 'Created'
-    UPDATED = 'updated', 'Updated'
-    DELETED = 'deleted', 'Deleted'
-    ARCHIVED = 'archived', 'Archived'
-    REVEALED = 'revealed', 'Revealed'
-
-
 class AuditEvent(models.Model):
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
