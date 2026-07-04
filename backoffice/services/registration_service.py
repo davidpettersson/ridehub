@@ -216,11 +216,11 @@ class RegistrationService:
             return True
 
         if registration.user_id is None:
-            return True
+            return False
 
         profile = getattr(registration.user, 'profile', None)
         if profile is None:
-            return True
+            return False
 
         match profile.name_visibility:
             case UserProfile.NameVisibility.ONLY_USERS:

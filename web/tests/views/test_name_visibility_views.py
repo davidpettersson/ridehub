@@ -154,7 +154,7 @@ class EventDetailNameVisibilityTests(BaseNameVisibilityTestCase):
         self.assertIn('Uma Usersonly', names)
         self.assertIn('Rex Requiredonly', names)
 
-    def test_registration_without_user_is_always_visible(self):
+    def test_registration_without_user_is_masked_for_anonymous_viewer(self):
         # Arrange
         Registration.objects.create(
             first_name='Nora',
@@ -167,6 +167,28 @@ class EventDetailNameVisibilityTests(BaseNameVisibilityTestCase):
             ride_leader_preference=Registration.RideLeaderPreference.NO,
             state=Registration.STATE_CONFIRMED,
         )
+
+        # Act
+        names = self._get_detail_names()
+
+        # Assert
+        self.assertNotIn('Nora Nouser', names)
+        self.assertIn('N* N*', names)
+
+    def test_registration_without_user_is_visible_to_staff(self):
+        # Arrange
+        Registration.objects.create(
+            first_name='Nora',
+            last_name='Nouser',
+            name='Nora Nouser',
+            email='nouser@example.com',
+            event=self.event,
+            ride=self.ride,
+            speed_range_preference=self.speed_range,
+            ride_leader_preference=Registration.RideLeaderPreference.NO,
+            state=Registration.STATE_CONFIRMED,
+        )
+        self.client.force_login(self.staff_user)
 
         # Act
         names = self._get_detail_names()

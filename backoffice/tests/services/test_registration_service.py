@@ -2498,12 +2498,22 @@ class MaskHiddenNamesTestCase(TestCase):
         # Assert
         self.assertEqual(registration.name, 'John Doe')
 
-    def test_registration_without_user_never_masked(self):
+    def test_registration_without_user_masked_for_unprivileged_viewer(self):
         # Arrange
         registration = self._create_registration('john@example.com', 'John', 'Doe', with_user=False)
 
         # Act
-        self.service.mask_hidden_names([registration], viewer_is_authenticated=False, viewer_is_privileged=False)
+        self.service.mask_hidden_names([registration], viewer_is_authenticated=True, viewer_is_privileged=False)
+
+        # Assert
+        self.assertNotEqual(registration.name, 'John Doe')
+
+    def test_registration_without_user_visible_to_privileged_viewer(self):
+        # Arrange
+        registration = self._create_registration('john@example.com', 'John', 'Doe', with_user=False)
+
+        # Act
+        self.service.mask_hidden_names([registration], viewer_is_authenticated=True, viewer_is_privileged=True)
 
         # Assert
         self.assertEqual(registration.name, 'John Doe')
