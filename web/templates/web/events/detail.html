@@ -201,7 +201,7 @@
                     {% for speed_range_id, speed_range_info in ride_info.speed_ranges.items %}
                     <div class="list-group-item p-0" x-data="{ open: false }">
                         <div class="d-flex align-items-start px-4 py-3"
-                             {% if speed_range_info.riders %}role="button" @click="open = !open" :aria-expanded="open"{% endif %}>
+                             {% if speed_range_info.riders %}role="button" tabindex="0" @click="open = !open" @keydown.enter.prevent="open = !open" @keydown.space.prevent="open = !open" :aria-expanded="open"{% endif %}>
                             <i class="bi bi-speedometer2 text-muted me-2"></i>
                             <span class="{% if speed_range_info.riders %}text-body{% else %}text-muted{% endif %}">
                                 {% if speed_range_info.speed_range %}
