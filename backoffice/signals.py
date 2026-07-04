@@ -8,7 +8,6 @@ from .models import (
     Announcement,
     Event,
     Program,
-    Registration,
     Ride,
     Route,
     SpeedRange,
@@ -43,7 +42,6 @@ AUDITED_MODELS = (
     Ride,
     UserProfile,
     UserMembershipNumber,
-    Registration,
     Announcement,
 )
 

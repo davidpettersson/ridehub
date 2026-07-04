@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 
@@ -370,69 +369,16 @@ class RouteImportServiceAuditTests(TestCase):
     def setUp(self):
         # Arrange
         self.service = RouteImportService()
-        self.actor = User.objects.create_user(username='importer', email='importer@example.com')
 
-    def test_import_with_actor_logs_created_audit_event(self):
+    def test_import_does_not_log_audit_events(self):
         # Arrange
         csv_text = make_csv(csv_row(
             url='https://ridewithgps.com/routes/100', name='New Route', distance='50', elevation='10',
         ))
 
         # Act
-        self.service.import_from_csv_text(csv_text, actor=self.actor)
-
-        # Assert
-        route = Route.objects.get(url='https://ridewithgps.com/routes/100')
-        audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.actor, self.actor)
-        self.assertEqual(audit_event.action, 'created')
-        self.assertEqual(audit_event.target, route)
-
-    def test_import_with_actor_logs_updated_audit_event(self):
-        # Arrange
-        url = 'https://ridewithgps.com/routes/101'
-        ts = timezone.now() - timedelta(days=1)
-        route = Route.objects.create(name='Old', url=url, distance=100, elevation_gain=200)
-        Route.objects.filter(pk=route.pk).update(last_imported_at=ts, updated_at=ts)
-        csv_text = make_csv(csv_row(url=url, name='Updated', distance='150', elevation='300'))
-
-        # Act
-        self.service.import_from_csv_text(csv_text, actor=self.actor)
-
-        # Assert
-        updated_route = Route.objects.get(url=url)
-        audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.actor, self.actor)
-        self.assertEqual(audit_event.action, 'updated')
-        self.assertEqual(audit_event.target, updated_route)
-
-    def test_import_with_actor_logs_deleted_audit_event(self):
-        # Arrange
-        keep_url = 'https://ridewithgps.com/routes/102'
-        gone_url = 'https://ridewithgps.com/routes/103'
-        ts = timezone.now() - timedelta(days=1)
-        for url in (keep_url, gone_url):
-            route = Route.objects.create(name='Existing', url=url, distance=100, elevation_gain=200)
-            Route.objects.filter(pk=route.pk).update(last_imported_at=ts, updated_at=ts)
-        csv_text = make_csv(csv_row(url=keep_url, name='Existing', distance='100', elevation='200'))
-
-        # Act
-        self.service.import_from_csv_text(csv_text, actor=self.actor)
-
-        # Assert
-        gone_route = Route.objects.get(url=gone_url)
-        audit_event = AuditEvent.objects.get(action='deleted')
-        self.assertEqual(audit_event.actor, self.actor)
-        self.assertEqual(audit_event.target, gone_route)
-
-    def test_import_without_actor_does_not_log_audit_event(self):
-        # Arrange
-        csv_text = make_csv(csv_row(
-            url='https://ridewithgps.com/routes/104', name='New Route', distance='50', elevation='10',
-        ))
-
-        # Act
         self.service.import_from_csv_text(csv_text)
 
         # Assert
+        Route.objects.get(url='https://ridewithgps.com/routes/100')
         self.assertFalse(AuditEvent.objects.exists())

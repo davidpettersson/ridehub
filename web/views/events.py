@@ -336,7 +336,7 @@ def event_emergency_contacts(request: HttpRequest, event_id: int) -> HttpRespons
     if not request.headers.get('HX-Request'):
         return redirect('riders_list', event_id=event_id)
 
-    AuditService().log(request.user, 'revealed', target=event)
+    AuditService().log(request.user, 'emergency_contacts_revealed', target=event)
 
     context = _build_registrations_context(request, event, contacts_revealed=True)
     return render(request, 'web/events/_registrations_list.html', context=context)
@@ -349,11 +349,11 @@ def event_emails(request: HttpRequest, event_id: int) -> HttpResponse:
     if not _is_confirmed_ride_leader(event_id, request.user) and not request.user.is_staff:
         raise PermissionDenied
 
-    emails = RegistrationService().fetch_confirmed_emails(
-        event, ride_leaders_only=request.GET.get('type') == 'leaders'
-    )
+    ride_leaders_only = request.GET.get('type') == 'leaders'
+    emails = RegistrationService().fetch_confirmed_emails(event, ride_leaders_only=ride_leaders_only)
 
-    AuditService().log(request.user, 'copied', target=event)
+    action = 'ride_leader_emails_copied' if ride_leaders_only else 'all_emails_copied'
+    AuditService().log(request.user, action, target=event)
     return HttpResponse(', '.join(emails), content_type='text/plain')
 
 
