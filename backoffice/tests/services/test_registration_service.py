@@ -2606,7 +2606,7 @@ class AuditLoggingTestCase(TestCase):
         # Assert
         audit_event = AuditEvent.objects.get()
         self.assertEqual(audit_event.actor, self.staff_user)
-        self.assertEqual(audit_event.action, 'registered')
+        self.assertEqual(audit_event.action, 'staff_registered')
         self.assertEqual(audit_event.target, registration)
 
     def test_staff_withdraw_creates_audit_event(self):
@@ -2626,7 +2626,7 @@ class AuditLoggingTestCase(TestCase):
         # Assert
         audit_event = AuditEvent.objects.get()
         self.assertEqual(audit_event.actor, self.staff_user)
-        self.assertEqual(audit_event.action, 'withdrawn')
+        self.assertEqual(audit_event.action, 'staff_withdrew')
         self.assertEqual(audit_event.target, registration)
 
     def test_staff_update_registration_creates_audit_event(self):
@@ -2643,7 +2643,7 @@ class AuditLoggingTestCase(TestCase):
         # Assert
         audit_event = AuditEvent.objects.get()
         self.assertEqual(audit_event.actor, self.staff_user)
-        self.assertEqual(audit_event.action, 'updated')
+        self.assertEqual(audit_event.action, 'staff_edited')
         self.assertEqual(audit_event.target, registration)
 
     def test_register_does_not_create_audit_event(self):

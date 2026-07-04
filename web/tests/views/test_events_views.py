@@ -467,7 +467,7 @@ class EventEmergencyContactsViewTests(BaseEventViewTestCase):
         # Assert
         self.assertEqual(AuditEvent.objects.count(), 1)
         audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.action, 'revealed')
+        self.assertEqual(audit_event.action, 'emergency_contacts_revealed')
         self.assertEqual(audit_event.target, self.event)
 
     def test_staff_reveal_logs_audit_event(self):
@@ -480,7 +480,7 @@ class EventEmergencyContactsViewTests(BaseEventViewTestCase):
         # Assert
         self.assertEqual(AuditEvent.objects.count(), 1)
         audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.action, 'revealed')
+        self.assertEqual(audit_event.action, 'emergency_contacts_revealed')
         self.assertEqual(audit_event.target, self.event)
 
     def test_regular_user_denied_logs_no_audit_event(self):
@@ -513,7 +513,7 @@ class EventEmailsViewTests(BaseEventViewTestCase):
         self.assertIn('regular@example.com', emails)
         self.assertIn('leader@example.com', emails)
         audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.action, 'copied')
+        self.assertEqual(audit_event.action, 'all_emails_copied')
         self.assertEqual(audit_event.target, self.event)
 
     def test_leaders_type_returns_only_ride_leader_emails(self):
@@ -527,7 +527,7 @@ class EventEmailsViewTests(BaseEventViewTestCase):
         emails = response.content.decode()
         self.assertIn('leader@example.com', emails)
         self.assertNotIn('regular@example.com', emails)
-        self.assertEqual(AuditEvent.objects.get().action, 'copied')
+        self.assertEqual(AuditEvent.objects.get().action, 'ride_leader_emails_copied')
 
     def test_ride_leader_fetch_logs_audit_event(self):
         # Arrange
@@ -538,7 +538,7 @@ class EventEmailsViewTests(BaseEventViewTestCase):
 
         # Assert
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(AuditEvent.objects.get().action, 'copied')
+        self.assertEqual(AuditEvent.objects.get().action, 'all_emails_copied')
 
     def test_regular_user_denied(self):
         # Arrange

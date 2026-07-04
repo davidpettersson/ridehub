@@ -1,7 +1,6 @@
 from io import StringIO
 from unittest.mock import patch
 
-from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
@@ -29,11 +28,6 @@ class FakeResponse:
 
 
 class SyncRoutesCommandTests(TestCase):
-    def setUp(self):
-        self.actor = User.objects.create_user(
-            username='importer', email='importer@example.com', password='password123'
-        )
-
     @patch('backoffice.management.commands.syncroutes.requests.get')
     def test_fetches_csv_and_imports(self, mock_get):
         # Arrange
@@ -41,7 +35,7 @@ class SyncRoutesCommandTests(TestCase):
         out = StringIO()
 
         # Act
-        call_command('syncroutes', '--non-interactive', '--actor', self.actor.email, stdout=out)
+        call_command('syncroutes', '--non-interactive', stdout=out)
 
         # Assert
         mock_get.assert_called_once()
@@ -52,34 +46,15 @@ class SyncRoutesCommandTests(TestCase):
         self.assertEqual(route.elevation_gain, 123)
 
     @patch('backoffice.management.commands.syncroutes.requests.get')
-    def test_import_logs_audit_event_per_row(self, mock_get):
+    def test_import_does_not_log_audit_events(self, mock_get):
         # Arrange
         mock_get.return_value = FakeResponse(CSV_TEXT)
 
         # Act
-        call_command('syncroutes', '--non-interactive', '--actor', self.actor.email, stdout=StringIO())
+        call_command('syncroutes', '--non-interactive', stdout=StringIO())
 
         # Assert
-        audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.actor, self.actor)
-        self.assertEqual(audit_event.action, 'created')
-        self.assertEqual(audit_event.target, Route.objects.first())
-
-    @patch('backoffice.management.commands.syncroutes.requests.get')
-    def test_unknown_actor_aborts_with_command_error(self, mock_get):
-        # Arrange
-        mock_get.return_value = FakeResponse(CSV_TEXT)
-
-        # Act / Assert
-        with self.assertRaises(CommandError):
-            call_command('syncroutes', '--non-interactive', '--actor', 'nobody@example.com',
-                         stdout=StringIO())
-        self.assertEqual(Route.objects.count(), 0)
-
-    def test_missing_actor_aborts_with_command_error(self):
-        # Act / Assert
-        with self.assertRaises(CommandError):
-            call_command('syncroutes', '--non-interactive', stdout=StringIO())
+        self.assertFalse(AuditEvent.objects.exists())
 
     @patch('backoffice.management.commands.syncroutes.requests.get')
     def test_dry_run_does_not_persist(self, mock_get):
@@ -87,8 +62,7 @@ class SyncRoutesCommandTests(TestCase):
         mock_get.return_value = FakeResponse(CSV_TEXT)
 
         # Act
-        call_command('syncroutes', '--non-interactive', '--dry-run', '--actor', self.actor.email,
-                     stdout=StringIO())
+        call_command('syncroutes', '--non-interactive', '--dry-run', stdout=StringIO())
 
         # Assert
         self.assertEqual(Route.objects.count(), 0)
@@ -101,7 +75,7 @@ class SyncRoutesCommandTests(TestCase):
 
         # Act
         call_command('syncroutes', '--non-interactive', '--url', 'https://example.test/x.csv',
-                     '--actor', self.actor.email, stdout=StringIO())
+                     stdout=StringIO())
 
         # Assert
         called_url = mock_get.call_args[0][0]
@@ -114,5 +88,4 @@ class SyncRoutesCommandTests(TestCase):
 
         # Act / Assert
         with self.assertRaises(CommandError):
-            call_command('syncroutes', '--non-interactive', '--actor', self.actor.email,
-                         stdout=StringIO())
+            call_command('syncroutes', '--non-interactive', stdout=StringIO())

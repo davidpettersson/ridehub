@@ -394,7 +394,7 @@ class RegistrationService:
             registration.event.name, registration.event.id,
         )
 
-        self.audit_service.log(staff_user, 'withdrawn', target=registration)
+        self.audit_service.log(staff_user, 'staff_withdrew', target=registration)
 
         if was_confirmed:
             self._send_withdrawal_email(registration)
@@ -424,7 +424,7 @@ class RegistrationService:
             staff_user.email, staff_user.id, user.email, event.name, event.id,
         )
 
-        self.audit_service.log(staff_user, 'registered', target=registration)
+        self.audit_service.log(staff_user, 'staff_registered', target=registration)
 
         self._send_confirmation_email(registration)
         return registration
@@ -445,7 +445,7 @@ class RegistrationService:
             registration.event.id, list(fields.keys()),
         )
 
-        self.audit_service.log(staff_user, 'updated', target=registration)
+        self.audit_service.log(staff_user, 'staff_edited', target=registration)
 
     def _send_withdrawal_email(self, registration: Registration) -> None:
         context = {
