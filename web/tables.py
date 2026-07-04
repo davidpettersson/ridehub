@@ -104,9 +104,10 @@ class PublicRegistrationTable(tables.Table):
             'data-registration-id': lambda record: record.id,
         }
 
-    def __init__(self, *args, contacts_hidden=False, ride_counts=None, **kwargs):
+    def __init__(self, *args, contacts_hidden=False, ride_counts=None, masked_ids=None, **kwargs):
         self.contacts_hidden = contacts_hidden
         self.ride_counts = ride_counts or {}
+        self.masked_ids = masked_ids or set()
         super().__init__(*args, **kwargs)
 
     def _hidden_placeholder(self):
@@ -125,6 +126,11 @@ class PublicRegistrationTable(tables.Table):
             html = format_html(
                 '{} <span class="badge badge-ride-count-{}">{} ride</span>',
                 html, count, self.RIDE_COUNT_LABELS[count]
+            )
+
+        if record.id in self.masked_ids:
+            html = format_html(
+                '{} <span class="badge badge-masked">Masked</span>', html
             )
 
         return html

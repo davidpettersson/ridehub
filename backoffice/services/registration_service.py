@@ -238,6 +238,13 @@ class RegistrationService:
                 registration.name = f"{registration.first_name} {registration.last_name}"
         return registrations
 
+    def masked_registration_ids(self, registrations: list[Registration]) -> set[int]:
+        return {
+            registration.id for registration in registrations
+            if not self._name_visible_to_viewer(registration, viewer_is_authenticated=False,
+                                                viewer_is_privileged=False)
+        }
+
     def fetch_ride_counts(self, user_ids: list[int]) -> dict[int, int]:
         rows = (
             Registration.objects.filter(
