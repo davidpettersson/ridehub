@@ -19,7 +19,7 @@ class AuditServiceTestCase(TestCase):
         self.assertEqual(event.actor, actor)
         self.assertEqual(event.action, 'updated')
         self.assertEqual(event.target, target)
-        self.assertEqual(event.target_repr, str(target))
+        self.assertEqual(event.target_repr, f'User #{target.pk}')
         self.assertEqual(AuditEvent.objects.count(), 1)
 
     def test_log_without_target(self):

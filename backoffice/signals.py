@@ -63,5 +63,7 @@ def log_audited_delete(sender, instance, **kwargs):
 
 
 for model in AUDITED_MODELS:
-    post_save.connect(log_audited_save, sender=model)
-    post_delete.connect(log_audited_delete, sender=model)
+    post_save.connect(log_audited_save, sender=model,
+                      dispatch_uid=f'audit_save_{model.__name__}')
+    post_delete.connect(log_audited_delete, sender=model,
+                        dispatch_uid=f'audit_delete_{model.__name__}')
