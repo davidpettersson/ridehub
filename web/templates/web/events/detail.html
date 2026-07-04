@@ -1,6 +1,7 @@
 {% extends 'web/_base_bootstrap.html' %}
 {% load form_filters %}
 {% load dict_filters %}
+{% load name_filters %}
 {% block title %}{{ event.name }} - Event Details{% endblock %}
 {% block content %}
     <div class="mb-4">
@@ -207,7 +208,7 @@
                         <div class="ps-5 pe-4 pb-3" x-show="open" x-cloak>
                             {% for rider in speed_range_info.riders %}
                                 <div class="small text-muted">
-                                    {{ rider.name }}{% if rider.is_ride_leader %} <span class="badge text-bg-primary">Ride leader</span>{% endif %}
+                                    {{ rider.name|styled_name }}{% if rider.is_ride_leader %} <span class="badge text-bg-primary">Ride leader</span>{% endif %}
                                 </div>
                             {% endfor %}
                         </div>

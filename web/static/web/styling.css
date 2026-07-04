@@ -462,3 +462,8 @@ body {
 .speed-range-chevron-open {
   transform: rotate(180deg);
 }
+
+.name-mask {
+  opacity: 0.45;
+  letter-spacing: 0.13em;
+}

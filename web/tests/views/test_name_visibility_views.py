@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from backoffice.models import Event, Program, Registration, Ride, Route, SpeedRange, UserProfile
 
-MASKED_NAME_PATTERN = re.compile(r'^[A-Z]\* [A-Z]\*$')
+MASKED_NAME_PATTERN = re.compile(r'^[A-Z]·{3,6} [A-Z]·{3,6}$')
 
 
 class BaseNameVisibilityTestCase(TestCase):
@@ -173,7 +173,8 @@ class EventDetailNameVisibilityTests(BaseNameVisibilityTestCase):
 
         # Assert
         self.assertNotIn('Nora Nouser', names)
-        self.assertIn('N* N*', names)
+        masked = [name for name in names if MASKED_NAME_PATTERN.match(name)]
+        self.assertTrue(any(name.startswith('N') for name in masked))
 
     def test_registration_without_user_is_visible_to_staff(self):
         # Arrange
@@ -268,7 +269,7 @@ class ProfileNameVisibilityTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['name_visibility'], UserProfile.NameVisibility.PUBLIC)
         self.assertContains(response, 'When can we show your full name on registration lists?')
-        self.assertContains(response, 'M* U*')
+        self.assertRegex(response.context['masked_name_example'], MASKED_NAME_PATTERN)
 
     def test_post_updates_name_visibility(self):
         # Arrange

@@ -11,6 +11,7 @@ from backoffice.models import Event, Registration, Program, UserProfile, Ride, R
 from backoffice.services.registration_service import (
     RegistrationService, UserDetail, RegistrationDetail, RegistrationResult,
     VERIFICATION_TOKEN_SALT, mask_name_with_initials, mask_name_with_random_letters,
+    mask_name_with_dots,
 )
 from backoffice.services.request_service import RequestDetail
 
@@ -2435,6 +2436,43 @@ class MaskHiddenNamesTestCase(TestCase):
         # Assert
         self.assertRegex(first_name, r'^[A-Z]$')
         self.assertRegex(last_name, r'^[A-Z]$')
+
+    def test_mask_name_with_dots_uses_initial_followed_by_dots(self):
+        # Arrange
+        registration = self._create_registration('john@example.com', 'John', 'Doe')
+
+        # Act
+        first_name, last_name = mask_name_with_dots(registration)
+
+        # Assert
+        self.assertRegex(first_name, r'^J·{3,6}$')
+        self.assertRegex(last_name, r'^D·{3,6}$')
+
+    def test_mask_name_with_dots_is_stable_for_same_name(self):
+        # Arrange
+        first = self._create_registration('john@example.com', 'John', 'Doe')
+        second = self._create_registration('john.b@example.com', 'John', 'Doe')
+
+        # Act
+        first_result = mask_name_with_dots(first)
+        second_result = mask_name_with_dots(second)
+
+        # Assert
+        self.assertEqual(first_result, second_result)
+
+    def test_mask_name_with_dots_does_not_reveal_name_length(self):
+        # Arrange
+        short_name = self._create_registration('al@example.com', 'Al', 'Ek')
+        long_name = self._create_registration('alexandra@example.com', 'Alexandra', 'Ekelundsson')
+
+        # Act
+        short_first, short_last = mask_name_with_dots(short_name)
+        long_first, long_last = mask_name_with_dots(long_name)
+
+        # Assert
+        self.assertNotEqual(len(short_first), len('Al'))
+        self.assertNotEqual(len(long_first), len('Alexandra'))
+        self.assertNotEqual(len(long_last), len('Ekelundsson'))
 
     def test_public_name_never_masked(self):
         # Arrange

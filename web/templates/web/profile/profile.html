@@ -1,6 +1,7 @@
 {% extends 'web/_base_bootstrap.html' %}
 {% load waffle_tags %}
 {% load phone_filters %}
+{% load name_filters %}
 {% block title %}My profile{% endblock %}
 {% block content %}
 <div class="mb-4">
@@ -83,7 +84,7 @@
                         {% endfor %}
                     </form>
 
-                    <p class="text-muted small mt-2 mb-0">When your name isn't shown, we'll display a masked version instead, e.g. <strong>{{ masked_name_example }}</strong> for your name.</p>
+                    <p class="text-muted small mt-2 mb-0">When your name isn't shown, we'll display a masked version instead, e.g. <strong>{{ masked_name_example|styled_name }}</strong> for your name.</p>
 
                     <div class="text-muted small mt-3">
                         <p class="mb-2">Your email, phone number and emergency contact details are only available to ride leaders and ride administrators.</p>
