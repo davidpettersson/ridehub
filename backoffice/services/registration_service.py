@@ -258,6 +258,19 @@ class RegistrationService:
                 registration.name = f"{registration.first_name} {registration.last_name}"
         return registrations
 
+    def fetch_confirmed_emails(self, event: Event, ride_leaders_only: bool = False) -> list[str]:
+        registrations = Registration.objects.filter(
+            event=event,
+            state=Registration.STATE_CONFIRMED,
+        )
+        if ride_leaders_only:
+            registrations = registrations.filter(
+                ride_leader_preference=Registration.RideLeaderPreference.YES
+            )
+        return sorted({
+            email for email in registrations.values_list('email', flat=True) if email
+        })
+
     def fetch_ride_counts(self, user_ids: list[int]) -> dict[int, int]:
         rows = (
             Registration.objects.filter(

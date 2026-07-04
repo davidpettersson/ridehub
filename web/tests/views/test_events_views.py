@@ -494,48 +494,13 @@ class EventEmergencyContactsViewTests(BaseEventViewTestCase):
         self.assertEqual(AuditEvent.objects.count(), 0)
 
 
-class EventEmailsCopiedViewTests(BaseEventViewTestCase):
+class EventEmailsViewTests(BaseEventViewTestCase):
 
     def setUp(self):
         super().setUp()
-        self.url = reverse('event_emails_copied', kwargs={'event_id': self.event.id})
+        self.url = reverse('event_emails', kwargs={'event_id': self.event.id})
 
-    def test_staff_copy_logs_audit_event(self):
-        # Arrange
-        self.client.login(username='staff_user', password='password123')
-
-        # Act
-        response = self.client.post(self.url)
-
-        # Assert
-        self.assertEqual(response.status_code, 204)
-        audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.action, 'copied')
-        self.assertEqual(audit_event.target, self.event)
-
-    def test_ride_leader_copy_logs_audit_event(self):
-        # Arrange
-        self.client.login(username='leader_user', password='password123')
-
-        # Act
-        response = self.client.post(self.url)
-
-        # Assert
-        self.assertEqual(response.status_code, 204)
-        self.assertEqual(AuditEvent.objects.get().action, 'copied')
-
-    def test_regular_user_denied(self):
-        # Arrange
-        self.client.login(username='regular_user', password='password123')
-
-        # Act
-        response = self.client.post(self.url)
-
-        # Assert
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(AuditEvent.objects.count(), 0)
-
-    def test_get_not_allowed(self):
+    def test_staff_fetch_returns_emails_and_logs_audit_event(self):
         # Arrange
         self.client.login(username='staff_user', password='password123')
 
@@ -543,7 +508,71 @@ class EventEmailsCopiedViewTests(BaseEventViewTestCase):
         response = self.client.get(self.url)
 
         # Assert
-        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.status_code, 200)
+        emails = response.content.decode()
+        self.assertIn('regular@example.com', emails)
+        self.assertIn('leader@example.com', emails)
+        audit_event = AuditEvent.objects.get()
+        self.assertEqual(audit_event.action, 'copied')
+        self.assertEqual(audit_event.target, self.event)
+
+    def test_leaders_type_returns_only_ride_leader_emails(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url, {'type': 'leaders'})
+
+        # Assert
+        emails = response.content.decode()
+        self.assertIn('leader@example.com', emails)
+        self.assertNotIn('regular@example.com', emails)
+        self.assertEqual(AuditEvent.objects.get().action, 'copied')
+
+    def test_ride_leader_fetch_logs_audit_event(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(AuditEvent.objects.get().action, 'copied')
+
+    def test_regular_user_denied(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 403)
+        self.assertNotIn('leader@example.com', response.content.decode())
+        self.assertEqual(AuditEvent.objects.count(), 0)
+
+    def test_anonymous_user_redirected_to_login(self):
+        # Arrange
+        client = Client()
+
+        # Act
+        response = client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login', response.url)
+
+    def test_roster_page_contains_no_email_addresses_for_staff(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(reverse('riders_list', kwargs={'event_id': self.event.id}))
+
+        # Assert
+        self.assertNotContains(response, 'regular@example.com')
+        self.assertNotContains(response, 'leader@example.com')
 
 
 class EventRegistrationsFilterTests(BaseEventViewTestCase):
