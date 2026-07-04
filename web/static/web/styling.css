@@ -454,6 +454,11 @@ body {
   color: #fff;
 }
 
+.badge-masked {
+  background-color: #6c757d;
+  color: #fff;
+}
+
 .speed-range-chevron {
   display: inline-block;
   transition: transform 0.2s ease-in-out;

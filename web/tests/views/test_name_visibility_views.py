@@ -306,3 +306,68 @@ class ProfileNameVisibilityTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 302)
         self.assertIn('login', response.url)
+
+
+class MaskedBadgeTests(BaseNameVisibilityTestCase):
+    def _get_riders_list_response(self):
+        response = self.client.get(reverse('riders_list', args=[self.event.id]))
+        self.assertEqual(response.status_code, 200)
+        return response
+
+    def test_staff_viewer_sees_masked_badges(self):
+        # Arrange
+        self.client.force_login(self.staff_user)
+
+        # Act
+        response = self._get_riders_list_response()
+
+        # Assert
+        self.assertContains(response, 'badge-masked', count=2)
+
+    def test_ride_leader_viewer_sees_masked_badges(self):
+        # Arrange
+        self.client.force_login(self.leader_user)
+
+        # Act
+        response = self._get_riders_list_response()
+
+        # Assert
+        self.assertContains(response, 'badge-masked', count=2)
+
+    def test_anonymous_viewer_does_not_see_masked_badges(self):
+        # Act
+        response = self._get_riders_list_response()
+
+        # Assert
+        self.assertNotContains(response, 'badge-masked')
+
+    def test_signed_in_viewer_does_not_see_masked_badges(self):
+        # Arrange
+        self.client.force_login(self.viewer_user)
+
+        # Act
+        response = self._get_riders_list_response()
+
+        # Assert
+        self.assertNotContains(response, 'badge-masked')
+
+    def test_staff_viewer_sees_badge_for_registration_without_user(self):
+        # Arrange
+        Registration.objects.create(
+            first_name='Nora',
+            last_name='Nouser',
+            name='Nora Nouser',
+            email='nouser@example.com',
+            event=self.event,
+            ride=self.ride,
+            speed_range_preference=self.speed_range,
+            ride_leader_preference=Registration.RideLeaderPreference.NO,
+            state=Registration.STATE_CONFIRMED,
+        )
+        self.client.force_login(self.staff_user)
+
+        # Act
+        response = self._get_riders_list_response()
+
+        # Assert
+        self.assertContains(response, 'badge-masked', count=3)

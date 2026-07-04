@@ -2531,3 +2531,57 @@ class MaskHiddenNamesTestCase(TestCase):
         # Assert
         registration.refresh_from_db(fields=['name', 'first_name', 'last_name'])
         self.assertEqual(registration.name, 'John Doe')
+
+
+class MaskedRegistrationIdsTestCase(TestCase):
+    def setUp(self):
+        self.service = RegistrationService()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Test Event",
+            program=self.program,
+            starts_at=timezone.now() + datetime.timedelta(days=3),
+            registration_closes_at=timezone.now() + datetime.timedelta(days=2),
+        )
+
+    def _create_registration(self, email, first_name, last_name, name_visibility=None, with_user=True):
+        user = None
+        if with_user:
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+            )
+            if name_visibility:
+                user.profile.name_visibility = name_visibility
+                user.profile.save()
+
+        return Registration.objects.create(
+            first_name=first_name,
+            last_name=last_name,
+            name=f"{first_name} {last_name}",
+            email=email,
+            event=self.event,
+            user=user,
+            state=Registration.STATE_CONFIRMED,
+        )
+
+    def test_returns_ids_of_registrations_hidden_from_public(self):
+        # Arrange
+        public = self._create_registration('public@example.com', 'Pat', 'Public')
+        only_users = self._create_registration(
+            'users@example.com', 'Uma', 'Usersonly',
+            name_visibility=UserProfile.NameVisibility.ONLY_USERS,
+        )
+        only_required = self._create_registration(
+            'required@example.com', 'Rex', 'Requiredonly',
+            name_visibility=UserProfile.NameVisibility.ONLY_REQUIRED_USERS,
+        )
+        no_user = self._create_registration('nouser@example.com', 'Nora', 'Nouser', with_user=False)
+
+        # Act
+        masked_ids = self.service.masked_registration_ids([public, only_users, only_required, no_user])
+
+        # Assert
+        self.assertEqual(masked_ids, {only_users.id, only_required.id, no_user.id})

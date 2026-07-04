@@ -284,13 +284,16 @@ def _build_registrations_context(request, event, contacts_revealed):
         exclude_columns = ('first_time_attendee',)
 
     ride_counts = {}
+    masked_ids = set()
     if can_access_rider_contacts:
         user_ids = [r.user_id for r in filtered_riders if r.user_id]
         ride_counts = RegistrationService().fetch_ride_counts(user_ids)
+        masked_ids = RegistrationService().masked_registration_ids(filtered_riders)
 
     table = PublicRegistrationTable(
         filtered_riders, exclude=exclude_columns,
         contacts_hidden=contacts_hidden, ride_counts=ride_counts,
+        masked_ids=masked_ids,
     )
     RequestConfig(request, paginate=False).configure(table)
 
