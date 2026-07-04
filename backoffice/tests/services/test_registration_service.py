@@ -7,6 +7,7 @@ from django.test import TestCase, RequestFactory
 from django.contrib.auth.models import User
 from django.utils import timezone
 
+from audit.models import AuditEvent
 from backoffice.models import Event, Registration, Program, UserProfile, Ride, Route, SpeedRange
 from backoffice.services.registration_service import (
     RegistrationService, UserDetail, RegistrationDetail, RegistrationResult,
@@ -2569,3 +2570,115 @@ class MaskHiddenNamesTestCase(TestCase):
         # Assert
         registration.refresh_from_db(fields=['name', 'first_name', 'last_name'])
         self.assertEqual(registration.name, 'John Doe')
+
+
+class AuditLoggingTestCase(TestCase):
+    def setUp(self):
+        # Arrange
+        self.service = RegistrationService()
+        self.staff_user = User.objects.create_user(
+            username='staffuser', email='staff@example.com', password='password',
+        )
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            program=self.program,
+            name="Test Event",
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+        )
+        mail.outbox = []
+
+    def test_staff_register_creates_audit_event(self):
+        # Arrange
+        user_detail = UserDetail(
+            first_name="Staff", last_name="Added", email="staffadded@example.com", phone="+16135552222",
+        )
+        registration_detail = RegistrationDetail(
+            ride=None, ride_leader_preference=None, speed_range_preference=None,
+            emergency_contact_name=None, emergency_contact_phone=None,
+        )
+
+        # Act
+        registration = self.service.staff_register(user_detail, registration_detail, self.event, self.staff_user)
+
+        # Assert
+        audit_event = AuditEvent.objects.get()
+        self.assertEqual(audit_event.actor, self.staff_user)
+        self.assertEqual(audit_event.action, 'registered')
+        self.assertEqual(audit_event.target, registration)
+
+    def test_staff_withdraw_creates_audit_event(self):
+        # Arrange
+        user = User.objects.create_user(username='withdrawme', email='withdrawme@example.com')
+        registration = Registration.objects.create(
+            user=user, event=self.event, name="Withdraw Me",
+            first_name="Withdraw", last_name="Me", email="withdrawme@example.com",
+            state=Registration.STATE_SUBMITTED,
+        )
+        registration.confirm()
+        registration.save()
+
+        # Act
+        self.service.staff_withdraw(registration, self.staff_user)
+
+        # Assert
+        audit_event = AuditEvent.objects.get()
+        self.assertEqual(audit_event.actor, self.staff_user)
+        self.assertEqual(audit_event.action, 'withdrawn')
+        self.assertEqual(audit_event.target, registration)
+
+    def test_staff_update_registration_creates_audit_event(self):
+        # Arrange
+        user = User.objects.create_user(username='updateme', email='updateme@example.com')
+        registration = Registration.objects.create(
+            user=user, event=self.event, name="Update Me",
+            first_name="Update", last_name="Me", email="updateme@example.com",
+        )
+
+        # Act
+        self.service.staff_update_registration(registration, self.staff_user, first_name="Updated")
+
+        # Assert
+        audit_event = AuditEvent.objects.get()
+        self.assertEqual(audit_event.actor, self.staff_user)
+        self.assertEqual(audit_event.action, 'updated')
+        self.assertEqual(audit_event.target, registration)
+
+    def test_register_does_not_create_audit_event(self):
+        # Arrange
+        user_detail = UserDetail(
+            first_name="Self", last_name="Serve", email="selfserve@example.com", phone="+16135552222",
+        )
+        registration_detail = RegistrationDetail(
+            ride=None, ride_leader_preference=None, speed_range_preference=None,
+            emergency_contact_name=None, emergency_contact_phone=None,
+        )
+
+        # Act
+        self.service.register(user_detail, registration_detail, self.event)
+
+        # Assert
+        self.assertFalse(AuditEvent.objects.exists())
+
+    def test_verify_registration_does_not_create_audit_event(self):
+        # Arrange
+        request_detail = RequestDetail(ip_address='127.0.0.1', user_agent='Test', authenticated=False)
+        user_detail = UserDetail(
+            first_name="Verify", last_name="Me", email="verifyme@example.com", phone="+16135552222",
+        )
+        registration_detail = RegistrationDetail(
+            ride=None, ride_leader_preference=None, speed_range_preference=None,
+            emergency_contact_name=None, emergency_contact_phone=None,
+        )
+        self.service.register(user_detail, registration_detail, self.event, request_detail)
+        registration = Registration.objects.get(event=self.event)
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+        token = signer.sign(str(registration.id))
+
+        # Act
+        self.service.verify_registration(token)
+
+        # Assert
+        self.assertFalse(AuditEvent.objects.exists())

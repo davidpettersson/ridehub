@@ -13,6 +13,7 @@ from django.utils import timezone
 from django_tables2 import RequestConfig
 from waffle import flag_is_active
 
+from audit.services import AuditService
 from backoffice.models import Event, Registration
 from backoffice.services.event_service import EventService
 from backoffice.services.registration_service import RegistrationService
@@ -255,17 +256,6 @@ def _build_registrations_context(request, event, contacts_revealed):
         'user__last_name'
     )
 
-    all_emails = ''
-    ride_leader_emails = ''
-    if can_access_rider_contacts:
-        all_emails = ', '.join(sorted(set(
-            rider.email for rider in all_riders if rider.email
-        )))
-        ride_leader_emails = ', '.join(sorted(set(
-            rider.email for rider in all_riders
-            if rider.email and rider.ride_leader_preference == Registration.RideLeaderPreference.YES
-        )))
-
     registration_filter = PublicRegistrationFilter(
         request.GET, queryset=all_riders, event=event
     )
@@ -305,8 +295,10 @@ def _build_registrations_context(request, event, contacts_revealed):
         'can_access_rider_contacts': can_access_rider_contacts,
         'can_reveal_contacts': can_reveal_contacts,
         'contacts_revealed': contacts_revealed,
-        'all_emails': all_emails,
-        'ride_leader_emails': ride_leader_emails,
+        'has_ride_leaders': any(
+            rider.ride_leader_preference == Registration.RideLeaderPreference.YES
+            for rider in all_riders
+        ),
         'registrations_available': True,
     }
 
@@ -322,8 +314,6 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
             'can_access_rider_contacts': False,
             'can_reveal_contacts': False,
             'contacts_revealed': False,
-            'all_emails': '',
-            'ride_leader_emails': '',
             'registrations_available': False,
             'registration_count': event.registration_count,
         }
@@ -340,21 +330,31 @@ def event_emergency_contacts(request: HttpRequest, event_id: int) -> HttpRespons
     if not _registrations_visible(event, request.user):
         return redirect('riders_list', event_id=event_id)
 
-    is_ride_leader = Registration.objects.filter(
-        event_id=event_id,
-        user=request.user,
-        state=Registration.STATE_CONFIRMED,
-        ride_leader_preference=Registration.RideLeaderPreference.YES
-    ).exists()
-
-    if not is_ride_leader and not request.user.is_staff:
+    if not _is_confirmed_ride_leader(event_id, request.user) and not request.user.is_staff:
         raise PermissionDenied
 
     if not request.headers.get('HX-Request'):
         return redirect('riders_list', event_id=event_id)
 
+    AuditService().log(request.user, 'revealed', target=event)
+
     context = _build_registrations_context(request, event, contacts_revealed=True)
     return render(request, 'web/events/_registrations_list.html', context=context)
+
+
+@login_required
+def event_emails(request: HttpRequest, event_id: int) -> HttpResponse:
+    event = get_object_or_404(Event, id=event_id)
+
+    if not _is_confirmed_ride_leader(event_id, request.user) and not request.user.is_staff:
+        raise PermissionDenied
+
+    emails = RegistrationService().fetch_confirmed_emails(
+        event, ride_leaders_only=request.GET.get('type') == 'leaders'
+    )
+
+    AuditService().log(request.user, 'copied', target=event)
+    return HttpResponse(', '.join(emails), content_type='text/plain')
 
 
 

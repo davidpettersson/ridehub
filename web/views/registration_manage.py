@@ -145,7 +145,7 @@ def staff_registration_edit(request: HttpRequest, event_id: int, registration_id
             if 'emergency_contact_phone' in data:
                 fields['emergency_contact_phone'] = data['emergency_contact_phone']
 
-            service.staff_update_registration(registration, **fields)
+            service.staff_update_registration(registration, request.user, **fields)
             return redirect('event_registrations_manage', event_id=event.id)
     else:
         initial = {

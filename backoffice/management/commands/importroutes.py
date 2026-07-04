@@ -1,6 +1,7 @@
 import os
 
-from django.core.management.base import BaseCommand
+from django.contrib.auth.models import User
+from django.core.management.base import BaseCommand, CommandError
 
 from backoffice.services.route_service import ACTION_SKIP, RouteImportService
 
@@ -11,12 +12,19 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('csv_file', type=str)
         parser.add_argument('--dry-run', action='store_true')
+        parser.add_argument('--actor', type=str, required=True,
+                            help='Email of the user running the import, recorded in the audit log.')
 
     def handle(self, *args, **options):
         path = options['csv_file']
         if not os.path.exists(path):
             self.stdout.write(self.style.ERROR(f'File not found: {path}'))
             return
+
+        try:
+            actor = User.objects.get(email=options['actor'])
+        except User.DoesNotExist:
+            raise CommandError(f'No user found with email {options["actor"]!r} for --actor.')
 
         with open(path, 'r', encoding='utf-8-sig') as fh:
             text = fh.read()
@@ -26,6 +34,7 @@ class Command(BaseCommand):
             text,
             on_conflict=lambda *_: ACTION_SKIP,
             dry_run=options['dry_run'],
+            actor=actor,
         )
 
         self._print_summary(stats, options['dry_run'])

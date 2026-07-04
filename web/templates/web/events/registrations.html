@@ -140,12 +140,12 @@
         </a>
         {% endif %}
         {% if can_access_rider_contacts %}
-        <button class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center copy-emails-btn" data-emails="{{ all_emails }}" data-type="all">
+        <button class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center copy-emails-btn" data-type="all">
             <i class="bi bi-clipboard me-2"></i>
             Copy all rider emails
         </button>
-        {% if ride_leader_emails %}
-        <button class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center copy-emails-btn" data-emails="{{ ride_leader_emails }}" data-type="leaders">
+        {% if has_ride_leaders %}
+        <button class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center copy-emails-btn" data-type="leaders">
             <i class="bi bi-clipboard me-2"></i>
             Copy ride leader emails
         </button>
@@ -210,10 +210,16 @@
 
     copyButtons.forEach(function(button) {
         button.addEventListener('click', async function() {
-            var emails = this.getAttribute('data-emails');
             var type = this.getAttribute('data-type');
 
             try {
+                var url = "{% url 'event_emails' event.id %}" + (type === 'leaders' ? '?type=leaders' : '');
+                var response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch emails');
+                }
+                var emails = await response.text();
+
                 await navigator.clipboard.writeText(emails);
 
                 var count = emails ? emails.split(',').length : 0;

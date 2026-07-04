@@ -27,11 +27,14 @@ class Command(BaseCommand):
                             help='Skip routes with manual-edit conflicts instead of prompting.')
         parser.add_argument('--url', type=str, default=None,
                             help='Override the CSV URL (defaults to RWGPS_ORG_SLUG).')
+        parser.add_argument('--actor', type=str, required=True,
+                            help='Email of the user running the import, recorded in the audit log.')
 
     def handle(self, *args, **options):
         url = options['url'] or CSV_URL_TEMPLATE.format(slug=settings.RWGPS_ORG_SLUG)
         dry_run = options['dry_run']
         non_interactive = options['non_interactive']
+        actor = self._resolve_actor(options['actor'])
 
         self.stdout.write(f'Fetching {url}')
         try:
@@ -59,9 +62,17 @@ class Command(BaseCommand):
             return self._prompt(route, csv_row, conflict_type, bulk_decisions)
 
         service = RouteImportService()
-        stats = service.import_from_csv_text(text, on_conflict=on_conflict, dry_run=dry_run)
+        stats = service.import_from_csv_text(text, on_conflict=on_conflict, dry_run=dry_run, actor=actor)
 
         self._print_summary(stats, dry_run)
+
+    @staticmethod
+    def _resolve_actor(email):
+        from django.contrib.auth.models import User
+        try:
+            return User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise CommandError(f'No user found with email {email!r} for --actor.')
 
     def _prompt(self, route, csv_row, conflict_type, bulk_decisions):
         self.stdout.write('')

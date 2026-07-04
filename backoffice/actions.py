@@ -8,6 +8,7 @@ from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 
 from django_fsm import TransitionNotAllowed
 
+from audit.services import AuditService
 from backoffice.services.email_service import EmailService
 from backoffice.services.event_service import EventService
 from backoffice.models import Registration
@@ -28,6 +29,8 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
             except TransitionNotAllowed:
                 skipped.append(event.name)
                 continue
+
+            AuditService().log(request.user, 'cancelled', target=event)
 
             for registration in event.registration_set.filter(state=Registration.STATE_CONFIRMED):
                 context = {
@@ -93,7 +96,8 @@ def duplicate_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet
 
                 source_event = events_by_id.get(event_id)
                 if source_event:
-                    service.duplicate_event(source_event, new_name, new_date)
+                    new_event = service.duplicate_event(source_event, new_name, new_date)
+                    AuditService().log(request.user, 'duplicated', target=new_event)
                     duplicate_count += 1
 
             if duplicate_count == 1:
@@ -141,6 +145,8 @@ def archive_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
         except TransitionNotAllowed:
             skipped.append(event.name)
             continue
+
+        AuditService().log(request.user, 'archived', target=event)
 
         archive_count += 1
 
