@@ -18,7 +18,7 @@
         <div id="events-container">
         {% for date, events in events_by_date %}
         <div class="mb-5">
-            <h2 class="fs-4 fw-medium mb-3">
+            <h2 class="eyebrow mb-2">
                 {% if date == today %}Today{% elif date == tomorrow %}Tomorrow{% else %}{{ date|date:"l, F j" }}{% endif %}
             </h2>
             <div class="d-flex flex-column gap-3">

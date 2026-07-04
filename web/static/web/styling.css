@@ -1,5 +1,19 @@
 /* Global styling */
 
+:root {
+  --obc-blue: rgb(0, 85, 150);
+  --bs-primary: #2563eb;
+  --bs-primary-hover: #1d4ed8;
+  --ground: #f9fafb;
+  --card: #ffffff;
+  --ink: #1f2937;
+  --muted: #6b7280;
+  --faint: #9ca3af;
+  --line: #e5e7eb;
+  --accent: #005596;
+  --accent-soft: rgba(0, 85, 150, 0.08);
+}
+
 .announcement {
   padding: 12px 16px;
   border-left: 4px solid;
@@ -34,12 +48,6 @@
   color: #d97706;
 }
 
-:root {
-  --obc-blue: rgb(0, 85, 150);
-  --bs-primary: #2563eb;
-  --bs-primary-hover: #1d4ed8;
-}
-
 [x-cloak] {
   display: none !important;
 }
@@ -47,9 +55,45 @@
 body {
   font-family: 'Inter', sans-serif;
   min-height: 100vh;
-  background-color: #f9fafb;
-  color: #4b5563;
+  background-color: var(--ground);
+  color: var(--ink);
   padding-top: 56px;
+}
+
+h1 {
+  letter-spacing: -0.01em;
+}
+
+.card {
+  background-color: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  box-shadow: none !important;
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.table {
+  --bs-table-border-color: var(--line);
+  font-variant-numeric: tabular-nums;
+}
+
+.table thead th {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.table td {
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
 }
 
 @media (min-width: 768px) {
@@ -284,8 +328,8 @@ body {
 /* Event card hover animations */
 .event-card {
   transition: background-color 0.2s ease, border-color 0.2s ease;
-  background-color: #ffffff;
-  border-color: #b9c0c7 !important;
+  background-color: var(--card);
+  border-color: var(--line) !important;
   position: relative;
   overflow: hidden;
 }
@@ -344,7 +388,7 @@ body {
 
 .event-card:hover {
   background-color: #f8f9fa !important;
-  border-color: #6c757d !important;
+  border-color: var(--faint) !important;
 }
 
 /* Calendar event color accent */
@@ -373,7 +417,7 @@ body {
 
 .calendar-event {
   transition: background-color 0.2s ease, border-color 0.2s ease;
-  border-color: #b9c0c7 !important;
+  border-color: var(--line) !important;
 }
 
 .calendar-event-announced {

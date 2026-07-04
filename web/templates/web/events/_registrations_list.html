@@ -1,7 +1,7 @@
 {% load django_tables2 %}
 
 {% if all_riders %}
-<h2 class="fs-5 fw-medium mb-3">Registered riders ({{ filtered_riders|length }})</h2>
+<h2 class="eyebrow mb-2">Registered riders ({{ filtered_riders|length }})</h2>
 
 {% include 'web/events/_registration_filter.html' %}
 
@@ -13,7 +13,7 @@
         </div>
     </div>
 {% else %}
-<h2 class="fs-5 fw-medium mb-3">Registered riders (0)</h2>
+<h2 class="eyebrow mb-2">Registered riders (0)</h2>
 <div class="py-5 text-center card">
     <p class="text-muted">No riders found for this event.</p>
 </div>
