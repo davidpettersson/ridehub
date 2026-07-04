@@ -2,6 +2,7 @@ import django_tables2 as tables
 from django.utils.html import format_html
 
 from backoffice.models import Registration
+from web.templatetags.name_filters import styled_name
 from web.templatetags.phone_filters import national_phone
 
 
@@ -113,7 +114,7 @@ class PublicRegistrationTable(tables.Table):
         return format_html('<span class="small text-muted fst-italic">(hidden)</span>')
 
     def render_name(self, value, record):
-        html = format_html('<span class="small fw-medium">{}</span>', value)
+        html = format_html('<span class="small fw-medium">{}</span>', styled_name(value))
 
         if record.ride_leader_preference == Registration.RideLeaderPreference.YES:
             html = format_html(

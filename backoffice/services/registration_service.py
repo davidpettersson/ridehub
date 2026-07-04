@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import random
 import string
@@ -21,6 +22,16 @@ VERIFICATION_TOKEN_MAX_AGE = 86400
 VERIFICATION_TOKEN_SALT = 'email-verification'
 
 
+MASK_DOT = '·'
+MASK_DOT_MIN = 3
+MASK_DOT_MAX = 6
+
+
+def _seeded_dot_count(name: str) -> int:
+    digest = hashlib.sha256(name.strip().lower().encode('utf-8')).digest()
+    return MASK_DOT_MIN + digest[0] % (MASK_DOT_MAX - MASK_DOT_MIN + 1)
+
+
 def mask_name_with_initials(registration: 'Registration') -> tuple[str, str]:
     return f"{registration.first_name[:1].upper()}*", f"{registration.last_name[:1].upper()}*"
 
@@ -29,7 +40,14 @@ def mask_name_with_random_letters(registration: 'Registration') -> tuple[str, st
     return random.choice(string.ascii_uppercase), random.choice(string.ascii_uppercase)
 
 
-NAME_MASKING_STRATEGY = mask_name_with_initials
+def mask_name_with_dots(registration: 'Registration') -> tuple[str, str]:
+    return (
+        f"{registration.first_name[:1].upper()}{MASK_DOT * _seeded_dot_count(registration.first_name)}",
+        f"{registration.last_name[:1].upper()}{MASK_DOT * _seeded_dot_count(registration.last_name)}",
+    )
+
+
+NAME_MASKING_STRATEGY = mask_name_with_dots
 
 
 class RegistrationResult(Enum):
