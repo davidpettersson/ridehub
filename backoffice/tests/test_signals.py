@@ -25,7 +25,7 @@ class AuditSignalsTestCase(TestCase):
             program.save()
 
         # Assert
-        events = AuditEvent.objects.filter(subject=self.staff_user)
+        events = AuditEvent.objects.filter(actor=self.staff_user)
         self.assertEqual(events.count(), 1)
         self.assertEqual(events.first().action, 'created')
 
@@ -39,7 +39,7 @@ class AuditSignalsTestCase(TestCase):
             program.save()
 
         # Assert
-        events = AuditEvent.objects.filter(subject=self.staff_user, action='updated')
+        events = AuditEvent.objects.filter(actor=self.staff_user, action='updated')
         self.assertEqual(events.count(), 1)
 
     def test_deleting_model_with_actor_context_logs_deleted(self):
@@ -51,7 +51,7 @@ class AuditSignalsTestCase(TestCase):
             program.delete()
 
         # Assert
-        events = AuditEvent.objects.filter(subject=self.staff_user, action='deleted')
+        events = AuditEvent.objects.filter(actor=self.staff_user, action='deleted')
         self.assertEqual(events.count(), 1)
 
     def test_saving_model_without_actor_context_creates_no_audit_event(self):
@@ -76,5 +76,5 @@ class AuditSignalsTestCase(TestCase):
         model_admin.delete_queryset(request, Program.objects.all())
 
         # Assert
-        events = AuditEvent.objects.filter(subject=self.staff_user, action='deleted')
+        events = AuditEvent.objects.filter(actor=self.staff_user, action='deleted')
         self.assertEqual(events.count(), 2)

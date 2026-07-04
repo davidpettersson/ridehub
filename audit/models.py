@@ -13,7 +13,7 @@ class StandardAction(models.TextChoices):
 
 
 class AuditEvent(models.Model):
-    subject = models.ForeignKey(
+    actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name='audit_events',
@@ -34,11 +34,11 @@ class AuditEvent(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['target_content_type', 'target_object_id']),
-            models.Index(fields=['subject']),
+            models.Index(fields=['actor']),
             models.Index(fields=['created_at']),
         ]
 
     def __str__(self):
         if self.target_repr:
-            return f'{self.subject} {self.action} {self.target_repr}'
-        return f'{self.subject} {self.action}'
+            return f'{self.actor} {self.action} {self.target_repr}'
+        return f'{self.actor} {self.action}'

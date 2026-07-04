@@ -61,7 +61,7 @@ class SyncRoutesCommandTests(TestCase):
 
         # Assert
         audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.subject, self.actor)
+        self.assertEqual(audit_event.actor, self.actor)
         self.assertEqual(audit_event.action, 'created')
         self.assertEqual(audit_event.target, Route.objects.first())
 

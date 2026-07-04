@@ -16,7 +16,7 @@ class AuditServiceTestCase(TestCase):
         event = service.log(actor, 'updated', target=target)
 
         # Assert
-        self.assertEqual(event.subject, actor)
+        self.assertEqual(event.actor, actor)
         self.assertEqual(event.action, 'updated')
         self.assertEqual(event.target, target)
         self.assertEqual(event.target_repr, str(target))

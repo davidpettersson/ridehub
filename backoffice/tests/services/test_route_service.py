@@ -384,7 +384,7 @@ class RouteImportServiceAuditTests(TestCase):
         # Assert
         route = Route.objects.get(url='https://ridewithgps.com/routes/100')
         audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.subject, self.actor)
+        self.assertEqual(audit_event.actor, self.actor)
         self.assertEqual(audit_event.action, 'created')
         self.assertEqual(audit_event.target, route)
 
@@ -402,7 +402,7 @@ class RouteImportServiceAuditTests(TestCase):
         # Assert
         updated_route = Route.objects.get(url=url)
         audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.subject, self.actor)
+        self.assertEqual(audit_event.actor, self.actor)
         self.assertEqual(audit_event.action, 'updated')
         self.assertEqual(audit_event.target, updated_route)
 
@@ -422,7 +422,7 @@ class RouteImportServiceAuditTests(TestCase):
         # Assert
         gone_route = Route.objects.get(url=gone_url)
         audit_event = AuditEvent.objects.get(action='deleted')
-        self.assertEqual(audit_event.subject, self.actor)
+        self.assertEqual(audit_event.actor, self.actor)
         self.assertEqual(audit_event.target, gone_route)
 
     def test_import_without_actor_does_not_log_audit_event(self):

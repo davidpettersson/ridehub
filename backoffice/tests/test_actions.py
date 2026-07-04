@@ -112,7 +112,7 @@ class EventAdminActionsTestCase(TestCase):
         })
 
         audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.subject, self.admin_user)
+        self.assertEqual(audit_event.actor, self.admin_user)
         self.assertEqual(audit_event.action, 'cancelled')
         self.assertEqual(audit_event.target, Event.objects.get(pk=event.pk))
 
@@ -134,7 +134,7 @@ class EventAdminActionsTestCase(TestCase):
 
         duplicated = Event.objects.get(name='Duplicated Event')
         audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.subject, self.admin_user)
+        self.assertEqual(audit_event.actor, self.admin_user)
         self.assertEqual(audit_event.action, 'duplicated')
         self.assertEqual(audit_event.target, duplicated)
 
@@ -173,6 +173,6 @@ class ArchiveEventActionTestCase(TestCase):
         archive_event(self.model_admin, request, Event.objects.filter(pk=self.event.pk))
 
         audit_event = AuditEvent.objects.get()
-        self.assertEqual(audit_event.subject, self.admin_user)
+        self.assertEqual(audit_event.actor, self.admin_user)
         self.assertEqual(audit_event.action, 'archived')
         self.assertEqual(audit_event.target, Event.objects.get(pk=self.event.pk))
