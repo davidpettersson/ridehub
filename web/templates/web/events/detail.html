@@ -41,18 +41,14 @@
                 <a href="{{ event.location_url }}"
                    class="meta-pill meta-pill-link"
                    target="_blank" rel="noopener noreferrer">
-                    <i class="bi bi-geo-alt me-2"></i>
-                    {% if event.location %}{{ event.location }}{% else %}See location{% endif %}
-                    <i class="bi bi-box-arrow-up-right ms-2 small"></i>
+                    📍 {% if event.location %}{{ event.location }}{% else %}See location{% endif %}&nbsp;↗
                 </a>
                 {% elif event.location %}
-                <span class="meta-pill text-muted" style="background-color: #6c757d1A;"><i class="bi bi-geo-alt me-2"></i>{{ event.location }}</span>
+                <span class="meta-pill text-muted" style="background-color: #6c757d1A;">📍 {{ event.location }}</span>
                 {% endif %}
                 {% if not event.external_registration_url and event.state != "announced" and event.registration_count > 0 %}
                 <a href="{% url 'riders_list' event.id %}" class="meta-pill meta-pill-link">
-                    <i class="bi bi-people me-2"></i>
-                    {{ event.registration_count }}{% if event.registration_limit %}/{{ event.registration_limit }}{% endif %} registered
-                    <i class="bi bi-chevron-right ms-2 small"></i>
+                    👥 {{ event.registration_count }}{% if event.registration_limit %}/{{ event.registration_limit }}{% endif %} registered&nbsp;›
                 </a>
                 {% endif %}
             </div>

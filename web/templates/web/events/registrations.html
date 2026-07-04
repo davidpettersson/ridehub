@@ -181,12 +181,10 @@
             <a href="{{ event.location_url }}"
                class="meta-pill meta-pill-link"
                target="_blank" rel="noopener noreferrer">
-                <i class="bi bi-geo-alt me-2"></i>
-                {% if event.location %}{{ event.location }}{% else %}See location{% endif %}
-                <i class="bi bi-box-arrow-up-right ms-2 small"></i>
+                📍 {% if event.location %}{{ event.location }}{% else %}See location{% endif %}&nbsp;↗
             </a>
             {% elif event.location %}
-            <span class="meta-pill text-muted" style="background-color: #6c757d1A;"><i class="bi bi-geo-alt me-2"></i>{{ event.location }}</span>
+            <span class="meta-pill text-muted" style="background-color: #6c757d1A;">📍 {{ event.location }}</span>
             {% endif %}
         </div>
     </div>
