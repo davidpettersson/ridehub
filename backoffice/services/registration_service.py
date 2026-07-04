@@ -1,4 +1,6 @@
 import logging
+import random
+import string
 from dataclasses import dataclass
 from enum import Enum
 
@@ -7,7 +9,7 @@ from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.db.models import QuerySet, Subquery, OuterRef, Count
 from django.utils import timezone
 
-from backoffice.models import Event, Registration, SpeedRange, Ride
+from backoffice.models import Event, Registration, SpeedRange, Ride, UserProfile
 from backoffice.services.email_service import EmailService
 from backoffice.services.request_service import RequestDetail
 from backoffice.services.user_service import UserService, UserDetail
@@ -17,6 +19,17 @@ logger = logging.getLogger(__name__)
 
 VERIFICATION_TOKEN_MAX_AGE = 86400
 VERIFICATION_TOKEN_SALT = 'email-verification'
+
+
+def mask_name_with_initials(registration: 'Registration') -> tuple[str, str]:
+    return f"{registration.first_name[:1].upper()}*", f"{registration.last_name[:1].upper()}*"
+
+
+def mask_name_with_random_letters(registration: 'Registration') -> tuple[str, str]:
+    return random.choice(string.ascii_uppercase), random.choice(string.ascii_uppercase)
+
+
+NAME_MASKING_STRATEGY = mask_name_with_initials
 
 
 class RegistrationResult(Enum):
@@ -196,6 +209,34 @@ class RegistrationService:
         registration.save()
         self._send_verification_email(registration)
         return RegistrationResult.VERIFICATION_REQUIRED
+
+    def _name_visible_to_viewer(self, registration: Registration, viewer_is_authenticated: bool,
+                                viewer_is_privileged: bool) -> bool:
+        if viewer_is_privileged:
+            return True
+
+        if registration.user_id is None:
+            return False
+
+        profile = getattr(registration.user, 'profile', None)
+        if profile is None:
+            return False
+
+        match profile.name_visibility:
+            case UserProfile.NameVisibility.ONLY_USERS:
+                return viewer_is_authenticated
+            case UserProfile.NameVisibility.ONLY_REQUIRED_USERS:
+                return False
+            case _:
+                return True
+
+    def mask_hidden_names(self, registrations: list[Registration], viewer_is_authenticated: bool,
+                          viewer_is_privileged: bool) -> list[Registration]:
+        for registration in registrations:
+            if not self._name_visible_to_viewer(registration, viewer_is_authenticated, viewer_is_privileged):
+                registration.first_name, registration.last_name = NAME_MASKING_STRATEGY(registration)
+                registration.name = f"{registration.first_name} {registration.last_name}"
+        return registrations
 
     def fetch_ride_counts(self, user_ids: list[int]) -> dict[int, int]:
         rows = (

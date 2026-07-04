@@ -1,7 +1,7 @@
 from django import forms
 from phonenumber_field.formfields import PhoneNumberField
 
-from backoffice.models import Registration, Event, Ride, SpeedRange
+from backoffice.models import Registration, Event, Ride, SpeedRange, UserProfile
 from backoffice.services.registration_service import RegistrationService
 
 
@@ -238,6 +238,14 @@ class MembershipNumberForm(forms.Form):
             'class': 'form-control',
             'placeholder': 'e.g. OBC-12345',
         })
+    )
+
+
+class NameVisibilityForm(forms.Form):
+    name_visibility = forms.ChoiceField(
+        choices=UserProfile.NameVisibility.choices,
+        required=True,
+        widget=forms.RadioSelect,
     )
 
 

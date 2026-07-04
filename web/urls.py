@@ -6,7 +6,7 @@ from web.views.events_ical import EventFeed
 from web.views.helpers import changes_email_addresses
 from web.views.login import LoginFormView, logout_view, CustomLoginView
 from web.views.pages import page_detail
-from web.views.profile import profile, registration_withdraw, profile_membership_number
+from web.views.profile import profile, registration_withdraw, profile_membership_number, profile_name_visibility
 from web.views.registration_manage import (
     event_registrations_manage, staff_registration_add,
     staff_registration_edit, staff_registration_withdraw,
@@ -46,6 +46,7 @@ urlpatterns = [
     path('events/<int:event_id>/membership-number', membership_number_capture, name='membership_number_capture'),
     path('profile', profile, name='profile'),
     path('profile/membership-number', profile_membership_number, name='profile_membership_number'),
+    path('profile/name-visibility', profile_name_visibility, name='profile_name_visibility'),
     path('reviews/2025', review_2025, name='review_2025'),
     path('robots.txt', robots_txt, name='robots_txt'),
     path('announcements', active_announcements, name='active_announcements'),

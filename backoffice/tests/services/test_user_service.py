@@ -328,3 +328,41 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         user.profile.refresh_from_db()
         self.assertEqual(user.profile.emergency_contact_name, "New Contact")
         self.assertEqual(user.profile.emergency_contact_phone, "613-555-0200") 
+
+class TestUserServiceUpdateNameVisibility(TestCase):
+    def setUp(self):
+        self.service = UserService()
+        self.user = User.objects.create_user(
+            username="rider@example.com",
+            email="rider@example.com",
+            first_name="Rider",
+            last_name="User"
+        )
+
+    def test_default_name_visibility_is_public(self):
+        # Assert
+        self.assertEqual(self.user.profile.name_visibility, UserProfile.NameVisibility.PUBLIC)
+
+    def test_update_name_visibility_to_only_users(self):
+        # Act
+        self.service.update_name_visibility(self.user, UserProfile.NameVisibility.ONLY_USERS)
+
+        # Assert
+        self.user.profile.refresh_from_db()
+        self.assertEqual(self.user.profile.name_visibility, UserProfile.NameVisibility.ONLY_USERS)
+
+    def test_update_name_visibility_to_only_required_users(self):
+        # Act
+        self.service.update_name_visibility(self.user, UserProfile.NameVisibility.ONLY_REQUIRED_USERS)
+
+        # Assert
+        self.user.profile.refresh_from_db()
+        self.assertEqual(self.user.profile.name_visibility, UserProfile.NameVisibility.ONLY_REQUIRED_USERS)
+
+    def test_update_name_visibility_rejects_invalid_choice(self):
+        # Act & Assert
+        with self.assertRaises(Exception):
+            self.service.update_name_visibility(self.user, 'xx')
+
+        self.user.profile.refresh_from_db()
+        self.assertEqual(self.user.profile.name_visibility, UserProfile.NameVisibility.PUBLIC)

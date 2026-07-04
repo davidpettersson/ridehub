@@ -473,6 +473,11 @@ class Ride(models.Model):
 
 
 class UserProfile(models.Model):
+    class NameVisibility(models.TextChoices):
+        PUBLIC = 'pb', 'Always'
+        ONLY_USERS = 'ou', 'Only to signed-in users'
+        ONLY_REQUIRED_USERS = 'rq', 'Only to ride leaders and ride administrators'
+
     class GenderIdentity(models.TextChoices):
         WOMAN = 'wm', 'woman'
         MAN = 'mn', 'man'
@@ -520,6 +525,12 @@ class UserProfile(models.Model):
 
     email_verified = models.BooleanField(
         default=False,
+    )
+
+    name_visibility = models.CharField(
+        max_length=2,
+        choices=NameVisibility,
+        default=NameVisibility.PUBLIC,
     )
 
     def __str__(self):
