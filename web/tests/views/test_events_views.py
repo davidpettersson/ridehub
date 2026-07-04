@@ -494,6 +494,58 @@ class EventEmergencyContactsViewTests(BaseEventViewTestCase):
         self.assertEqual(AuditEvent.objects.count(), 0)
 
 
+class EventEmailsCopiedViewTests(BaseEventViewTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('event_emails_copied', kwargs={'event_id': self.event.id})
+
+    def test_staff_copy_logs_audit_event(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.post(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 204)
+        audit_event = AuditEvent.objects.get()
+        self.assertEqual(audit_event.action, 'copied')
+        self.assertEqual(audit_event.target, self.event)
+
+    def test_ride_leader_copy_logs_audit_event(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.post(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(AuditEvent.objects.get().action, 'copied')
+
+    def test_regular_user_denied(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.post(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(AuditEvent.objects.count(), 0)
+
+    def test_get_not_allowed(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 405)
+
+
 class EventRegistrationsFilterTests(BaseEventViewTestCase):
     def setUp(self):
         super().setUp()

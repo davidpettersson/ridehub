@@ -19,6 +19,10 @@ class AuditedAdminMixin:
         with actor(request.user):
             super().delete_model(request, obj)
 
+    def delete_queryset(self, request, queryset):
+        with actor(request.user):
+            super().delete_queryset(request, queryset)
+
     def save_formset(self, request, form, formset, change):
         with actor(request.user):
             super().save_formset(request, form, formset, change)

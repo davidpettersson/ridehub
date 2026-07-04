@@ -5,7 +5,7 @@ from .models import AuditEvent
 
 @admin.register(AuditEvent)
 class AuditEventAdmin(admin.ModelAdmin):
-    list_display = ('created_at', 'subject', 'action', 'target')
+    list_display = ('created_at', 'subject', 'action', 'target_repr')
     list_filter = ('action', 'content_type', 'created_at')
     search_fields = ('subject__username', 'target_repr')
     date_hierarchy = 'created_at'

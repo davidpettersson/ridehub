@@ -216,6 +216,11 @@
             try {
                 await navigator.clipboard.writeText(emails);
 
+                fetch("{% url 'event_emails_copied' event.id %}", {
+                    method: 'POST',
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'}
+                });
+
                 var count = emails ? emails.split(',').length : 0;
                 var label = type === 'all' ? 'rider' : 'ride leader';
                 successText.textContent = 'Copied ' + count + ' ' + label + ' email' + (count !== 1 ? 's' : '') + ' to clipboard!';

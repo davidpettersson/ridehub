@@ -9,6 +9,7 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from django_tables2 import RequestConfig
 from waffle import flag_is_active
@@ -334,6 +335,15 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
     return render(request, 'web/events/registrations.html', context=context)
 
 
+def _is_event_ride_leader(user, event_id: int) -> bool:
+    return Registration.objects.filter(
+        event_id=event_id,
+        user=user,
+        state=Registration.STATE_CONFIRMED,
+        ride_leader_preference=Registration.RideLeaderPreference.YES
+    ).exists()
+
+
 @login_required
 def event_emergency_contacts(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
@@ -341,14 +351,7 @@ def event_emergency_contacts(request: HttpRequest, event_id: int) -> HttpRespons
     if not _registrations_visible(event, request.user):
         return redirect('riders_list', event_id=event_id)
 
-    is_ride_leader = Registration.objects.filter(
-        event_id=event_id,
-        user=request.user,
-        state=Registration.STATE_CONFIRMED,
-        ride_leader_preference=Registration.RideLeaderPreference.YES
-    ).exists()
-
-    if not is_ride_leader and not request.user.is_staff:
+    if not _is_event_ride_leader(request.user, event_id) and not request.user.is_staff:
         raise PermissionDenied
 
     if not request.headers.get('HX-Request'):
@@ -358,6 +361,18 @@ def event_emergency_contacts(request: HttpRequest, event_id: int) -> HttpRespons
 
     context = _build_registrations_context(request, event, contacts_revealed=True)
     return render(request, 'web/events/_registrations_list.html', context=context)
+
+
+@login_required
+@require_POST
+def event_emails_copied(request: HttpRequest, event_id: int) -> HttpResponse:
+    event = get_object_or_404(Event, id=event_id)
+
+    if not _is_event_ride_leader(request.user, event_id) and not request.user.is_staff:
+        raise PermissionDenied
+
+    AuditService().log(request.user, 'copied', target=event)
+    return HttpResponse(status=204)
 
 
 

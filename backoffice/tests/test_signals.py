@@ -1,8 +1,10 @@
+from django.contrib.admin.sites import AdminSite
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 
 from audit.context import actor
 from audit.models import AuditEvent
+from backoffice.admin import ProgramAdmin
 from backoffice.models import Program
 
 
@@ -61,3 +63,18 @@ class AuditSignalsTestCase(TestCase):
 
         # Assert
         self.assertEqual(AuditEvent.objects.count(), 0)
+
+    def test_admin_bulk_delete_logs_deleted_per_object(self):
+        # Arrange
+        Program.objects.create(name='Program A')
+        Program.objects.create(name='Program B')
+        model_admin = ProgramAdmin(Program, AdminSite())
+        request = RequestFactory().post('/')
+        request.user = self.staff_user
+
+        # Act
+        model_admin.delete_queryset(request, Program.objects.all())
+
+        # Assert
+        events = AuditEvent.objects.filter(subject=self.staff_user, action='deleted')
+        self.assertEqual(events.count(), 2)
