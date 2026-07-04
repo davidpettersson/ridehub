@@ -19,21 +19,21 @@ class AuditEvent(models.Model):
         related_name='audit_events',
     )
     action = models.CharField(max_length=50)
-    content_type = models.ForeignKey(
+    target_content_type = models.ForeignKey(
         ContentType,
         on_delete=models.PROTECT,
         null=True,
         blank=True,
     )
-    object_id = models.PositiveIntegerField(null=True, blank=True)
-    target = GenericForeignKey('content_type', 'object_id')
+    target_object_id = models.PositiveIntegerField(null=True, blank=True)
+    target = GenericForeignKey('target_content_type', 'target_object_id')
     target_repr = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['content_type', 'object_id']),
+            models.Index(fields=['target_content_type', 'target_object_id']),
             models.Index(fields=['subject']),
             models.Index(fields=['created_at']),
         ]
