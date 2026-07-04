@@ -245,6 +245,43 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         profile = UserProfile.objects.get(user=found_staff)
         self.assertEqual(profile.phone, "+16135552222")
 
+    def test_find_by_email_or_create_keeps_unusable_password_unchanged(self):
+        # Arrange
+        user = User.objects.get(email=self.non_staff_email)
+        password_before = user.password
+        user_detail = UserDetail(
+            first_name="Test",
+            last_name="User",
+            email=self.non_staff_email,
+            phone="+16135552222",
+        )
+
+        # Act
+        self.service.find_by_email_or_create(user_detail)
+
+        # Assert
+        user.refresh_from_db()
+        self.assertEqual(user.password, password_before)
+
+    def test_find_by_email_or_create_makes_usable_password_unusable_for_non_staff(self):
+        # Arrange
+        user = User.objects.get(email=self.non_staff_email)
+        user.set_password("secret123")
+        user.save()
+        user_detail = UserDetail(
+            first_name="Test",
+            last_name="User",
+            email=self.non_staff_email,
+            phone="+16135552222",
+        )
+
+        # Act
+        self.service.find_by_email_or_create(user_detail)
+
+        # Assert
+        user.refresh_from_db()
+        self.assertFalse(user.has_usable_password())
+
     def test_find_by_email_or_create_saves_emergency_contact_to_new_profile(self):
         # Arrange
         user_detail = UserDetail(

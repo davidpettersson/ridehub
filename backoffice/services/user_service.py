@@ -39,7 +39,7 @@ class UserService(object):
 
         match self.find_by_email(lowercase_email):
             case Some(user):
-                if not user.is_staff:
+                if not user.is_staff and user.has_usable_password():
                     user.set_unusable_password()
 
                 user.first_name = user_detail.first_name
