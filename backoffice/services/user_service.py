@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from django.contrib.auth.models import User
 from returns.maybe import Maybe, Some, Nothing
 
+from backoffice.models import UserProfile
 from backoffice.utils import ensure, lower_email
 
 
@@ -17,6 +18,11 @@ class UserDetail:
 
 
 class UserService(object):
+    def update_name_visibility(self, user: User, name_visibility: str) -> None:
+        ensure(name_visibility in UserProfile.NameVisibility.values, "valid name visibility choice")
+        user.profile.name_visibility = name_visibility
+        user.profile.save(update_fields=['name_visibility'])
+
     def find_by_email(self, email: str) -> Maybe[User]:
         lowercase_email = lower_email(email)
         users = User.objects.filter(email=lowercase_email)

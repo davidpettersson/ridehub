@@ -26,6 +26,23 @@ def _registrations_visible(event, user):
     return user.is_authenticated and user.is_staff
 
 
+def _is_confirmed_ride_leader(event_id, user):
+    if not user.is_authenticated:
+        return False
+    return Registration.objects.filter(
+        event_id=event_id,
+        user=user,
+        state=Registration.STATE_CONFIRMED,
+        ride_leader_preference=Registration.RideLeaderPreference.YES
+    ).exists()
+
+
+def _viewer_can_see_all_names(event_id, user):
+    if user.is_authenticated and user.is_staff:
+        return True
+    return _is_confirmed_ride_leader(event_id, user)
+
+
 def _create_ride_structure(ride):
     return {
         'ride': ride,
@@ -109,13 +126,19 @@ def _finalize_rides_data(rides_data):
     }
 
 
-def _get_rides_with_riders_for_event(event_id: int) -> dict:
+def _get_rides_with_riders_for_event(event_id: int, viewer) -> dict:
     event = get_object_or_404(Event, id=event_id)
 
-    registrations = Registration.objects.filter(
+    registrations = list(Registration.objects.filter(
         event_id=event_id,
         state=Registration.STATE_CONFIRMED
-    ).select_related('ride', 'speed_range_preference', 'ride__route')
+    ).select_related('ride', 'speed_range_preference', 'ride__route', 'user__profile'))
+
+    RegistrationService().mask_hidden_names(
+        registrations,
+        viewer_is_authenticated=viewer.is_authenticated,
+        viewer_is_privileged=_viewer_can_see_all_names(event_id, viewer),
+    )
 
     rides_data = _initialize_rides_structure(event)
     _populate_riders(rides_data, registrations)
@@ -144,7 +167,7 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
         id=event_id)
 
     if _registrations_visible(event, request.user):
-        rides = _get_rides_with_riders_for_event(event_id)
+        rides = _get_rides_with_riders_for_event(event_id, request.user)
     else:
         rides = {}
 
@@ -211,15 +234,7 @@ def event_list(request: HttpRequest) -> HttpResponse:
 
 
 def _build_registrations_context(request, event, contacts_revealed):
-    is_ride_leader = False
-
-    if request.user.is_authenticated:
-        is_ride_leader = Registration.objects.filter(
-            event_id=event.id,
-            user=request.user,
-            state=Registration.STATE_CONFIRMED,
-            ride_leader_preference=Registration.RideLeaderPreference.YES
-        ).exists()
+    is_ride_leader = _is_confirmed_ride_leader(event.id, request.user)
 
     is_staff = request.user.is_authenticated and request.user.is_staff
     can_access_rider_contacts = is_ride_leader or is_staff
@@ -231,7 +246,8 @@ def _build_registrations_context(request, event, contacts_revealed):
     ).select_related(
         'ride',
         'speed_range_preference',
-        'user'
+        'user',
+        'user__profile'
     ).order_by(
         'ride__ordering',
         'speed_range_preference__lower_limit',
@@ -254,6 +270,12 @@ def _build_registrations_context(request, event, contacts_revealed):
         request.GET, queryset=all_riders, event=event
     )
 
+    filtered_riders = RegistrationService().mask_hidden_names(
+        list(registration_filter.qs),
+        viewer_is_authenticated=request.user.is_authenticated,
+        viewer_is_privileged=can_access_rider_contacts,
+    )
+
     contacts_hidden = can_reveal_contacts and not contacts_revealed
     exclude_columns = ()
     if not can_access_rider_contacts:
@@ -263,11 +285,11 @@ def _build_registrations_context(request, event, contacts_revealed):
 
     ride_counts = {}
     if can_access_rider_contacts:
-        user_ids = [r.user_id for r in registration_filter.qs if r.user_id]
+        user_ids = [r.user_id for r in filtered_riders if r.user_id]
         ride_counts = RegistrationService().fetch_ride_counts(user_ids)
 
     table = PublicRegistrationTable(
-        registration_filter.qs, exclude=exclude_columns,
+        filtered_riders, exclude=exclude_columns,
         contacts_hidden=contacts_hidden, ride_counts=ride_counts,
     )
     RequestConfig(request, paginate=False).configure(table)
@@ -275,7 +297,7 @@ def _build_registrations_context(request, event, contacts_revealed):
     return {
         'event': event,
         'all_riders': all_riders,
-        'filtered_riders': registration_filter.qs,
+        'filtered_riders': filtered_riders,
         'table': table,
         'filter': registration_filter,
         'filter_clear_url': reverse('riders_list', args=[event.id]),

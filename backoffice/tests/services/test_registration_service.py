@@ -10,7 +10,7 @@ from django.utils import timezone
 from backoffice.models import Event, Registration, Program, UserProfile, Ride, Route, SpeedRange
 from backoffice.services.registration_service import (
     RegistrationService, UserDetail, RegistrationDetail, RegistrationResult,
-    VERIFICATION_TOKEN_SALT,
+    VERIFICATION_TOKEN_SALT, mask_name_with_initials, mask_name_with_random_letters,
 )
 from backoffice.services.request_service import RequestDetail
 
@@ -2379,3 +2379,145 @@ class FirstTimeAttendeeServiceTests(TestCase):
         # Act & Assert
         with self.assertRaises(ValueError):
             self.service.register(user_detail, registration_detail, self.event)
+
+class MaskHiddenNamesTestCase(TestCase):
+    def setUp(self):
+        self.service = RegistrationService()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Test Event",
+            program=self.program,
+            starts_at=timezone.now() + datetime.timedelta(days=3),
+            registration_closes_at=timezone.now() + datetime.timedelta(days=2),
+        )
+
+    def _create_registration(self, email, first_name, last_name, name_visibility=None, with_user=True):
+        user = None
+        if with_user:
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+            )
+            if name_visibility:
+                user.profile.name_visibility = name_visibility
+                user.profile.save()
+
+        return Registration.objects.create(
+            first_name=first_name,
+            last_name=last_name,
+            name=f"{first_name} {last_name}",
+            email=email,
+            event=self.event,
+            user=user,
+            state=Registration.STATE_CONFIRMED,
+        )
+
+    def test_mask_name_with_initials_uses_actual_name(self):
+        # Arrange
+        registration = self._create_registration('john@example.com', 'John', 'Doe')
+
+        # Act
+        first_name, last_name = mask_name_with_initials(registration)
+
+        # Assert
+        self.assertEqual(first_name, 'J*')
+        self.assertEqual(last_name, 'D*')
+
+    def test_mask_name_with_random_letters_returns_single_capitals(self):
+        # Arrange
+        registration = self._create_registration('john@example.com', 'John', 'Doe')
+
+        # Act
+        first_name, last_name = mask_name_with_random_letters(registration)
+
+        # Assert
+        self.assertRegex(first_name, r'^[A-Z]$')
+        self.assertRegex(last_name, r'^[A-Z]$')
+
+    def test_public_name_never_masked(self):
+        # Arrange
+        registration = self._create_registration('john@example.com', 'John', 'Doe')
+
+        # Act
+        self.service.mask_hidden_names([registration], viewer_is_authenticated=False, viewer_is_privileged=False)
+
+        # Assert
+        self.assertEqual(registration.name, 'John Doe')
+
+    def test_only_users_name_masked_for_anonymous_viewer(self):
+        # Arrange
+        registration = self._create_registration(
+            'john@example.com', 'John', 'Doe',
+            name_visibility=UserProfile.NameVisibility.ONLY_USERS,
+        )
+
+        # Act
+        self.service.mask_hidden_names([registration], viewer_is_authenticated=False, viewer_is_privileged=False)
+
+        # Assert
+        self.assertNotEqual(registration.name, 'John Doe')
+
+    def test_only_users_name_visible_to_authenticated_viewer(self):
+        # Arrange
+        registration = self._create_registration(
+            'john@example.com', 'John', 'Doe',
+            name_visibility=UserProfile.NameVisibility.ONLY_USERS,
+        )
+
+        # Act
+        self.service.mask_hidden_names([registration], viewer_is_authenticated=True, viewer_is_privileged=False)
+
+        # Assert
+        self.assertEqual(registration.name, 'John Doe')
+
+    def test_only_required_users_name_masked_for_authenticated_viewer(self):
+        # Arrange
+        registration = self._create_registration(
+            'john@example.com', 'John', 'Doe',
+            name_visibility=UserProfile.NameVisibility.ONLY_REQUIRED_USERS,
+        )
+
+        # Act
+        self.service.mask_hidden_names([registration], viewer_is_authenticated=True, viewer_is_privileged=False)
+
+        # Assert
+        self.assertNotEqual(registration.name, 'John Doe')
+
+    def test_only_required_users_name_visible_to_privileged_viewer(self):
+        # Arrange
+        registration = self._create_registration(
+            'john@example.com', 'John', 'Doe',
+            name_visibility=UserProfile.NameVisibility.ONLY_REQUIRED_USERS,
+        )
+
+        # Act
+        self.service.mask_hidden_names([registration], viewer_is_authenticated=True, viewer_is_privileged=True)
+
+        # Assert
+        self.assertEqual(registration.name, 'John Doe')
+
+    def test_registration_without_user_never_masked(self):
+        # Arrange
+        registration = self._create_registration('john@example.com', 'John', 'Doe', with_user=False)
+
+        # Act
+        self.service.mask_hidden_names([registration], viewer_is_authenticated=False, viewer_is_privileged=False)
+
+        # Assert
+        self.assertEqual(registration.name, 'John Doe')
+
+    def test_masking_does_not_persist_to_database(self):
+        # Arrange
+        registration = self._create_registration(
+            'john@example.com', 'John', 'Doe',
+            name_visibility=UserProfile.NameVisibility.ONLY_REQUIRED_USERS,
+        )
+
+        # Act
+        self.service.mask_hidden_names([registration], viewer_is_authenticated=False, viewer_is_privileged=False)
+
+        # Assert
+        registration.refresh_from_db(fields=['name', 'first_name', 'last_name'])
+        self.assertEqual(registration.name, 'John Doe')
