@@ -52,10 +52,10 @@
                             <div class="d-flex flex-wrap gap-2 align-items-center">
                                 <span class="meta-pill meta-pill-sm text-muted" style="background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}</span>
                                 {% if event.location %}
-                                <span class="meta-pill meta-pill-sm text-muted" style="background-color: #6c757d1A;">📍 {{ event.location }}</span>
+                                <span class="meta-pill meta-pill-sm text-muted" style="background-color: #6c757d1A;">🗺️ {{ event.location }}</span>
                                 {% endif %}
                                 {% if not event.external_registration_url and event.state != "announced" and event.registration_count > 0 %}
-                                <span class="meta-pill meta-pill-sm text-muted" style="background-color: #6c757d1A;">👥 {{ event.registration_count }}{% if event.registration_limit %}/{{ event.registration_limit }}{% endif %} registered</span>
+                                <span class="meta-pill meta-pill-sm text-muted" style="background-color: #6c757d1A;">🚴 {{ event.registration_count }}{% if event.registration_limit %}/{{ event.registration_limit }}{% endif %} registered</span>
                                 {% endif %}
                             </div>
                         </div>
