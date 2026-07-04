@@ -72,7 +72,7 @@
 
                     <form method="post" action="{% url 'profile_name_visibility' %}">
                         {% csrf_token %}
-                        <p class="fw-medium mb-2">When can we show your full name on registration lists?</p>
+                        <p class="fw-medium mb-2">Who can see your full name?</p>
                         {% for value, label in name_visibility_choices %}
                         <div class="form-check mb-1">
                             <input class="form-check-input" type="radio" name="name_visibility"
@@ -84,7 +84,7 @@
                         {% endfor %}
                     </form>
 
-                    <p class="text-muted small mt-2 mb-0">When your name isn't shown, we'll display a masked version instead, e.g. <strong>{{ masked_name_example|styled_name }}</strong> for your name.</p>
+                    <p class="text-muted small mt-2 mb-0">For anyone who isn't allowed to see your full name, we'll show a masked version instead, e.g. <strong>{{ masked_name_example|styled_name }}</strong> for your full name.</p>
 
                     <div class="text-muted small mt-3">
                         <p class="mb-2">Your email, phone number and emergency contact details are only available to ride leaders and ride administrators.</p>

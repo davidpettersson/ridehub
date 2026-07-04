@@ -474,9 +474,9 @@ class Ride(models.Model):
 
 class UserProfile(models.Model):
     class NameVisibility(models.TextChoices):
-        PUBLIC = 'pb', 'Always'
-        ONLY_USERS = 'ou', 'Only to signed-in users'
-        ONLY_REQUIRED_USERS = 'rq', 'Only to ride leaders and ride administrators'
+        PUBLIC = 'pb', 'Everyone'
+        ONLY_USERS = 'ou', 'Only signed-in users'
+        ONLY_REQUIRED_USERS = 'rq', 'Only ride leaders and ride administrators'
 
     class GenderIdentity(models.TextChoices):
         WOMAN = 'wm', 'woman'
