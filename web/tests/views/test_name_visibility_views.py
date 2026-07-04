@@ -267,7 +267,8 @@ class ProfileNameVisibilityTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['name_visibility'], UserProfile.NameVisibility.PUBLIC)
-        self.assertContains(response, 'When can we show your name on registration lists?')
+        self.assertContains(response, 'When can we show your full name on registration lists?')
+        self.assertContains(response, 'M* U*')
 
     def test_post_updates_name_visibility(self):
         # Arrange
