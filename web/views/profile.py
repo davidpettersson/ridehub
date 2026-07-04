@@ -6,7 +6,7 @@ from waffle import flag_is_active
 
 from backoffice.models import Registration, UserProfile
 from backoffice.services.membership_service import MembershipService
-from backoffice.services.registration_service import RegistrationService
+from backoffice.services.registration_service import RegistrationService, NAME_MASKING_STRATEGY
 from backoffice.services.user_service import UserService
 from web.forms import MembershipNumberForm, NameVisibilityForm
 
@@ -17,12 +17,15 @@ def profile(request: HttpRequest) -> HttpResponse:
     registrations = registration_service.fetch_current_registrations(request.user)
     past_registrations = registration_service.fetch_past_registrations(request.user)
 
+    masked_first_name, masked_last_name = NAME_MASKING_STRATEGY(request.user)
+
     context = {
         'registrations': registrations,
         'past_registrations': past_registrations,
         'name_visibility': request.user.profile.name_visibility,
         'name_visibility_choices': UserProfile.NameVisibility.choices,
         'registration_visibility_hours': settings.REGISTRATION_VISIBILITY_HOURS,
+        'masked_name_example': f'{masked_first_name} {masked_last_name}',
     }
 
     if flag_is_active(request, 'capture_membership_number'):
