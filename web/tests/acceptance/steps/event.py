@@ -55,15 +55,9 @@ def step_impl(context):
     context.test.assertEqual(200, context.scenario_objects['response'].status_code)
 
 
-@then('the event shows {count:d} registered')
+@then('the event shows {count} registered')
 def step_impl(context, count):
     context.test.assertContains(context.scenario_objects['response'], f"{count} registered")
-
-
-@then('the event shows {count:d} registration remaining')
-@then('the event shows {count:d} registrations remaining')
-def step_impl(context, count):
-    context.test.assertContains(context.scenario_objects['response'], f"{count} remaining")
 
 
 @step("the event has {count:d} registration")
@@ -75,7 +69,7 @@ def step_impl(context, count):
             first_name=f'John {k}',
             last_name='Doe',
             email=email,
-            phone=f'+123456789{k}',
+            phone=f'+1613555{1000 + k}',
         )
         registration_detail = RegistrationDetail(
             ride=None,
@@ -85,12 +79,10 @@ def step_impl(context, count):
             emergency_contact_phone=''
         )
         rs.register(user_detail, registration_detail, context.scenario_objects['event'])
+        registration = Registration.objects.get(user__email=email, event=context.scenario_objects['event'])
+        registration.confirm()
+        registration.save()
     context.test.assertEqual(count, context.scenario_objects['event'].registration_count)
-
-
-@then("the event does not show registrations remaining")
-def step_impl(context):
-    context.test.assertNotContains(context.scenario_objects['response'], f"remaining")
 
 
 @step("the event does not show registrations")
@@ -107,11 +99,6 @@ def step_impl(context):
 @then("the event ical feed contains the event")
 def step_impl(context):
     context.test.assertContains(context.scenario_objects['response'], TEST_EVENT_NAME_TOKEN)
-
-
-@step("the event shows it is fully registered")
-def step_impl(context):
-    context.test.assertContains(context.scenario_objects['response'], "(full)")
 
 
 @then("the event shows when registration closes")

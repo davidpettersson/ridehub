@@ -25,28 +25,19 @@
             <h1 class="fs-2 fw-bold mb-2">
                 {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
             </h1>
-            <span class="badge fw-normal text-muted" style="font-size: 0.85rem; background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="meta-pill text-muted" style="background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
+                {% if event.location_url %}
+                <a href="{{ event.location_url }}"
+                   class="meta-pill meta-pill-link"
+                   target="_blank" rel="noopener noreferrer">
+                    🗺️ {% if event.location %}{{ event.location }}{% else %}See location{% endif %}&nbsp;↗
+                </a>
+                {% elif event.location %}
+                <span class="meta-pill text-muted" style="background-color: #6c757d1A;">🗺️ {{ event.location }}</span>
+                {% endif %}
+            </div>
         </div>
-
-        {% if event.location or event.location_url %}
-        <div class="card shadow-sm p-4 mb-4">
-            <div class="d-flex flex-wrap gap-3 small">
-                    <div class="d-inline-flex align-items-center text-muted">
-                        <i class="bi bi-geo-alt me-2"></i>
-                        {% if event.location_url %}
-                        <a href="{{ event.location_url }}"
-                           class="text-primary text-decoration-underline d-flex align-items-center"
-                           target="_blank" rel="noopener noreferrer">
-                            {% if event.location %}{{ event.location }}{% else %}See location{% endif %}
-                            <i class="bi bi-box-arrow-up-right ms-1 small"></i>
-                        </a>
-                        {% else %}
-                        <span>{{ event.location }}</span>
-                        {% endif %}
-                    </div>
-                </div>
-        </div>
-        {% endif %}
 
         <form method="post">
             {% csrf_token %}
