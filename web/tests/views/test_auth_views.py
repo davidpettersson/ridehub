@@ -97,9 +97,10 @@ class LoginEmailTests(TestCase):
             self.assertContains(response, f'{max_age_minutes} minute')
 
         if is_sesame_one_time():
-            self.assertContains(response, 'only once')
+            self.assertContains(response, 'can be used once')
 
-        self.assertContains(response, "After clicking the link, you'll be logged in automatically")
+        self.assertContains(response, 'Check your email')
+        self.assertContains(response, "you'll be signed in right away")
 
     def test_expired_link_shows_friendly_error(self):
         login_url = reverse('login')
