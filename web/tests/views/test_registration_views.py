@@ -141,6 +141,35 @@ class RegistrationViewPhoneTests(TestCase):
         self.assertTrue(hasattr(user, 'profile'))
         self.assertEqual(str(user.profile.phone), '+16139876543')
 
+    def test_anonymous_registration_does_not_overwrite_existing_user_pii(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='victim@example.com',
+            email='victim@example.com',
+            first_name='Real',
+            last_name='Member',
+        )
+        user.profile.phone = '+16135550100'
+        user.profile.save()
+
+        form_data = {
+            'first_name': 'Injected',
+            'last_name': 'Name',
+            'email': 'victim@example.com',
+            'phone': '+16139999999',
+        }
+
+        # Act - anonymous (not logged in) submission targeting the victim's email
+        response = self.client.post(reverse('registration_create', args=[self.event.id]), form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        user.refresh_from_db()
+        self.assertEqual(user.first_name, 'Real')
+        self.assertEqual(user.last_name, 'Member')
+        user.profile.refresh_from_db()
+        self.assertEqual(str(user.profile.phone), '+16135550100')
+
     def test_registration_form_stores_phone_in_registration_record(self):
         # Arrange
         user = User.objects.create_user(
@@ -149,7 +178,7 @@ class RegistrationViewPhoneTests(TestCase):
             first_name='Phone',
             last_name='Test'
         )
-        
+
         self.client.force_login(user)
 
         form_data = {
