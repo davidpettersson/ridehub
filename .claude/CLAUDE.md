@@ -27,4 +27,4 @@ Django web application for managing cycling events, deployed to Heroku.
 ## Frontend
 - Mobile-first responsive design for all pages
 - Bootstrap CSS with global stylesheet at `web/static/web/styling.css`
-- Migrating from Tailwind to Bootstrap; let them co-exist during transition
+- Fully migrated from Tailwind to Bootstrap; do not introduce Tailwind
