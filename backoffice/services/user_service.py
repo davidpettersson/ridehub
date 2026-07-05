@@ -34,42 +34,34 @@ class UserService(object):
         else:
             return Nothing
 
-    def find_by_email_or_create(self, user_detail: UserDetail) -> User:
+    def _apply_user_detail(self, user: User, user_detail: UserDetail) -> None:
+        if not user.is_staff and user.has_usable_password():
+            user.set_unusable_password()
+
+        user.first_name = user_detail.first_name
+        user.last_name = user_detail.last_name
+        user.save()
+
+        user.profile.phone = user_detail.phone
+        if user_detail.emergency_contact_name:
+            user.profile.emergency_contact_name = user_detail.emergency_contact_name
+        if user_detail.emergency_contact_phone:
+            user.profile.emergency_contact_phone = user_detail.emergency_contact_phone
+        user.profile.save()
+
+    def find_by_email_or_create(self, user_detail: UserDetail, update_existing: bool = False) -> User:
         lowercase_email = lower_email(user_detail.email)
 
         match self.find_by_email(lowercase_email):
             case Some(user):
-                if not user.is_staff and user.has_usable_password():
-                    user.set_unusable_password()
-
-                user.first_name = user_detail.first_name
-                user.last_name = user_detail.last_name
-                user.save()
-
-                user.profile.phone = user_detail.phone
-                if user_detail.emergency_contact_name:
-                    user.profile.emergency_contact_name = user_detail.emergency_contact_name
-                if user_detail.emergency_contact_phone:
-                    user.profile.emergency_contact_phone = user_detail.emergency_contact_phone
-                user.profile.save()
-
+                if update_existing:
+                    self._apply_user_detail(user, user_detail)
                 return user
             case _:
                 user = User.objects.create_user(
                     username=lowercase_email,
                     email=lowercase_email,
-                    first_name=user_detail.first_name,
-                    last_name=user_detail.last_name,
                 )
-
                 user.set_unusable_password()
-                user.save()
-
-                user.profile.phone = user_detail.phone
-                if user_detail.emergency_contact_name:
-                    user.profile.emergency_contact_name = user_detail.emergency_contact_name
-                if user_detail.emergency_contact_phone:
-                    user.profile.emergency_contact_phone = user_detail.emergency_contact_phone
-                user.profile.save()
-
+                self._apply_user_detail(user, user_detail)
                 return user

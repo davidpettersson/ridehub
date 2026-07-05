@@ -163,6 +163,35 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         # Check it was actually created
         self.assertTrue(User.objects.filter(email=self.test_email).exists())
 
+    def test_find_by_email_or_create_does_not_update_existing_by_default(self):
+        # Arrange
+        user = User.objects.get(email=self.non_staff_email)
+        user.profile.emergency_contact_name = "Original Contact"
+        user.profile.emergency_contact_phone = "613-555-0100"
+        user.profile.save()
+
+        attacker_detail = UserDetail(
+            first_name="Attacker",
+            last_name="Injected",
+            email=self.non_staff_email,
+            phone="+16135550000",
+            emergency_contact_name="Attacker Contact",
+            emergency_contact_phone="613-555-9999",
+        )
+
+        # Act
+        result = self.service.find_by_email_or_create(attacker_detail)
+
+        # Assert
+        self.assertEqual(result.pk, user.pk)
+        result.refresh_from_db()
+        self.assertEqual(result.first_name, "Old")
+        self.assertEqual(result.last_name, "Name")
+        result.profile.refresh_from_db()
+        self.assertEqual(result.profile.phone, "+16135558888")
+        self.assertEqual(result.profile.emergency_contact_name, "Original Contact")
+        self.assertEqual(result.profile.emergency_contact_phone, "613-555-0100")
+
     def test_find_by_email_or_create_when_non_staff_user_exists(self):
         # Arrange
         user_detail_upper = UserDetail(
@@ -173,7 +202,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         )
 
         # Act
-        user = self.service.find_by_email_or_create(user_detail_upper)
+        user = self.service.find_by_email_or_create(user_detail_upper, update_existing=True)
 
         # Assert
         self.assertEqual(user.email, self.non_staff_email) # Original email
@@ -199,7 +228,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         )
         
         # Act
-        user = self.service.find_by_email_or_create(user_detail_mixed)
+        user = self.service.find_by_email_or_create(user_detail_mixed, update_existing=True)
 
         # Assert
         self.assertEqual(user.email, self.staff_email) # Original email
@@ -215,7 +244,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         non_staff_detail_upper = UserDetail("NewNon", "Staff", "NONSTAFFCASING@EXAMPLE.COM", "+16135552222")
         
         # Act
-        updated_non_staff = self.service.find_by_email_or_create(non_staff_detail_upper)
+        updated_non_staff = self.service.find_by_email_or_create(non_staff_detail_upper, update_existing=True)
         
         # Assert
         self.assertEqual(updated_non_staff.email, self.non_staff_casing_email)
@@ -235,7 +264,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         staff_detail_mixed = UserDetail("New", "Staff", "StaffCasing@Example.com", "+16135552222")
 
         # Act
-        found_staff = self.service.find_by_email_or_create(staff_detail_mixed)
+        found_staff = self.service.find_by_email_or_create(staff_detail_mixed, update_existing=True)
 
         # Assert
         self.assertEqual(found_staff.email, self.staff_casing_email)
@@ -257,7 +286,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         )
 
         # Act
-        self.service.find_by_email_or_create(user_detail)
+        self.service.find_by_email_or_create(user_detail, update_existing=True)
 
         # Assert
         user.refresh_from_db()
@@ -276,7 +305,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         )
 
         # Act
-        self.service.find_by_email_or_create(user_detail)
+        self.service.find_by_email_or_create(user_detail, update_existing=True)
 
         # Assert
         user.refresh_from_db()
@@ -313,7 +342,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         )
 
         # Act
-        user = self.service.find_by_email_or_create(user_detail)
+        user = self.service.find_by_email_or_create(user_detail, update_existing=True)
 
         # Assert
         profile = UserProfile.objects.get(user=user)
@@ -335,7 +364,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         )
 
         # Act
-        self.service.find_by_email_or_create(user_detail)
+        self.service.find_by_email_or_create(user_detail, update_existing=True)
 
         # Assert
         user.profile.refresh_from_db()
@@ -359,7 +388,7 @@ class TestUserServiceFindByEmailOrCreate(TestCase):
         )
 
         # Act
-        self.service.find_by_email_or_create(user_detail)
+        self.service.find_by_email_or_create(user_detail, update_existing=True)
 
         # Assert
         user.profile.refresh_from_db()

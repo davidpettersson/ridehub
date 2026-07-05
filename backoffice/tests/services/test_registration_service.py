@@ -1769,6 +1769,109 @@ class RegisterMethodTestCase(TestCase):
         self.assertEqual(registration.user, user)
         self.assertEqual(registration.email, "existing@example.com")
 
+    def test_register_does_not_overwrite_existing_user_pii_when_anonymous(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='victim',
+            email='victim@example.com',
+            first_name='Real',
+            last_name='Member',
+        )
+        user.profile.phone = "+16135551111"
+        user.profile.save()
+
+        attacker_detail = UserDetail(
+            first_name="Injected",
+            last_name="Name",
+            email="victim@example.com",
+            phone="+16135559999",
+        )
+        registration_detail = RegistrationDetail(
+            ride=None, ride_leader_preference=None, speed_range_preference=None,
+            emergency_contact_name=None, emergency_contact_phone=None,
+        )
+
+        # Act
+        self.service.register(attacker_detail, registration_detail, self.event, acting_user=None)
+
+        # Assert
+        user.refresh_from_db()
+        self.assertEqual(user.first_name, "Real")
+        self.assertEqual(user.last_name, "Member")
+        user.profile.refresh_from_db()
+        self.assertEqual(user.profile.phone, "+16135551111")
+
+    def test_register_updates_existing_user_pii_when_authenticated_self(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='selfreg',
+            email='selfreg@example.com',
+            first_name='Old',
+            last_name='Name',
+        )
+        user.profile.phone = "+16135551111"
+        user.profile.email_verified = True
+        user.profile.save()
+
+        updated_detail = UserDetail(
+            first_name="New",
+            last_name="Name",
+            email="selfreg@example.com",
+            phone="+16135552222",
+        )
+        registration_detail = RegistrationDetail(
+            ride=None, ride_leader_preference=None, speed_range_preference=None,
+            emergency_contact_name=None, emergency_contact_phone=None,
+        )
+
+        # Act
+        self.service.register(updated_detail, registration_detail, self.event, acting_user=user)
+
+        # Assert
+        user.refresh_from_db()
+        self.assertEqual(user.first_name, "New")
+        user.profile.refresh_from_db()
+        self.assertEqual(user.profile.phone, "+16135552222")
+
+    def test_register_does_not_overwrite_other_users_pii_when_authenticated(self):
+        # Arrange
+        victim = User.objects.create_user(
+            username='othervictim',
+            email='othervictim@example.com',
+            first_name='Real',
+            last_name='Member',
+        )
+        victim.profile.phone = "+16135551111"
+        victim.profile.save()
+
+        attacker = User.objects.create_user(
+            username='attacker',
+            email='attacker@example.com',
+            first_name='Mal',
+            last_name='Actor',
+        )
+
+        forged_detail = UserDetail(
+            first_name="Injected",
+            last_name="Name",
+            email="othervictim@example.com",
+            phone="+16135559999",
+        )
+        registration_detail = RegistrationDetail(
+            ride=None, ride_leader_preference=None, speed_range_preference=None,
+            emergency_contact_name=None, emergency_contact_phone=None,
+        )
+
+        # Act
+        self.service.register(forged_detail, registration_detail, self.event, acting_user=attacker)
+
+        # Assert
+        victim.refresh_from_db()
+        self.assertEqual(victim.first_name, "Real")
+        self.assertEqual(victim.last_name, "Member")
+        victim.profile.refresh_from_db()
+        self.assertEqual(victim.profile.phone, "+16135551111")
+
     def test_register_creates_new_user_when_email_not_exists(self):
         user_detail = UserDetail(
             first_name="New",

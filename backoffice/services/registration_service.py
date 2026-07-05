@@ -15,6 +15,7 @@ from backoffice.models import Event, Registration, SpeedRange, Ride, UserProfile
 from backoffice.services.email_service import EmailService
 from backoffice.services.request_service import RequestDetail
 from backoffice.services.user_service import UserService, UserDetail
+from backoffice.utils import lower_email
 from ridehub import settings
 
 logger = logging.getLogger(__name__)
@@ -82,17 +83,18 @@ class RegistrationService:
         self.email_service = EmailService()
         self.audit_service = AuditService()
 
-    def _create_registration(self, event: Event, user: User, registration_detail: RegistrationDetail,
+    def _create_registration(self, event: Event, user: User, user_detail: UserDetail,
+                             registration_detail: RegistrationDetail,
                              request_detail: RequestDetail | None = None) -> Registration:
         registration = Registration()
         registration.event = event
         registration.user = user
 
-        registration.name = user.get_full_name()
-        registration.first_name = user.first_name
-        registration.last_name = user.last_name
+        registration.name = f"{user_detail.first_name} {user_detail.last_name}"
+        registration.first_name = user_detail.first_name
+        registration.last_name = user_detail.last_name
         registration.email = user.email
-        registration.phone = user.profile.phone
+        registration.phone = user_detail.phone
 
         if event.has_rides:
             registration.ride = registration_detail.ride
@@ -203,8 +205,13 @@ class RegistrationService:
         return registration, None
 
     def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event,
-                 request_detail: RequestDetail | None = None) -> RegistrationResult:
-        user = self.user_service.find_by_email_or_create(user_detail)
+                 request_detail: RequestDetail | None = None, acting_user: User | None = None) -> RegistrationResult:
+        update_existing = (
+            acting_user is not None
+            and acting_user.is_authenticated
+            and lower_email(acting_user.email) == lower_email(user_detail.email)
+        )
+        user = self.user_service.find_by_email_or_create(user_detail, update_existing=update_existing)
 
         active_registrations = Registration.objects.filter(
             user=user, event=event,
@@ -217,7 +224,7 @@ class RegistrationService:
             )
             return RegistrationResult.DUPLICATE
 
-        registration = self._create_registration(event, user, registration_detail, request_detail)
+        registration = self._create_registration(event, user, user_detail, registration_detail, request_detail)
 
         if self._should_skip_verification(user, request_detail):
             self._send_confirmation_email(registration)
@@ -401,7 +408,7 @@ class RegistrationService:
 
     def staff_register(self, user_detail: UserDetail, registration_detail: RegistrationDetail,
                        event: Event, staff_user) -> Registration | None:
-        user = self.user_service.find_by_email_or_create(user_detail)
+        user = self.user_service.find_by_email_or_create(user_detail, update_existing=True)
 
         existing = Registration.objects.filter(
             user=user, event=event,
@@ -415,7 +422,7 @@ class RegistrationService:
             )
             return None
 
-        registration = self._create_registration(event, user, registration_detail)
+        registration = self._create_registration(event, user, user_detail, registration_detail)
         registration.confirm()
         registration.save()
 
