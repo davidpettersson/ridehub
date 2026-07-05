@@ -58,11 +58,6 @@ body {
   }
 }
 
-.dark-mode {
-  background-color: #111827;
-  color: #9ca3af;
-}
-
 .btn-primary {
   background-color: var(--bs-primary);
   border-color: var(--bs-primary);
