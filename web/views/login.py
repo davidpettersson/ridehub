@@ -35,7 +35,8 @@ class LoginFormView(FormView):
         return link
 
     def _send_email(self, user: User, link: str) -> None:
-        base_url = f"https://{settings.WEB_HOST}"
+        protocol = 'https' if getattr(settings, 'SECURE_SSL_REDIRECT', False) else 'http'
+        base_url = f"{protocol}://{settings.WEB_HOST}"
 
         context = {
             'login_link': link,
