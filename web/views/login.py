@@ -29,14 +29,17 @@ class LoginFormView(FormView):
         except User.DoesNotExist:
             return None
 
+    def _base_url(self) -> str:
+        protocol = 'https' if getattr(settings, 'SECURE_SSL_REDIRECT', False) else 'http'
+        return f"{protocol}://{settings.WEB_HOST}"
+
     def _create_link(self, user: User) -> str:
-        link = f"https://{settings.WEB_HOST}{reverse('login')}"
+        link = f"{self._base_url()}{reverse('login')}"
         link += get_query_string(user)
         return link
 
     def _send_email(self, user: User, link: str) -> None:
-        protocol = 'https' if getattr(settings, 'SECURE_SSL_REDIRECT', False) else 'http'
-        base_url = f"{protocol}://{settings.WEB_HOST}"
+        base_url = self._base_url()
 
         context = {
             'login_link': link,

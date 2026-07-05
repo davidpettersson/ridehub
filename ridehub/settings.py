@@ -182,15 +182,26 @@ SENTRY_DSN = os.environ.get('SENTRY_DSN', None)
 SENTRY_SCRUB_QUERY_PARAMS = ('token', 'sesame')
 
 
+def _sentry_traces_sample_rate() -> float:
+    try:
+        return float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0.1'))
+    except (TypeError, ValueError):
+        return 0.1
+
+
 def _scrub_sentry_event(event, hint):
     request = event.get('request')
-    if request and request.get('query_string'):
-        query = request['query_string']
-        if any(param in query for param in SENTRY_SCRUB_QUERY_PARAMS):
-            request['query_string'] = '[Filtered]'
-        url = request.get('url')
-        if url and '?' in url and any(param in url for param in SENTRY_SCRUB_QUERY_PARAMS):
-            request['url'] = url.split('?', 1)[0]
+    if not request:
+        return event
+
+    query = request.get('query_string') or ''
+    if any(param in query for param in SENTRY_SCRUB_QUERY_PARAMS):
+        request['query_string'] = '[Filtered]'
+
+    url = request.get('url') or ''
+    if '?' in url and any(param in url for param in SENTRY_SCRUB_QUERY_PARAMS):
+        request['url'] = url.split('?', 1)[0]
+
     return event
 
 
@@ -198,7 +209,7 @@ if SENTRY_DSN:
     sentry_sdk.init(
         dsn=os.environ.get('SENTRY_DSN', SENTRY_DSN),
         send_default_pii=False,
-        traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0.1')),
+        traces_sample_rate=_sentry_traces_sample_rate(),
         integrations=[DjangoIntegration(), CeleryIntegration()],
         release=os.environ.get('HEROKU_RELEASE_VERSION', 'unknown'),
         before_send=_scrub_sentry_event,
