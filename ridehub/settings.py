@@ -91,7 +91,7 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-SESAME_MAX_AGE = 60 * 5
+SESAME_MAX_AGE = 60 * 15
 SESAME_ONE_TIME = os.environ.get('SESAME_ONE_TIME') is not None
 
 LOGIN_REDIRECT_URL = "/profile"
