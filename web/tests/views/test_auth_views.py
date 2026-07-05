@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.core import mail
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 
 from web.utils import get_sesame_max_age_minutes, is_sesame_one_time
@@ -101,6 +101,15 @@ class LoginEmailTests(TestCase):
 
         self.assertContains(response, 'Check your email')
         self.assertContains(response, "you'll be signed in right away")
+
+    @override_settings(SESAME_MAX_AGE=None, SESAME_ONE_TIME=True)
+    def test_login_email_sent_page_shows_one_time_note_without_max_age(self):
+        # Act
+        response = self.client.post(self.login_form_url, {'email': self.user.email})
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'can be used once')
 
     def test_expired_link_shows_friendly_error(self):
         login_url = reverse('login')

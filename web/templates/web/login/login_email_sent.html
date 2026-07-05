@@ -16,6 +16,10 @@
     <p class="text-muted mb-4">
         The link works for the next {{ max_age_minutes }} minute{{ max_age_minutes|pluralize }}{% if is_one_time %} and can be used once{% endif %}, so it's best to open it soon.
     </p>
+    {% elif is_one_time %}
+    <p class="text-muted mb-4">
+        The link can be used once, so it's best to open it soon.
+    </p>
     {% endif %}
     <hr class="my-4">
     <p class="small text-muted mb-2">
