@@ -19,8 +19,16 @@ WEB_HOST = os.environ.get('WEB_HOST', 'obcrides.ca')
 RWGPS_ORG_SLUG = os.environ.get('RWGPS_ORG_SLUG', '3471-ottawa-bicycle-club')
 
 if IS_HEROKU_APP:
-    ALLOWED_HOSTS = ["*"]
+    ALLOWED_HOSTS = [WEB_HOST] + [
+        h.strip() for h in os.environ.get('EXTRA_ALLOWED_HOSTS', '').split(',') if h.strip()
+    ]
     SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
     DEBUG = False
     assert SECRET_KEY != SECRET_KEY_FOR_DEVELOPMENT
 else:
@@ -171,13 +179,30 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 SENTRY_DSN = os.environ.get('SENTRY_DSN', None)
 
+SENTRY_SCRUB_QUERY_PARAMS = ('token', 'sesame')
+
+
+def _scrub_sentry_event(event, hint):
+    request = event.get('request')
+    if request and request.get('query_string'):
+        query = request['query_string']
+        if any(param in query for param in SENTRY_SCRUB_QUERY_PARAMS):
+            request['query_string'] = '[Filtered]'
+        url = request.get('url')
+        if url and '?' in url and any(param in url for param in SENTRY_SCRUB_QUERY_PARAMS):
+            request['url'] = url.split('?', 1)[0]
+    return event
+
+
 if SENTRY_DSN:
     sentry_sdk.init(
         dsn=os.environ.get('SENTRY_DSN', SENTRY_DSN),
-        send_default_pii=True,
-        traces_sample_rate=1.0,
+        send_default_pii=False,
+        traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0.1')),
         integrations=[DjangoIntegration(), CeleryIntegration()],
         release=os.environ.get('HEROKU_RELEASE_VERSION', 'unknown'),
+        before_send=_scrub_sentry_event,
+        before_send_transaction=_scrub_sentry_event,
         _experiments={
             'enable_logs': True,
         }
