@@ -17,7 +17,7 @@ This is the primary authentication method for the thousands of club members who 
 4. User clicks the link and is automatically logged in
 
 **Configuration** (in `settings.py`):
-- `SESAME_MAX_AGE`: Token validity period (default: 5 minutes)
+- `SESAME_MAX_AGE`: Token validity period (default: 15 minutes)
 - `SESAME_ONE_TIME`: If set, tokens can only be used once
 
 **Requirements**:
@@ -93,6 +93,6 @@ All email addresses are lowercased for consistency. This ensures:
 ## Security Considerations
 
 - No passwords are stored for regular users (passwordless design)
-- Email tokens are short-lived (5 minutes default) and optionally single-use
+- Email tokens are short-lived (15 minutes default) and optionally single-use
 - Azure AD tenant restriction prevents unauthorized Microsoft accounts
 - Admin accounts should use strong passwords and are separate from member accounts
