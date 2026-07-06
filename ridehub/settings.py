@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'membership',
     'content',
     'audit',
+    'agents',
     'web',
 ]
 
@@ -83,6 +84,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'waffle.middleware.WaffleMiddleware',
+    'agents.middleware.AgentTrackingMiddleware',
 ]
 
 AUTHENTICATION_BACKENDS = [
