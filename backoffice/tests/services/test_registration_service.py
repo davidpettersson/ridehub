@@ -2278,6 +2278,80 @@ class EmailVerificationFlowTestCase(TestCase):
         registration = Registration.objects.get(event=self.event)
         self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
 
+    def test_register_force_verification_holds_verified_unauthenticated_user(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='test@example.com',
+            email='test@example.com',
+            first_name='Test',
+            last_name='User',
+        )
+        user.profile.email_verified = True
+        user.profile.save()
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+
+        # Act
+        result = self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail,
+            force_verification=True,
+        )
+
+        # Assert
+        self.assertEqual(result, RegistrationResult.VERIFICATION_REQUIRED)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Verify", mail.outbox[0].subject)
+
+    def test_register_force_verification_confirms_authenticated_user(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=True,
+        )
+
+        # Act
+        result = self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail,
+            force_verification=True,
+        )
+
+        # Assert
+        self.assertEqual(result, RegistrationResult.CONFIRMED)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+
+    def test_register_without_force_verification_confirms_verified_user(self):
+        # Arrange
+        user = User.objects.create_user(
+            username='test@example.com',
+            email='test@example.com',
+            first_name='Test',
+            last_name='User',
+        )
+        user.profile.email_verified = True
+        user.profile.save()
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+
+        # Act
+        result = self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail,
+        )
+
+        # Assert
+        self.assertEqual(result, RegistrationResult.CONFIRMED)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+
     def test_register_sends_verification_email_not_confirmation(self):
         # Arrange
         request_detail = RequestDetail(

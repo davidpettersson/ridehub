@@ -68,6 +68,19 @@ Traditional username/password authentication is available only through the Djang
 - These accounts use Django's built-in password authentication
 - Only used for administrative access, not for the main application
 
+## Email Verification at Event Registration
+
+Anonymous event registrations by users without a verified email are held in an
+`unverified` state until the registrant clicks a verification link sent by email.
+Clicking the link confirms the registration, marks the email as verified, and signs
+the user in. Signed-in users are confirmed directly and their email is considered
+verified automatically.
+
+**Feature flag**: The Waffle flag `require_email_verification` extends this to all
+anonymous registrations, including those whose email was previously verified. This
+nudges returning members to sign in (or verify again) rather than registering
+anonymously. Enable it incrementally via Django Admin > Waffle > Flags.
+
 ## User Lifecycle
 
 ### Account Creation
