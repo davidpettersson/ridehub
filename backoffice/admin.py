@@ -184,7 +184,8 @@ class UserMembershipNumberAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
 
 class UserProfileAdmin(AuditedAdminMixin, admin.ModelAdmin):
-    pass
+    list_display = ('user', 'user__first_name', 'user__last_name', 'email_verified', 'name_visibility', 'legacy')
+    list_filter = ('email_verified', 'name_visibility', 'legacy')
 
 
 admin.site.register(Program, ProgramAdmin)
