@@ -54,19 +54,6 @@ class RegistrationForm(forms.Form):
         requirements = registration_service.get_event_requirements(event)
         rides = registration_service.get_rides_for_event(event)
 
-        if rides.exists():
-            self.fields['ride'] = forms.ModelChoiceField(
-                queryset=rides,
-                label="Ride",
-                required=True
-            )
-
-            self.fields['speed_range_preference'] = forms.ModelChoiceField(
-                queryset=SpeedRange.objects.all(),
-                label="Speed range preference",
-                required=False
-            )
-
         if requirements.requires_emergency_contact:
             self.fields['emergency_contact_name'] = forms.CharField(
                 max_length=128,
@@ -86,6 +73,19 @@ class RegistrationForm(forms.Form):
                     'type': 'tel',
                     'autocomplete': 'off'
                 })
+            )
+
+        if rides.exists():
+            self.fields['ride'] = forms.ModelChoiceField(
+                queryset=rides,
+                label="Ride",
+                required=True
+            )
+
+            self.fields['speed_range_preference'] = forms.ModelChoiceField(
+                queryset=SpeedRange.objects.all(),
+                label="Speed range preference",
+                required=False
             )
 
         if requirements.ride_leaders_wanted:

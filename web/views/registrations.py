@@ -41,6 +41,18 @@ def registration_verify(request: HttpRequest) -> HttpResponse:
     })
 
 
+CONTACT_FIELDS = ('first_name', 'last_name', 'email', 'phone')
+EMERGENCY_CONTACT_FIELDS = ('emergency_contact_name', 'emergency_contact_phone')
+
+
+def _is_section_collapsed(form: RegistrationForm, field_names: tuple, initial_data: dict) -> bool:
+    if not all(initial_data.get(name) for name in field_names):
+        return False
+    if form.is_bound and any(name in form.errors for name in field_names):
+        return False
+    return True
+
+
 def _get_registration_detail(form: RegistrationForm) -> RegistrationDetail:
     ride_leader_raw = form.cleaned_data.get('ride_leader_preference')
     first_time_raw = form.cleaned_data.get('first_time_attendee')
@@ -137,6 +149,14 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         'event': event,
         'form': form,
         'selected_ride_id': selected_ride_id,
+        'contact_collapsed': _is_section_collapsed(form, CONTACT_FIELDS, initial_data),
+        'emergency_collapsed': (
+            'emergency_contact_name' in form.fields
+            and _is_section_collapsed(form, EMERGENCY_CONTACT_FIELDS, initial_data)
+        ),
+        'has_event_fields': any(
+            name not in CONTACT_FIELDS + EMERGENCY_CONTACT_FIELDS for name in form.fields
+        ),
     })
 
 
