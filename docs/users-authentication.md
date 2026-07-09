@@ -2,6 +2,23 @@
 
 This document describes the authentication methods available in RideHub and when each is used.
 
+## Design Goal: Frequent Users Stay Signed In
+
+The desirable steady state is that frequent users are signed in most of the time.
+Signed-in users get prefilled registration forms, skip email verification, and can
+manage their registrations, so the system is designed to establish and preserve
+authenticated sessions wherever possible:
+
+- Verifying an email at registration signs the user in, not just confirms the registration
+- The `require_email_verification` flag routes all anonymous registrations through
+  that sign-in-producing verification step
+- Sessions last 90 days and roll forward on every visit (`SESSION_COOKIE_AGE`,
+  `SESSION_SAVE_EVERY_REQUEST` in `settings.py`), so a member only gets signed out
+  after 90 days of inactivity
+
+Changes that shorten sessions, add sign-out paths, or let users complete flows
+anonymously work against this goal and should be weighed accordingly.
+
 ## Authentication Methods
 
 ### 1. Passwordless Email Links (Primary)
@@ -67,6 +84,19 @@ Traditional username/password authentication is available only through the Djang
 - Superuser accounts are created via `python manage.py createsuperuser`
 - These accounts use Django's built-in password authentication
 - Only used for administrative access, not for the main application
+
+## Email Verification at Event Registration
+
+Anonymous event registrations by users without a verified email are held in an
+`unverified` state until the registrant clicks a verification link sent by email.
+Clicking the link confirms the registration, marks the email as verified, and signs
+the user in. Signed-in users are confirmed directly and their email is considered
+verified automatically.
+
+**Feature flag**: The Waffle flag `require_email_verification` extends this to all
+anonymous registrations, including those whose email was previously verified. This
+nudges returning members to sign in (or verify again) rather than registering
+anonymously. Enable it incrementally via Django Admin > Waffle > Flags.
 
 ## User Lifecycle
 

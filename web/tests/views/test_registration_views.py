@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.urls import reverse
 from django.core import mail
+from waffle.testutils import override_flag
 
 from backoffice.models import Event, Program, UserProfile, Registration, Ride, Route, SpeedRange
 from backoffice.services.registration_service import VERIFICATION_TOKEN_SALT
@@ -1000,6 +1001,73 @@ class RegistrationFullFlowTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 302)
         self.assertIn('submitted', response.url)
+
+
+class RequireEmailVerificationFlagTests(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Flagged Event",
+            program=self.program,
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+        )
+        self.user = User.objects.create_user(
+            username='verified@example.com',
+            email='verified@example.com',
+            first_name='Verified',
+            last_name='User',
+        )
+        self.user.profile.email_verified = True
+        self.user.profile.save()
+        self.form_data = {
+            'first_name': 'Verified',
+            'last_name': 'User',
+            'email': 'verified@example.com',
+            'phone': '+16135550100',
+        }
+        mail.outbox = []
+
+    @override_flag('require_email_verification', active=True)
+    def test_anonymous_verified_user_held_for_verification_when_flag_active(self):
+        # Act
+        response = self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('verification-sent', response.url)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Verify', mail.outbox[0].subject)
+
+    @override_flag('require_email_verification', active=True)
+    def test_signed_in_user_confirmed_directly_when_flag_active(self):
+        # Arrange
+        self.client.force_login(self.user)
+
+        # Act
+        response = self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('submitted', response.url)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+
+    @override_flag('require_email_verification', active=False)
+    def test_anonymous_verified_user_confirmed_directly_when_flag_inactive(self):
+        # Act
+        response = self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('submitted', response.url)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
 
 
 class RegistrationVerifyViewTests(TestCase):

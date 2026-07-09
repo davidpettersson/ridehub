@@ -102,7 +102,8 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
                 registration_detail=_get_registration_detail(form),
                 event=event,
                 request_detail=request_detail,
-                acting_user=request.user if request.user.is_authenticated else None)
+                acting_user=request.user if request.user.is_authenticated else None,
+                force_verification=flag_is_active(request, 'require_email_verification'))
 
             if result == RegistrationResult.VERIFICATION_REQUIRED:
                 return redirect('registration_verification_sent')
