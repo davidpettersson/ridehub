@@ -9,6 +9,7 @@ Django web application for managing cycling events, deployed to Heroku.
 - Keep models lightweight and focused on data structure
 - Always create model validations to ensure data integrity
 - If the correct validation approach is unclear, ask the user
+- Frequent users should be signed in most of the time; see `docs/users-authentication.md` for the design goal and the mechanisms that serve it
 
 ## Code Style
 - No comments in code
