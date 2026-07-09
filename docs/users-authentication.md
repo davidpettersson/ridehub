@@ -2,6 +2,23 @@
 
 This document describes the authentication methods available in RideHub and when each is used.
 
+## Design Goal: Frequent Users Stay Signed In
+
+The desirable steady state is that frequent users are signed in most of the time.
+Signed-in users get prefilled registration forms, skip email verification, and can
+manage their registrations, so the system is designed to establish and preserve
+authenticated sessions wherever possible:
+
+- Verifying an email at registration signs the user in, not just confirms the registration
+- The `require_email_verification` flag routes all anonymous registrations through
+  that sign-in-producing verification step
+- Sessions last 90 days and roll forward on every visit (`SESSION_COOKIE_AGE`,
+  `SESSION_SAVE_EVERY_REQUEST` in `settings.py`), so a member only gets signed out
+  after 90 days of inactivity
+
+Changes that shorten sessions, add sign-out paths, or let users complete flows
+anonymously work against this goal and should be weighed accordingly.
+
 ## Authentication Methods
 
 ### 1. Passwordless Email Links (Primary)
