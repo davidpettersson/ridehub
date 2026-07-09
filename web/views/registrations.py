@@ -103,7 +103,15 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
             'emergency_contact_phone': user.profile.emergency_contact_phone,
         }
 
+    speed_run = flag_is_active(request, 'registration_speed_run')
+
     form = RegistrationForm(request.POST or None, event=event, initial=initial_data)
+    if not speed_run:
+        form.order_fields([
+            'first_name', 'last_name', 'email', 'phone',
+            'ride', 'speed_range_preference',
+            'emergency_contact_name', 'emergency_contact_phone',
+        ])
 
     if request.method == 'POST':
         if form.is_valid():
@@ -149,9 +157,11 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         'event': event,
         'form': form,
         'selected_ride_id': selected_ride_id,
-        'contact_collapsed': _is_section_collapsed(form, CONTACT_FIELDS, initial_data),
+        'speed_run': speed_run,
+        'contact_collapsed': speed_run and _is_section_collapsed(form, CONTACT_FIELDS, initial_data),
         'emergency_collapsed': (
-            'emergency_contact_name' in form.fields
+            speed_run
+            and 'emergency_contact_name' in form.fields
             and _is_section_collapsed(form, EMERGENCY_CONTACT_FIELDS, initial_data)
         ),
         'has_event_fields': any(

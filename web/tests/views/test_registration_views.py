@@ -1,4 +1,5 @@
 from django.core.signing import TimestampSigner
+from waffle.testutils import override_flag
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -380,6 +381,7 @@ class RegistrationCollapsedSectionTests(TestCase):
         user.profile.save()
         return user
 
+    @override_flag('registration_speed_run', active=True)
     def test_contact_section_collapsed_for_signed_in_user_with_complete_details(self):
         # Arrange
         user = self._create_user()
@@ -393,6 +395,7 @@ class RegistrationCollapsedSectionTests(TestCase):
         self.assertTrue(response.context['contact_collapsed'])
         self.assertTrue(response.context['emergency_collapsed'])
 
+    @override_flag('registration_speed_run', active=True)
     def test_contact_section_expanded_for_anonymous_user(self):
         # Act
         response = self.client.get(reverse('registration_create', args=[self.event.id]))
@@ -402,6 +405,7 @@ class RegistrationCollapsedSectionTests(TestCase):
         self.assertFalse(response.context['contact_collapsed'])
         self.assertFalse(response.context['emergency_collapsed'])
 
+    @override_flag('registration_speed_run', active=True)
     def test_contact_section_expanded_when_phone_missing(self):
         # Arrange
         user = self._create_user(with_phone=False)
@@ -415,6 +419,7 @@ class RegistrationCollapsedSectionTests(TestCase):
         self.assertFalse(response.context['contact_collapsed'])
         self.assertTrue(response.context['emergency_collapsed'])
 
+    @override_flag('registration_speed_run', active=True)
     def test_emergency_section_expanded_when_no_emergency_contact_on_profile(self):
         # Arrange
         user = self._create_user(with_emergency_contact=False)
@@ -428,6 +433,7 @@ class RegistrationCollapsedSectionTests(TestCase):
         self.assertTrue(response.context['contact_collapsed'])
         self.assertFalse(response.context['emergency_collapsed'])
 
+    @override_flag('registration_speed_run', active=True)
     def test_emergency_section_not_collapsed_when_event_does_not_require_it(self):
         # Arrange
         event = Event.objects.create(
@@ -449,6 +455,7 @@ class RegistrationCollapsedSectionTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context['emergency_collapsed'])
 
+    @override_flag('registration_speed_run', active=True)
     def test_contact_section_expanded_when_contact_field_has_error(self):
         # Arrange
         user = self._create_user()
@@ -471,6 +478,7 @@ class RegistrationCollapsedSectionTests(TestCase):
         self.assertFalse(response.context['contact_collapsed'])
         self.assertTrue(response.context['emergency_collapsed'])
 
+    @override_flag('registration_speed_run', active=True)
     def test_contact_section_stays_collapsed_when_error_is_elsewhere(self):
         # Arrange
         route = Route.objects.create(name="Test Route")
@@ -498,6 +506,7 @@ class RegistrationCollapsedSectionTests(TestCase):
         self.assertTrue(response.context['contact_collapsed'])
         self.assertTrue(response.context['emergency_collapsed'])
 
+    @override_flag('registration_speed_run', active=True)
     def test_event_fields_flag_reflects_form_contents(self):
         # Arrange
         user = self._create_user()
@@ -508,6 +517,47 @@ class RegistrationCollapsedSectionTests(TestCase):
 
         # Assert
         self.assertFalse(response.context['has_event_fields'])
+
+    @override_flag('registration_speed_run', active=False)
+    def test_sections_not_collapsed_when_flag_inactive(self):
+        # Arrange
+        user = self._create_user()
+        self.client.force_login(user)
+
+        # Act
+        response = self.client.get(reverse('registration_create', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['speed_run'])
+        self.assertFalse(response.context['contact_collapsed'])
+        self.assertFalse(response.context['emergency_collapsed'])
+
+    @override_flag('registration_speed_run', active=False)
+    def test_field_order_restored_when_flag_inactive(self):
+        # Arrange
+        route = Route.objects.create(name="Test Route")
+        Ride.objects.create(event=self.event, name="Test Ride", route=route)
+
+        # Act
+        response = self.client.get(reverse('registration_create', args=[self.event.id]))
+
+        # Assert
+        field_names = list(response.context['form'].fields)
+        self.assertLess(field_names.index('ride'), field_names.index('emergency_contact_name'))
+
+    @override_flag('registration_speed_run', active=True)
+    def test_field_order_when_flag_active(self):
+        # Arrange
+        route = Route.objects.create(name="Test Route")
+        Ride.objects.create(event=self.event, name="Test Ride", route=route)
+
+        # Act
+        response = self.client.get(reverse('registration_create', args=[self.event.id]))
+
+        # Assert
+        field_names = list(response.context['form'].fields)
+        self.assertLess(field_names.index('emergency_contact_name'), field_names.index('ride'))
 
 
 class RegistrationWithdrawAccessControlTests(TestCase):

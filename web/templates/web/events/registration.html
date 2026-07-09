@@ -55,6 +55,7 @@
                     {% endif %}
 
                     <div class="mb-4">
+                        {% if speed_run %}
                         <h3 class="fs-6 fw-semibold mb-3">Your details</h3>
                         {% if contact_collapsed %}
                             <div class="collapse show" id="contact-preview">
@@ -105,9 +106,13 @@
                             <hr class="my-4 opacity-25">
                             <h3 class="fs-6 fw-semibold mb-3">Event details</h3>
                         {% endif %}
+                        {% endif %}
 
                         {% for field in form %}
                             {% if field.name == 'first_name' or field.name == 'last_name' or field.name == 'email' or field.name == 'phone' or field.name == 'emergency_contact_name' or field.name == 'emergency_contact_phone' %}
+                                {% if not speed_run %}
+                                    {% include 'web/events/_registration_field.html' with field=field %}
+                                {% endif %}
                             {% elif field.name == 'ride_leader_preference' or field.name == 'first_time_attendee' %}
                                 <div class="mb-3">
                                     <div class="form-check">
