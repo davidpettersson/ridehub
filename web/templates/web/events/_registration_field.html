@@ -1,0 +1,12 @@
+{% load form_filters %}
+<div class="mb-3">
+    <label for="{{ field.id_for_label }}"
+           class="form-label fw-medium">{{ field.label }}</label>
+    {{ field|addclass:"form-control" }}
+    {% if field.errors %}
+        <div class="small text-danger mt-1">{{ field.errors }}</div>
+    {% endif %}
+    {% if field.help_text %}
+        <div class="form-text small">{{ field.help_text }}</div>
+    {% endif %}
+</div>
