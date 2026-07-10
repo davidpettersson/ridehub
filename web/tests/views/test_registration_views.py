@@ -463,9 +463,9 @@ class RegistrationCollapsedSectionTests(TestCase):
         self.client.force_login(user)
 
         form_data = {
-            'first_name': 'Collapse',
+            'first_name': 'C',
             'last_name': 'User',
-            'email': 'not-an-email',
+            'email': user.email,
             'phone': '+16135550100',
             'emergency_contact_name': 'Jane Doe',
             'emergency_contact_phone': '613-555-0199',
@@ -1400,3 +1400,82 @@ class RegistrationDisabledTests(TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 400)
+
+class RegistrationEmailLockdownTests(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Lockdown Event",
+            program=self.program,
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+        )
+        self.user = User.objects.create_user(
+            username='member@example.com',
+            email='member@example.com',
+            first_name='Member',
+            last_name='User',
+        )
+        mail.outbox = []
+
+    def test_email_field_disabled_when_signed_in(self):
+        # Arrange
+        self.client.force_login(self.user)
+
+        # Act
+        response = self.client.get(reverse('registration_create', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['form'].fields['email'].disabled)
+
+    def test_email_field_editable_when_anonymous(self):
+        # Act
+        response = self.client.get(reverse('registration_create', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['form'].fields['email'].disabled)
+
+    def test_signed_in_user_cannot_register_with_other_email(self):
+        # Arrange
+        self.client.force_login(self.user)
+        form_data = {
+            'first_name': 'Member',
+            'last_name': 'User',
+            'email': 'someone-else@example.invalid',
+            'phone': '+16135550100',
+        }
+
+        # Act
+        response = self.client.post(reverse('registration_create', args=[self.event.id]), form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.email, 'member@example.com')
+        self.assertEqual(registration.user, self.user)
+        self.assertFalse(User.objects.filter(email='someone-else@example.invalid').exists())
+
+    def test_signed_in_registration_marks_own_email_verified(self):
+        # Arrange
+        self.client.force_login(self.user)
+        form_data = {
+            'first_name': 'Member',
+            'last_name': 'User',
+            'email': 'member@example.com',
+            'phone': '+16135550100',
+        }
+
+        # Act
+        response = self.client.post(reverse('registration_create', args=[self.event.id]), form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+        self.user.profile.refresh_from_db()
+        self.assertTrue(self.user.profile.email_verified)

@@ -246,3 +246,63 @@ class RegistrationCleanTestCase(TestCase):
         with self.assertRaises(ValidationError) as context:
             registration.clean()
         self.assertIn('first_time_attendee', context.exception.message_dict)
+
+
+class RegistrationEmailMatchesUserTestCase(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.user = User.objects.create_user(username='testuser', email='test@example.com')
+        self.event = Event.objects.create(
+            program=self.program,
+            name="Test Event",
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6)
+        )
+
+    def _build_registration(self, email, authenticated):
+        return Registration(
+            user=self.user,
+            event=self.event,
+            name="Test User",
+            first_name="Test",
+            last_name="User",
+            email=email,
+            authenticated=authenticated,
+        )
+
+    def test_clean_raises_error_when_authenticated_email_differs_from_user_email(self):
+        # Arrange
+        registration = self._build_registration('other@example.com', authenticated=True)
+
+        # Act & Assert
+        with self.assertRaises(ValidationError) as context:
+            registration.clean()
+        self.assertIn('email', context.exception.message_dict)
+
+    def test_clean_passes_when_authenticated_email_matches_user_email(self):
+        # Arrange
+        registration = self._build_registration('test@example.com', authenticated=True)
+
+        # Act
+        registration.clean()
+
+    def test_clean_ignores_email_case_when_comparing(self):
+        # Arrange
+        registration = self._build_registration('Test@Example.com', authenticated=True)
+
+        # Act
+        registration.clean()
+
+    def test_clean_passes_when_anonymous_email_differs_from_user_email(self):
+        # Arrange
+        registration = self._build_registration('other@example.com', authenticated=False)
+
+        # Act
+        registration.clean()
+
+    def test_clean_passes_when_authenticated_is_none(self):
+        # Arrange
+        registration = self._build_registration('other@example.com', authenticated=None)
+
+        # Act
+        registration.clean()

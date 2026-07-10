@@ -136,9 +136,9 @@ class RegistrationService:
             recipient_list=[registration.email],
         )
 
-    def _should_skip_verification(self, user: User, request_detail: RequestDetail | None,
+    def _should_skip_verification(self, user: User, acting_user: User | None,
                                   force_verification: bool) -> bool:
-        if request_detail and request_detail.authenticated:
+        if acting_user is not None and acting_user.is_authenticated and acting_user.pk == user.pk:
             if not user.profile.email_verified:
                 user.profile.email_verified = True
                 user.profile.save(update_fields=['email_verified'])
@@ -230,7 +230,7 @@ class RegistrationService:
 
         registration = self._create_registration(event, user, user_detail, registration_detail, request_detail)
 
-        if self._should_skip_verification(user, request_detail, force_verification):
+        if self._should_skip_verification(user, acting_user, force_verification):
             self._send_confirmation_email(registration)
             registration.confirm()
             registration.save()

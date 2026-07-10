@@ -24,6 +24,8 @@ PROSE_EDITOR_CONFIG = {
 }
 from phonenumber_field.modelfields import PhoneNumberField
 
+from backoffice.utils import lower_email
+
 
 class Program(models.Model):
     class Article(models.TextChoices):
@@ -705,6 +707,11 @@ class Registration(models.Model):
         return f"{self.name} for {self.event}"
 
     def clean(self):
+        if self.authenticated and self.user_id and lower_email(self.email) != lower_email(self.user.email):
+            raise ValidationError({
+                'email': "Email must match the account email for registrations made while signed in."
+            })
+
         if self.ride and self.ride.event_id != self.event_id:
             raise ValidationError({
                 'ride': f"The ride '{self.ride}' does not belong to this event."
