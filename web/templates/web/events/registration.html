@@ -1,5 +1,6 @@
 {% extends 'web/_base_bootstrap.html' %}
 {% load form_filters %}
+{% load phone_filters %}
 {% block title %}Register for {{ event.name }}{% endblock %}
 {% block content %}
     <div class="mb-4">
@@ -62,7 +63,7 @@
                                 <div class="position-relative border rounded p-3 bg-body-tertiary mb-3">
                                     <div class="fw-medium preview-fade" id="contact-preview-name">{{ form.first_name.value }} {{ form.last_name.value }}</div>
                                     <div class="text-muted small preview-fade" id="contact-preview-email">{{ form.email.value }}</div>
-                                    <div class="text-muted small preview-fade" id="contact-preview-phone">{{ form.phone.value }}</div>
+                                    <div class="text-muted small preview-fade" id="contact-preview-phone">{{ form.phone.value|national_phone }}</div>
                                     <button type="button" class="btn btn-outline-secondary btn-sm position-absolute top-50 end-0 translate-middle-y me-3"
                                             data-bs-toggle="collapse" data-bs-target="#contact-preview, #contact-fields"
                                             aria-expanded="false" aria-controls="contact-preview contact-fields">
@@ -93,7 +94,7 @@
                                 <div class="collapse show" id="emergency-preview">
                                     <div class="position-relative border rounded p-3 bg-body-tertiary mb-3">
                                         <div class="fw-medium preview-fade" id="emergency-preview-name">{{ form.emergency_contact_name.value }}</div>
-                                        <div class="text-muted small preview-fade" id="emergency-preview-meta">{{ form.emergency_contact_phone.value }}</div>
+                                        <div class="text-muted small preview-fade" id="emergency-preview-meta">{{ form.emergency_contact_phone.value|national_phone }}</div>
                                         <button type="button" class="btn btn-outline-secondary btn-sm position-absolute top-50 end-0 translate-middle-y me-3"
                                                 data-bs-toggle="collapse" data-bs-target="#emergency-preview, #emergency-fields"
                                                 aria-expanded="false" aria-controls="emergency-preview emergency-fields">
