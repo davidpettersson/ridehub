@@ -117,7 +117,7 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         if form.is_valid():
             request_detail = request_service.extract_details(request)
             user_detail = _get_user_details(form)
-            if user:
+            if user and user.email:
                 user_detail.email = user.email
             result = registration_service.register(
                 user_detail=user_detail,

@@ -1479,3 +1479,37 @@ class RegistrationEmailLockdownTests(TestCase):
         self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
         self.user.profile.refresh_from_db()
         self.assertTrue(self.user.profile.email_verified)
+
+    def test_email_field_editable_when_signed_in_user_has_no_email(self):
+        # Arrange
+        user = User.objects.create_user(username='no-email-user', email='')
+        self.client.force_login(user)
+
+        # Act
+        response = self.client.get(reverse('registration_create', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['form'].fields['email'].disabled)
+
+    def test_signed_in_user_without_email_registers_with_verification(self):
+        # Arrange
+        user = User.objects.create_user(username='no-email-user', email='')
+        self.client.force_login(user)
+        form_data = {
+            'first_name': 'Member',
+            'last_name': 'User',
+            'email': 'entered@example.com',
+            'phone': '+16135550100',
+        }
+
+        # Act
+        response = self.client.post(reverse('registration_create', args=[self.event.id]), form_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.email, 'entered@example.com')
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
+        registered_user = User.objects.get(email='entered@example.com')
+        self.assertFalse(registered_user.profile.email_verified)

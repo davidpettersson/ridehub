@@ -51,7 +51,7 @@ class RegistrationForm(forms.Form):
         assert event
         self.event = event
 
-        if user is not None and user.is_authenticated:
+        if user is not None and user.is_authenticated and user.email:
             self.fields['email'].disabled = True
             self.initial['email'] = user.email
 
