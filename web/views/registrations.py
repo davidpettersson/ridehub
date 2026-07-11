@@ -105,7 +105,7 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
 
     speed_run = flag_is_active(request, 'registration_speed_run')
 
-    form = RegistrationForm(request.POST or None, event=event, initial=initial_data)
+    form = RegistrationForm(request.POST or None, event=event, user=user, initial=initial_data)
     if not speed_run:
         form.order_fields([
             'first_name', 'last_name', 'email', 'phone',
@@ -117,6 +117,8 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         if form.is_valid():
             request_detail = request_service.extract_details(request)
             user_detail = _get_user_details(form)
+            if user and user.email:
+                user_detail.email = user.email
             result = registration_service.register(
                 user_detail=user_detail,
                 registration_detail=_get_registration_detail(form),

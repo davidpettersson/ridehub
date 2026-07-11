@@ -45,10 +45,15 @@ class RegistrationForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         event: Event = kwargs.pop('event', None)
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
         assert event
         self.event = event
+
+        if user is not None and user.is_authenticated and user.email:
+            self.fields['email'].disabled = True
+            self.initial['email'] = user.email
 
         registration_service = RegistrationService()
         requirements = registration_service.get_event_requirements(event)

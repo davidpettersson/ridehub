@@ -2226,6 +2226,12 @@ class EmailVerificationFlowTestCase(TestCase):
 
     def test_register_authenticated_user_confirms_directly(self):
         # Arrange
+        user = User.objects.create_user(
+            username='test@example.com',
+            email='test@example.com',
+            first_name='Test',
+            last_name='User',
+        )
         request_detail = RequestDetail(
             ip_address='127.0.0.1',
             user_agent='Test',
@@ -2234,7 +2240,8 @@ class EmailVerificationFlowTestCase(TestCase):
 
         # Act
         result = self.service.register(
-            self.user_detail, self.registration_detail, self.event, request_detail
+            self.user_detail, self.registration_detail, self.event, request_detail,
+            acting_user=user,
         )
 
         # Assert
@@ -2244,6 +2251,12 @@ class EmailVerificationFlowTestCase(TestCase):
 
     def test_register_authenticated_user_sets_email_verified(self):
         # Arrange
+        user = User.objects.create_user(
+            username='test@example.com',
+            email='test@example.com',
+            first_name='Test',
+            last_name='User',
+        )
         request_detail = RequestDetail(
             ip_address='127.0.0.1',
             user_agent='Test',
@@ -2252,13 +2265,41 @@ class EmailVerificationFlowTestCase(TestCase):
 
         # Act
         self.service.register(
-            self.user_detail, self.registration_detail, self.event, request_detail
+            self.user_detail, self.registration_detail, self.event, request_detail,
+            acting_user=user,
         )
 
         # Assert
         user = User.objects.get(email='test@example.com')
         user.profile.refresh_from_db()
         self.assertTrue(user.profile.email_verified)
+
+    def test_register_authenticated_user_with_other_email_holds_for_verification(self):
+        # Arrange
+        acting_user = User.objects.create_user(
+            username='someone-else@example.com',
+            email='someone-else@example.com',
+            first_name='Someone',
+            last_name='Else',
+        )
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=True,
+        )
+
+        # Act
+        result = self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail,
+            acting_user=acting_user,
+        )
+
+        # Assert
+        self.assertEqual(result, RegistrationResult.VERIFICATION_REQUIRED)
+        registration = Registration.objects.get(event=self.event)
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
+        user = User.objects.get(email='test@example.com')
+        self.assertFalse(user.profile.email_verified)
 
     def test_register_unverified_unauthenticated_user_holds_for_verification(self):
         # Arrange
@@ -2309,6 +2350,12 @@ class EmailVerificationFlowTestCase(TestCase):
 
     def test_register_force_verification_confirms_authenticated_user(self):
         # Arrange
+        user = User.objects.create_user(
+            username='test@example.com',
+            email='test@example.com',
+            first_name='Test',
+            last_name='User',
+        )
         request_detail = RequestDetail(
             ip_address='127.0.0.1',
             user_agent='Test',
@@ -2318,7 +2365,7 @@ class EmailVerificationFlowTestCase(TestCase):
         # Act
         result = self.service.register(
             self.user_detail, self.registration_detail, self.event, request_detail,
-            force_verification=True,
+            acting_user=user, force_verification=True,
         )
 
         # Assert
