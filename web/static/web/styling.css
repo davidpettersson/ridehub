@@ -44,6 +44,10 @@
   display: none !important;
 }
 
+.min-w-0 {
+  min-width: 0;
+}
+
 body {
   font-family: 'Inter', sans-serif;
   min-height: 100vh;

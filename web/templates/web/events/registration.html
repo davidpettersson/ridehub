@@ -62,7 +62,7 @@
                                 <div class="d-flex justify-content-between align-items-center gap-3 border rounded p-3 bg-body-tertiary mb-3">
                                     <div class="min-w-0">
                                         <div class="fw-medium" id="contact-preview-name">{{ form.first_name.value }} {{ form.last_name.value }}</div>
-                                        <div class="text-muted small" id="contact-preview-meta">{{ form.email.value }} · {{ form.phone.value }}</div>
+                                        <div class="text-muted small text-break" id="contact-preview-meta">{{ form.email.value }} · {{ form.phone.value }}</div>
                                     </div>
                                     <button type="button" class="btn btn-outline-secondary btn-sm flex-shrink-0"
                                             data-bs-toggle="collapse" data-bs-target="#contact-preview, #contact-fields"
@@ -95,7 +95,7 @@
                                     <div class="d-flex justify-content-between align-items-center gap-3 border rounded p-3 bg-body-tertiary mb-3">
                                         <div class="min-w-0">
                                             <div class="fw-medium" id="emergency-preview-name">{{ form.emergency_contact_name.value }}</div>
-                                            <div class="text-muted small" id="emergency-preview-meta">{{ form.emergency_contact_phone.value }}</div>
+                                            <div class="text-muted small text-break" id="emergency-preview-meta">{{ form.emergency_contact_phone.value }}</div>
                                         </div>
                                         <button type="button" class="btn btn-outline-secondary btn-sm flex-shrink-0"
                                                 data-bs-toggle="collapse" data-bs-target="#emergency-preview, #emergency-fields"
