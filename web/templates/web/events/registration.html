@@ -61,7 +61,8 @@
                             <div class="collapse show" id="contact-preview">
                                 <div class="position-relative border rounded p-3 bg-body-tertiary mb-3">
                                     <div class="fw-medium preview-fade" id="contact-preview-name">{{ form.first_name.value }} {{ form.last_name.value }}</div>
-                                    <div class="text-muted small preview-fade" id="contact-preview-meta">{{ form.email.value }} · {{ form.phone.value }}</div>
+                                    <div class="text-muted small preview-fade" id="contact-preview-email">{{ form.email.value }}</div>
+                                    <div class="text-muted small preview-fade" id="contact-preview-phone">{{ form.phone.value }}</div>
                                     <button type="button" class="btn btn-outline-secondary btn-sm position-absolute top-50 end-0 translate-middle-y me-3"
                                             data-bs-toggle="collapse" data-bs-target="#contact-preview, #contact-fields"
                                             aria-expanded="false" aria-controls="contact-preview contact-fields">
@@ -223,7 +224,8 @@
                 const email = document.getElementById('id_email').value.trim();
                 const phone = document.getElementById('id_phone').value.trim();
                 document.getElementById('contact-preview-name').textContent = first + ' ' + last;
-                document.getElementById('contact-preview-meta').textContent = email + ' · ' + phone;
+                document.getElementById('contact-preview-email').textContent = email;
+                document.getElementById('contact-preview-phone').textContent = phone;
             });
 
             bindPreviewSync('emergency-preview', function () {
