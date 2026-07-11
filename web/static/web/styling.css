@@ -44,6 +44,13 @@
   display: none !important;
 }
 
+.preview-fade {
+  white-space: nowrap;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 6rem), transparent calc(100% - 2rem));
+  mask-image: linear-gradient(to right, black calc(100% - 6rem), transparent calc(100% - 2rem));
+}
+
 body {
   font-family: 'Inter', sans-serif;
   min-height: 100vh;
