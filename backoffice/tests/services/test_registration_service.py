@@ -823,14 +823,14 @@ class RegistrationServiceEmailTests(TestCase):
         )
 
         # Act
-        self.service.register(user_detail, registration_detail, self.event)
+        self.service.register(user_detail, registration_detail, self.event, acting_user=self.user)
 
         # Assert
         self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
 
         expected_profile_url = f"https://{settings.WEB_HOST}{reverse('profile')}"
-        
+
         # HTML part (if multipart)
         if email.alternatives:
             html_body = email.alternatives[0][0]
@@ -862,7 +862,7 @@ class RegistrationServiceEmailTests(TestCase):
         )
 
         # Act
-        self.service.register(user_detail, registration_detail, self.event)
+        self.service.register(user_detail, registration_detail, self.event, acting_user=ride_leader_user)
 
         # Assert
         self.assertEqual(len(mail.outbox), 1)
@@ -2066,14 +2066,14 @@ class RegisterMethodTestCase(TestCase):
             emergency_contact_phone=None
         )
 
-        self.service.register(user_detail, registration_detail, self.event)
+        self.service.register(user_detail, registration_detail, self.event, acting_user=user)
 
         registrations = Registration.objects.filter(user=user, event=self.event)
         self.assertEqual(registrations.count(), 2)
         new_registration = registrations.exclude(pk=old_registration.pk).first()
         self.assertEqual(new_registration.state, Registration.STATE_CONFIRMED)
 
-    def test_register_sets_registration_state_to_confirmed_for_verified_user(self):
+    def test_register_sets_registration_state_to_unverified_for_anonymous_verified_user(self):
         # Arrange
         user = User.objects.create_user(
             username='confirmed@example.com',
@@ -2103,9 +2103,9 @@ class RegisterMethodTestCase(TestCase):
 
         # Assert
         registration = Registration.objects.get(event=self.event)
-        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
 
-    def test_register_sends_confirmation_email_for_verified_user(self):
+    def test_register_sends_confirmation_email_for_authenticated_user(self):
         # Arrange
         user = User.objects.create_user(
             username='emailtest@example.com',
@@ -2131,7 +2131,7 @@ class RegisterMethodTestCase(TestCase):
         )
 
         # Act
-        self.service.register(user_detail, registration_detail, self.event)
+        self.service.register(user_detail, registration_detail, self.event, acting_user=user)
 
         # Assert
         self.assertEqual(len(mail.outbox), 1)
@@ -2205,7 +2205,7 @@ class EmailVerificationFlowTestCase(TestCase):
         )
         mail.outbox = []
 
-    def test_register_verified_user_confirms_directly(self):
+    def test_register_verified_anonymous_user_holds_for_verification(self):
         # Arrange
         user = User.objects.create_user(
             username='test@example.com',
@@ -2220,9 +2220,9 @@ class EmailVerificationFlowTestCase(TestCase):
         result = self.service.register(self.user_detail, self.registration_detail, self.event)
 
         # Assert
-        self.assertEqual(result, RegistrationResult.CONFIRMED)
+        self.assertEqual(result, RegistrationResult.VERIFICATION_REQUIRED)
         registration = Registration.objects.get(event=self.event)
-        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
 
     def test_register_authenticated_user_confirms_directly(self):
         # Arrange
@@ -2319,7 +2319,7 @@ class EmailVerificationFlowTestCase(TestCase):
         registration = Registration.objects.get(event=self.event)
         self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
 
-    def test_register_force_verification_holds_verified_unauthenticated_user(self):
+    def test_register_verified_unauthenticated_user_receives_verification_email(self):
         # Arrange
         user = User.objects.create_user(
             username='test@example.com',
@@ -2338,7 +2338,6 @@ class EmailVerificationFlowTestCase(TestCase):
         # Act
         result = self.service.register(
             self.user_detail, self.registration_detail, self.event, request_detail,
-            force_verification=True,
         )
 
         # Assert
@@ -2347,57 +2346,6 @@ class EmailVerificationFlowTestCase(TestCase):
         self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("Verify", mail.outbox[0].subject)
-
-    def test_register_force_verification_confirms_authenticated_user(self):
-        # Arrange
-        user = User.objects.create_user(
-            username='test@example.com',
-            email='test@example.com',
-            first_name='Test',
-            last_name='User',
-        )
-        request_detail = RequestDetail(
-            ip_address='127.0.0.1',
-            user_agent='Test',
-            authenticated=True,
-        )
-
-        # Act
-        result = self.service.register(
-            self.user_detail, self.registration_detail, self.event, request_detail,
-            acting_user=user, force_verification=True,
-        )
-
-        # Assert
-        self.assertEqual(result, RegistrationResult.CONFIRMED)
-        registration = Registration.objects.get(event=self.event)
-        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
-
-    def test_register_without_force_verification_confirms_verified_user(self):
-        # Arrange
-        user = User.objects.create_user(
-            username='test@example.com',
-            email='test@example.com',
-            first_name='Test',
-            last_name='User',
-        )
-        user.profile.email_verified = True
-        user.profile.save()
-        request_detail = RequestDetail(
-            ip_address='127.0.0.1',
-            user_agent='Test',
-            authenticated=False,
-        )
-
-        # Act
-        result = self.service.register(
-            self.user_detail, self.registration_detail, self.event, request_detail,
-        )
-
-        # Assert
-        self.assertEqual(result, RegistrationResult.CONFIRMED)
-        registration = Registration.objects.get(event=self.event)
-        self.assertEqual(registration.state, Registration.STATE_CONFIRMED)
 
     def test_register_sends_verification_email_not_confirmation(self):
         # Arrange

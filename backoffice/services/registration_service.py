@@ -136,16 +136,13 @@ class RegistrationService:
             recipient_list=[registration.email],
         )
 
-    def _should_skip_verification(self, user: User, acting_user: User | None,
-                                  force_verification: bool) -> bool:
+    def _should_skip_verification(self, user: User, acting_user: User | None) -> bool:
         if acting_user is not None and acting_user.is_authenticated and acting_user.pk == user.pk:
             if not user.profile.email_verified:
                 user.profile.email_verified = True
                 user.profile.save(update_fields=['email_verified'])
             return True
-        if force_verification:
-            return False
-        return user.profile.email_verified
+        return False
 
     def _send_verification_email(self, registration: Registration) -> None:
         signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
@@ -208,8 +205,8 @@ class RegistrationService:
         return registration, None
 
     def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event,
-                 request_detail: RequestDetail | None = None, acting_user: User | None = None,
-                 force_verification: bool = False) -> RegistrationResult:
+                 request_detail: RequestDetail | None = None,
+                 acting_user: User | None = None) -> RegistrationResult:
         update_existing = (
             acting_user is not None
             and acting_user.is_authenticated
@@ -230,7 +227,7 @@ class RegistrationService:
 
         registration = self._create_registration(event, user, user_detail, registration_detail, request_detail)
 
-        if self._should_skip_verification(user, acting_user, force_verification):
+        if self._should_skip_verification(user, acting_user):
             self._send_confirmation_email(registration)
             registration.confirm()
             registration.save()
