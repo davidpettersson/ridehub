@@ -9,6 +9,7 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 
 from django_tables2 import RequestConfig
 from waffle import flag_is_active
@@ -343,6 +344,7 @@ def event_emergency_contacts(request: HttpRequest, event_id: int) -> HttpRespons
 
 
 @login_required
+@never_cache
 def event_registrations_print(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 

@@ -584,6 +584,16 @@ class EventRegistrationsPrintViewTests(BaseEventViewTestCase):
         # Assert
         self.assertEqual(AuditEvent.objects.count(), 0)
 
+    def test_response_is_not_cacheable(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertIn('no-store', response['Cache-Control'])
+
     def _make_event_old(self):
         self.event.starts_at = timezone.now() - timedelta(hours=80)
         self.event.ends_at = timezone.now() - timedelta(hours=78)
