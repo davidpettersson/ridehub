@@ -493,6 +493,168 @@ class EventEmergencyContactsViewTests(BaseEventViewTestCase):
         # Assert
         self.assertEqual(AuditEvent.objects.count(), 0)
 
+    def test_response_is_not_cacheable(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url, HTTP_HX_REQUEST='true')
+
+        # Assert
+        self.assertIn('no-store', response['Cache-Control'])
+
+
+class EventRegistrationsPrintViewTests(BaseEventViewTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('event_registrations_print', kwargs={'event_id': self.event.id})
+
+    def test_ride_leader_sees_printable_contacts(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/events/registrations_print.html')
+        self.assertTrue(response.context['contacts_revealed'])
+        self.assertContains(response, 'Emergency Contact')
+        self.assertContains(response, '123-456-7890')
+        self.assertContains(response, 'mailto:regular@example.com')
+
+    def test_staff_sees_printable_contacts(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/events/registrations_print.html')
+        self.assertContains(response, 'Emergency Contact')
+
+    def test_regular_user_denied(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 403)
+
+    def test_anonymous_user_redirected_to_login(self):
+        # Arrange
+        client = Client()
+
+        # Act
+        response = client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login', response.url)
+
+    def test_ride_leader_view_logs_audit_event(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(AuditEvent.objects.count(), 1)
+        audit_event = AuditEvent.objects.get()
+        self.assertEqual(audit_event.action, 'printable_emergency_contacts_viewed')
+        self.assertEqual(audit_event.target, self.event)
+
+    def test_staff_view_logs_audit_event(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(AuditEvent.objects.count(), 1)
+        audit_event = AuditEvent.objects.get()
+        self.assertEqual(audit_event.action, 'printable_emergency_contacts_viewed')
+        self.assertEqual(audit_event.target, self.event)
+
+    def test_regular_user_denied_logs_no_audit_event(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(AuditEvent.objects.count(), 0)
+
+    def test_response_is_not_cacheable(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertIn('no-store', response['Cache-Control'])
+
+    def _make_event_old(self):
+        self.event.starts_at = timezone.now() - timedelta(hours=80)
+        self.event.ends_at = timezone.now() - timedelta(hours=78)
+        self.event.registration_closes_at = timezone.now() - timedelta(hours=81)
+        self.event.save()
+
+    def test_staff_can_access_printable_contacts_for_old_event(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+        self._make_event_old()
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['contacts_revealed'])
+
+    def test_ride_leader_cannot_access_printable_contacts_for_old_event(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+        self._make_event_old()
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('riders_list', kwargs={'event_id': self.event.id}))
+
+    def test_registrations_page_shows_print_button_for_ride_leader(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(reverse('riders_list', kwargs={'event_id': self.event.id}))
+
+        # Assert
+        self.assertContains(response, 'Print contact details')
+        self.assertContains(response, self.url)
+
+    def test_registrations_page_hides_print_button_for_regular_user(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(reverse('riders_list', kwargs={'event_id': self.event.id}))
+
+        # Assert
+        self.assertNotContains(response, 'Print contact details')
+
 
 class EventEmailsViewTests(BaseEventViewTestCase):
 

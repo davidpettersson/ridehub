@@ -160,6 +160,13 @@
             <i class="bi bi-shield-exclamation me-2"></i> Reveal contact details
         </button>
         {% endif %}
+        {% if can_access_rider_contacts %}
+        <a href="{% url 'event_registrations_print' event.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
+           class="btn btn-danger btn-sm rounded-pill d-inline-flex align-items-center"
+           target="_blank" rel="noopener">
+            <i class="bi bi-printer me-2"></i> Print contact details
+        </a>
+        {% endif %}
     </div>
     {% if can_access_rider_contacts %}
     <div id="copy-success-message" class="alert alert-success mb-3 small d-none d-print-none" role="alert">
