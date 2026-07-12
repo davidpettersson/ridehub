@@ -90,6 +90,17 @@
     .overflow-auto {
         overflow: visible !important;
     }
+
+    .table thead th.orderable a::after,
+    .table thead th.asc a::after,
+    .table thead th.desc a::after {
+        content: none !important;
+    }
+
+    .table td a[href^="tel:"],
+    .table td a[href^="mailto:"] {
+        white-space: nowrap !important;
+    }
 </style>
 
 <div class="mb-4">
