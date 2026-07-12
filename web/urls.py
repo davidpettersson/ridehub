@@ -1,7 +1,7 @@
 from django.urls import path
 
 from web.views.events import event_detail, event_list, event_registrations, \
-    event_emergency_contacts, event_emails, calendar_view, events_redirect
+    event_emergency_contacts, event_emails, event_registrations_print, calendar_view, events_redirect
 from web.views.events_ical import EventFeed
 from web.views.helpers import changes_email_addresses
 from web.views.login import LoginFormView, logout_view, CustomLoginView
@@ -35,6 +35,7 @@ urlpatterns = [
     path('events/<int:event_id>/registrations/<int:registration_id>/withdraw', staff_registration_withdraw, name='staff_registration_withdraw'),
     path('events/<int:event_id>/registrations/emergency-contacts', event_emergency_contacts, name='event_emergency_contacts'),
     path('events/<int:event_id>/registrations/emails', event_emails, name='event_emails'),
+    path('events/<int:event_id>/registrations/print', event_registrations_print, name='event_registrations_print'),
     path('events/<int:event_id>/registrations', event_registrations, name='riders_list'),
     path('events/<int:event_id>/registration', registration_create, name='registration_create'),
     path('events/<int:event_id>', event_detail, name='event_detail'),

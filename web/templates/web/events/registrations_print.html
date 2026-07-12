@@ -1,0 +1,135 @@
+{% extends 'web/_base_bootstrap.html' %}
+{% load django_tables2 %}
+{% block title %}Printable contact details for {{ event.name }}{% endblock %}
+{% block content %}
+<style media="print">
+    nav, .navbar, .navbar-obc, footer, .footer {
+        display: none !important;
+    }
+
+    tr {
+        page-break-inside: avoid !important;
+    }
+
+    html, body, main, .mb-5 {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+    }
+
+    @page {
+        size: landscape;
+        margin: 0.5cm;
+    }
+
+    body {
+        background-color: white !important;
+        color: black !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .container, .container-fluid, .container-lg, .container-md,
+    .container-sm, .container-xl, .container-xxl {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .card > .p-4 {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .text-muted {
+        color: #333 !important;
+    }
+
+    .badge {
+        border: 1px solid #333 !important;
+        color: black !important;
+        background-color: white !important;
+    }
+
+    a {
+        color: black !important;
+        text-decoration: none !important;
+    }
+
+    .text-primary {
+        color: black !important;
+    }
+
+    .table {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .table th, .table td {
+        border: 1px solid #ddd !important;
+        padding: 4px !important;
+        word-wrap: break-word !important;
+    }
+
+    .mb-4, .mb-5, .py-4, .py-5, .p-4 {
+        margin: 0 !important;
+        padding: 0.2rem !important;
+    }
+
+    .overflow-auto {
+        overflow: visible !important;
+    }
+</style>
+
+<div class="mb-4">
+    <div class="mb-4 d-print-none d-flex flex-wrap gap-2 align-items-center">
+        <a href="{% url 'riders_list' event.id %}" class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
+            <i class="bi bi-arrow-left me-2"></i> Back to registrations
+        </a>
+        <button class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center" onclick="window.print()">
+            <i class="bi bi-printer me-2"></i> Print
+        </button>
+    </div>
+
+    <div class="mb-4">
+        <div class="text-muted small mb-2">
+            {{ event.starts_at|date:"l, F j" }} · {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% if event.starts_at|date:"Y-m-d" != event.ends_at|date:"Y-m-d" %}<sup>+1</sup>{% endif %}{% endif %}
+        </div>
+        <h1 class="fs-2 fw-bold mb-2">
+            {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
+        </h1>
+    </div>
+
+    <h2 class="fs-5 fw-medium mb-3">Registered riders ({{ filtered_riders|length }})</h2>
+    {% if filtered_riders %}
+    <div class="card shadow-sm">
+        <div class="p-4">
+            <div class="overflow-auto">
+                {% render_table table %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="py-5 text-center card">
+        <p class="text-muted">No riders found for this event.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+window.addEventListener('load', function() {
+    window.print();
+});
+</script>
+{% endblock %}
