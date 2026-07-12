@@ -325,6 +325,7 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
 
 
 @login_required
+@never_cache
 def event_emergency_contacts(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 

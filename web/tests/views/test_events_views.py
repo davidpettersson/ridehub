@@ -493,6 +493,16 @@ class EventEmergencyContactsViewTests(BaseEventViewTestCase):
         # Assert
         self.assertEqual(AuditEvent.objects.count(), 0)
 
+    def test_response_is_not_cacheable(self):
+        # Arrange
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url, HTTP_HX_REQUEST='true')
+
+        # Assert
+        self.assertIn('no-store', response['Cache-Control'])
+
 
 class EventRegistrationsPrintViewTests(BaseEventViewTestCase):
 
