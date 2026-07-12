@@ -38,8 +38,15 @@
 
                     <div class="mb-2">
                         <div class="d-flex align-items-center">
-                            <span class="fw-medium me-2">Emergency contact:</span>
-                            <span>{% if user.profile.emergency_contact_name and user.profile.emergency_contact_phone %}{{ user.profile.emergency_contact_name }}, {{ user.profile.emergency_contact_phone }}{% else %}Not provided{% endif %}</span>
+                            <span class="fw-medium me-2">Emergency contact name:</span>
+                            <span>{% if user.profile.emergency_contact_name %}{{ user.profile.emergency_contact_name }}{% else %}Not provided{% endif %}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center">
+                            <span class="fw-medium me-2">Emergency contact phone:</span>
+                            <span>{% if user.profile.emergency_contact_phone %}{{ user.profile.emergency_contact_phone }}{% else %}Not provided{% endif %}</span>
                         </div>
                     </div>
 
