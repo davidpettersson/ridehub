@@ -6,5 +6,5 @@ from backoffice.services.announcement_service import AnnouncementService
 
 def active_announcements(request: HttpRequest) -> HttpResponse:
     service = AnnouncementService()
-    announcements = service.fetch_active_announcements()
+    announcements = service.fetch_active_announcements(request.user)
     return render(request, 'web/components/announcements.html', {'announcements': announcements})

@@ -1,6 +1,8 @@
 import datetime
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
 from django.utils import timezone
 
@@ -16,6 +18,11 @@ class BaseAnnouncementServiceTest(TestCase):
         self.one_hour_from_now = self.now + timedelta(hours=1)
         self.two_hours_ago = self.now - timedelta(hours=2)
         self.two_hours_from_now = self.now + timedelta(hours=2)
+
+        self.anonymous_user = AnonymousUser()
+        self.signed_in_user = get_user_model().objects.create_user(
+            username='member', email='member@example.com', password='password',
+        )
 
         # Create test announcements
         self._create_test_announcements()
@@ -71,7 +78,7 @@ class FetchActiveAnnouncementsTests(BaseAnnouncementServiceTest):
         # (Setup is done in the base class)
 
         # Act
-        result = self.service.fetch_active_announcements(current_time=self.now)
+        result = self.service.fetch_active_announcements(self.anonymous_user, current_time=self.now)
 
         # Assert
         self.assertEqual(3, result.count(), "Should return announcements that are currently active")
@@ -85,7 +92,7 @@ class FetchActiveAnnouncementsTests(BaseAnnouncementServiceTest):
         # (Setup is done in the base class)
 
         # Act
-        result = self.service.fetch_active_announcements(current_time=self.now)
+        result = self.service.fetch_active_announcements(self.anonymous_user, current_time=self.now)
 
         # Assert
         announcement_titles = [a.title for a in result]
@@ -96,7 +103,7 @@ class FetchActiveAnnouncementsTests(BaseAnnouncementServiceTest):
         # (Setup is done in the base class)
 
         # Act
-        result = self.service.fetch_active_announcements(current_time=self.now)
+        result = self.service.fetch_active_announcements(self.anonymous_user, current_time=self.now)
 
         # Assert
         announcement_titles = [a.title for a in result]
@@ -107,7 +114,7 @@ class FetchActiveAnnouncementsTests(BaseAnnouncementServiceTest):
         # (Setup is done in the base class)
 
         # Act
-        result = self.service.fetch_active_announcements(current_time=self.now)
+        result = self.service.fetch_active_announcements(self.anonymous_user, current_time=self.now)
 
         # Assert
         self.assertEqual(3, result.count())
@@ -119,7 +126,7 @@ class FetchActiveAnnouncementsTests(BaseAnnouncementServiceTest):
         past_time = self.two_hours_ago - timedelta(hours=1)  # 3 hours ago, before any announcements
 
         # Act
-        result = self.service.fetch_active_announcements(current_time=past_time)
+        result = self.service.fetch_active_announcements(self.anonymous_user, current_time=past_time)
 
         # Assert
         self.assertEqual(0, result.count(), "Should return no announcements for time in the past")
@@ -129,7 +136,7 @@ class FetchActiveAnnouncementsTests(BaseAnnouncementServiceTest):
         future_time = self.two_hours_from_now + timedelta(hours=1)  # 3 hours from now, after all announcements
 
         # Act
-        result = self.service.fetch_active_announcements(current_time=future_time)
+        result = self.service.fetch_active_announcements(self.anonymous_user, current_time=future_time)
 
         # Assert
         self.assertEqual(0, result.count(), "Should return no announcements for time far in the future")
@@ -139,7 +146,7 @@ class FetchActiveAnnouncementsTests(BaseAnnouncementServiceTest):
         future_time = self.one_hour_from_now + timedelta(minutes=30)  # In the middle of future announcement
 
         # Act
-        result = self.service.fetch_active_announcements(current_time=future_time)
+        result = self.service.fetch_active_announcements(self.anonymous_user, current_time=future_time)
 
         # Assert
         self.assertEqual(1, result.count(), "Should return the future announcement when time matches")
@@ -150,7 +157,7 @@ class FetchActiveAnnouncementsTests(BaseAnnouncementServiceTest):
         # (Setup is done in the base class)
 
         # Act
-        result = self.service.fetch_active_announcements()
+        result = self.service.fetch_active_announcements(self.anonymous_user)
 
         # Assert
         # This test verifies the method works without explicitly providing current_time
@@ -163,7 +170,7 @@ class FetchActiveAnnouncementsTests(BaseAnnouncementServiceTest):
         Announcement.objects.all().delete()  # Remove all announcements
 
         # Act
-        result = self.service.fetch_active_announcements(current_time=self.now)
+        result = self.service.fetch_active_announcements(self.anonymous_user, current_time=self.now)
 
         # Assert
         self.assertEqual(0, result.count(), "Should return empty queryset when no announcements exist")
@@ -195,11 +202,61 @@ class FetchActiveAnnouncementsTests(BaseAnnouncementServiceTest):
         )
 
         # Act
-        result = self.service.fetch_active_announcements(current_time=self.now)
+        result = self.service.fetch_active_announcements(self.anonymous_user, current_time=self.now)
 
         # Assert
         self.assertEqual(3, result.count())
         announcements = list(result)
         self.assertEqual("Ends Very Soon", announcements[0].title, "Should be ordered by end_at (earliest first)")
         self.assertEqual("Ends Soon", announcements[1].title)
-        self.assertEqual("Ends Later", announcements[2].title) 
+        self.assertEqual("Ends Later", announcements[2].title)
+
+
+class FetchActiveAnnouncementsAudienceTests(BaseAnnouncementServiceTest):
+    def setUp(self):
+        super().setUp()
+        Announcement.objects.all().delete()
+
+        Announcement.objects.create(
+            title="For Everyone",
+            text="Visible to everyone",
+            audience=Announcement.AUDIENCE_EVERYONE,
+            begin_at=self.one_hour_ago,
+            end_at=self.one_hour_from_now,
+        )
+
+        Announcement.objects.create(
+            title="For Signed In",
+            text="Visible to signed in users only",
+            audience=Announcement.AUDIENCE_SIGNED_IN,
+            begin_at=self.one_hour_ago,
+            end_at=self.one_hour_from_now,
+        )
+
+        Announcement.objects.create(
+            title="For Anonymous",
+            text="Visible to anonymous users only",
+            audience=Announcement.AUDIENCE_ANONYMOUS,
+            begin_at=self.one_hour_ago,
+            end_at=self.one_hour_from_now,
+        )
+
+    def test_anonymous_user_sees_everyone_and_anonymous_announcements(self):
+        # Act
+        result = self.service.fetch_active_announcements(self.anonymous_user, current_time=self.now)
+
+        # Assert
+        titles = [a.title for a in result]
+        self.assertIn("For Everyone", titles)
+        self.assertIn("For Anonymous", titles)
+        self.assertNotIn("For Signed In", titles)
+
+    def test_signed_in_user_sees_everyone_and_signed_in_announcements(self):
+        # Act
+        result = self.service.fetch_active_announcements(self.signed_in_user, current_time=self.now)
+
+        # Assert
+        titles = [a.title for a in result]
+        self.assertIn("For Everyone", titles)
+        self.assertIn("For Signed In", titles)
+        self.assertNotIn("For Anonymous", titles)

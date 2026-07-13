@@ -164,9 +164,9 @@ class RegistrationAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
 
 class AnnouncementAdmin(AuditedAdminMixin, admin.ModelAdmin):
-    list_display = ('title', 'type', 'begin_at', 'end_at',)
+    list_display = ('title', 'type', 'audience', 'begin_at', 'end_at',)
     search_fields = ('title', 'text',)
-    list_filter = ('type',)
+    list_filter = ('type', 'audience',)
     ordering = ('-end_at',)
 
 

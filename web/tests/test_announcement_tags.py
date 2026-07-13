@@ -1,6 +1,8 @@
 from datetime import timedelta
 
-from django.test import TestCase
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
+from django.test import TestCase, RequestFactory
 from django.template import Context, Template
 from django.utils import timezone
 
@@ -12,6 +14,10 @@ class AnnouncementTagsTest(TestCase):
         self.now = timezone.now()
         self.one_hour_ago = self.now - timedelta(hours=1)
         self.one_hour_from_now = self.now + timedelta(hours=1)
+
+        request = RequestFactory().get('/')
+        request.user = AnonymousUser()
+        self.context = Context({'request': request})
 
     def test_active_announcements_tag_renders_active_announcements(self):
         # Arrange
@@ -25,7 +31,7 @@ class AnnouncementTagsTest(TestCase):
         template = Template("{% load announcement_tags %}{% active_announcements %}")
 
         # Act
-        rendered = template.render(Context())
+        rendered = template.render(self.context)
 
         # Assert
         self.assertIn("Test Announcement", rendered)
@@ -51,7 +57,7 @@ class AnnouncementTagsTest(TestCase):
         template = Template("{% load announcement_tags %}{% active_announcements %}")
 
         # Act
-        rendered = template.render(Context())
+        rendered = template.render(self.context)
 
         # Assert
         self.assertNotIn("This announcement is in the past", rendered)
@@ -76,7 +82,7 @@ class AnnouncementTagsTest(TestCase):
         template = Template("{% load announcement_tags %}{% active_announcements %}")
 
         # Act
-        rendered = template.render(Context())
+        rendered = template.render(self.context)
 
         # Assert
         self.assertIn("First Announcement", rendered)
@@ -91,7 +97,7 @@ class AnnouncementTagsTest(TestCase):
         template = Template("{% load announcement_tags %}{% active_announcements %}")
 
         # Act
-        rendered = template.render(Context())
+        rendered = template.render(self.context)
 
         # Assert
         self.assertEqual(rendered.strip(), "")
@@ -108,7 +114,7 @@ class AnnouncementTagsTest(TestCase):
         template = Template("{% load announcement_tags %}{% active_announcements %}")
 
         # Act
-        rendered = template.render(Context())
+        rendered = template.render(self.context)
 
         # Assert
         self.assertIn("HTML Announcement", rendered)
@@ -128,7 +134,7 @@ class AnnouncementTagsTest(TestCase):
         template = Template("{% load announcement_tags %}{% active_announcements %}")
 
         # Act
-        rendered = template.render(Context())
+        rendered = template.render(self.context)
 
         # Assert
         self.assertIn("announcement-info", rendered)
@@ -146,7 +152,7 @@ class AnnouncementTagsTest(TestCase):
         template = Template("{% load announcement_tags %}{% active_announcements %}")
 
         # Act
-        rendered = template.render(Context())
+        rendered = template.render(self.context)
 
         # Assert
         self.assertIn("announcement-warning", rendered)
@@ -172,10 +178,51 @@ class AnnouncementTagsTest(TestCase):
         template = Template("{% load announcement_tags %}{% active_announcements %}")
 
         # Act
-        rendered = template.render(Context())
+        rendered = template.render(self.context)
 
         # Assert
         self.assertIn("announcement-info", rendered)
         self.assertIn("announcement-warning", rendered)
         self.assertIn("Information text", rendered)
         self.assertIn("Warning text", rendered)
+
+    def test_excludes_signed_in_only_announcement_for_anonymous_user(self):
+        # Arrange
+        Announcement.objects.create(
+            title="Members Only",
+            text="For members only",
+            audience=Announcement.AUDIENCE_SIGNED_IN,
+            begin_at=self.one_hour_ago,
+            end_at=self.one_hour_from_now,
+        )
+
+        template = Template("{% load announcement_tags %}{% active_announcements %}")
+
+        # Act
+        rendered = template.render(self.context)
+
+        # Assert
+        self.assertNotIn("Members Only", rendered)
+
+    def test_includes_signed_in_only_announcement_for_signed_in_user(self):
+        # Arrange
+        Announcement.objects.create(
+            title="Members Only",
+            text="For members only",
+            audience=Announcement.AUDIENCE_SIGNED_IN,
+            begin_at=self.one_hour_ago,
+            end_at=self.one_hour_from_now,
+        )
+
+        request = RequestFactory().get('/')
+        request.user = get_user_model().objects.create_user(
+            username='member', email='member@example.com', password='password',
+        )
+        context = Context({'request': request})
+        template = Template("{% load announcement_tags %}{% active_announcements %}")
+
+        # Act
+        rendered = template.render(context)
+
+        # Assert
+        self.assertIn("Members Only", rendered)
