@@ -285,6 +285,7 @@ class RegistrationService:
                 user_id__in=user_ids,
                 state=Registration.STATE_CONFIRMED,
             )
+            .exclude(event__state=Event.STATE_CANCELLED)
             .values('user_id')
             .annotate(count=Count('event', distinct=True))
         )
