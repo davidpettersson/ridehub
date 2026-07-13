@@ -606,6 +606,22 @@ class FetchRideCountsTestCase(TestCase):
         # Assert
         self.assertEqual(result, {self.user.id: 1})
 
+    def test_excludes_registrations_for_cancelled_events(self):
+        # Arrange
+        live_event = self._create_event("Live", 1)
+        self._create_confirmed(self.user, live_event)
+
+        cancelled_event = self._create_event("Cancelled", 2)
+        self._create_confirmed(self.user, cancelled_event)
+        cancelled_event.cancel()
+        cancelled_event.save()
+
+        # Act
+        result = self.service.fetch_ride_counts([self.user.id])
+
+        # Assert
+        self.assertEqual(result, {self.user.id: 1})
+
     def test_counts_are_per_user(self):
         # Arrange
         event_one = self._create_event("Event One", 1)
