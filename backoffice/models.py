@@ -755,6 +755,16 @@ class Announcement(models.Model):
         (TYPE_WARNING, 'Warning'),
     ]
 
+    AUDIENCE_EVERYONE = 'e'
+    AUDIENCE_SIGNED_IN = 's'
+    AUDIENCE_ANONYMOUS = 'a'
+
+    AUDIENCE_CHOICES = [
+        (AUDIENCE_EVERYONE, 'Everyone'),
+        (AUDIENCE_SIGNED_IN, 'Only signed in'),
+        (AUDIENCE_ANONYMOUS, 'Only anonymous'),
+    ]
+
     begin_at = models.DateTimeField(
         help_text='Time when the announcement should begin.',
     )
@@ -768,6 +778,13 @@ class Announcement(models.Model):
         choices=TYPE_CHOICES,
         default=TYPE_INFORMATION,
         help_text='Type of the announcement. Use warning to get more attention.',
+    )
+
+    audience = models.CharField(
+        max_length=1,
+        choices=AUDIENCE_CHOICES,
+        default=AUDIENCE_EVERYONE,
+        help_text='Which users should see this announcement.',
     )
 
     title = models.CharField(

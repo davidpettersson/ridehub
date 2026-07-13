@@ -5,10 +5,17 @@ from backoffice.models import Announcement
 
 
 class AnnouncementService:
-    def fetch_active_announcements(self, current_time=None) -> QuerySet[Announcement]:
+    def fetch_active_announcements(self, user, current_time=None) -> QuerySet[Announcement]:
         current_time = current_time or timezone.now()
 
-        return Announcement.objects.filter(
+        queryset = Announcement.objects.filter(
             begin_at__lte=current_time,
             end_at__gte=current_time
-        ).order_by('end_at')
+        )
+
+        if user.is_authenticated:
+            queryset = queryset.exclude(audience=Announcement.AUDIENCE_ANONYMOUS)
+        else:
+            queryset = queryset.exclude(audience=Announcement.AUDIENCE_SIGNED_IN)
+
+        return queryset.order_by('end_at')
