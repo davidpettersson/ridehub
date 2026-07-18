@@ -24,9 +24,12 @@ class ForecastService:
     def get_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> Forecast | None:
         time = self._snap_to_hour(starts_at)
         end_time = self._snap_to_hour_ceiling(ends_at) if ends_at else time + timedelta(hours=1)
+        now = timezone.now()
+
+        horizon = self._snap_to_hour_ceiling(now + FORECAST_WINDOW)
+        end_time = min(end_time, horizon)
         if end_time < time:
             end_time = time
-        now = timezone.now()
 
         if time < self._snap_to_hour(now) or time > now + FORECAST_WINDOW:
             return None
@@ -104,8 +107,9 @@ class ForecastService:
         weather.raise_for_status()
         weather_data = weather.json()
 
-        weather_codes = self._window_values(weather_data, 'weather_code', time, end_time)
-        temperatures = self._window_values(weather_data, 'temperature_2m', time, end_time)
+        weather_indexes = self._window_indexes(weather_data, time, end_time)
+        weather_codes = self._series_values(weather_data, 'weather_code', weather_indexes)
+        temperatures = self._series_values(weather_data, 'temperature_2m', weather_indexes)
 
         air_quality = requests.get(
             AIR_QUALITY_URL,
@@ -149,14 +153,11 @@ class ForecastService:
             raise ValueError(f'No forecast data available between {time} and {end_time}')
         return indexes
 
-    @classmethod
-    def _window_values(cls, data: dict, field: str, time, end_time) -> list:
-        values = [
-            data['hourly'][field][index]
-            for index in cls._window_indexes(data, time, end_time)
-        ]
+    @staticmethod
+    def _series_values(data: dict, field: str, indexes: list[int]) -> list:
+        values = [data['hourly'][field][index] for index in indexes]
         if any(v is None for v in values):
-            raise ValueError(f'Missing {field} data between {time} and {end_time}')
+            raise ValueError(f'Missing {field} data in forecast window')
         return values
 
     NO2_UG_M3_PER_PPB = 1.88

@@ -202,7 +202,7 @@ class ForecastServiceTestCase(TestCase):
         self.assertEqual(mock_get.call_count, 2)
         self.assertEqual(Forecast.objects.count(), 1)
 
-    def test_window_clamped_to_available_forecast_horizon(self):
+    def test_missing_trailing_hours_still_produce_forecast_for_requested_window(self):
         # Arrange
         available_end = self.starts_at + timedelta(hours=1)
         requested_end = self.starts_at + timedelta(hours=6)
@@ -218,6 +218,27 @@ class ForecastServiceTestCase(TestCase):
         # Assert
         self.assertIsNotNone(forecast)
         self.assertEqual(forecast.end_time, requested_end)
+
+    def test_end_time_clamped_to_forecast_window_horizon(self):
+        # Arrange
+        before = timezone.now()
+        requested_end = self.starts_at + timedelta(days=30)
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=2))
+
+            # Act
+            forecast = self.service.get_forecast(
+                self.latitude, self.longitude, self.starts_at, requested_end
+            )
+
+        # Assert
+        after = timezone.now()
+        expected = {
+            ForecastService._snap_to_hour_ceiling(before + timedelta(days=7)),
+            ForecastService._snap_to_hour_ceiling(after + timedelta(days=7)),
+        }
+        self.assertIn(forecast.end_time, expected)
 
     def test_past_event_returns_none(self):
         # Arrange

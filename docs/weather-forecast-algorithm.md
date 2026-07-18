@@ -41,9 +41,12 @@ returned UTC offset. All events currently use a single fixed location, YOW
    (`starts_at + duration`, where duration defaults to 1 hour when `ends_at`
    is blank) is snapped **up** to the next top of the hour.
 2. Events starting in the past or more than 7 days out get no badge.
-3. The window is the inclusive list of hours from start to end. If the window
-   extends beyond the available forecast horizon, it is clamped to the hours
-   that exist; if no hours are available the fetch fails safely.
+3. The window end is clamped to the 7-day horizon so cache keys stay bounded
+   and deterministic. The stored `end_time` always describes the requested
+   window, not the provider's data coverage.
+4. The window is the inclusive list of hours from start to end. If the window
+   extends beyond the hours the provider actually returned, the metrics cover
+   the available hours; if no hours are available the fetch fails safely.
 
 ## Metrics
 

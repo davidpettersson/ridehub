@@ -524,11 +524,11 @@ class Forecast(models.Model):
                 'longitude': 'Longitude must be between -180 and 180.'
             })
 
-        for field in ('time', 'end_time'):
+        for field, label in (('time', 'Start time'), ('end_time', 'End time')):
             value = getattr(self, field)
             if value and (value.minute or value.second or value.microsecond):
                 raise ValidationError({
-                    field: 'Forecast time must be at the top of the hour.'
+                    field: f'{label} must be at the top of the hour.'
                 })
 
         if self.time and self.end_time and self.end_time < self.time:
