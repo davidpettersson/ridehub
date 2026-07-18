@@ -56,7 +56,7 @@ class ForecastBadgeViewTestCase(TestCase):
         self.assertContains(response, 'AQHI&nbsp;5')
         self.assertContains(response, '12..15°')
         self.assertContains(response, '(beta)')
-        self.assertContains(response, 'bi-cloud-rain')
+        self.assertContains(response, '🌧️')
 
     @override_flag('weather_forecast_badges', active=False)
     def test_upcoming_hides_badge_when_flag_disabled(self):

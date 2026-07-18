@@ -54,10 +54,10 @@
                                 {% if event.location %}
                                 <span class="meta-pill meta-pill-sm text-muted" style="background-color: #6c757d1A;">🗺️ {{ event.location }}</span>
                                 {% endif %}
+                                {% include 'web/events/_forecast_badge.html' with forecast=forecasts|get_item:event.id compact=True %}
                                 {% if not event.external_registration_url and event.state != "announced" and event.registration_count > 0 %}
                                 <span class="meta-pill meta-pill-sm text-muted" style="background-color: #6c757d1A;">🚴 {{ event.registration_count }}{% if event.registration_limit %}/{{ event.registration_limit }}{% endif %} registered</span>
                                 {% endif %}
-                                {% include 'web/events/_forecast_badge.html' with forecast=forecasts|get_item:event.id compact=True %}
                             </div>
                         </div>
                     </div>

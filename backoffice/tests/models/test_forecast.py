@@ -109,18 +109,18 @@ class ForecastModelTestCase(TestCase):
         # Act & Assert
         self.assertEqual(forecast.aqhi_display, '10+')
 
-    def test_precipitation_icon_mapping(self):
+    def test_precipitation_emoji_mapping(self):
         # Arrange
         expectations = {
-            Forecast.Precipitation.SUN: 'bi-sun',
-            Forecast.Precipitation.CLOUD: 'bi-cloud',
-            Forecast.Precipitation.RAIN: 'bi-cloud-rain',
-            Forecast.Precipitation.THUNDER: 'bi-cloud-lightning-rain',
+            Forecast.Precipitation.SUN: '☀️',
+            Forecast.Precipitation.CLOUD: '☁️',
+            Forecast.Precipitation.RAIN: '🌧️',
+            Forecast.Precipitation.THUNDER: '⛈️',
         }
 
-        for precipitation, icon in expectations.items():
+        for precipitation, emoji in expectations.items():
             # Act
             forecast = self._build_forecast(precipitation=precipitation)
 
             # Assert
-            self.assertEqual(forecast.precipitation_icon, icon)
+            self.assertEqual(forecast.precipitation_emoji, emoji)
