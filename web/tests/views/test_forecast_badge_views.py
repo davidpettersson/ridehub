@@ -125,7 +125,7 @@ class ForecastBadgeViewTestCase(TestCase):
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=True)
-    def test_detail_hides_badge_for_cancelled_event(self):
+    def test_detail_shows_badge_for_cancelled_event(self):
         # Arrange
         event = self._create_event()
         self._create_forecast()
@@ -133,9 +133,7 @@ class ForecastBadgeViewTestCase(TestCase):
         event.save()
 
         # Act
-        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            response = self.client.get(reverse('event_detail', args=[event.id]))
+        response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
-        self.assertNotContains(response, 'AQHI')
-        mock_get.assert_not_called()
+        self.assertContains(response, 'AQHI&nbsp;5')

@@ -415,17 +415,18 @@ class ForecastServiceEventsTestCase(TestCase):
         self.assertEqual(forecasts, {})
         mock_get.assert_not_called()
 
-    def test_cancelled_events_skipped(self):
+    def test_cancelled_events_included(self):
         # Arrange
         event = self._create_event('Cancelled', self.starts_at, cancelled=True)
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at)
+
             # Act
             forecasts = self.service.get_forecasts_for_events([event])
 
         # Assert
-        self.assertEqual(forecasts, {})
-        mock_get.assert_not_called()
+        self.assertIn(event.id, forecasts)
 
     def test_events_outside_window_excluded(self):
         # Arrange

@@ -58,7 +58,7 @@ class ForecastService:
         )
 
         for event in events:
-            if event.cancelled or event.id not in event_ids_with_rides:
+            if event.id not in event_ids_with_rides:
                 continue
             time = self._snap_to_hour(event.starts_at)
             if time not in forecasts_by_time:
