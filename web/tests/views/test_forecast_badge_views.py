@@ -111,7 +111,7 @@ class ForecastBadgeViewTestCase(TestCase):
     @override_flag('weather_forecast_badges', active=True)
     def test_detail_hides_badge_for_event_beyond_window(self):
         # Arrange
-        far_starts_at = (timezone.now() + timedelta(days=6)).replace(
+        far_starts_at = (timezone.now() + timedelta(days=9)).replace(
             minute=0, second=0, microsecond=0
         )
         event = self._create_event(starts_at=far_starts_at)

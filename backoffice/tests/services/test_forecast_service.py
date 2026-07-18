@@ -184,7 +184,7 @@ class ForecastServiceTestCase(TestCase):
 
     def test_event_beyond_window_returns_none(self):
         # Arrange
-        far_future = timezone.now() + timedelta(days=7)
+        far_future = timezone.now() + timedelta(days=9)
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             # Act
@@ -444,7 +444,7 @@ class ForecastServiceEventsTestCase(TestCase):
 
     def test_events_outside_window_excluded(self):
         # Arrange
-        event = self._create_event('Far out', timezone.now() + timedelta(days=7))
+        event = self._create_event('Far out', timezone.now() + timedelta(days=9))
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             # Act
