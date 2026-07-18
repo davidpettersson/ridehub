@@ -6,7 +6,7 @@ from django.utils.html import format_html
 
 from audit.context import actor
 from backoffice.actions import cancel_event, duplicate_event
-from backoffice.models import Ride, Route, Event, Program, SpeedRange, Registration, Announcement, UserProfile, UserMembershipNumber
+from backoffice.models import Forecast, Ride, Route, Event, Program, SpeedRange, Registration, Announcement, UserProfile, UserMembershipNumber
 from .forms import EventAdminForm
 
 
@@ -117,6 +117,12 @@ class RouteAdmin(AuditedAdminMixin, admin.ModelAdmin):
     search_fields = ('name',)
 
 
+class ForecastAdmin(AuditedAdminMixin, admin.ModelAdmin):
+    list_display = ('time', 'latitude', 'longitude', 'precipitation', 'temperature_min', 'temperature_max', 'aqhi', 'updated_at',)
+    list_filter = ('precipitation',)
+    ordering = ('-time',)
+
+
 class RegistrationAdmin(AuditedAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'state', 'submitted_at', 'username', 'event', 'ride', 'speed_range_preference')
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'event__name',)
@@ -191,6 +197,7 @@ class UserProfileAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
 admin.site.register(Program, ProgramAdmin)
 admin.site.register(UserProfile, UserProfileAdmin)
+admin.site.register(Forecast, ForecastAdmin)
 admin.site.register(Route, RouteAdmin)
 admin.site.register(SpeedRange, SpeedRangeAdmin)
 admin.site.register(Event, EventAdmin)

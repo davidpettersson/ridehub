@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 YOW_LOCATION = (Decimal('45.32250'), Decimal('-75.66920'))
 
 FORECAST_MAX_AGE = timedelta(hours=1)
-FORECAST_WINDOW = timedelta(days=3)
+FORECAST_WINDOW = timedelta(days=5)
 REQUEST_TIMEOUT_SECONDS = 3
 
 WEATHER_URL = 'https://api.open-meteo.com/v1/forecast'
@@ -81,7 +81,7 @@ class ForecastService:
                 'hourly': 'weather_code',
                 'daily': 'temperature_2m_min,temperature_2m_max',
                 'timezone': 'auto',
-                'forecast_days': 4,
+                'forecast_days': 6,
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
@@ -100,7 +100,7 @@ class ForecastService:
                 'longitude': str(longitude),
                 'hourly': 'pm2_5,nitrogen_dioxide,ozone',
                 'timezone': 'auto',
-                'forecast_days': 4,
+                'forecast_days': 6,
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
