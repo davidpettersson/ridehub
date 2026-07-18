@@ -35,11 +35,11 @@ class ForecastService:
         if time < self._snap_to_hour(now) or time > now + FORECAST_WINDOW:
             return None
 
-        existing = Forecast.objects.filter(
+        latest = Forecast.objects.filter(
             latitude=latitude, longitude=longitude, start_time=time, end_time=end_time
-        ).first()
-        if existing and existing.updated_at >= now - FORECAST_MAX_AGE:
-            return existing
+        ).order_by('-prepared_at').first()
+        if latest and latest.prepared_at >= now - FORECAST_MAX_AGE:
+            return latest
 
         try:
             metrics = self._fetch_metrics(latitude, longitude, time, end_time)
@@ -48,16 +48,15 @@ class ForecastService:
                 'Forecast fetch failed for (%s, %s) from %s to %s: %s',
                 latitude, longitude, time, end_time, e,
             )
-            return existing
+            return latest
 
-        forecast, _ = Forecast.objects.update_or_create(
+        return Forecast.objects.create(
             latitude=latitude,
             longitude=longitude,
             start_time=time,
             end_time=end_time,
-            defaults=metrics,
+            **metrics,
         )
-        return forecast
 
     def get_forecasts_for_events(self, events) -> dict:
         latitude, longitude = YOW_LOCATION

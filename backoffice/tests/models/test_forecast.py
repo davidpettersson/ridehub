@@ -2,7 +2,6 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 
@@ -89,13 +88,15 @@ class ForecastModelTestCase(TestCase):
             forecast.full_clean()
         self.assertIn('longitude', ctx.exception.message_dict)
 
-    def test_duplicate_location_and_window_rejected(self):
+    def test_multiple_forecasts_allowed_for_same_location_and_window(self):
         # Arrange
         self._build_forecast().save()
 
-        # Act & Assert
-        with self.assertRaises(IntegrityError):
-            self._build_forecast().save()
+        # Act
+        self._build_forecast().save()
+
+        # Assert
+        self.assertEqual(Forecast.objects.count(), 2)
 
     def test_same_start_different_end_allowed(self):
         # Arrange

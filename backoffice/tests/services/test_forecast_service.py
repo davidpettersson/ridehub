@@ -150,7 +150,7 @@ class ForecastServiceTestCase(TestCase):
         self.assertNotEqual(short.pk, long.pk)
         self.assertEqual(Forecast.objects.count(), 2)
 
-    def test_stale_forecast_refetched_and_updated_in_place(self):
+    def test_stale_forecast_refetched_as_new_record_preserving_old(self):
         # Arrange
         stale = Forecast.objects.create(
             latitude=self.latitude,
@@ -164,7 +164,7 @@ class ForecastServiceTestCase(TestCase):
             aqhi_max=3,
         )
         Forecast.objects.filter(pk=stale.pk).update(
-            updated_at=timezone.now() - timedelta(hours=2)
+            prepared_at=timezone.now() - timedelta(hours=2)
         )
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
@@ -178,11 +178,39 @@ class ForecastServiceTestCase(TestCase):
             forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at)
 
         # Assert
-        self.assertEqual(forecast.pk, stale.pk)
+        self.assertNotEqual(forecast.pk, stale.pk)
         self.assertEqual(forecast.conditions, 'rain')
         self.assertEqual(forecast.aqhi_min, 10)
         self.assertEqual(forecast.aqhi_max, 10)
-        self.assertEqual(Forecast.objects.count(), 1)
+        self.assertEqual(Forecast.objects.count(), 2)
+        stale.refresh_from_db()
+        self.assertEqual(stale.conditions, 'sun')
+
+    def test_latest_forecast_returned_when_multiple_exist_for_window(self):
+        # Arrange
+        common = {
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'start_time': self.starts_at,
+            'end_time': self.starts_at + timedelta(hours=1),
+            'temperature_min': 5,
+            'temperature_max': 15,
+            'aqhi_min': 3,
+            'aqhi_max': 3,
+        }
+        old = Forecast.objects.create(conditions='rain', **common)
+        Forecast.objects.filter(pk=old.pk).update(
+            prepared_at=timezone.now() - timedelta(minutes=30)
+        )
+        newer = Forecast.objects.create(conditions='sun', **common)
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            # Act
+            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at)
+
+        # Assert
+        self.assertEqual(forecast.pk, newer.pk)
+        mock_get.assert_not_called()
 
     def test_start_times_in_same_hour_share_forecast(self):
         # Arrange
@@ -278,7 +306,7 @@ class ForecastServiceTestCase(TestCase):
             aqhi_max=3,
         )
         Forecast.objects.filter(pk=stale.pk).update(
-            updated_at=timezone.now() - timedelta(hours=2)
+            prepared_at=timezone.now() - timedelta(hours=2)
         )
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:

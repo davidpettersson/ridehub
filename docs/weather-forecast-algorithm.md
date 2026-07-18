@@ -81,11 +81,16 @@ For each hour in the window:
 
 ## Caching and refresh
 
-- One `Forecast` row is stored per `(latitude, longitude, time, end_time)`;
-  events sharing the same snapped window share a row and a fetch.
-- A row younger than 1 hour is served as-is. Older rows are refreshed in place
-  (synchronously, on page load) with a 3-second timeout per request.
-- On any fetch or parse error the stale row is served if one exists, otherwise
-  no badge is rendered. A failure never breaks the page and a partial or
+- `Forecast` rows are immutable. Each fetch stores a new row stamped with
+  `prepared_at`; older rows for the same window are preserved, so the history
+  of how the forecast for a given time period evolved can be reconstructed.
+- Lookups key on `(latitude, longitude, start_time, end_time)` and use the row
+  with the latest `prepared_at`; events sharing the same snapped window share
+  rows and fetches.
+- A row younger than 1 hour is served as-is. When the latest row is older, a
+  new one is fetched (synchronously, on page load) with a 3-second timeout per
+  request.
+- On any fetch or parse error the latest stale row is served if one exists,
+  otherwise no badge is rendered. A failure never breaks the page and a partial or
   invalid value is never stored: model validation enforces top-of-hour times,
   ordered min/max pairs, AQHI in 1..11, and known precipitation categories.

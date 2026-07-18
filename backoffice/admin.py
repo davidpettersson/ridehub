@@ -118,9 +118,12 @@ class RouteAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
 
 class ForecastAdmin(AuditedAdminMixin, admin.ModelAdmin):
-    list_display = ('start_time', 'end_time', 'latitude', 'longitude', 'conditions', 'temperature_min', 'temperature_max', 'aqhi_min', 'aqhi_max', 'updated_at',)
+    list_display = ('start_time', 'end_time', 'latitude', 'longitude', 'conditions', 'temperature_min', 'temperature_max', 'aqhi_min', 'aqhi_max', 'prepared_at',)
     list_filter = ('conditions',)
-    ordering = ('-start_time',)
+    ordering = ('-start_time', '-prepared_at',)
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 class RegistrationAdmin(AuditedAdminMixin, admin.ModelAdmin):
