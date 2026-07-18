@@ -94,7 +94,7 @@ class ForecastServiceTestCase(TestCase):
         self.assertIsNotNone(forecast)
         self.assertEqual(forecast.start_time, self.starts_at)
         self.assertEqual(forecast.end_time, window_end)
-        self.assertEqual(forecast.conditions, 'thunder,cloud,sun')
+        self.assertEqual(forecast.conditions, 'sun,thunder,cloud')
         self.assertEqual(forecast.temperature_min, 5)
         self.assertEqual(forecast.temperature_max, 16)
         self.assertEqual(forecast.aqhi_min, 3)
@@ -327,9 +327,29 @@ class ForecastServiceTestCase(TestCase):
             # Assert
             self.assertEqual(result, expected, f'weather code {code}')
 
-    def test_condition_categories_deduplicated_worst_first(self):
+    def test_conditions_ordered_by_prevalence(self):
         # Arrange
-        codes = [95, 0, 61, 71, 0, 3]
+        codes = [61, 61, 61, 0, 3, 3]
+
+        # Act
+        result = ForecastService._conditions_from_weather_codes(codes)
+
+        # Assert
+        self.assertEqual(result, 'rain,cloud,sun')
+
+    def test_mostly_sun_with_some_cloud_puts_sun_first(self):
+        # Arrange
+        codes = [0, 0, 0, 3]
+
+        # Act
+        result = ForecastService._conditions_from_weather_codes(codes)
+
+        # Assert
+        self.assertEqual(result, 'sun,cloud')
+
+    def test_equally_prevalent_conditions_ordered_worst_first(self):
+        # Arrange
+        codes = [95, 0, 61, 71, 3]
 
         # Act
         result = ForecastService._conditions_from_weather_codes(codes)

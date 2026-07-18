@@ -12,9 +12,11 @@ All events except virtual ones that start within the next 7 days get a badge:
 ☁️/☀️ · 12 – 15° · AQHI 3 – 5 (beta)
 ```
 
-- **Conditions**: every weather condition that occurs during the event,
-  slash-separated worst first (thunder ⚡, snow ❄️, rain ☔, cloud ☁️,
-  sun ☀️).
+- **Conditions**: every weather condition that occurs during the event
+  (thunder ⚡, snow ❄️, rain ☔, cloud ☁️, sun ☀️), slash-separated and
+  ordered by prevalence — the condition covering the most hours of the
+  window comes first. Conditions covering the same number of hours are
+  ordered worst first.
 - **Temperature**: minimum and maximum in °C across the event's duration,
   collapsed to a single number when they are equal.
 - **AQHI**: minimum and maximum Canadian Air Quality Health Index across the
@@ -56,7 +58,9 @@ For each hour in the window:
 
 - **Condition category** from the WMO weather code: 95+ thunder,
   71-77 and 85-86 snow, other codes 51-94 rain, 2-50 cloud, otherwise sun.
-  The badge shows the distinct set of categories over the window, worst first.
+  The badge shows the distinct set of categories over the window, ordered by
+  the number of hours each category covers (most prevalent first), with ties
+  broken worst first.
 - **Temperature** is `temperature_2m`; the badge shows the rounded min and max
   over the window.
 - **AQHI** is computed with Environment Canada's formula from the 3-hour

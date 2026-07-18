@@ -1,5 +1,6 @@
 import logging
 import math
+from collections import Counter
 from datetime import timedelta, timezone as datetime_timezone
 from decimal import Decimal
 
@@ -195,8 +196,12 @@ class ForecastService:
 
     @classmethod
     def _conditions_from_weather_codes(cls, codes: list) -> str:
-        categories = {cls._condition_from_weather_code(int(code)) for code in codes}
-        ordered = [category for category in reversed(Forecast.Condition) if category in categories]
+        hour_counts = Counter(cls._condition_from_weather_code(int(code)) for code in codes)
+        severity = list(reversed(Forecast.Condition))
+        ordered = sorted(
+            hour_counts,
+            key=lambda category: (-hour_counts[category], severity.index(category)),
+        )
         return ','.join(ordered)
 
     @staticmethod
