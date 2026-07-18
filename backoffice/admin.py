@@ -118,7 +118,7 @@ class RouteAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
 
 class ForecastAdmin(AuditedAdminMixin, admin.ModelAdmin):
-    list_display = ('time', 'latitude', 'longitude', 'precipitation', 'temperature_min', 'temperature_max', 'aqhi', 'updated_at',)
+    list_display = ('time', 'end_time', 'latitude', 'longitude', 'precipitation', 'temperature_min', 'temperature_max', 'aqhi_min', 'aqhi_max', 'updated_at',)
     list_filter = ('precipitation',)
     ordering = ('-time',)
 

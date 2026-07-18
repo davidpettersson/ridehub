@@ -21,43 +21,47 @@ def _mock_response(payload):
     return response
 
 
-def _weather_payload(time, weather_code=0, temperature_min=5.4, temperature_max=15.6):
-    hour_key = time.strftime('%Y-%m-%dT%H:%M')
-    date_key = time.strftime('%Y-%m-%d')
-    return {
-        'utc_offset_seconds': 0,
-        'hourly': {
-            'time': [hour_key],
-            'weather_code': [weather_code],
-        },
-        'daily': {
-            'time': [date_key],
-            'temperature_2m_min': [temperature_min],
-            'temperature_2m_max': [temperature_max],
-        },
-    }
+def _hour_range(start, end, hours_before=0):
+    hours = []
+    hour = start - timedelta(hours=hours_before)
+    while hour <= end:
+        hours.append(hour)
+        hour += timedelta(hours=1)
+    return hours
 
 
-def _air_quality_payload(time, pm2_5=8.0, nitrogen_dioxide=15.0, ozone=60.0):
-    hours = [time - timedelta(hours=2), time - timedelta(hours=1), time]
+def _weather_payload(start, end, weather_codes=None, temperatures=None):
+    hours = _hour_range(start, end)
     return {
         'utc_offset_seconds': 0,
         'hourly': {
             'time': [h.strftime('%Y-%m-%dT%H:%M') for h in hours],
-            'pm2_5': [pm2_5] * 3,
-            'nitrogen_dioxide': [nitrogen_dioxide] * 3,
-            'ozone': [ozone] * 3,
+            'weather_code': weather_codes or [0] * len(hours),
+            'temperature_2m': temperatures or [10.0] * len(hours),
         },
     }
 
 
-def _mock_get(time, weather_code=0, temperature_min=5.4, temperature_max=15.6,
+def _air_quality_payload(start, end, pm2_5=8.0, nitrogen_dioxide=15.0, ozone=60.0):
+    hours = _hour_range(start, end, hours_before=2)
+    return {
+        'utc_offset_seconds': 0,
+        'hourly': {
+            'time': [h.strftime('%Y-%m-%dT%H:%M') for h in hours],
+            'pm2_5': [pm2_5] * len(hours),
+            'nitrogen_dioxide': [nitrogen_dioxide] * len(hours),
+            'ozone': [ozone] * len(hours),
+        },
+    }
+
+
+def _mock_get(start, end, weather_codes=None, temperatures=None,
               pm2_5=8.0, nitrogen_dioxide=15.0, ozone=60.0):
     def side_effect(url, **kwargs):
         if url == WEATHER_URL:
-            return _mock_response(_weather_payload(time, weather_code, temperature_min, temperature_max))
+            return _mock_response(_weather_payload(start, end, weather_codes, temperatures))
         if url == AIR_QUALITY_URL:
-            return _mock_response(_air_quality_payload(time, pm2_5, nitrogen_dioxide, ozone))
+            return _mock_response(_air_quality_payload(start, end, pm2_5, nitrogen_dioxide, ozone))
         raise AssertionError(f'Unexpected URL {url}')
     return side_effect
 
@@ -70,24 +74,43 @@ class ForecastServiceTestCase(TestCase):
             minute=0, second=0, microsecond=0
         )
 
-    def test_fetches_and_stores_forecast(self):
+    def test_fetches_and_stores_forecast_over_event_duration(self):
         # Arrange
+        starts_at = self.starts_at + timedelta(minutes=25)
+        ends_at = self.starts_at + timedelta(hours=2, minutes=30)
+        window_end = self.starts_at + timedelta(hours=3)
+
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            mock_get.side_effect = _mock_get(self.starts_at, weather_code=95)
+            mock_get.side_effect = _mock_get(
+                self.starts_at, window_end,
+                weather_codes=[0, 95, 3, 0],
+                temperatures=[5.4, 15.6, 10.0, 10.0],
+            )
 
             # Act
-            forecast = self.service.get_forecast(
-                self.latitude, self.longitude, self.starts_at + timedelta(minutes=25)
-            )
+            forecast = self.service.get_forecast(self.latitude, self.longitude, starts_at, ends_at)
 
         # Assert
         self.assertIsNotNone(forecast)
         self.assertEqual(forecast.time, self.starts_at)
-        self.assertEqual(forecast.precipitation, Forecast.Precipitation.THUNDER)
+        self.assertEqual(forecast.end_time, window_end)
+        self.assertEqual(forecast.precipitation, 'sun,cloud,thunder')
         self.assertEqual(forecast.temperature_min, 5)
         self.assertEqual(forecast.temperature_max, 16)
-        self.assertEqual(forecast.aqhi, 3)
+        self.assertEqual(forecast.aqhi_min, 3)
+        self.assertEqual(forecast.aqhi_max, 3)
         self.assertEqual(Forecast.objects.count(), 1)
+
+    def test_missing_end_defaults_to_one_hour_window(self):
+        # Arrange
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
+
+            # Act
+            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at)
+
+        # Assert
+        self.assertEqual(forecast.end_time, self.starts_at + timedelta(hours=1))
 
     def test_fresh_forecast_returned_without_fetching(self):
         # Arrange
@@ -95,10 +118,12 @@ class ForecastServiceTestCase(TestCase):
             latitude=self.latitude,
             longitude=self.longitude,
             time=self.starts_at,
-            precipitation=Forecast.Precipitation.SUN,
+            end_time=self.starts_at + timedelta(hours=1),
+            precipitation='sun',
             temperature_min=5,
             temperature_max=15,
-            aqhi=3,
+            aqhi_min=3,
+            aqhi_max=3,
         )
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
@@ -109,16 +134,34 @@ class ForecastServiceTestCase(TestCase):
         self.assertIsNotNone(forecast)
         mock_get.assert_not_called()
 
+    def test_same_start_different_end_uses_separate_forecasts(self):
+        # Arrange
+        short_end = self.starts_at + timedelta(hours=1)
+        long_end = self.starts_at + timedelta(hours=4)
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, long_end)
+
+            # Act
+            short = self.service.get_forecast(self.latitude, self.longitude, self.starts_at, short_end)
+            long = self.service.get_forecast(self.latitude, self.longitude, self.starts_at, long_end)
+
+        # Assert
+        self.assertNotEqual(short.pk, long.pk)
+        self.assertEqual(Forecast.objects.count(), 2)
+
     def test_stale_forecast_refetched_and_updated_in_place(self):
         # Arrange
         stale = Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
             time=self.starts_at,
-            precipitation=Forecast.Precipitation.SUN,
+            end_time=self.starts_at + timedelta(hours=1),
+            precipitation='sun',
             temperature_min=5,
             temperature_max=15,
-            aqhi=3,
+            aqhi_min=3,
+            aqhi_max=3,
         )
         Forecast.objects.filter(pk=stale.pk).update(
             updated_at=timezone.now() - timedelta(hours=2)
@@ -126,7 +169,9 @@ class ForecastServiceTestCase(TestCase):
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             mock_get.side_effect = _mock_get(
-                self.starts_at, weather_code=61, pm2_5=100.0, nitrogen_dioxide=40.0, ozone=120.0
+                self.starts_at, self.starts_at + timedelta(hours=1),
+                weather_codes=[61, 61],
+                pm2_5=100.0, nitrogen_dioxide=40.0, ozone=120.0,
             )
 
             # Act
@@ -134,14 +179,15 @@ class ForecastServiceTestCase(TestCase):
 
         # Assert
         self.assertEqual(forecast.pk, stale.pk)
-        self.assertEqual(forecast.precipitation, Forecast.Precipitation.RAIN)
-        self.assertEqual(forecast.aqhi, 10)
+        self.assertEqual(forecast.precipitation, 'rain')
+        self.assertEqual(forecast.aqhi_min, 10)
+        self.assertEqual(forecast.aqhi_max, 10)
         self.assertEqual(Forecast.objects.count(), 1)
 
     def test_start_times_in_same_hour_share_forecast(self):
         # Arrange
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            mock_get.side_effect = _mock_get(self.starts_at)
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
 
             # Act
             first = self.service.get_forecast(
@@ -156,6 +202,23 @@ class ForecastServiceTestCase(TestCase):
         self.assertEqual(mock_get.call_count, 2)
         self.assertEqual(Forecast.objects.count(), 1)
 
+    def test_window_clamped_to_available_forecast_horizon(self):
+        # Arrange
+        available_end = self.starts_at + timedelta(hours=1)
+        requested_end = self.starts_at + timedelta(hours=6)
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, available_end)
+
+            # Act
+            forecast = self.service.get_forecast(
+                self.latitude, self.longitude, self.starts_at, requested_end
+            )
+
+        # Assert
+        self.assertIsNotNone(forecast)
+        self.assertEqual(forecast.end_time, requested_end)
+
     def test_past_event_returns_none(self):
         # Arrange
         past = timezone.now() - timedelta(hours=2)
@@ -167,20 +230,6 @@ class ForecastServiceTestCase(TestCase):
         # Assert
         self.assertIsNone(forecast)
         mock_get.assert_not_called()
-
-    def test_event_four_days_out_within_window(self):
-        # Arrange
-        starts_at = (timezone.now() + timedelta(days=4)).replace(minute=0, second=0, microsecond=0)
-
-        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            mock_get.side_effect = _mock_get(starts_at)
-
-            # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, starts_at)
-
-        # Assert
-        self.assertIsNotNone(forecast)
-        self.assertEqual(forecast.time, starts_at)
 
     def test_event_beyond_window_returns_none(self):
         # Arrange
@@ -200,10 +249,12 @@ class ForecastServiceTestCase(TestCase):
             latitude=self.latitude,
             longitude=self.longitude,
             time=self.starts_at,
-            precipitation=Forecast.Precipitation.CLOUD,
+            end_time=self.starts_at + timedelta(hours=1),
+            precipitation='cloud',
             temperature_min=5,
             temperature_max=15,
-            aqhi=3,
+            aqhi_min=3,
+            aqhi_max=3,
         )
         Forecast.objects.filter(pk=stale.pk).update(
             updated_at=timezone.now() - timedelta(hours=2)
@@ -249,6 +300,16 @@ class ForecastServiceTestCase(TestCase):
 
             # Assert
             self.assertEqual(result, expected, f'weather code {code}')
+
+    def test_precipitation_categories_deduplicated_in_severity_order(self):
+        # Arrange
+        codes = [95, 0, 61, 0, 3]
+
+        # Act
+        result = ForecastService._precipitation_from_weather_codes(codes)
+
+        # Assert
+        self.assertEqual(result, 'sun,cloud,rain,thunder')
 
 
 class AqhiComputationTestCase(TestCase):
@@ -357,14 +418,16 @@ class AqhiComputationTestCase(TestCase):
         service = ForecastService()
         latitude, longitude = YOW_LOCATION
         starts_at = (timezone.now() + timedelta(days=1)).replace(minute=0, second=0, microsecond=0)
+        window_end = starts_at + timedelta(hours=1)
 
         def side_effect(url, **kwargs):
             if url == WEATHER_URL:
-                return _mock_response(_weather_payload(starts_at))
-            payload = _air_quality_payload(starts_at)
-            payload['hourly']['pm2_5'] = [None] * 3
-            payload['hourly']['nitrogen_dioxide'] = [None] * 3
-            payload['hourly']['ozone'] = [None] * 3
+                return _mock_response(_weather_payload(starts_at, window_end))
+            payload = _air_quality_payload(starts_at, window_end)
+            hour_count = len(payload['hourly']['time'])
+            payload['hourly']['pm2_5'] = [None] * hour_count
+            payload['hourly']['nitrogen_dioxide'] = [None] * hour_count
+            payload['hourly']['ozone'] = [None] * hour_count
             return _mock_response(payload)
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
@@ -387,12 +450,13 @@ class ForecastServiceEventsTestCase(TestCase):
             minute=0, second=0, microsecond=0
         )
 
-    def _create_event(self, name, starts_at, with_ride=True, cancelled=False):
+    def _create_event(self, name, starts_at, ends_at=None, with_ride=True, cancelled=False):
         event = Event.objects.create(
             program=self.program,
             name=name,
             description='Description',
             starts_at=starts_at,
+            ends_at=ends_at,
             registration_closes_at=starts_at - timedelta(hours=1),
         )
         if with_ride:
@@ -402,13 +466,13 @@ class ForecastServiceEventsTestCase(TestCase):
             event.save()
         return event
 
-    def test_events_in_same_hour_trigger_single_fetch(self):
+    def test_events_with_same_window_trigger_single_fetch(self):
         # Arrange
         first = self._create_event('First', self.starts_at + timedelta(minutes=1))
         second = self._create_event('Second', self.starts_at + timedelta(minutes=55))
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            mock_get.side_effect = _mock_get(self.starts_at)
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=2))
 
             # Act
             forecasts = self.service.get_forecasts_for_events([first, second])
@@ -416,6 +480,20 @@ class ForecastServiceEventsTestCase(TestCase):
         # Assert
         self.assertEqual(mock_get.call_count, 2)
         self.assertEqual(forecasts[first.id].pk, forecasts[second.id].pk)
+
+    def test_events_with_different_durations_get_separate_forecasts(self):
+        # Arrange
+        short = self._create_event('Short', self.starts_at, ends_at=self.starts_at + timedelta(hours=1))
+        long = self._create_event('Long', self.starts_at, ends_at=self.starts_at + timedelta(hours=4))
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=4))
+
+            # Act
+            forecasts = self.service.get_forecasts_for_events([short, long])
+
+        # Assert
+        self.assertNotEqual(forecasts[short.id].pk, forecasts[long.id].pk)
 
     def test_events_without_rides_skipped(self):
         # Arrange
@@ -434,7 +512,7 @@ class ForecastServiceEventsTestCase(TestCase):
         event = self._create_event('Cancelled', self.starts_at, cancelled=True)
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            mock_get.side_effect = _mock_get(self.starts_at)
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
 
             # Act
             forecasts = self.service.get_forecasts_for_events([event])

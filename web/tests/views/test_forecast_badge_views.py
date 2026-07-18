@@ -33,14 +33,17 @@ class ForecastBadgeViewTestCase(TestCase):
         return event
 
     def _create_forecast(self, time=None):
+        time = time or self.starts_at
         return Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
-            time=time or self.starts_at,
-            precipitation=Forecast.Precipitation.RAIN,
+            time=time,
+            end_time=time + timedelta(hours=1),
+            precipitation='cloud,rain',
             temperature_min=12,
             temperature_max=15,
-            aqhi=5,
+            aqhi_min=5,
+            aqhi_max=5,
         )
 
     @override_flag('weather_forecast_badges', active=True)
@@ -54,9 +57,9 @@ class ForecastBadgeViewTestCase(TestCase):
 
         # Assert
         self.assertContains(response, 'AQHI&nbsp;5')
-        self.assertContains(response, '12..15°')
+        self.assertContains(response, '· 12..15°')
         self.assertContains(response, '(beta)')
-        self.assertContains(response, '🌧️')
+        self.assertContains(response, '☁️/☔')
 
     @override_flag('weather_forecast_badges', active=False)
     def test_upcoming_hides_badge_when_flag_disabled(self):

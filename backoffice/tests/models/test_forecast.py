@@ -18,10 +18,12 @@ class ForecastModelTestCase(TestCase):
             'latitude': Decimal('45.32250'),
             'longitude': Decimal('-75.66920'),
             'time': self.time,
-            'precipitation': Forecast.Precipitation.SUN,
+            'end_time': self.time + timedelta(hours=2),
+            'precipitation': 'sun',
             'temperature_min': 5,
             'temperature_max': 15,
-            'aqhi': 3,
+            'aqhi_min': 3,
+            'aqhi_max': 5,
         }
         fields.update(overrides)
         return Forecast(**fields)
@@ -41,6 +43,24 @@ class ForecastModelTestCase(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             forecast.full_clean()
         self.assertIn('time', ctx.exception.message_dict)
+
+    def test_end_time_not_at_top_of_hour_rejected(self):
+        # Arrange
+        forecast = self._build_forecast(end_time=self.time + timedelta(hours=1, minutes=30))
+
+        # Act & Assert
+        with self.assertRaises(ValidationError) as ctx:
+            forecast.full_clean()
+        self.assertIn('end_time', ctx.exception.message_dict)
+
+    def test_end_time_before_time_rejected(self):
+        # Arrange
+        forecast = self._build_forecast(end_time=self.time - timedelta(hours=1))
+
+        # Act & Assert
+        with self.assertRaises(ValidationError) as ctx:
+            forecast.full_clean()
+        self.assertIn('end_time', ctx.exception.message_dict)
 
     def test_temperature_min_above_max_rejected(self):
         # Arrange
@@ -69,7 +89,7 @@ class ForecastModelTestCase(TestCase):
             forecast.full_clean()
         self.assertIn('longitude', ctx.exception.message_dict)
 
-    def test_duplicate_location_and_time_rejected(self):
+    def test_duplicate_location_and_window_rejected(self):
         # Arrange
         self._build_forecast().save()
 
@@ -77,45 +97,94 @@ class ForecastModelTestCase(TestCase):
         with self.assertRaises(IntegrityError):
             self._build_forecast().save()
 
+    def test_same_start_different_end_allowed(self):
+        # Arrange
+        self._build_forecast().save()
+
+        # Act
+        self._build_forecast(end_time=self.time + timedelta(hours=4)).save()
+
+        # Assert
+        self.assertEqual(Forecast.objects.count(), 2)
+
     def test_aqhi_below_one_rejected(self):
         # Arrange
-        forecast = self._build_forecast(aqhi=0)
+        forecast = self._build_forecast(aqhi_min=0)
 
         # Act & Assert
         with self.assertRaises(ValidationError) as ctx:
             forecast.full_clean()
-        self.assertIn('aqhi', ctx.exception.message_dict)
+        self.assertIn('aqhi_min', ctx.exception.message_dict)
 
     def test_aqhi_above_eleven_rejected(self):
         # Arrange
-        forecast = self._build_forecast(aqhi=12)
+        forecast = self._build_forecast(aqhi_max=12)
 
         # Act & Assert
         with self.assertRaises(ValidationError) as ctx:
             forecast.full_clean()
-        self.assertIn('aqhi', ctx.exception.message_dict)
+        self.assertIn('aqhi_max', ctx.exception.message_dict)
 
-    def test_aqhi_display_shows_value_up_to_ten(self):
+    def test_aqhi_min_above_max_rejected(self):
         # Arrange
-        forecast = self._build_forecast(aqhi=7)
+        forecast = self._build_forecast(aqhi_min=7, aqhi_max=3)
 
         # Act & Assert
-        self.assertEqual(forecast.aqhi_display, '7')
+        with self.assertRaises(ValidationError) as ctx:
+            forecast.full_clean()
+        self.assertIn('aqhi_max', ctx.exception.message_dict)
+
+    def test_unknown_precipitation_category_rejected(self):
+        # Arrange
+        forecast = self._build_forecast(precipitation='sun,hail')
+
+        # Act & Assert
+        with self.assertRaises(ValidationError) as ctx:
+            forecast.full_clean()
+        self.assertIn('precipitation', ctx.exception.message_dict)
+
+    def test_aqhi_display_collapses_equal_range(self):
+        # Arrange
+        forecast = self._build_forecast(aqhi_min=4, aqhi_max=4)
+
+        # Act & Assert
+        self.assertEqual(forecast.aqhi_display, '4')
+
+    def test_aqhi_display_shows_range(self):
+        # Arrange
+        forecast = self._build_forecast(aqhi_min=3, aqhi_max=5)
+
+        # Act & Assert
+        self.assertEqual(forecast.aqhi_display, '3..5')
 
     def test_aqhi_display_caps_above_ten(self):
         # Arrange
-        forecast = self._build_forecast(aqhi=11)
+        forecast = self._build_forecast(aqhi_min=9, aqhi_max=11)
 
         # Act & Assert
-        self.assertEqual(forecast.aqhi_display, '10+')
+        self.assertEqual(forecast.aqhi_display, '9..10+')
+
+    def test_precipitation_emojis_joined_with_slash(self):
+        # Arrange
+        forecast = self._build_forecast(precipitation='sun,cloud')
+
+        # Act & Assert
+        self.assertEqual(forecast.precipitation_emojis, '☀️/☁️')
+
+    def test_precipitation_display_joined_with_slash(self):
+        # Arrange
+        forecast = self._build_forecast(precipitation='rain,thunder')
+
+        # Act & Assert
+        self.assertEqual(forecast.precipitation_display, 'Rain/Thunder')
 
     def test_precipitation_emoji_mapping(self):
         # Arrange
         expectations = {
-            Forecast.Precipitation.SUN: '☀️',
-            Forecast.Precipitation.CLOUD: '☁️',
-            Forecast.Precipitation.RAIN: '🌧️',
-            Forecast.Precipitation.THUNDER: '⛈️',
+            'sun': '☀️',
+            'cloud': '☁️',
+            'rain': '☔',
+            'thunder': '⚡',
         }
 
         for precipitation, emoji in expectations.items():
@@ -123,4 +192,4 @@ class ForecastModelTestCase(TestCase):
             forecast = self._build_forecast(precipitation=precipitation)
 
             # Assert
-            self.assertEqual(forecast.precipitation_emoji, emoji)
+            self.assertEqual(forecast.precipitation_emojis, emoji)

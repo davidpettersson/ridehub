@@ -185,7 +185,9 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
     forecast = None
     if flag_is_active(request, 'weather_forecast_badges') and event.has_rides:
         latitude, longitude = YOW_LOCATION
-        forecast = ForecastService().get_forecast(latitude, longitude, event.starts_at)
+        forecast = ForecastService().get_forecast(
+            latitude, longitude, event.starts_at, event.starts_at + event.duration
+        )
 
     context = {
         'event': event,
