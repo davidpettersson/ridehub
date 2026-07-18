@@ -462,14 +462,14 @@ class Forecast(models.Model):
         help_text='Last hour included in the forecast window, always at the top of the hour.'
     )
 
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        help_text='When this forecast was last fetched from the weather provider.'
+    prepared_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text='When this forecast was fetched from the weather provider. Forecasts are immutable; newer fetches create new records.'
     )
 
     conditions = models.CharField(
         max_length=32,
-        help_text='Comma-separated weather conditions occurring during the forecast window, worst first.'
+        help_text='Comma-separated weather conditions occurring during the forecast window, most prevalent first.'
     )
 
     temperature_min = models.IntegerField(
@@ -491,12 +491,6 @@ class Forecast(models.Model):
     )
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['latitude', 'longitude', 'start_time', 'end_time'],
-                name='unique_forecast_location_window',
-            )
-        ]
         indexes = [
             models.Index(fields=['latitude', 'longitude', 'start_time', 'end_time'], name='forecast_location_window_idx'),
         ]
