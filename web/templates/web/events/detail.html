@@ -52,6 +52,7 @@
                     🚴 {{ event.registration_count }}{% if event.registration_limit %}/{{ event.registration_limit }}{% endif %} registered&nbsp;›
                 </a>
                 {% endif %}
+                {% include 'web/events/_forecast_badge.html' %}
             </div>
         </div>
 
