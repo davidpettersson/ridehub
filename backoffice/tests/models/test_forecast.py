@@ -21,7 +21,7 @@ class ForecastModelTestCase(TestCase):
             'precipitation': Forecast.Precipitation.SUN,
             'temperature_min': 5,
             'temperature_max': 15,
-            'aqi': 42,
+            'aqhi': 3,
         }
         fields.update(overrides)
         return Forecast(**fields)
@@ -76,6 +76,38 @@ class ForecastModelTestCase(TestCase):
         # Act & Assert
         with self.assertRaises(IntegrityError):
             self._build_forecast().save()
+
+    def test_aqhi_below_one_rejected(self):
+        # Arrange
+        forecast = self._build_forecast(aqhi=0)
+
+        # Act & Assert
+        with self.assertRaises(ValidationError) as ctx:
+            forecast.full_clean()
+        self.assertIn('aqhi', ctx.exception.message_dict)
+
+    def test_aqhi_above_eleven_rejected(self):
+        # Arrange
+        forecast = self._build_forecast(aqhi=12)
+
+        # Act & Assert
+        with self.assertRaises(ValidationError) as ctx:
+            forecast.full_clean()
+        self.assertIn('aqhi', ctx.exception.message_dict)
+
+    def test_aqhi_display_shows_value_up_to_ten(self):
+        # Arrange
+        forecast = self._build_forecast(aqhi=7)
+
+        # Act & Assert
+        self.assertEqual(forecast.aqhi_display, '7')
+
+    def test_aqhi_display_caps_above_ten(self):
+        # Arrange
+        forecast = self._build_forecast(aqhi=11)
+
+        # Act & Assert
+        self.assertEqual(forecast.aqhi_display, '10+')
 
     def test_precipitation_icon_mapping(self):
         # Arrange

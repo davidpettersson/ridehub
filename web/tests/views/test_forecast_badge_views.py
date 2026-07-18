@@ -40,7 +40,7 @@ class ForecastBadgeViewTestCase(TestCase):
             precipitation=Forecast.Precipitation.RAIN,
             temperature_min=12,
             temperature_max=15,
-            aqi=5,
+            aqhi=5,
         )
 
     @override_flag('weather_forecast_badges', active=True)
@@ -53,8 +53,9 @@ class ForecastBadgeViewTestCase(TestCase):
         response = self.client.get(reverse('upcoming'))
 
         # Assert
-        self.assertContains(response, 'AQI&nbsp;5')
-        self.assertContains(response, '12..15&nbsp;°C')
+        self.assertContains(response, 'AQHI&nbsp;5')
+        self.assertContains(response, '12..15°')
+        self.assertContains(response, '(beta)')
         self.assertContains(response, 'bi-cloud-rain')
 
     @override_flag('weather_forecast_badges', active=False)
@@ -68,7 +69,7 @@ class ForecastBadgeViewTestCase(TestCase):
             response = self.client.get(reverse('upcoming'))
 
         # Assert
-        self.assertNotContains(response, 'AQI')
+        self.assertNotContains(response, 'AQHI')
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=True)
@@ -81,7 +82,7 @@ class ForecastBadgeViewTestCase(TestCase):
         response = self.client.get(reverse('upcoming'))
 
         # Assert
-        self.assertNotContains(response, 'AQI')
+        self.assertNotContains(response, 'AQHI')
 
     @override_flag('weather_forecast_badges', active=True)
     def test_detail_shows_badge_for_event_with_ride(self):
@@ -93,7 +94,7 @@ class ForecastBadgeViewTestCase(TestCase):
         response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
-        self.assertContains(response, 'AQI&nbsp;5')
+        self.assertContains(response, 'AQHI&nbsp;5')
 
     @override_flag('weather_forecast_badges', active=False)
     def test_detail_hides_badge_when_flag_disabled(self):
@@ -105,7 +106,7 @@ class ForecastBadgeViewTestCase(TestCase):
         response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
-        self.assertNotContains(response, 'AQI')
+        self.assertNotContains(response, 'AQHI')
 
     @override_flag('weather_forecast_badges', active=True)
     def test_detail_hides_badge_for_event_beyond_window(self):
@@ -120,7 +121,7 @@ class ForecastBadgeViewTestCase(TestCase):
             response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
-        self.assertNotContains(response, 'AQI')
+        self.assertNotContains(response, 'AQHI')
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=True)
@@ -136,5 +137,5 @@ class ForecastBadgeViewTestCase(TestCase):
             response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
-        self.assertNotContains(response, 'AQI')
+        self.assertNotContains(response, 'AQHI')
         mock_get.assert_not_called()

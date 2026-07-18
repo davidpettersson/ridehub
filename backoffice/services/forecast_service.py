@@ -1,4 +1,5 @@
 import logging
+import math
 from datetime import timedelta, timezone as datetime_timezone
 from decimal import Decimal
 
@@ -93,7 +94,7 @@ class ForecastService:
             params={
                 'latitude': str(latitude),
                 'longitude': str(longitude),
-                'hourly': 'us_aqi',
+                'hourly': 'pm2_5,nitrogen_dioxide,ozone',
                 'timezone': 'auto',
                 'forecast_days': 4,
             },
@@ -102,16 +103,48 @@ class ForecastService:
         air_quality.raise_for_status()
         air_quality_data = air_quality.json()
 
-        aqi_hour_key, _ = self._local_keys(time, air_quality_data['utc_offset_seconds'])
-        aqi_index = air_quality_data['hourly']['time'].index(aqi_hour_key)
-        aqi = air_quality_data['hourly']['us_aqi'][aqi_index]
+        aqhi_hour_key, _ = self._local_keys(time, air_quality_data['utc_offset_seconds'])
+        aqhi_index = air_quality_data['hourly']['time'].index(aqhi_hour_key)
+        aqhi = self._compute_aqhi(air_quality_data['hourly'], aqhi_index)
 
         return {
             'precipitation': self._precipitation_from_weather_code(int(weather_code)),
             'temperature_min': round(weather_data['daily']['temperature_2m_min'][day_index]),
             'temperature_max': round(weather_data['daily']['temperature_2m_max'][day_index]),
-            'aqi': int(aqi),
+            'aqhi': aqhi,
         }
+
+    NO2_UG_M3_PER_PPB = 1.88
+    O3_UG_M3_PER_PPB = 1.96
+
+    @classmethod
+    def _compute_aqhi(cls, hourly: dict, hour_index: int) -> int:
+        pm25, no2, o3 = cls._pollutant_averages(hourly, hour_index)
+
+        no2_ppb = no2 / cls.NO2_UG_M3_PER_PPB
+        o3_ppb = o3 / cls.O3_UG_M3_PER_PPB
+
+        aqhi = (10 / 10.4) * 100 * (
+            (math.exp(0.000871 * no2_ppb) - 1)
+            + (math.exp(0.000537 * o3_ppb) - 1)
+            + (math.exp(0.000487 * pm25) - 1)
+        )
+        return min(11, max(1, round(aqhi)))
+
+    @staticmethod
+    def _pollutant_averages(hourly: dict, hour_index: int) -> tuple[float, float, float]:
+        series = (hourly['pm2_5'], hourly['nitrogen_dioxide'], hourly['ozone'])
+
+        window = []
+        for index in range(max(0, hour_index - 2), hour_index + 1):
+            values = tuple(s[index] for s in series)
+            if all(isinstance(v, (int, float)) for v in values):
+                window.append(values)
+
+        if not window:
+            raise ValueError(f'No pollutant data available around hour index {hour_index}')
+
+        return tuple(sum(values) / len(window) for values in zip(*window))
 
     @staticmethod
     def _local_keys(time, utc_offset_seconds: int) -> tuple[str, str]:

@@ -465,8 +465,8 @@ class Forecast(models.Model):
         help_text='Maximum temperature in Celsius for the forecast day.'
     )
 
-    aqi = models.PositiveIntegerField(
-        help_text='US Air Quality Index at the forecast hour.'
+    aqhi = models.PositiveIntegerField(
+        help_text='Canadian Air Quality Health Index at the forecast hour (1-10, 11 means above 10).'
     )
 
     class Meta:
@@ -483,6 +483,10 @@ class Forecast(models.Model):
     @property
     def precipitation_icon(self) -> str:
         return self.PRECIPITATION_ICONS[self.Precipitation(self.precipitation)]
+
+    @property
+    def aqhi_display(self) -> str:
+        return '10+' if self.aqhi > 10 else str(self.aqhi)
 
     def clean(self):
         super().clean()
@@ -507,6 +511,11 @@ class Forecast(models.Model):
                 raise ValidationError({
                     'temperature_max': 'Maximum temperature cannot be below minimum temperature.'
                 })
+
+        if self.aqhi is not None and not (1 <= self.aqhi <= 11):
+            raise ValidationError({
+                'aqhi': 'AQHI must be between 1 and 11.'
+            })
 
     def __str__(self):
         return f'({self.latitude}, {self.longitude}) at {self.time}'
