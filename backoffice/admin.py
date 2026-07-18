@@ -121,6 +121,7 @@ class ForecastAdmin(AuditedAdminMixin, admin.ModelAdmin):
     list_display = ('start_time', 'end_time', 'latitude', 'longitude', 'conditions', 'temperature_min', 'temperature_max', 'aqhi_min', 'aqhi_max', 'prepared_at',)
     list_filter = ('conditions',)
     ordering = ('-start_time', '-prepared_at',)
+    readonly_fields = ('latitude', 'longitude', 'start_time', 'end_time', 'prepared_at', 'conditions', 'temperature_min', 'temperature_max', 'aqhi_min', 'aqhi_max',)
 
     def has_change_permission(self, request, obj=None):
         return False
