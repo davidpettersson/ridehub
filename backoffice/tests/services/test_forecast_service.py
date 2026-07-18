@@ -476,7 +476,7 @@ class ForecastServiceEventsTestCase(TestCase):
             minute=0, second=0, microsecond=0
         )
 
-    def _create_event(self, name, starts_at, ends_at=None, with_ride=True, cancelled=False):
+    def _create_event(self, name, starts_at, ends_at=None, with_ride=True, cancelled=False, virtual=False):
         event = Event.objects.create(
             program=self.program,
             name=name,
@@ -484,6 +484,7 @@ class ForecastServiceEventsTestCase(TestCase):
             starts_at=starts_at,
             ends_at=ends_at,
             registration_closes_at=starts_at - timedelta(hours=1),
+            virtual=virtual,
         )
         if with_ride:
             Ride.objects.create(name=f'{name} ride', event=event, route=self.route)
@@ -521,9 +522,22 @@ class ForecastServiceEventsTestCase(TestCase):
         # Assert
         self.assertNotEqual(forecasts[short.id].pk, forecasts[long.id].pk)
 
-    def test_events_without_rides_skipped(self):
+    def test_events_without_rides_included(self):
         # Arrange
         event = self._create_event('No rides', self.starts_at, with_ride=False)
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
+
+            # Act
+            forecasts = self.service.get_forecasts_for_events([event])
+
+        # Assert
+        self.assertIn(event.id, forecasts)
+
+    def test_virtual_events_skipped(self):
+        # Arrange
+        event = self._create_event('Virtual', self.starts_at, virtual=True)
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             # Act

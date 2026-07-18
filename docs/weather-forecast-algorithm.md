@@ -6,7 +6,7 @@ events (`/upcoming` and `/event/<id>`). The implementation lives in
 
 ## What is shown
 
-Events that have at least one ride and start within the next 7 days get a badge:
+All events except virtual ones that start within the next 7 days get a badge:
 
 ```
 ☁️/☀️ · 12 – 15° · AQHI 3 – 5 (beta)

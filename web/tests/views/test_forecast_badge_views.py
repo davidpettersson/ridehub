@@ -19,7 +19,7 @@ class ForecastBadgeViewTestCase(TestCase):
         )
         self.latitude, self.longitude = YOW_LOCATION
 
-    def _create_event(self, name='Test Event', starts_at=None, with_ride=True):
+    def _create_event(self, name='Test Event', starts_at=None, with_ride=True, virtual=False):
         starts_at = starts_at or self.starts_at
         event = Event.objects.create(
             program=self.program,
@@ -27,6 +27,7 @@ class ForecastBadgeViewTestCase(TestCase):
             description='Description',
             starts_at=starts_at,
             registration_closes_at=starts_at - timedelta(hours=1),
+            virtual=virtual,
         )
         if with_ride:
             Ride.objects.create(name=f'{name} ride', event=event, route=self.route)
@@ -91,13 +92,37 @@ class ForecastBadgeViewTestCase(TestCase):
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=True)
-    def test_upcoming_hides_badge_for_event_without_rides(self):
+    def test_upcoming_shows_badge_for_event_without_rides(self):
         # Arrange
         self._create_event(with_ride=False)
         self._create_forecast()
 
         # Act
         response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertContains(response, 'AQHI&nbsp;5')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_upcoming_hides_badge_for_virtual_event(self):
+        # Arrange
+        self._create_event(virtual=True)
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertNotContains(response, 'AQHI')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_hides_badge_for_virtual_event(self):
+        # Arrange
+        event = self._create_event(virtual=True)
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
         self.assertNotContains(response, 'AQHI')
