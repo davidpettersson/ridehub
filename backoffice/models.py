@@ -234,14 +234,22 @@ class Event(models.Model):
 
     @property
     def has_rides(self) -> bool:
+        if hasattr(self, 'annotated_ride_count'):
+            return self.annotated_ride_count > 0
         return self.ride_set.all().exists()
 
     @property
     def ride_count(self) -> int:
+        if hasattr(self, 'annotated_ride_count'):
+            return self.annotated_ride_count
         return self.ride_set.count()
 
     @property
     def distance_range(self) -> tuple[int, int] | None:
+        if hasattr(self, 'annotated_min_distance'):
+            if self.annotated_min_distance is None:
+                return None
+            return (self.annotated_min_distance, self.annotated_max_distance)
         distances = [
             ride.route.distance
             for ride in self.ride_set.select_related('route').all()
@@ -253,6 +261,8 @@ class Event(models.Model):
 
     @property
     def registration_count(self) -> int:
+        if hasattr(self, 'annotated_registration_count'):
+            return self.annotated_registration_count
         return self.registration_set.filter(state=Registration.STATE_CONFIRMED).count()
 
     @property

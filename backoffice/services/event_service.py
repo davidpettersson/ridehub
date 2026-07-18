@@ -1,14 +1,14 @@
 from datetime import date, datetime, timedelta
 
-from django.db.models import Q, QuerySet
+from django.db.models import Count, Max, Min, Q, QuerySet
 from django.utils import timezone
 
-from backoffice.models import Event, Ride
+from backoffice.models import Event, Registration, Ride
 
 
 class EventService:
     def fetch_events(self, include_archived: bool = False, only_visible: bool = True) -> QuerySet[Event]:
-        queryset = Event.objects.all()
+        queryset = Event.objects.select_related('program')
 
         if not include_archived:
             queryset = queryset.exclude(state=Event.STATE_ARCHIVED)
@@ -20,11 +20,25 @@ class EventService:
 
         return queryset.order_by('starts_at')
 
+    def _with_listing_stats(self, queryset: QuerySet[Event]) -> QuerySet[Event]:
+        return queryset.annotate(
+            annotated_registration_count=Count(
+                'registration',
+                filter=Q(registration__state=Registration.STATE_CONFIRMED),
+                distinct=True,
+            ),
+            annotated_ride_count=Count('ride', distinct=True),
+            annotated_min_distance=Min('ride__route__distance', filter=Q(ride__route__distance__gt=0)),
+            annotated_max_distance=Max('ride__route__distance', filter=Q(ride__route__distance__gt=0)),
+        )
+
     def fetch_upcoming_events(self, include_archived: bool = False, only_visible: bool = True,
                               current_date: date | None = None, program_id: int | None = None,
                               query: str | None = None) -> QuerySet[Event]:
         current_date = current_date or timezone.now().date()
-        qs = self.fetch_events(include_archived, only_visible).filter(starts_at__date__gte=current_date)
+        qs = self._with_listing_stats(
+            self.fetch_events(include_archived, only_visible)
+        ).filter(starts_at__date__gte=current_date)
         if program_id is not None:
             qs = qs.filter(program_id=program_id)
         if query:
