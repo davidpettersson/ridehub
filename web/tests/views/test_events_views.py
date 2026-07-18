@@ -1527,3 +1527,105 @@ class AllDayEventViewTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'All day')
+
+
+class UpcomingViewQueryCountTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.program = Program.objects.create(name='Query Count Program', emoji='🚴', color='#ff0000')
+        self.speed_range = SpeedRange.objects.create(lower_limit=25, upper_limit=30)
+        self.user = User.objects.create_user(
+            username='query_count_user',
+            email='query_count@example.com',
+            password='password123'
+        )
+
+    def _create_event_with_activity(self, offset):
+        event = Event.objects.create(
+            program=self.program,
+            name=f'Query Count Event {offset}',
+            description='Description',
+            location='Location',
+            starts_at=timezone.now() + timedelta(days=offset + 1),
+        )
+        route = Route.objects.create(name=f'Route {offset}', distance=40 + offset)
+        ride = Ride.objects.create(name='Ride', event=event, route=route)
+        Registration.objects.create(
+            first_name='Rider',
+            last_name=f'{offset}',
+            name=f'Rider {offset}',
+            email=f'rider{offset}@example.com',
+            event=event,
+            ride=ride,
+            speed_range_preference=self.speed_range,
+            emergency_contact_name='Emergency Contact',
+            emergency_contact_phone='123-456-7890',
+            user=self.user,
+            state=Registration.STATE_CONFIRMED
+        )
+        return event
+
+    def _count_queries_for_upcoming(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        with CaptureQueriesContext(connection) as context:
+            response = self.client.get(reverse('upcoming'))
+        self.assertEqual(response.status_code, 200)
+        return len(context.captured_queries)
+
+    def test_query_count_does_not_grow_with_number_of_events(self):
+        # Arrange
+        for offset in range(3):
+            self._create_event_with_activity(offset)
+        self.client.get(reverse('upcoming'))
+        queries_with_few_events = self._count_queries_for_upcoming()
+
+        for offset in range(3, 10):
+            self._create_event_with_activity(offset)
+
+        # Act
+        queries_with_many_events = self._count_queries_for_upcoming()
+
+        # Assert
+        self.assertEqual(queries_with_few_events, queries_with_many_events)
+
+    def test_query_count_does_not_grow_with_number_of_events_in_dense_view(self):
+        from waffle.testutils import override_flag
+
+        # Arrange
+        with override_flag('upcoming_dense_view', active=True):
+            for offset in range(3):
+                self._create_event_with_activity(offset)
+            self.client.get(reverse('upcoming'))
+            queries_with_few_events = self._count_queries_for_upcoming()
+
+            for offset in range(3, 10):
+                self._create_event_with_activity(offset)
+
+            # Act
+            queries_with_many_events = self._count_queries_for_upcoming()
+
+        # Assert
+        self.assertEqual(queries_with_few_events, queries_with_many_events)
+
+    def test_upcoming_shows_registration_count_from_annotation(self):
+        # Arrange
+        event = self._create_event_with_activity(0)
+        Registration.objects.create(
+            first_name='Second',
+            last_name='Rider',
+            name='Second Rider',
+            email='second@example.com',
+            event=event,
+            emergency_contact_name='Emergency Contact',
+            emergency_contact_phone='123-456-7890',
+            state=Registration.STATE_CONFIRMED
+        )
+
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '2 registered')

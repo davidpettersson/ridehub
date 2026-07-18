@@ -1,14 +1,23 @@
 from datetime import date, datetime, timedelta
 
-from django.db.models import Q, QuerySet
+from django.db.models import Count, Max, Min, Q, QuerySet
 from django.utils import timezone
 
-from backoffice.models import Event, Ride
+from backoffice.models import Event, Registration, Ride
 
 
 class EventService:
     def fetch_events(self, include_archived: bool = False, only_visible: bool = True) -> QuerySet[Event]:
-        queryset = Event.objects.all()
+        queryset = Event.objects.select_related('program').annotate(
+            annotated_registration_count=Count(
+                'registration',
+                filter=Q(registration__state=Registration.STATE_CONFIRMED),
+                distinct=True,
+            ),
+            annotated_ride_count=Count('ride', distinct=True),
+            annotated_min_distance=Min('ride__route__distance', filter=Q(ride__route__distance__gt=0)),
+            annotated_max_distance=Max('ride__route__distance', filter=Q(ride__route__distance__gt=0)),
+        )
 
         if not include_archived:
             queryset = queryset.exclude(state=Event.STATE_ARCHIVED)
