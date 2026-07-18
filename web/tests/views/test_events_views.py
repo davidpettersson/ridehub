@@ -1609,7 +1609,7 @@ class UpcomingViewQueryCountTests(TestCase):
         # Assert
         self.assertEqual(queries_with_few_events, queries_with_many_events)
 
-    def test_upcoming_shows_registration_count_from_annotation(self):
+    def test_upcoming_shows_confirmed_registration_count(self):
         # Arrange
         event = self._create_event_with_activity(0)
         Registration.objects.create(
