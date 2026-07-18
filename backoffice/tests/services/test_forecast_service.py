@@ -168,9 +168,23 @@ class ForecastServiceTestCase(TestCase):
         self.assertIsNone(forecast)
         mock_get.assert_not_called()
 
+    def test_event_four_days_out_within_window(self):
+        # Arrange
+        starts_at = (timezone.now() + timedelta(days=4)).replace(minute=0, second=0, microsecond=0)
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(starts_at)
+
+            # Act
+            forecast = self.service.get_forecast(self.latitude, self.longitude, starts_at)
+
+        # Assert
+        self.assertIsNotNone(forecast)
+        self.assertEqual(forecast.time, starts_at)
+
     def test_event_beyond_window_returns_none(self):
         # Arrange
-        far_future = timezone.now() + timedelta(days=5)
+        far_future = timezone.now() + timedelta(days=7)
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             # Act
@@ -430,7 +444,7 @@ class ForecastServiceEventsTestCase(TestCase):
 
     def test_events_outside_window_excluded(self):
         # Arrange
-        event = self._create_event('Far out', timezone.now() + timedelta(days=5))
+        event = self._create_event('Far out', timezone.now() + timedelta(days=7))
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             # Act
