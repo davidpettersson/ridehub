@@ -1,6 +1,6 @@
 {% if forecast %}
 <span class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted" style="background-color: #6c757d1A;">
     <span aria-hidden="true">{{ forecast.precipitation_emojis }}</span><span class="visually-hidden">{{ forecast.precipitation_display }},</span>
-    · {{ forecast.temperature_min }}..{{ forecast.temperature_max }}° · AQHI&nbsp;{{ forecast.aqhi_display }}&nbsp;<span class="opacity-75">(beta)</span>
+    · {{ forecast.temperature_min }}&nbsp;–&nbsp;{{ forecast.temperature_max }}° · AQHI&nbsp;{{ forecast.aqhi_display }}&nbsp;<span class="opacity-75">(beta)</span>
 </span>
 {% endif %}

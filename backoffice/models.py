@@ -421,12 +421,14 @@ class Forecast(models.Model):
         SUN = 'sun', 'Sun'
         CLOUD = 'cloud', 'Cloud'
         RAIN = 'rain', 'Rain'
+        SNOW = 'snow', 'Snow'
         THUNDER = 'thunder', 'Thunder'
 
     PRECIPITATION_EMOJIS = {
         Precipitation.SUN: '☀️',
         Precipitation.CLOUD: '☁️',
         Precipitation.RAIN: '☔',
+        Precipitation.SNOW: '❄️',
         Precipitation.THUNDER: '⚡',
     }
 
@@ -503,7 +505,7 @@ class Forecast(models.Model):
     def aqhi_display(self) -> str:
         if self.aqhi_min == self.aqhi_max:
             return self._format_aqhi(self.aqhi_min)
-        return f'{self._format_aqhi(self.aqhi_min)}..{self._format_aqhi(self.aqhi_max)}'
+        return f'{self._format_aqhi(self.aqhi_min)} – {self._format_aqhi(self.aqhi_max)}'
 
     @staticmethod
     def _format_aqhi(value: int) -> str:

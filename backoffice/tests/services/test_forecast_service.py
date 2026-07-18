@@ -288,8 +288,13 @@ class ForecastServiceTestCase(TestCase):
             2: Forecast.Precipitation.CLOUD,
             45: Forecast.Precipitation.CLOUD,
             51: Forecast.Precipitation.RAIN,
-            75: Forecast.Precipitation.RAIN,
-            86: Forecast.Precipitation.RAIN,
+            61: Forecast.Precipitation.RAIN,
+            82: Forecast.Precipitation.RAIN,
+            71: Forecast.Precipitation.SNOW,
+            75: Forecast.Precipitation.SNOW,
+            77: Forecast.Precipitation.SNOW,
+            85: Forecast.Precipitation.SNOW,
+            86: Forecast.Precipitation.SNOW,
             95: Forecast.Precipitation.THUNDER,
             99: Forecast.Precipitation.THUNDER,
         }
@@ -303,13 +308,13 @@ class ForecastServiceTestCase(TestCase):
 
     def test_precipitation_categories_deduplicated_in_severity_order(self):
         # Arrange
-        codes = [95, 0, 61, 0, 3]
+        codes = [95, 0, 61, 71, 0, 3]
 
         # Act
         result = ForecastService._precipitation_from_weather_codes(codes)
 
         # Assert
-        self.assertEqual(result, 'sun,cloud,rain,thunder')
+        self.assertEqual(result, 'sun,cloud,rain,snow,thunder')
 
 
 class AqhiComputationTestCase(TestCase):

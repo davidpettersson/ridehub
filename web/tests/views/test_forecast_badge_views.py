@@ -57,7 +57,7 @@ class ForecastBadgeViewTestCase(TestCase):
 
         # Assert
         self.assertContains(response, 'AQHI&nbsp;5')
-        self.assertContains(response, '· 12..15°')
+        self.assertContains(response, '· 12&nbsp;–&nbsp;15°')
         self.assertContains(response, '(beta)')
         self.assertContains(response, '☁️/☔')
 

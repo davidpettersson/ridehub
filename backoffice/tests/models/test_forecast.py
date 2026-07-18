@@ -155,14 +155,14 @@ class ForecastModelTestCase(TestCase):
         forecast = self._build_forecast(aqhi_min=3, aqhi_max=5)
 
         # Act & Assert
-        self.assertEqual(forecast.aqhi_display, '3..5')
+        self.assertEqual(forecast.aqhi_display, '3 – 5')
 
     def test_aqhi_display_caps_above_ten(self):
         # Arrange
         forecast = self._build_forecast(aqhi_min=9, aqhi_max=11)
 
         # Act & Assert
-        self.assertEqual(forecast.aqhi_display, '9..10+')
+        self.assertEqual(forecast.aqhi_display, '9 – 10+')
 
     def test_precipitation_emojis_joined_with_slash(self):
         # Arrange
@@ -184,6 +184,7 @@ class ForecastModelTestCase(TestCase):
             'sun': '☀️',
             'cloud': '☁️',
             'rain': '☔',
+            'snow': '❄️',
             'thunder': '⚡',
         }
 

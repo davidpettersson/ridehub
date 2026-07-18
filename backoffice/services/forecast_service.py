@@ -206,6 +206,8 @@ class ForecastService:
     def _precipitation_from_weather_code(code: int) -> str:
         if code >= 95:
             return Forecast.Precipitation.THUNDER
+        if 71 <= code <= 77 or code in (85, 86):
+            return Forecast.Precipitation.SNOW
         if code >= 51:
             return Forecast.Precipitation.RAIN
         if code >= 2:
