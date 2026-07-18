@@ -1,0 +1,6 @@
+{% if forecast %}
+<span class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted" style="background-color: #6c757d1A;">
+    <i class="bi {{ forecast.precipitation_icon }} me-1" aria-hidden="true"></i><span class="visually-hidden">{{ forecast.get_precipitation_display }},</span>
+    {{ forecast.temperature_min }}..{{ forecast.temperature_max }}&nbsp;°C, AQI&nbsp;{{ forecast.aqi }}
+</span>
+{% endif %}

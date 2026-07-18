@@ -416,6 +416,102 @@ class Route(models.Model):
         return self.name
 
 
+class Forecast(models.Model):
+    class Precipitation(models.TextChoices):
+        SUN = 'sun', 'Sun'
+        CLOUD = 'cloud', 'Cloud'
+        RAIN = 'rain', 'Rain'
+        THUNDER = 'thunder', 'Thunder'
+
+    PRECIPITATION_ICONS = {
+        Precipitation.SUN: 'bi-sun',
+        Precipitation.CLOUD: 'bi-cloud',
+        Precipitation.RAIN: 'bi-cloud-rain',
+        Precipitation.THUNDER: 'bi-cloud-lightning-rain',
+    }
+
+    latitude = models.DecimalField(
+        max_digits=8,
+        decimal_places=5,
+        help_text='Latitude of the forecast location.'
+    )
+
+    longitude = models.DecimalField(
+        max_digits=8,
+        decimal_places=5,
+        help_text='Longitude of the forecast location.'
+    )
+
+    time = models.DateTimeField(
+        help_text='Hour the forecast applies to, always at the top of the hour.'
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        help_text='When this forecast was last fetched from the weather provider.'
+    )
+
+    precipitation = models.CharField(
+        max_length=8,
+        choices=Precipitation.choices,
+        help_text='Precipitation category at the forecast hour.'
+    )
+
+    temperature_min = models.IntegerField(
+        help_text='Minimum temperature in Celsius for the forecast day.'
+    )
+
+    temperature_max = models.IntegerField(
+        help_text='Maximum temperature in Celsius for the forecast day.'
+    )
+
+    aqi = models.PositiveIntegerField(
+        help_text='US Air Quality Index at the forecast hour.'
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['latitude', 'longitude', 'time'],
+                name='unique_forecast_location_time',
+            )
+        ]
+        indexes = [
+            models.Index(fields=['latitude', 'longitude', 'time']),
+        ]
+
+    @property
+    def precipitation_icon(self) -> str:
+        return self.PRECIPITATION_ICONS[self.Precipitation(self.precipitation)]
+
+    def clean(self):
+        super().clean()
+
+        if self.latitude is not None and not (-90 <= self.latitude <= 90):
+            raise ValidationError({
+                'latitude': 'Latitude must be between -90 and 90.'
+            })
+
+        if self.longitude is not None and not (-180 <= self.longitude <= 180):
+            raise ValidationError({
+                'longitude': 'Longitude must be between -180 and 180.'
+            })
+
+        if self.time and (self.time.minute or self.time.second or self.time.microsecond):
+            raise ValidationError({
+                'time': 'Forecast time must be at the top of the hour.'
+            })
+
+        if self.temperature_min is not None and self.temperature_max is not None:
+            if self.temperature_min > self.temperature_max:
+                raise ValidationError({
+                    'temperature_max': 'Maximum temperature cannot be below minimum temperature.'
+                })
+
+    def __str__(self):
+        return f'({self.latitude}, {self.longitude}) at {self.time}'
+
+
 class SpeedRange(models.Model):
     lower_limit = models.IntegerField()
     upper_limit = models.IntegerField(blank=True, null=True)
