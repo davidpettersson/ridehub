@@ -423,11 +423,11 @@ class Forecast(models.Model):
         RAIN = 'rain', 'Rain'
         THUNDER = 'thunder', 'Thunder'
 
-    PRECIPITATION_ICONS = {
-        Precipitation.SUN: 'bi-sun',
-        Precipitation.CLOUD: 'bi-cloud',
-        Precipitation.RAIN: 'bi-cloud-rain',
-        Precipitation.THUNDER: 'bi-cloud-lightning-rain',
+    PRECIPITATION_EMOJIS = {
+        Precipitation.SUN: '☀️',
+        Precipitation.CLOUD: '☁️',
+        Precipitation.RAIN: '🌧️',
+        Precipitation.THUNDER: '⛈️',
     }
 
     latitude = models.DecimalField(
@@ -481,8 +481,8 @@ class Forecast(models.Model):
         ]
 
     @property
-    def precipitation_icon(self) -> str:
-        return self.PRECIPITATION_ICONS[self.Precipitation(self.precipitation)]
+    def precipitation_emoji(self) -> str:
+        return self.PRECIPITATION_EMOJIS[self.Precipitation(self.precipitation)]
 
     @property
     def aqhi_display(self) -> str:
