@@ -17,9 +17,9 @@ class ForecastModelTestCase(TestCase):
         fields = {
             'latitude': Decimal('45.32250'),
             'longitude': Decimal('-75.66920'),
-            'time': self.time,
+            'start_time': self.time,
             'end_time': self.time + timedelta(hours=2),
-            'precipitation': 'sun',
+            'conditions': 'sun',
             'temperature_min': 5,
             'temperature_max': 15,
             'aqhi_min': 3,
@@ -37,12 +37,12 @@ class ForecastModelTestCase(TestCase):
 
     def test_time_not_at_top_of_hour_rejected(self):
         # Arrange
-        forecast = self._build_forecast(time=self.time + timedelta(minutes=30))
+        forecast = self._build_forecast(start_time=self.time + timedelta(minutes=30))
 
         # Act & Assert
         with self.assertRaises(ValidationError) as ctx:
             forecast.full_clean()
-        self.assertIn('time', ctx.exception.message_dict)
+        self.assertIn('start_time', ctx.exception.message_dict)
 
     def test_end_time_not_at_top_of_hour_rejected(self):
         # Arrange
@@ -134,14 +134,14 @@ class ForecastModelTestCase(TestCase):
             forecast.full_clean()
         self.assertIn('aqhi_max', ctx.exception.message_dict)
 
-    def test_unknown_precipitation_category_rejected(self):
+    def test_unknown_condition_category_rejected(self):
         # Arrange
-        forecast = self._build_forecast(precipitation='sun,hail')
+        forecast = self._build_forecast(conditions='sun,hail')
 
         # Act & Assert
         with self.assertRaises(ValidationError) as ctx:
             forecast.full_clean()
-        self.assertIn('precipitation', ctx.exception.message_dict)
+        self.assertIn('conditions', ctx.exception.message_dict)
 
     def test_aqhi_display_collapses_equal_range(self):
         # Arrange
@@ -164,21 +164,35 @@ class ForecastModelTestCase(TestCase):
         # Act & Assert
         self.assertEqual(forecast.aqhi_display, '9 – 10+')
 
-    def test_precipitation_emojis_joined_with_slash(self):
+    def test_temperature_display_collapses_equal_range(self):
         # Arrange
-        forecast = self._build_forecast(precipitation='sun,cloud')
+        forecast = self._build_forecast(temperature_min=12, temperature_max=12)
 
         # Act & Assert
-        self.assertEqual(forecast.precipitation_emojis, '☀️/☁️')
+        self.assertEqual(forecast.temperature_display, '12')
 
-    def test_precipitation_display_joined_with_slash(self):
+    def test_temperature_display_shows_range(self):
         # Arrange
-        forecast = self._build_forecast(precipitation='rain,thunder')
+        forecast = self._build_forecast(temperature_min=12, temperature_max=15)
 
         # Act & Assert
-        self.assertEqual(forecast.precipitation_display, 'Rain/Thunder')
+        self.assertEqual(forecast.temperature_display, '12 – 15')
 
-    def test_precipitation_emoji_mapping(self):
+    def test_condition_emojis_joined_with_slash(self):
+        # Arrange
+        forecast = self._build_forecast(conditions='cloud,sun')
+
+        # Act & Assert
+        self.assertEqual(forecast.condition_emojis, '☁️/☀️')
+
+    def test_condition_display_joined_with_slash(self):
+        # Arrange
+        forecast = self._build_forecast(conditions='thunder,rain')
+
+        # Act & Assert
+        self.assertEqual(forecast.condition_display, 'Thunder/Rain')
+
+    def test_condition_emoji_mapping(self):
         # Arrange
         expectations = {
             'sun': '☀️',
@@ -188,9 +202,9 @@ class ForecastModelTestCase(TestCase):
             'thunder': '⚡',
         }
 
-        for precipitation, emoji in expectations.items():
+        for condition, emoji in expectations.items():
             # Act
-            forecast = self._build_forecast(precipitation=precipitation)
+            forecast = self._build_forecast(conditions=condition)
 
             # Assert
-            self.assertEqual(forecast.precipitation_emojis, emoji)
+            self.assertEqual(forecast.condition_emojis, emoji)

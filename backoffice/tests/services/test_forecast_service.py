@@ -92,9 +92,9 @@ class ForecastServiceTestCase(TestCase):
 
         # Assert
         self.assertIsNotNone(forecast)
-        self.assertEqual(forecast.time, self.starts_at)
+        self.assertEqual(forecast.start_time, self.starts_at)
         self.assertEqual(forecast.end_time, window_end)
-        self.assertEqual(forecast.precipitation, 'sun,cloud,thunder')
+        self.assertEqual(forecast.conditions, 'thunder,cloud,sun')
         self.assertEqual(forecast.temperature_min, 5)
         self.assertEqual(forecast.temperature_max, 16)
         self.assertEqual(forecast.aqhi_min, 3)
@@ -117,9 +117,9 @@ class ForecastServiceTestCase(TestCase):
         Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
-            time=self.starts_at,
+            start_time=self.starts_at,
             end_time=self.starts_at + timedelta(hours=1),
-            precipitation='sun',
+            conditions='sun',
             temperature_min=5,
             temperature_max=15,
             aqhi_min=3,
@@ -155,9 +155,9 @@ class ForecastServiceTestCase(TestCase):
         stale = Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
-            time=self.starts_at,
+            start_time=self.starts_at,
             end_time=self.starts_at + timedelta(hours=1),
-            precipitation='sun',
+            conditions='sun',
             temperature_min=5,
             temperature_max=15,
             aqhi_min=3,
@@ -179,7 +179,7 @@ class ForecastServiceTestCase(TestCase):
 
         # Assert
         self.assertEqual(forecast.pk, stale.pk)
-        self.assertEqual(forecast.precipitation, 'rain')
+        self.assertEqual(forecast.conditions, 'rain')
         self.assertEqual(forecast.aqhi_min, 10)
         self.assertEqual(forecast.aqhi_max, 10)
         self.assertEqual(Forecast.objects.count(), 1)
@@ -269,9 +269,9 @@ class ForecastServiceTestCase(TestCase):
         stale = Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
-            time=self.starts_at,
+            start_time=self.starts_at,
             end_time=self.starts_at + timedelta(hours=1),
-            precipitation='cloud',
+            conditions='cloud',
             temperature_min=5,
             temperature_max=15,
             aqhi_min=3,
@@ -301,41 +301,41 @@ class ForecastServiceTestCase(TestCase):
         # Assert
         self.assertIsNone(forecast)
 
-    def test_precipitation_mapping_from_weather_codes(self):
+    def test_condition_mapping_from_weather_codes(self):
         # Arrange
         expectations = {
-            0: Forecast.Precipitation.SUN,
-            1: Forecast.Precipitation.SUN,
-            2: Forecast.Precipitation.CLOUD,
-            45: Forecast.Precipitation.CLOUD,
-            51: Forecast.Precipitation.RAIN,
-            61: Forecast.Precipitation.RAIN,
-            82: Forecast.Precipitation.RAIN,
-            71: Forecast.Precipitation.SNOW,
-            75: Forecast.Precipitation.SNOW,
-            77: Forecast.Precipitation.SNOW,
-            85: Forecast.Precipitation.SNOW,
-            86: Forecast.Precipitation.SNOW,
-            95: Forecast.Precipitation.THUNDER,
-            99: Forecast.Precipitation.THUNDER,
+            0: Forecast.Condition.SUN,
+            1: Forecast.Condition.SUN,
+            2: Forecast.Condition.CLOUD,
+            45: Forecast.Condition.CLOUD,
+            51: Forecast.Condition.RAIN,
+            61: Forecast.Condition.RAIN,
+            82: Forecast.Condition.RAIN,
+            71: Forecast.Condition.SNOW,
+            75: Forecast.Condition.SNOW,
+            77: Forecast.Condition.SNOW,
+            85: Forecast.Condition.SNOW,
+            86: Forecast.Condition.SNOW,
+            95: Forecast.Condition.THUNDER,
+            99: Forecast.Condition.THUNDER,
         }
 
         for code, expected in expectations.items():
             # Act
-            result = ForecastService._precipitation_from_weather_code(code)
+            result = ForecastService._condition_from_weather_code(code)
 
             # Assert
             self.assertEqual(result, expected, f'weather code {code}')
 
-    def test_precipitation_categories_deduplicated_in_severity_order(self):
+    def test_condition_categories_deduplicated_worst_first(self):
         # Arrange
         codes = [95, 0, 61, 71, 0, 3]
 
         # Act
-        result = ForecastService._precipitation_from_weather_codes(codes)
+        result = ForecastService._conditions_from_weather_codes(codes)
 
         # Assert
-        self.assertEqual(result, 'sun,cloud,rain,snow,thunder')
+        self.assertEqual(result, 'thunder,snow,rain,cloud,sun')
 
 
 class AqhiComputationTestCase(TestCase):
@@ -476,7 +476,7 @@ class ForecastServiceEventsTestCase(TestCase):
             minute=0, second=0, microsecond=0
         )
 
-    def _create_event(self, name, starts_at, ends_at=None, with_ride=True, cancelled=False):
+    def _create_event(self, name, starts_at, ends_at=None, with_ride=True, cancelled=False, virtual=False):
         event = Event.objects.create(
             program=self.program,
             name=name,
@@ -484,6 +484,7 @@ class ForecastServiceEventsTestCase(TestCase):
             starts_at=starts_at,
             ends_at=ends_at,
             registration_closes_at=starts_at - timedelta(hours=1),
+            virtual=virtual,
         )
         if with_ride:
             Ride.objects.create(name=f'{name} ride', event=event, route=self.route)
@@ -521,9 +522,22 @@ class ForecastServiceEventsTestCase(TestCase):
         # Assert
         self.assertNotEqual(forecasts[short.id].pk, forecasts[long.id].pk)
 
-    def test_events_without_rides_skipped(self):
+    def test_events_without_rides_included(self):
         # Arrange
         event = self._create_event('No rides', self.starts_at, with_ride=False)
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
+
+            # Act
+            forecasts = self.service.get_forecasts_for_events([event])
+
+        # Assert
+        self.assertIn(event.id, forecasts)
+
+    def test_virtual_events_skipped(self):
+        # Arrange
+        event = self._create_event('Virtual', self.starts_at, virtual=True)
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             # Act

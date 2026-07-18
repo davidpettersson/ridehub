@@ -6,21 +6,23 @@ events (`/upcoming` and `/event/<id>`). The implementation lives in
 
 ## What is shown
 
-Events that have at least one ride and start within the next 7 days get a badge:
+All events except virtual ones that start within the next 7 days get a badge:
 
 ```
-☀️/☁️ · 12 – 15° · AQHI 3 – 5 (beta)
+☁️/☀️ · 12 – 15° · AQHI 3 – 5 (beta)
 ```
 
-- **Conditions**: every precipitation category that occurs during the event,
-  slash-separated in severity order (sun ☀️, cloud ☁️, rain ☔, snow ❄️,
-  thunder ⚡).
-- **Temperature**: minimum and maximum in °C across the event's duration.
+- **Conditions**: every weather condition that occurs during the event,
+  slash-separated worst first (thunder ⚡, snow ❄️, rain ☔, cloud ☁️,
+  sun ☀️).
+- **Temperature**: minimum and maximum in °C across the event's duration,
+  collapsed to a single number when they are equal.
 - **AQHI**: minimum and maximum Canadian Air Quality Health Index across the
   event's duration, collapsed to a single value when they are equal, and shown
   as `10+` above 10.
 
-The badge is gated behind the `weather_forecast_badges` waffle flag.
+The badge is gated behind the `weather_forecast_badges` waffle flag and
+credits its source: Open-Meteo.
 
 ## Data source
 
@@ -52,9 +54,9 @@ returned UTC offset. All events currently use a single fixed location, YOW
 
 For each hour in the window:
 
-- **Precipitation category** from the WMO weather code: 95+ thunder,
+- **Condition category** from the WMO weather code: 95+ thunder,
   71-77 and 85-86 snow, other codes 51-94 rain, 2-50 cloud, otherwise sun.
-  The badge shows the distinct set of categories over the window.
+  The badge shows the distinct set of categories over the window, worst first.
 - **Temperature** is `temperature_2m`; the badge shows the rounded min and max
   over the window.
 - **AQHI** is computed with Environment Canada's formula from the 3-hour

@@ -6,7 +6,7 @@ from decimal import Decimal
 import requests
 from django.utils import timezone
 
-from backoffice.models import Forecast, Ride
+from backoffice.models import Forecast
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class ForecastService:
             return None
 
         existing = Forecast.objects.filter(
-            latitude=latitude, longitude=longitude, time=time, end_time=end_time
+            latitude=latitude, longitude=longitude, start_time=time, end_time=end_time
         ).first()
         if existing and existing.updated_at >= now - FORECAST_MAX_AGE:
             return existing
@@ -52,7 +52,7 @@ class ForecastService:
         forecast, _ = Forecast.objects.update_or_create(
             latitude=latitude,
             longitude=longitude,
-            time=time,
+            start_time=time,
             end_time=end_time,
             defaults=metrics,
         )
@@ -63,12 +63,8 @@ class ForecastService:
         forecasts_by_window: dict = {}
         forecasts_by_event_id: dict = {}
 
-        event_ids_with_rides = set(
-            Ride.objects.filter(event__in=events).values_list('event_id', flat=True)
-        )
-
         for event in events:
-            if event.id not in event_ids_with_rides:
+            if event.virtual:
                 continue
             ends_at = event.starts_at + event.duration
             window = (self._snap_to_hour(event.starts_at), self._snap_to_hour_ceiling(ends_at))
@@ -131,7 +127,7 @@ class ForecastService:
         ]
 
         return {
-            'precipitation': self._precipitation_from_weather_codes(weather_codes),
+            'conditions': self._conditions_from_weather_codes(weather_codes),
             'temperature_min': round(min(temperatures)),
             'temperature_max': round(max(temperatures)),
             'aqhi_min': min(aqhi_values),
@@ -198,19 +194,19 @@ class ForecastService:
         return local.strftime('%Y-%m-%dT%H:%M'), local.strftime('%Y-%m-%d')
 
     @classmethod
-    def _precipitation_from_weather_codes(cls, codes: list) -> str:
-        categories = {cls._precipitation_from_weather_code(int(code)) for code in codes}
-        ordered = [category for category in Forecast.Precipitation if category in categories]
+    def _conditions_from_weather_codes(cls, codes: list) -> str:
+        categories = {cls._condition_from_weather_code(int(code)) for code in codes}
+        ordered = [category for category in reversed(Forecast.Condition) if category in categories]
         return ','.join(ordered)
 
     @staticmethod
-    def _precipitation_from_weather_code(code: int) -> str:
+    def _condition_from_weather_code(code: int) -> str:
         if code >= 95:
-            return Forecast.Precipitation.THUNDER
+            return Forecast.Condition.THUNDER
         if 71 <= code <= 77 or code in (85, 86):
-            return Forecast.Precipitation.SNOW
+            return Forecast.Condition.SNOW
         if code >= 51:
-            return Forecast.Precipitation.RAIN
+            return Forecast.Condition.RAIN
         if code >= 2:
-            return Forecast.Precipitation.CLOUD
-        return Forecast.Precipitation.SUN
+            return Forecast.Condition.CLOUD
+        return Forecast.Condition.SUN

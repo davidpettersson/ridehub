@@ -19,7 +19,7 @@ class ForecastBadgeViewTestCase(TestCase):
         )
         self.latitude, self.longitude = YOW_LOCATION
 
-    def _create_event(self, name='Test Event', starts_at=None, with_ride=True):
+    def _create_event(self, name='Test Event', starts_at=None, with_ride=True, virtual=False):
         starts_at = starts_at or self.starts_at
         event = Event.objects.create(
             program=self.program,
@@ -27,6 +27,7 @@ class ForecastBadgeViewTestCase(TestCase):
             description='Description',
             starts_at=starts_at,
             registration_closes_at=starts_at - timedelta(hours=1),
+            virtual=virtual,
         )
         if with_ride:
             Ride.objects.create(name=f'{name} ride', event=event, route=self.route)
@@ -37,9 +38,9 @@ class ForecastBadgeViewTestCase(TestCase):
         return Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
-            time=time,
+            start_time=time,
             end_time=time + timedelta(hours=1),
-            precipitation='cloud,rain',
+            conditions='rain,cloud',
             temperature_min=12,
             temperature_max=15,
             aqhi_min=5,
@@ -57,9 +58,24 @@ class ForecastBadgeViewTestCase(TestCase):
 
         # Assert
         self.assertContains(response, 'AQHI&nbsp;5')
-        self.assertContains(response, '· 12&nbsp;–&nbsp;15°')
+        self.assertContains(response, '· 12 – 15°')
         self.assertContains(response, '(beta)')
-        self.assertContains(response, '☁️/☔')
+        self.assertContains(response, '☔/☁️')
+        self.assertContains(response, 'Open-Meteo')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_upcoming_shows_single_temperature_when_min_equals_max(self):
+        # Arrange
+        self._create_event()
+        forecast = self._create_forecast()
+        Forecast.objects.filter(pk=forecast.pk).update(temperature_min=12, temperature_max=12)
+
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertContains(response, '· 12°')
+        self.assertNotContains(response, '12 – 12')
 
     @override_flag('weather_forecast_badges', active=False)
     def test_upcoming_hides_badge_when_flag_disabled(self):
@@ -76,13 +92,37 @@ class ForecastBadgeViewTestCase(TestCase):
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=True)
-    def test_upcoming_hides_badge_for_event_without_rides(self):
+    def test_upcoming_shows_badge_for_event_without_rides(self):
         # Arrange
         self._create_event(with_ride=False)
         self._create_forecast()
 
         # Act
         response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertContains(response, 'AQHI&nbsp;5')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_upcoming_hides_badge_for_virtual_event(self):
+        # Arrange
+        self._create_event(virtual=True)
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertNotContains(response, 'AQHI')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_hides_badge_for_virtual_event(self):
+        # Arrange
+        event = self._create_event(virtual=True)
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
         self.assertNotContains(response, 'AQHI')
