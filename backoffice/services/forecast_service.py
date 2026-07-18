@@ -6,7 +6,7 @@ from decimal import Decimal
 import requests
 from django.utils import timezone
 
-from backoffice.models import Forecast
+from backoffice.models import Forecast, Ride
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +53,12 @@ class ForecastService:
         forecasts_by_time: dict = {}
         forecasts_by_event_id: dict = {}
 
+        event_ids_with_rides = set(
+            Ride.objects.filter(event__in=events).values_list('event_id', flat=True)
+        )
+
         for event in events:
-            if event.cancelled or not event.has_rides:
+            if event.cancelled or event.id not in event_ids_with_rides:
                 continue
             time = self._snap_to_hour(event.starts_at)
             if time not in forecasts_by_time:

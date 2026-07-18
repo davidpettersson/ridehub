@@ -1,5 +1,4 @@
 from datetime import timedelta
-from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import requests
