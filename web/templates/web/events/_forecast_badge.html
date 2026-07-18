@@ -1,6 +1,6 @@
 {% if forecast %}
-<span class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted" style="background-color: #6c757d1A;">
-    <span aria-hidden="true">{{ forecast.precipitation_emojis }}</span><span class="visually-hidden">{{ forecast.precipitation_display }},</span>
-    · {{ forecast.temperature_min }}&nbsp;–&nbsp;{{ forecast.temperature_max }}° · AQHI&nbsp;{{ forecast.aqhi_display }}&nbsp;<span class="opacity-75">(beta)</span>
+<span class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted" style="background-color: #6c757d1A;" title="Weather forecast from Open-Meteo">
+    <span aria-hidden="true" class="me-1">{{ forecast.condition_emojis }}</span><span class="visually-hidden">{{ forecast.condition_display }},</span>
+    · {{ forecast.temperature_display }}° · AQHI&nbsp;{{ forecast.aqhi_display }}&nbsp;<span class="opacity-75">(beta)</span><span class="visually-hidden">, forecast from Open-Meteo</span>
 </span>
 {% endif %}

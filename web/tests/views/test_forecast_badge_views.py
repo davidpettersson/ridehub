@@ -37,9 +37,9 @@ class ForecastBadgeViewTestCase(TestCase):
         return Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
-            time=time,
+            start_time=time,
             end_time=time + timedelta(hours=1),
-            precipitation='cloud,rain',
+            conditions='rain,cloud',
             temperature_min=12,
             temperature_max=15,
             aqhi_min=5,
@@ -57,9 +57,24 @@ class ForecastBadgeViewTestCase(TestCase):
 
         # Assert
         self.assertContains(response, 'AQHI&nbsp;5')
-        self.assertContains(response, '· 12&nbsp;–&nbsp;15°')
+        self.assertContains(response, '· 12 – 15°')
         self.assertContains(response, '(beta)')
-        self.assertContains(response, '☁️/☔')
+        self.assertContains(response, '☔/☁️')
+        self.assertContains(response, 'Open-Meteo')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_upcoming_shows_single_temperature_when_min_equals_max(self):
+        # Arrange
+        self._create_event()
+        forecast = self._create_forecast()
+        Forecast.objects.filter(pk=forecast.pk).update(temperature_min=12, temperature_max=12)
+
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertContains(response, '· 12°')
+        self.assertNotContains(response, '12 – 12')
 
     @override_flag('weather_forecast_badges', active=False)
     def test_upcoming_hides_badge_when_flag_disabled(self):

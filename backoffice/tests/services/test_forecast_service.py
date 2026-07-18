@@ -92,9 +92,9 @@ class ForecastServiceTestCase(TestCase):
 
         # Assert
         self.assertIsNotNone(forecast)
-        self.assertEqual(forecast.time, self.starts_at)
+        self.assertEqual(forecast.start_time, self.starts_at)
         self.assertEqual(forecast.end_time, window_end)
-        self.assertEqual(forecast.precipitation, 'sun,cloud,thunder')
+        self.assertEqual(forecast.conditions, 'thunder,cloud,sun')
         self.assertEqual(forecast.temperature_min, 5)
         self.assertEqual(forecast.temperature_max, 16)
         self.assertEqual(forecast.aqhi_min, 3)
@@ -117,9 +117,9 @@ class ForecastServiceTestCase(TestCase):
         Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
-            time=self.starts_at,
+            start_time=self.starts_at,
             end_time=self.starts_at + timedelta(hours=1),
-            precipitation='sun',
+            conditions='sun',
             temperature_min=5,
             temperature_max=15,
             aqhi_min=3,
@@ -155,9 +155,9 @@ class ForecastServiceTestCase(TestCase):
         stale = Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
-            time=self.starts_at,
+            start_time=self.starts_at,
             end_time=self.starts_at + timedelta(hours=1),
-            precipitation='sun',
+            conditions='sun',
             temperature_min=5,
             temperature_max=15,
             aqhi_min=3,
@@ -179,7 +179,7 @@ class ForecastServiceTestCase(TestCase):
 
         # Assert
         self.assertEqual(forecast.pk, stale.pk)
-        self.assertEqual(forecast.precipitation, 'rain')
+        self.assertEqual(forecast.conditions, 'rain')
         self.assertEqual(forecast.aqhi_min, 10)
         self.assertEqual(forecast.aqhi_max, 10)
         self.assertEqual(Forecast.objects.count(), 1)
@@ -269,9 +269,9 @@ class ForecastServiceTestCase(TestCase):
         stale = Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
-            time=self.starts_at,
+            start_time=self.starts_at,
             end_time=self.starts_at + timedelta(hours=1),
-            precipitation='cloud',
+            conditions='cloud',
             temperature_min=5,
             temperature_max=15,
             aqhi_min=3,
@@ -301,41 +301,41 @@ class ForecastServiceTestCase(TestCase):
         # Assert
         self.assertIsNone(forecast)
 
-    def test_precipitation_mapping_from_weather_codes(self):
+    def test_condition_mapping_from_weather_codes(self):
         # Arrange
         expectations = {
-            0: Forecast.Precipitation.SUN,
-            1: Forecast.Precipitation.SUN,
-            2: Forecast.Precipitation.CLOUD,
-            45: Forecast.Precipitation.CLOUD,
-            51: Forecast.Precipitation.RAIN,
-            61: Forecast.Precipitation.RAIN,
-            82: Forecast.Precipitation.RAIN,
-            71: Forecast.Precipitation.SNOW,
-            75: Forecast.Precipitation.SNOW,
-            77: Forecast.Precipitation.SNOW,
-            85: Forecast.Precipitation.SNOW,
-            86: Forecast.Precipitation.SNOW,
-            95: Forecast.Precipitation.THUNDER,
-            99: Forecast.Precipitation.THUNDER,
+            0: Forecast.Condition.SUN,
+            1: Forecast.Condition.SUN,
+            2: Forecast.Condition.CLOUD,
+            45: Forecast.Condition.CLOUD,
+            51: Forecast.Condition.RAIN,
+            61: Forecast.Condition.RAIN,
+            82: Forecast.Condition.RAIN,
+            71: Forecast.Condition.SNOW,
+            75: Forecast.Condition.SNOW,
+            77: Forecast.Condition.SNOW,
+            85: Forecast.Condition.SNOW,
+            86: Forecast.Condition.SNOW,
+            95: Forecast.Condition.THUNDER,
+            99: Forecast.Condition.THUNDER,
         }
 
         for code, expected in expectations.items():
             # Act
-            result = ForecastService._precipitation_from_weather_code(code)
+            result = ForecastService._condition_from_weather_code(code)
 
             # Assert
             self.assertEqual(result, expected, f'weather code {code}')
 
-    def test_precipitation_categories_deduplicated_in_severity_order(self):
+    def test_condition_categories_deduplicated_worst_first(self):
         # Arrange
         codes = [95, 0, 61, 71, 0, 3]
 
         # Act
-        result = ForecastService._precipitation_from_weather_codes(codes)
+        result = ForecastService._conditions_from_weather_codes(codes)
 
         # Assert
-        self.assertEqual(result, 'sun,cloud,rain,snow,thunder')
+        self.assertEqual(result, 'thunder,snow,rain,cloud,sun')
 
 
 class AqhiComputationTestCase(TestCase):

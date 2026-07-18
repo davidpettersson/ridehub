@@ -427,19 +427,19 @@ class Route(models.Model):
 
 
 class Forecast(models.Model):
-    class Precipitation(models.TextChoices):
+    class Condition(models.TextChoices):
         SUN = 'sun', 'Sun'
         CLOUD = 'cloud', 'Cloud'
         RAIN = 'rain', 'Rain'
         SNOW = 'snow', 'Snow'
         THUNDER = 'thunder', 'Thunder'
 
-    PRECIPITATION_EMOJIS = {
-        Precipitation.SUN: '☀️',
-        Precipitation.CLOUD: '☁️',
-        Precipitation.RAIN: '☔',
-        Precipitation.SNOW: '❄️',
-        Precipitation.THUNDER: '⚡',
+    CONDITION_EMOJIS = {
+        Condition.SUN: '☀️',
+        Condition.CLOUD: '☁️',
+        Condition.RAIN: '☔',
+        Condition.SNOW: '❄️',
+        Condition.THUNDER: '⚡',
     }
 
     latitude = models.DecimalField(
@@ -454,7 +454,7 @@ class Forecast(models.Model):
         help_text='Longitude of the forecast location.'
     )
 
-    time = models.DateTimeField(
+    start_time = models.DateTimeField(
         help_text='Hour the forecast window starts at, always at the top of the hour.'
     )
 
@@ -467,9 +467,9 @@ class Forecast(models.Model):
         help_text='When this forecast was last fetched from the weather provider.'
     )
 
-    precipitation = models.CharField(
+    conditions = models.CharField(
         max_length=32,
-        help_text='Comma-separated precipitation categories occurring during the forecast window.'
+        help_text='Comma-separated weather conditions occurring during the forecast window, worst first.'
     )
 
     temperature_min = models.IntegerField(
@@ -481,35 +481,43 @@ class Forecast(models.Model):
     )
 
     aqhi_min = models.PositiveIntegerField(
+        verbose_name='AQHI min',
         help_text='Lowest Canadian Air Quality Health Index during the forecast window (1-10, 11 means above 10).'
     )
 
     aqhi_max = models.PositiveIntegerField(
+        verbose_name='AQHI max',
         help_text='Highest Canadian Air Quality Health Index during the forecast window (1-10, 11 means above 10).'
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['latitude', 'longitude', 'time', 'end_time'],
+                fields=['latitude', 'longitude', 'start_time', 'end_time'],
                 name='unique_forecast_location_window',
             )
         ]
         indexes = [
-            models.Index(fields=['latitude', 'longitude', 'time', 'end_time'], name='forecast_location_window_idx'),
+            models.Index(fields=['latitude', 'longitude', 'start_time', 'end_time'], name='forecast_location_window_idx'),
         ]
 
     @property
-    def precipitation_categories(self) -> list:
-        return [self.Precipitation(value) for value in self.precipitation.split(',')]
+    def condition_categories(self) -> list:
+        return [self.Condition(value) for value in self.conditions.split(',')]
 
     @property
-    def precipitation_emojis(self) -> str:
-        return '/'.join(self.PRECIPITATION_EMOJIS[category] for category in self.precipitation_categories)
+    def condition_emojis(self) -> str:
+        return '/'.join(self.CONDITION_EMOJIS[category] for category in self.condition_categories)
 
     @property
-    def precipitation_display(self) -> str:
-        return '/'.join(category.label for category in self.precipitation_categories)
+    def condition_display(self) -> str:
+        return '/'.join(category.label for category in self.condition_categories)
+
+    @property
+    def temperature_display(self) -> str:
+        if self.temperature_min == self.temperature_max:
+            return str(self.temperature_min)
+        return f'{self.temperature_min} – {self.temperature_max}'
 
     @property
     def aqhi_display(self) -> str:
@@ -534,23 +542,23 @@ class Forecast(models.Model):
                 'longitude': 'Longitude must be between -180 and 180.'
             })
 
-        for field, label in (('time', 'Start time'), ('end_time', 'End time')):
+        for field, label in (('start_time', 'Start time'), ('end_time', 'End time')):
             value = getattr(self, field)
             if value and (value.minute or value.second or value.microsecond):
                 raise ValidationError({
                     field: f'{label} must be at the top of the hour.'
                 })
 
-        if self.time and self.end_time and self.end_time < self.time:
+        if self.start_time and self.end_time and self.end_time < self.start_time:
             raise ValidationError({
                 'end_time': 'End time cannot be before the start time.'
             })
 
-        if self.precipitation:
-            valid = set(self.Precipitation.values)
-            if not all(value in valid for value in self.precipitation.split(',')):
+        if self.conditions:
+            valid = set(self.Condition.values)
+            if not all(value in valid for value in self.conditions.split(',')):
                 raise ValidationError({
-                    'precipitation': 'Precipitation must be a comma-separated list of valid categories.'
+                    'conditions': 'Conditions must be a comma-separated list of valid categories.'
                 })
 
         if self.temperature_min is not None and self.temperature_max is not None:
@@ -573,7 +581,7 @@ class Forecast(models.Model):
                 })
 
     def __str__(self):
-        return f'({self.latitude}, {self.longitude}) from {self.time} to {self.end_time}'
+        return f'({self.latitude}, {self.longitude}) from {self.start_time} to {self.end_time}'
 
 
 class SpeedRange(models.Model):
