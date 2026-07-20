@@ -17,7 +17,6 @@ from waffle import flag_is_active
 from audit.services import AuditService
 from backoffice.models import Event, Registration
 from backoffice.services.event_service import EventService
-from backoffice.services.forecast_service import ForecastService
 from backoffice.services.registration_service import RegistrationService
 from web.filters import PublicRegistrationFilter
 from web.tables import PublicRegistrationTable
@@ -184,7 +183,7 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 
     forecast = None
     if flag_is_active(request, 'weather_forecast_badges'):
-        forecast = ForecastService().get_current_forecast_for_event(event)
+        forecast = EventService().fetch_current_forecast(event)
 
     context = {
         'event': event,
@@ -200,7 +199,7 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 def event_forecasts(request: HttpRequest, event_id: int) -> JsonResponse:
     event = get_object_or_404(Event, id=event_id)
 
-    forecasts = ForecastService().get_forecasts_for_event(event)
+    forecasts = EventService().fetch_forecast_history(event)
 
     return JsonResponse({
         'forecasts': [
@@ -251,7 +250,7 @@ def event_list(request: HttpRequest) -> HttpResponse:
 
     forecasts = {}
     if flag_is_active(request, 'weather_forecast_badges'):
-        forecasts = ForecastService().get_forecasts_for_events(events)
+        forecasts = EventService().fetch_forecasts(events)
 
     context = {
         'forecasts': forecasts,

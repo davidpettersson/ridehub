@@ -59,45 +59,29 @@ class ForecastService:
             **metrics,
         )
 
-    def get_current_forecast_for_event(self, event) -> Forecast | None:
-        if event.virtual:
-            return None
+    def get_forecasts_for_windows(self, windows) -> dict:
         latitude, longitude = YOW_LOCATION
-        return self.get_forecast(latitude, longitude, event.starts_at, event.starts_at + event.duration)
-
-    def get_forecasts_for_events(self, events) -> dict:
-        latitude, longitude = YOW_LOCATION
+        forecasts_by_snapped_window: dict = {}
         forecasts_by_window: dict = {}
-        forecasts_by_event_id: dict = {}
 
-        for event in events:
-            if event.virtual:
-                continue
-            window = self._window_for_event(event)
-            if window not in forecasts_by_window:
-                forecasts_by_window[window] = self.get_forecast(
-                    latitude, longitude, event.starts_at, event.starts_at + event.duration
+        for window in windows:
+            starts_at, ends_at = window
+            snapped_window = (self._snap_to_hour(starts_at), self._snap_to_hour_ceiling(ends_at))
+            if snapped_window not in forecasts_by_snapped_window:
+                forecasts_by_snapped_window[snapped_window] = self.get_forecast(
+                    latitude, longitude, starts_at, ends_at
                 )
-            if forecasts_by_window[window]:
-                forecasts_by_event_id[event.id] = forecasts_by_window[window]
+            forecasts_by_window[window] = forecasts_by_snapped_window[snapped_window]
 
-        return forecasts_by_event_id
+        return forecasts_by_window
 
-    def get_forecasts_for_event(self, event) -> QuerySet:
-        if event.virtual:
-            return Forecast.objects.none()
-
-        latitude, longitude = YOW_LOCATION
-        start_time, end_time = self._window_for_event(event)
+    def get_forecast_history(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> QuerySet:
+        time = self._snap_to_hour(starts_at)
+        end_time = self._snap_to_hour_ceiling(ends_at) if ends_at else time + timedelta(hours=1)
 
         return Forecast.objects.filter(
-            latitude=latitude, longitude=longitude, start_time=start_time, end_time=end_time
+            latitude=latitude, longitude=longitude, start_time=time, end_time=end_time
         ).order_by('-prepared_at')
-
-    @classmethod
-    def _window_for_event(cls, event) -> tuple:
-        ends_at = event.starts_at + event.duration
-        return cls._snap_to_hour(event.starts_at), cls._snap_to_hour_ceiling(ends_at)
 
     @staticmethod
     def _snap_to_hour(value):
