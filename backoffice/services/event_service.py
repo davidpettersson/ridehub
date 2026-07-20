@@ -3,7 +3,8 @@ from datetime import date, datetime, timedelta
 from django.db.models import Count, Max, Min, Q, QuerySet
 from django.utils import timezone
 
-from backoffice.models import Event, Registration, Ride
+from backoffice.models import Event, Forecast, Registration, Ride
+from backoffice.services.forecast_service import ForecastService, YOW_LOCATION
 
 
 class EventService:
@@ -105,6 +106,34 @@ class EventService:
         self._copy_rides(source_event, new_event)
 
         return new_event
+
+    def fetch_current_forecast(self, event: Event) -> Forecast | None:
+        if event.virtual:
+            return None
+        latitude, longitude = YOW_LOCATION
+        return ForecastService().get_forecast(latitude, longitude, event.starts_at, event.starts_at + event.duration)
+
+    def fetch_forecasts(self, events) -> dict:
+        windows_by_event_id = {
+            event.id: (event.starts_at, event.starts_at + event.duration)
+            for event in events
+            if not event.virtual
+        }
+        forecasts_by_window = ForecastService().get_forecasts_for_windows(windows_by_event_id.values())
+
+        return {
+            event_id: forecasts_by_window[window]
+            for event_id, window in windows_by_event_id.items()
+            if forecasts_by_window[window]
+        }
+
+    def fetch_forecast_history(self, event: Event) -> QuerySet:
+        if event.virtual:
+            return Forecast.objects.none()
+        latitude, longitude = YOW_LOCATION
+        return ForecastService().get_forecast_history(
+            latitude, longitude, event.starts_at, event.starts_at + event.duration
+        )
 
     def _copy_rides(self, source_event: Event, target_event: Event) -> None:
         for ride in source_event.ride_set.all():

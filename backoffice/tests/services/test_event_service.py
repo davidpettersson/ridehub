@@ -1,12 +1,14 @@
 import datetime
 from datetime import timedelta
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 
-from backoffice.models import Event, Program, Registration, Ride, Route, SpeedRange
+from backoffice.models import Event, Forecast, Program, Registration, Ride, Route, SpeedRange
 from backoffice.services.event_service import EventService
+from backoffice.services.forecast_service import YOW_LOCATION
 
 
 class BaseEventServiceTest(TestCase):
@@ -690,3 +692,186 @@ class FetchEventsForMonthQueryFilterTests(TestCase):
 
         self.assertIn(self.road_event, result)
         self.assertIn(self.gravel_event, result)
+
+
+def _mock_response(payload):
+    response = MagicMock()
+    response.json.return_value = payload
+    response.raise_for_status.return_value = None
+    return response
+
+
+def _hour_range(start, end, hours_before=0):
+    hours = []
+    hour = start - timedelta(hours=hours_before)
+    while hour <= end:
+        hours.append(hour)
+        hour += timedelta(hours=1)
+    return hours
+
+
+def _mock_get(start, end):
+    weather_hours = _hour_range(start, end)
+    weather_payload = {
+        'utc_offset_seconds': 0,
+        'hourly': {
+            'time': [h.strftime('%Y-%m-%dT%H:%M') for h in weather_hours],
+            'weather_code': [0] * len(weather_hours),
+            'temperature_2m': [10.0] * len(weather_hours),
+        },
+    }
+    air_quality_hours = _hour_range(start, end, hours_before=2)
+    air_quality_payload = {
+        'utc_offset_seconds': 0,
+        'hourly': {
+            'time': [h.strftime('%Y-%m-%dT%H:%M') for h in air_quality_hours],
+            'pm2_5': [8.0] * len(air_quality_hours),
+            'nitrogen_dioxide': [15.0] * len(air_quality_hours),
+            'ozone': [60.0] * len(air_quality_hours),
+        },
+    }
+
+    def side_effect(url, **kwargs):
+        if 'air-quality' in url:
+            return _mock_response(air_quality_payload)
+        return _mock_response(weather_payload)
+
+    return side_effect
+
+
+class EventServiceForecastTestCase(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name='Test Program')
+        self.service = EventService()
+        self.starts_at = (timezone.now() + timedelta(days=1)).replace(
+            minute=0, second=0, microsecond=0
+        )
+        self.latitude, self.longitude = YOW_LOCATION
+
+    def _create_event(self, name='Test Event', starts_at=None, ends_at=None, virtual=False):
+        starts_at = starts_at or self.starts_at
+        return Event.objects.create(
+            program=self.program,
+            name=name,
+            description='Description',
+            starts_at=starts_at,
+            ends_at=ends_at,
+            registration_closes_at=starts_at - timedelta(hours=1),
+            virtual=virtual,
+        )
+
+    def _create_forecast(self, start_time=None, end_time=None):
+        start_time = start_time or self.starts_at
+        return Forecast.objects.create(
+            latitude=self.latitude,
+            longitude=self.longitude,
+            start_time=start_time,
+            end_time=end_time or start_time + timedelta(hours=1),
+            conditions='sun',
+            temperature_min=5,
+            temperature_max=15,
+            aqhi_min=3,
+            aqhi_max=3,
+        )
+
+    def test_fetch_current_forecast_fetches_for_event_window(self):
+        # Arrange
+        event = self._create_event()
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
+
+            # Act
+            forecast = self.service.fetch_current_forecast(event)
+
+        # Assert
+        self.assertIsNotNone(forecast)
+        self.assertEqual(forecast.start_time, self.starts_at)
+
+    def test_fetch_current_forecast_returns_none_for_virtual_event(self):
+        # Arrange
+        event = self._create_event(virtual=True)
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            # Act
+            forecast = self.service.fetch_current_forecast(event)
+
+        # Assert
+        self.assertIsNone(forecast)
+        mock_get.assert_not_called()
+
+    def test_fetch_forecasts_groups_events_sharing_a_window(self):
+        # Arrange
+        first = self._create_event('First', self.starts_at + timedelta(minutes=1))
+        second = self._create_event('Second', self.starts_at + timedelta(minutes=55))
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
+
+            # Act
+            forecasts = self.service.fetch_forecasts([first, second])
+
+        # Assert
+        self.assertEqual(mock_get.call_count, 2)
+        self.assertEqual(forecasts[first.id].pk, forecasts[second.id].pk)
+
+    def test_fetch_forecasts_skips_virtual_events(self):
+        # Arrange
+        event = self._create_event(virtual=True)
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            # Act
+            forecasts = self.service.fetch_forecasts([event])
+
+        # Assert
+        self.assertEqual(forecasts, {})
+        mock_get.assert_not_called()
+
+    def test_fetch_forecasts_excludes_events_beyond_forecast_window(self):
+        # Arrange
+        event = self._create_event(starts_at=timezone.now() + timedelta(days=9))
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            # Act
+            forecasts = self.service.fetch_forecasts([event])
+
+        # Assert
+        self.assertEqual(forecasts, {})
+        mock_get.assert_not_called()
+
+    def test_fetch_forecast_history_returns_forecasts_for_event_window_newest_first(self):
+        # Arrange
+        event = self._create_event()
+        older = self._create_forecast()
+        Forecast.objects.filter(pk=older.pk).update(
+            prepared_at=timezone.now() - timedelta(minutes=30)
+        )
+        newer = self._create_forecast()
+
+        # Act
+        forecasts = list(self.service.fetch_forecast_history(event))
+
+        # Assert
+        self.assertEqual(forecasts, [newer, older])
+
+    def test_fetch_forecast_history_returns_empty_for_virtual_event(self):
+        # Arrange
+        event = self._create_event(virtual=True)
+        self._create_forecast()
+
+        # Act
+        forecasts = list(self.service.fetch_forecast_history(event))
+
+        # Assert
+        self.assertEqual(forecasts, [])
+
+    def test_fetch_forecast_history_uses_event_duration(self):
+        # Arrange
+        event = self._create_event(ends_at=self.starts_at + timedelta(hours=3))
+        self._create_forecast(end_time=self.starts_at + timedelta(hours=3))
+
+        # Act
+        forecasts = list(self.service.fetch_forecast_history(event))
+
+        # Assert
+        self.assertEqual(len(forecasts), 1)
