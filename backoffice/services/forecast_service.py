@@ -5,6 +5,7 @@ from datetime import timedelta, timezone as datetime_timezone
 from decimal import Decimal
 
 import requests
+from django.db.models import QuerySet
 from django.utils import timezone
 
 from backoffice.models import Forecast
@@ -76,6 +77,20 @@ class ForecastService:
                 forecasts_by_event_id[event.id] = forecasts_by_window[window]
 
         return forecasts_by_event_id
+
+    def get_forecasts_for_event(self, event) -> QuerySet:
+        if event.virtual:
+            return Forecast.objects.none()
+
+        latitude, longitude = YOW_LOCATION
+        ends_at = event.starts_at + event.duration
+
+        return Forecast.objects.filter(
+            latitude=latitude,
+            longitude=longitude,
+            start_time=self._snap_to_hour(event.starts_at),
+            end_time=self._snap_to_hour_ceiling(ends_at),
+        ).order_by('-prepared_at')
 
     @staticmethod
     def _snap_to_hour(value):

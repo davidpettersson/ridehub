@@ -619,3 +619,75 @@ class ForecastServiceEventsTestCase(TestCase):
         # Assert
         self.assertEqual(forecasts, {})
         mock_get.assert_not_called()
+
+
+class ForecastServiceHistoryTestCase(TestCase):
+    def setUp(self):
+        self.service = ForecastService()
+        self.program = Program.objects.create(name='Test Program')
+        self.latitude, self.longitude = YOW_LOCATION
+        self.starts_at = (timezone.now() + timedelta(days=1)).replace(
+            minute=0, second=0, microsecond=0
+        )
+
+    def _create_event(self, starts_at=None, ends_at=None, virtual=False):
+        return Event.objects.create(
+            program=self.program,
+            name='Test Event',
+            description='Description',
+            starts_at=starts_at or self.starts_at,
+            ends_at=ends_at,
+            registration_closes_at=(starts_at or self.starts_at) - timedelta(hours=1),
+            virtual=virtual,
+        )
+
+    def _create_forecast(self, start_time=None, end_time=None):
+        start_time = start_time or self.starts_at
+        return Forecast.objects.create(
+            latitude=self.latitude,
+            longitude=self.longitude,
+            start_time=start_time,
+            end_time=end_time or start_time + timedelta(hours=1),
+            conditions='sun',
+            temperature_min=5,
+            temperature_max=15,
+            aqhi_min=3,
+            aqhi_max=3,
+        )
+
+    def test_returns_all_forecasts_for_event_window_newest_first(self):
+        # Arrange
+        event = self._create_event()
+        older = self._create_forecast()
+        Forecast.objects.filter(pk=older.pk).update(
+            prepared_at=timezone.now() - timedelta(minutes=30)
+        )
+        newer = self._create_forecast()
+
+        # Act
+        forecasts = list(self.service.get_forecasts_for_event(event))
+
+        # Assert
+        self.assertEqual(forecasts, [newer, older])
+
+    def test_excludes_forecasts_for_different_window(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast(start_time=self.starts_at + timedelta(days=1))
+
+        # Act
+        forecasts = list(self.service.get_forecasts_for_event(event))
+
+        # Assert
+        self.assertEqual(forecasts, [])
+
+    def test_virtual_event_returns_no_forecasts(self):
+        # Arrange
+        event = self._create_event(virtual=True)
+        self._create_forecast()
+
+        # Act
+        forecasts = list(self.service.get_forecasts_for_event(event))
+
+        # Assert
+        self.assertEqual(forecasts, [])
