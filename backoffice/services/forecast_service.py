@@ -59,6 +59,12 @@ class ForecastService:
             **metrics,
         )
 
+    def get_current_forecast_for_event(self, event) -> Forecast | None:
+        if event.virtual:
+            return None
+        latitude, longitude = YOW_LOCATION
+        return self.get_forecast(latitude, longitude, event.starts_at, event.starts_at + event.duration)
+
     def get_forecasts_for_events(self, events) -> dict:
         latitude, longitude = YOW_LOCATION
         forecasts_by_window: dict = {}
@@ -67,11 +73,10 @@ class ForecastService:
         for event in events:
             if event.virtual:
                 continue
-            ends_at = event.starts_at + event.duration
-            window = (self._snap_to_hour(event.starts_at), self._snap_to_hour_ceiling(ends_at))
+            window = self._window_for_event(event)
             if window not in forecasts_by_window:
                 forecasts_by_window[window] = self.get_forecast(
-                    latitude, longitude, event.starts_at, ends_at
+                    latitude, longitude, event.starts_at, event.starts_at + event.duration
                 )
             if forecasts_by_window[window]:
                 forecasts_by_event_id[event.id] = forecasts_by_window[window]
@@ -83,14 +88,16 @@ class ForecastService:
             return Forecast.objects.none()
 
         latitude, longitude = YOW_LOCATION
-        ends_at = event.starts_at + event.duration
+        start_time, end_time = self._window_for_event(event)
 
         return Forecast.objects.filter(
-            latitude=latitude,
-            longitude=longitude,
-            start_time=self._snap_to_hour(event.starts_at),
-            end_time=self._snap_to_hour_ceiling(ends_at),
+            latitude=latitude, longitude=longitude, start_time=start_time, end_time=end_time
         ).order_by('-prepared_at')
+
+    @classmethod
+    def _window_for_event(cls, event) -> tuple:
+        ends_at = event.starts_at + event.duration
+        return cls._snap_to_hour(event.starts_at), cls._snap_to_hour_ceiling(ends_at)
 
     @staticmethod
     def _snap_to_hour(value):

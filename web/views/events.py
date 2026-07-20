@@ -17,7 +17,7 @@ from waffle import flag_is_active
 from audit.services import AuditService
 from backoffice.models import Event, Registration
 from backoffice.services.event_service import EventService
-from backoffice.services.forecast_service import ForecastService, YOW_LOCATION
+from backoffice.services.forecast_service import ForecastService
 from backoffice.services.registration_service import RegistrationService
 from web.filters import PublicRegistrationFilter
 from web.tables import PublicRegistrationTable
@@ -183,11 +183,8 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
         ).exists()
 
     forecast = None
-    if flag_is_active(request, 'weather_forecast_badges') and not event.virtual:
-        latitude, longitude = YOW_LOCATION
-        forecast = ForecastService().get_forecast(
-            latitude, longitude, event.starts_at, event.starts_at + event.duration
-        )
+    if flag_is_active(request, 'weather_forecast_badges'):
+        forecast = ForecastService().get_current_forecast_for_event(event)
 
     context = {
         'event': event,
