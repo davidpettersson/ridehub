@@ -1,4 +1,3 @@
-import json
 from datetime import timedelta
 
 from django.test import TestCase
@@ -50,7 +49,7 @@ class EventForecastsViewTestCase(TestCase):
             forecast.refresh_from_db()
         return forecast
 
-    def test_returns_forecast_for_event_window(self):
+    def test_renders_forecast_for_event_window(self):
         # Arrange
         event = self._create_event()
         self._create_forecast()
@@ -60,33 +59,27 @@ class EventForecastsViewTestCase(TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 200)
-        data = json.loads(response.content)
-        self.assertEqual(len(data['forecasts']), 1)
-        forecast_data = data['forecasts'][0]
-        self.assertEqual(forecast_data['conditions'], ['rain', 'cloud'])
-        self.assertEqual(forecast_data['temperature_min'], 12)
-        self.assertEqual(forecast_data['temperature_max'], 15)
-        self.assertEqual(forecast_data['aqhi_min'], 5)
-        self.assertEqual(forecast_data['aqhi_max'], 5)
+        self.assertTemplateUsed(response, 'web/events/forecasts.html')
+        self.assertContains(response, 'AQHI&nbsp;5')
+        self.assertContains(response, '15°')
+        self.assertContains(response, '☔/☁️')
 
-    def test_returns_all_forecasts_prepared_for_window_newest_first(self):
+    def test_shows_all_forecasts_prepared_for_window_newest_first(self):
         # Arrange
         event = self._create_event()
-        older = self._create_forecast(
+        self._create_forecast(
             conditions='sun', prepared_at=timezone.now() - timedelta(minutes=30)
         )
-        newer = self._create_forecast(conditions='rain')
+        self._create_forecast(conditions='rain')
 
         # Act
         response = self.client.get(reverse('event_forecasts', args=[event.id]))
 
         # Assert
-        data = json.loads(response.content)
-        prepared_ats = [f['prepared_at'] for f in data['forecasts']]
-        self.assertEqual(len(data['forecasts']), 2)
-        self.assertEqual(data['forecasts'][0]['prepared_at'], newer.prepared_at.isoformat())
-        self.assertEqual(data['forecasts'][1]['prepared_at'], older.prepared_at.isoformat())
-        self.assertEqual(prepared_ats, sorted(prepared_ats, reverse=True))
+        content = response.content.decode()
+        self.assertContains(response, '☔')
+        self.assertContains(response, '☀️')
+        self.assertLess(content.index('☔'), content.index('☀️'))
 
     def test_excludes_forecasts_for_other_windows(self):
         # Arrange
@@ -97,10 +90,9 @@ class EventForecastsViewTestCase(TestCase):
         response = self.client.get(reverse('event_forecasts', args=[event.id]))
 
         # Assert
-        data = json.loads(response.content)
-        self.assertEqual(data['forecasts'], [])
+        self.assertContains(response, 'No forecasts have been prepared for this event yet.')
 
-    def test_returns_empty_list_for_virtual_event(self):
+    def test_shows_empty_state_for_virtual_event(self):
         # Arrange
         event = self._create_event(virtual=True)
         self._create_forecast()
@@ -109,10 +101,9 @@ class EventForecastsViewTestCase(TestCase):
         response = self.client.get(reverse('event_forecasts', args=[event.id]))
 
         # Assert
-        data = json.loads(response.content)
-        self.assertEqual(data['forecasts'], [])
+        self.assertContains(response, 'No forecasts have been prepared for this event yet.')
 
-    def test_returns_empty_list_when_no_forecasts_prepared(self):
+    def test_shows_empty_state_when_no_forecasts_prepared(self):
         # Arrange
         event = self._create_event()
 
@@ -120,8 +111,7 @@ class EventForecastsViewTestCase(TestCase):
         response = self.client.get(reverse('event_forecasts', args=[event.id]))
 
         # Assert
-        data = json.loads(response.content)
-        self.assertEqual(data['forecasts'], [])
+        self.assertContains(response, 'No forecasts have been prepared for this event yet.')
 
     def test_uses_event_duration_to_determine_window(self):
         # Arrange
@@ -132,8 +122,7 @@ class EventForecastsViewTestCase(TestCase):
         response = self.client.get(reverse('event_forecasts', args=[event.id]))
 
         # Assert
-        data = json.loads(response.content)
-        self.assertEqual(len(data['forecasts']), 1)
+        self.assertContains(response, 'AQHI&nbsp;5')
 
     def test_returns_404_for_unknown_event(self):
         # Act
@@ -141,3 +130,13 @@ class EventForecastsViewTestCase(TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 404)
+
+    def test_back_link_points_to_event_detail(self):
+        # Arrange
+        event = self._create_event()
+
+        # Act
+        response = self.client.get(reverse('event_forecasts', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, reverse('event_detail', args=[event.id]))

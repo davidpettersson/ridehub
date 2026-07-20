@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.http import HttpRequest, HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.utils import timezone
@@ -196,26 +196,17 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
     return render(request, 'web/events/detail.html', context)
 
 
-def event_forecasts(request: HttpRequest, event_id: int) -> JsonResponse:
+def event_forecasts(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
     forecasts = EventService().fetch_forecast_history(event)
 
-    return JsonResponse({
-        'forecasts': [
-            {
-                'prepared_at': forecast.prepared_at.isoformat(),
-                'start_time': forecast.start_time.isoformat(),
-                'end_time': forecast.end_time.isoformat(),
-                'conditions': forecast.conditions.split(','),
-                'temperature_min': forecast.temperature_min,
-                'temperature_max': forecast.temperature_max,
-                'aqhi_min': forecast.aqhi_min,
-                'aqhi_max': forecast.aqhi_max,
-            }
-            for forecast in forecasts
-        ],
-    })
+    context = {
+        'event': event,
+        'forecasts': forecasts,
+    }
+
+    return render(request, 'web/events/forecasts.html', context)
 
 
 def _get_filter_params(request):
