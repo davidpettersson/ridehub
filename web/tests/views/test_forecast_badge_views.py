@@ -57,10 +57,10 @@ class ForecastBadgeViewTestCase(TestCase):
         response = self.client.get(reverse('upcoming'))
 
         # Assert
-        self.assertContains(response, 'AQHI&nbsp;5')
-        self.assertContains(response, '· 12 – 15°')
+        self.assertContains(response, 'AQHI&nbsp;moderate')
+        self.assertContains(response, '12\u201315&nbsp;&deg;C')
         self.assertContains(response, '(beta)')
-        self.assertContains(response, '☔/☁️')
+        self.assertNotContains(response, '\U0001F327')
         self.assertContains(response, 'Open-Meteo')
 
     @override_flag('weather_forecast_badges', active=True)
@@ -74,8 +74,8 @@ class ForecastBadgeViewTestCase(TestCase):
         response = self.client.get(reverse('upcoming'))
 
         # Assert
-        self.assertContains(response, '· 12°')
-        self.assertNotContains(response, '12 – 12')
+        self.assertContains(response, '12&nbsp;&deg;C')
+        self.assertNotContains(response, '12\u201312')
 
     @override_flag('weather_forecast_badges', active=False)
     def test_upcoming_hides_badge_when_flag_disabled(self):
@@ -101,7 +101,7 @@ class ForecastBadgeViewTestCase(TestCase):
         response = self.client.get(reverse('upcoming'))
 
         # Assert
-        self.assertContains(response, 'AQHI&nbsp;5')
+        self.assertContains(response, 'AQHI&nbsp;moderate')
 
     @override_flag('weather_forecast_badges', active=True)
     def test_upcoming_hides_badge_for_virtual_event(self):
@@ -137,7 +137,7 @@ class ForecastBadgeViewTestCase(TestCase):
         response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
-        self.assertContains(response, 'AQHI&nbsp;5')
+        self.assertContains(response, 'AQHI&nbsp;moderate')
 
     @override_flag('weather_forecast_badges', active=False)
     def test_detail_hides_badge_when_flag_disabled(self):
@@ -179,4 +179,4 @@ class ForecastBadgeViewTestCase(TestCase):
         response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
-        self.assertContains(response, 'AQHI&nbsp;5')
+        self.assertContains(response, 'AQHI&nbsp;moderate')

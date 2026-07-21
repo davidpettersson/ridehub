@@ -434,13 +434,20 @@ class Forecast(models.Model):
         SNOW = 'snow', 'Snow'
         THUNDER = 'thunder', 'Thunder'
 
-    CONDITION_EMOJIS = {
-        Condition.SUN: '☀️',
-        Condition.CLOUD: '☁️',
-        Condition.RAIN: '☔',
-        Condition.SNOW: '❄️',
-        Condition.THUNDER: '⚡',
+    CONDITION_ARIA_LABELS = {
+        Condition.SUN: 'sunny',
+        Condition.CLOUD: 'cloudy',
+        Condition.RAIN: 'rainy',
+        Condition.SNOW: 'snowy',
+        Condition.THUNDER: 'stormy',
     }
+
+    AQHI_CATEGORY_THRESHOLDS = (
+        (3, 'low'),
+        (6, 'moderate'),
+        (10, 'high'),
+    )
+    AQHI_VERY_HIGH_LABEL = 'very high'
 
     latitude = models.DecimalField(
         max_digits=8,
@@ -500,24 +507,54 @@ class Forecast(models.Model):
         return [self.Condition(value) for value in self.conditions.split(',')]
 
     @property
-    def condition_emojis(self) -> str:
-        return '/'.join(self.CONDITION_EMOJIS[category] for category in self.condition_categories)
+    def condition_start(self) -> 'Forecast.Condition':
+        return self.condition_categories[0]
 
     @property
-    def condition_display(self) -> str:
-        return '/'.join(category.label for category in self.condition_categories)
+    def condition_end(self) -> 'Forecast.Condition':
+        return self.condition_categories[0]
 
     @property
     def temperature_display(self) -> str:
         if self.temperature_min == self.temperature_max:
             return str(self.temperature_min)
-        return f'{self.temperature_min} – {self.temperature_max}'
+        return f'{self.temperature_min}–{self.temperature_max}'
 
     @property
-    def aqhi_display(self) -> str:
-        if self.aqhi_min == self.aqhi_max:
-            return self._format_aqhi(self.aqhi_min)
-        return f'{self._format_aqhi(self.aqhi_min)} – {self._format_aqhi(self.aqhi_max)}'
+    def aqhi_worst(self) -> int:
+        return self.aqhi_max
+
+    @property
+    def aqhi_worst_display(self) -> str:
+        return self._format_aqhi(self.aqhi_worst)
+
+    @property
+    def aqhi_category_label(self) -> str:
+        for threshold, label in self.AQHI_CATEGORY_THRESHOLDS:
+            if self.aqhi_worst <= threshold:
+                return label
+        return self.AQHI_VERY_HIGH_LABEL
+
+    @property
+    def condition_transition_aria_label(self) -> str:
+        start = self.CONDITION_ARIA_LABELS[self.condition_start]
+        end = self.CONDITION_ARIA_LABELS[self.condition_end]
+        if start == end:
+            return start
+        return f'{start} changing to {end}'
+
+    @property
+    def temperature_aria_label(self) -> str:
+        if self.temperature_min == self.temperature_max:
+            return f'{self.temperature_min} degrees Celsius'
+        return f'{self.temperature_min} to {self.temperature_max} degrees Celsius'
+
+    @property
+    def weather_aria_label(self) -> str:
+        return (
+            f'Weather: {self.condition_transition_aria_label}, '
+            f'{self.temperature_aria_label}, air quality {self.aqhi_category_label}'
+        )
 
     @staticmethod
     def _format_aqhi(value: int) -> str:

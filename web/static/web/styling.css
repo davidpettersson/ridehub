@@ -102,6 +102,47 @@ body {
   text-decoration: underline;
 }
 
+.wx-icon {
+  vertical-align: -3px;
+  margin-right: 0.25rem;
+}
+
+.wx-arrow {
+  color: #94a3b8;
+  font-size: 0.75em;
+  margin: 0 0.15rem;
+}
+
+.chip-sep {
+  margin: 0 0.35rem;
+  color: #adb5bd;
+}
+
+.wx-temp {
+  white-space: nowrap;
+}
+
+.wx-aqhi {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.wx-aqhi-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.3rem;
+  background-color: currentColor;
+}
+
+.wx-aqhi--low { color: #0891b2; }
+.wx-aqhi--moderate { color: #d97706; }
+.wx-aqhi--high { color: #dc2626; }
+.wx-aqhi--very-high { color: #7f1d1d; }
+
 .btn-danger {
   background-color: #dc2626;
   border-color: #dc2626;

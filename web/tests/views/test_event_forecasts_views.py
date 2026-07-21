@@ -60,9 +60,9 @@ class EventForecastsViewTestCase(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'web/events/forecasts.html')
-        self.assertContains(response, 'AQHI&nbsp;5')
-        self.assertContains(response, '15°')
-        self.assertContains(response, '☔/☁️')
+        self.assertContains(response, 'AQHI&nbsp;moderate')
+        self.assertContains(response, '12\u201315&nbsp;&deg;C')
+        self.assertContains(response, 'rainy')
 
     def test_shows_all_forecasts_prepared_for_window_newest_first(self):
         # Arrange
@@ -77,9 +77,9 @@ class EventForecastsViewTestCase(TestCase):
 
         # Assert
         content = response.content.decode()
-        self.assertContains(response, '☔')
-        self.assertContains(response, '☀️')
-        self.assertLess(content.index('☔'), content.index('☀️'))
+        self.assertContains(response, 'rainy')
+        self.assertContains(response, 'sunny')
+        self.assertLess(content.index('rainy'), content.index('sunny'))
 
     def test_excludes_forecasts_for_other_windows(self):
         # Arrange
@@ -122,7 +122,7 @@ class EventForecastsViewTestCase(TestCase):
         response = self.client.get(reverse('event_forecasts', args=[event.id]))
 
         # Assert
-        self.assertContains(response, 'AQHI&nbsp;5')
+        self.assertContains(response, 'AQHI&nbsp;moderate')
 
     def test_returns_404_for_unknown_event(self):
         # Act

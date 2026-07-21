@@ -1,6 +1,19 @@
 {% if forecast %}
-<span class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted" style="background-color: #6c757d1A;" title="Weather forecast from Open-Meteo">
-    <span aria-hidden="true" class="me-1">{{ forecast.condition_emojis }}</span><span class="visually-hidden">{{ forecast.condition_display }},</span>
-    · {{ forecast.temperature_display }}° · AQHI&nbsp;{{ forecast.aqhi_display }}&nbsp;<span class="opacity-75">(beta)</span><span class="visually-hidden">, forecast from Open-Meteo</span>
+<span class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted"
+      style="background-color: #6c757d1A;"
+      title="Weather forecast from Open-Meteo"
+      role="img"
+      aria-label="{{ forecast.weather_aria_label }}">
+    {% include 'web/events/_weather_icon.html' with condition=forecast.condition_start %}
+    {% if forecast.condition_start != forecast.condition_end %}
+    <span class="wx-arrow" aria-hidden="true">&rarr;</span>
+    {% include 'web/events/_weather_icon.html' with condition=forecast.condition_end %}
+    {% endif %}
+    <span class="chip-sep" aria-hidden="true">&middot;</span>
+    <span class="wx-temp" aria-hidden="true">{{ forecast.temperature_display }}&nbsp;&deg;C</span>
+    <span class="chip-sep" aria-hidden="true">&middot;</span>
+    <span class="wx-aqhi wx-aqhi--{{ forecast.aqhi_category_label|slugify }}" title="Air Quality Health Index {{ forecast.aqhi_worst_display }} (beta)" aria-hidden="true">
+        <span class="wx-aqhi-dot"></span>AQHI&nbsp;{{ forecast.aqhi_category_label }}
+    </span>
 </span>
 {% endif %}
