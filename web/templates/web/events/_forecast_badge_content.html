@@ -1,14 +1,10 @@
 {% include 'web/events/_weather_icon.html' with condition=summary.condition_primary %}
 {% if summary.condition_warning %}
-<span class="wx-warning-sep" aria-hidden="true">+</span>
-<span class="wx-warning-icon">
-    {% include 'web/events/_weather_icon.html' with condition=summary.condition_warning %}
-</span>
+<span class="wx-warning-sep" aria-hidden="true">/</span>
+{% include 'web/events/_weather_icon.html' with condition=summary.condition_warning %}
 {% endif %}
-<span class="chip-sep" aria-hidden="true">&middot;</span>
 <span class="wx-temp" aria-hidden="true">{{ summary.temperature_display }}&nbsp;&deg;C</span>
 {% if summary.aqhi_category %}
-<span class="chip-sep" aria-hidden="true">&middot;</span>
 <span class="wx-aqhi wx-aqhi--{{ summary.aqhi_category|slugify }}" aria-hidden="true">
     <span class="wx-aqhi-dot"></span>AQHI&nbsp;{{ summary.aqhi_category }}
 </span>
