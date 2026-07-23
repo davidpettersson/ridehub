@@ -89,6 +89,10 @@ body {
   font-size: 0.75rem;
 }
 
+.meta-pill-neutral {
+  background-color: rgba(108, 117, 125, 0.1);
+}
+
 .meta-pill-link {
   background-color: rgba(108, 117, 125, 0.1);
   color: var(--bs-primary);
@@ -165,11 +169,12 @@ body {
 
 button.meta-pill {
   cursor: pointer;
-  font: inherit;
+  font-family: inherit;
+  border: 0;
 }
 
 button.meta-pill:hover, button.meta-pill:focus-visible {
-  background-color: rgba(108, 117, 125, 0.2) !important;
+  background-color: rgba(108, 117, 125, 0.2);
 }
 
 .btn-danger {

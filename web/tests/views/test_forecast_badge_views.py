@@ -59,7 +59,7 @@ class ForecastBadgeViewTestCase(TestCase):
         # Assert
         self.assertContains(response, 'AQHI&nbsp;moderate')
         self.assertContains(response, '12\u201315&nbsp;&deg;C')
-        self.assertContains(response, '(beta)')
+        self.assertNotContains(response, '(beta)')
         self.assertNotContains(response, '\U0001F327')
         self.assertContains(response, 'Open-Meteo')
 
@@ -140,6 +140,7 @@ class ForecastBadgeViewTestCase(TestCase):
 
         # Assert
         self.assertContains(response, 'AQHI&nbsp;moderate')
+        self.assertContains(response, '(beta)')
 
     @override_flag('weather_forecast_badges', active=False)
     def test_detail_hides_badge_when_flag_disabled(self):
