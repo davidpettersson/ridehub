@@ -142,6 +142,31 @@ class ForecastBadgeViewTestCase(TestCase):
         self.assertContains(response, 'AQHI&nbsp;moderate')
         self.assertContains(response, '(beta)')
 
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_popup_links_to_forecast_history(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, reverse('event_forecasts', args=[event.id]))
+        self.assertContains(response, 'View forecast history')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_upcoming_popup_has_no_forecast_history_link(self):
+        # Arrange
+        self._create_event()
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertNotContains(response, 'View forecast history')
+
     @override_flag('weather_forecast_badges', active=False)
     def test_detail_hides_badge_when_flag_disabled(self):
         # Arrange

@@ -93,6 +93,19 @@ class EventForecastsViewTestCase(TestCase):
         # Assert
         self.assertContains(response, 'No forecasts have been prepared for this event yet.')
 
+    def test_ignores_forecasts_without_hourly_readings(self):
+        # Arrange
+        event = self._create_event()
+        forecast = self._create_forecast()
+        Forecast.objects.filter(pk=forecast.pk).update(hourly=[])
+
+        # Act
+        response = self.client.get(reverse('event_forecasts', args=[event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'No forecasts have been prepared for this event yet.')
+
     def test_shows_empty_state_for_virtual_event(self):
         # Arrange
         event = self._create_event(virtual=True)

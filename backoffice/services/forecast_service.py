@@ -80,7 +80,7 @@ class ForecastService:
 
         return Forecast.objects.filter(
             latitude=latitude, longitude=longitude, start_time=time, end_time=end_time
-        ).order_by('-prepared_at')
+        ).exclude(hourly=[]).order_by('-prepared_at')
 
     @staticmethod
     def _snap_to_hour(value):
