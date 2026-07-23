@@ -28,22 +28,20 @@ class EventForecastsViewTestCase(TestCase):
             virtual=virtual,
         )
 
-    def _create_forecast(self, start_time=None, end_time=None, prepared_at=None, **overrides):
+    def _create_forecast(self, start_time=None, end_time=None, prepared_at=None, hourly=None):
         start_time = start_time or self.starts_at
         end_time = end_time or (start_time + timedelta(hours=1))
-        fields = {
-            'latitude': self.latitude,
-            'longitude': self.longitude,
-            'start_time': start_time,
-            'end_time': end_time,
-            'conditions': 'rain,cloud',
-            'temperature_min': 12,
-            'temperature_max': 15,
-            'aqhi_min': 5,
-            'aqhi_max': 5,
-            **overrides,
-        }
-        forecast = Forecast.objects.create(**fields)
+        hourly = hourly or [
+            {'time': start_time.strftime('%Y-%m-%dT%H:%M'), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
+            {'time': end_time.strftime('%Y-%m-%dT%H:%M'), 'condition': 'cloud', 'temperature': 15, 'aqhi': 5},
+        ]
+        forecast = Forecast.objects.create(
+            latitude=self.latitude,
+            longitude=self.longitude,
+            start_time=start_time,
+            end_time=end_time,
+            hourly=hourly,
+        )
         if prepared_at:
             Forecast.objects.filter(pk=forecast.pk).update(prepared_at=prepared_at)
             forecast.refresh_from_db()
@@ -68,9 +66,12 @@ class EventForecastsViewTestCase(TestCase):
         # Arrange
         event = self._create_event()
         self._create_forecast(
-            conditions='sun', prepared_at=timezone.now() - timedelta(minutes=30)
+            hourly=[{'time': self.starts_at.strftime('%Y-%m-%dT%H:%M'), 'condition': 'sun', 'temperature': 12, 'aqhi': 5}],
+            prepared_at=timezone.now() - timedelta(minutes=30),
         )
-        self._create_forecast(conditions='rain')
+        self._create_forecast(
+            hourly=[{'time': self.starts_at.strftime('%Y-%m-%dT%H:%M'), 'condition': 'rain', 'temperature': 12, 'aqhi': 5}],
+        )
 
         # Act
         response = self.client.get(reverse('event_forecasts', args=[event.id]))

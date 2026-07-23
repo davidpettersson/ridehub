@@ -1,0 +1,43 @@
+<div class="modal fade" id="forecast-hourly-{{ forecast.pk }}" tabindex="-1" aria-labelledby="forecast-hourly-{{ forecast.pk }}-label" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="forecast-hourly-{{ forecast.pk }}-label">Hourly forecast</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small">
+            Forecast from Open-Meteo, prepared {{ forecast.prepared_at|date:"M j, g:i A" }}.
+            AQHI is an experimental (beta) reading.
+        </p>
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Time</th>
+              <th scope="col">Condition</th>
+              <th scope="col">Temp</th>
+              <th scope="col">AQHI</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for hour in summary.hourly %}
+            <tr>
+              <td>{{ hour.time|date:"g A" }}</td>
+              <td>
+                {% include 'web/events/_weather_icon.html' with condition=hour.condition %}
+                <span class="visually-hidden">{{ hour.condition.label }}</span>
+              </td>
+              <td>{{ hour.temperature }}&nbsp;&deg;C</td>
+              <td>
+                <span class="wx-aqhi wx-aqhi--{{ hour.aqhi_category|slugify }}">
+                    <span class="wx-aqhi-dot"></span>{{ hour.aqhi_display }}&nbsp;&middot;&nbsp;{{ hour.aqhi_category }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

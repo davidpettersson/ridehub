@@ -1,19 +1,26 @@
+{% load forecast_filters %}
 {% if forecast %}
+{% with summary=forecast|forecast_summary %}
+{% if expandable %}
+<button type="button"
+        class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted border-0 bg-transparent"
+        style="background-color: #6c757d1A;"
+        title="Weather forecast from Open-Meteo. Tap for hourly detail."
+        aria-label="{{ summary.aria_label }}. Tap for hourly detail."
+        aria-haspopup="dialog"
+        data-bs-toggle="modal"
+        data-bs-target="#forecast-hourly-{{ forecast.pk }}">
+    {% include 'web/events/_forecast_badge_content.html' with summary=summary %}
+</button>
+{% include 'web/events/_forecast_hourly_modal.html' with forecast=forecast summary=summary %}
+{% else %}
 <span class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted"
       style="background-color: #6c757d1A;"
       title="Weather forecast from Open-Meteo"
       role="img"
-      aria-label="{{ forecast.weather_aria_label }}">
-    {% include 'web/events/_weather_icon.html' with condition=forecast.condition_start %}
-    {% if forecast.condition_start != forecast.condition_end %}
-    <span class="wx-arrow" aria-hidden="true">&rarr;</span>
-    {% include 'web/events/_weather_icon.html' with condition=forecast.condition_end %}
-    {% endif %}
-    <span class="chip-sep" aria-hidden="true">&middot;</span>
-    <span class="wx-temp" aria-hidden="true">{{ forecast.temperature_display }}&nbsp;&deg;C</span>
-    <span class="chip-sep" aria-hidden="true">&middot;</span>
-    <span class="wx-aqhi wx-aqhi--{{ forecast.aqhi_category_label|slugify }}" title="Air Quality Health Index {{ forecast.aqhi_worst_display }} (beta)" aria-hidden="true">
-        <span class="wx-aqhi-dot"></span>AQHI&nbsp;{{ forecast.aqhi_category_label }}
-    </span>
+      aria-label="{{ summary.aria_label }}">
+    {% include 'web/events/_forecast_badge_content.html' with summary=summary %}
 </span>
+{% endif %}
+{% endwith %}
 {% endif %}

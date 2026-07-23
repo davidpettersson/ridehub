@@ -33,18 +33,18 @@ class ForecastBadgeViewTestCase(TestCase):
             Ride.objects.create(name=f'{name} ride', event=event, route=self.route)
         return event
 
-    def _create_forecast(self, time=None):
+    def _create_forecast(self, time=None, hourly=None):
         time = time or self.starts_at
+        hourly = hourly or [
+            {'time': time.strftime('%Y-%m-%dT%H:%M'), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
+            {'time': (time + timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M'), 'condition': 'cloud', 'temperature': 15, 'aqhi': 5},
+        ]
         return Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
             start_time=time,
             end_time=time + timedelta(hours=1),
-            conditions='rain,cloud',
-            temperature_min=12,
-            temperature_max=15,
-            aqhi_min=5,
-            aqhi_max=5,
+            hourly=hourly,
         )
 
     @override_flag('weather_forecast_badges', active=True)
@@ -64,11 +64,13 @@ class ForecastBadgeViewTestCase(TestCase):
         self.assertContains(response, 'Open-Meteo')
 
     @override_flag('weather_forecast_badges', active=True)
-    def test_upcoming_shows_single_temperature_when_min_equals_max(self):
+    def test_upcoming_shows_single_temperature_when_within_two_degree_span(self):
         # Arrange
         self._create_event()
-        forecast = self._create_forecast()
-        Forecast.objects.filter(pk=forecast.pk).update(temperature_min=12, temperature_max=12)
+        self._create_forecast(hourly=[
+            {'time': self.starts_at.strftime('%Y-%m-%dT%H:%M'), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
+            {'time': (self.starts_at + timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M'), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
+        ])
 
         # Act
         response = self.client.get(reverse('upcoming'))

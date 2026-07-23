@@ -118,13 +118,16 @@ class RouteAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
 
 class ForecastAdmin(AuditedAdminMixin, admin.ModelAdmin):
-    list_display = ('start_time', 'end_time', 'latitude', 'longitude', 'conditions', 'temperature_min', 'temperature_max', 'aqhi_min', 'aqhi_max', 'prepared_at',)
-    list_filter = ('conditions',)
+    list_display = ('start_time', 'end_time', 'latitude', 'longitude', 'hourly_count', 'prepared_at',)
     ordering = ('-start_time', '-prepared_at',)
-    readonly_fields = ('latitude', 'longitude', 'start_time', 'end_time', 'prepared_at', 'conditions', 'temperature_min', 'temperature_max', 'aqhi_min', 'aqhi_max',)
+    readonly_fields = ('latitude', 'longitude', 'start_time', 'end_time', 'prepared_at', 'hourly',)
 
     def has_change_permission(self, request, obj=None):
         return False
+
+    def hourly_count(self, obj):
+        return len(obj.hourly)
+    hourly_count.short_description = 'Hours'
 
 
 class RegistrationAdmin(AuditedAdminMixin, admin.ModelAdmin):

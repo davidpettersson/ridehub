@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from colorfield.fields import ColorField
 from django.conf import settings
@@ -449,6 +449,8 @@ class Forecast(models.Model):
     )
     AQHI_VERY_HIGH_LABEL = 'very high'
 
+    HOURLY_READING_KEYS = {'time', 'condition', 'temperature', 'aqhi'}
+
     latitude = models.DecimalField(
         max_digits=8,
         decimal_places=5,
@@ -474,27 +476,12 @@ class Forecast(models.Model):
         help_text='When this forecast was fetched from the weather provider. Forecasts are immutable; newer fetches create new records.'
     )
 
-    conditions = models.CharField(
-        max_length=32,
-        help_text='Comma-separated weather conditions occurring during the forecast window, most prevalent first.'
-    )
-
-    temperature_min = models.IntegerField(
-        help_text='Minimum temperature in Celsius during the forecast window.'
-    )
-
-    temperature_max = models.IntegerField(
-        help_text='Maximum temperature in Celsius during the forecast window.'
-    )
-
-    aqhi_min = models.PositiveIntegerField(
-        verbose_name='AQHI min',
-        help_text='Lowest Canadian Air Quality Health Index during the forecast window (1-10, 11 means above 10).'
-    )
-
-    aqhi_max = models.PositiveIntegerField(
-        verbose_name='AQHI max',
-        help_text='Highest Canadian Air Quality Health Index during the forecast window (1-10, 11 means above 10).'
+    hourly = models.JSONField(
+        default=list,
+        help_text=(
+            'Per-hour readings across the forecast window: a list of '
+            '{time (ISO 8601, local), condition, temperature (Celsius), aqhi} entries.'
+        )
     )
 
     class Meta:
@@ -502,63 +489,16 @@ class Forecast(models.Model):
             models.Index(fields=['latitude', 'longitude', 'start_time', 'end_time'], name='forecast_location_window_idx'),
         ]
 
-    @property
-    def condition_categories(self) -> list:
-        return [self.Condition(value) for value in self.conditions.split(',')]
-
-    @property
-    def condition_start(self) -> 'Forecast.Condition':
-        return self.condition_categories[0]
-
-    @property
-    def condition_end(self) -> 'Forecast.Condition':
-        return self.condition_categories[0]
-
-    @property
-    def temperature_display(self) -> str:
-        if self.temperature_min == self.temperature_max:
-            return str(self.temperature_min)
-        return f'{self.temperature_min}–{self.temperature_max}'
-
-    @property
-    def aqhi_worst(self) -> int:
-        return self.aqhi_max
-
-    @property
-    def aqhi_worst_display(self) -> str:
-        return self._format_aqhi(self.aqhi_worst)
-
-    @property
-    def aqhi_category_label(self) -> str:
-        for threshold, label in self.AQHI_CATEGORY_THRESHOLDS:
-            if self.aqhi_worst <= threshold:
-                return label
-        return self.AQHI_VERY_HIGH_LABEL
-
-    @property
-    def condition_transition_aria_label(self) -> str:
-        start = self.CONDITION_ARIA_LABELS[self.condition_start]
-        end = self.CONDITION_ARIA_LABELS[self.condition_end]
-        if start == end:
-            return start
-        return f'{start} changing to {end}'
-
-    @property
-    def temperature_aria_label(self) -> str:
-        if self.temperature_min == self.temperature_max:
-            return f'{self.temperature_min} degrees Celsius'
-        return f'{self.temperature_min} to {self.temperature_max} degrees Celsius'
-
-    @property
-    def weather_aria_label(self) -> str:
-        return (
-            f'Weather: {self.condition_transition_aria_label}, '
-            f'{self.temperature_aria_label}, air quality {self.aqhi_category_label}'
-        )
-
     @staticmethod
-    def _format_aqhi(value: int) -> str:
+    def format_aqhi(value: int) -> str:
         return '10+' if value > 10 else str(value)
+
+    @classmethod
+    def aqhi_category_for(cls, value: int) -> str:
+        for threshold, label in cls.AQHI_CATEGORY_THRESHOLDS:
+            if value <= threshold:
+                return label
+        return cls.AQHI_VERY_HIGH_LABEL
 
     def clean(self):
         super().clean()
@@ -585,31 +525,30 @@ class Forecast(models.Model):
                 'end_time': 'End time cannot be before the start time.'
             })
 
-        if self.conditions:
-            valid = set(self.Condition.values)
-            if not all(value in valid for value in self.conditions.split(',')):
-                raise ValidationError({
-                    'conditions': 'Conditions must be a comma-separated list of valid categories.'
-                })
-
-        if self.temperature_min is not None and self.temperature_max is not None:
-            if self.temperature_min > self.temperature_max:
-                raise ValidationError({
-                    'temperature_max': 'Maximum temperature cannot be below minimum temperature.'
-                })
-
-        for field in ('aqhi_min', 'aqhi_max'):
-            value = getattr(self, field)
-            if value is not None and not (1 <= value <= 11):
-                raise ValidationError({
-                    field: 'AQHI must be between 1 and 11.'
-                })
-
-        if self.aqhi_min is not None and self.aqhi_max is not None:
-            if self.aqhi_min > self.aqhi_max:
-                raise ValidationError({
-                    'aqhi_max': 'Maximum AQHI cannot be below minimum AQHI.'
-                })
+        if not self.hourly:
+            raise ValidationError({
+                'hourly': 'At least one hourly reading is required.'
+            })
+        else:
+            for entry in self.hourly:
+                if not isinstance(entry, dict) or not self.HOURLY_READING_KEYS.issubset(entry.keys()):
+                    raise ValidationError({
+                        'hourly': 'Each hourly reading needs time, condition, temperature, and aqhi.'
+                    })
+                if entry['condition'] not in self.Condition.values:
+                    raise ValidationError({
+                        'hourly': f"Unknown condition '{entry['condition']}' in hourly readings."
+                    })
+                if not (1 <= entry['aqhi'] <= 11):
+                    raise ValidationError({
+                        'hourly': 'AQHI in hourly readings must be between 1 and 11.'
+                    })
+                try:
+                    datetime.fromisoformat(entry['time'])
+                except (TypeError, ValueError):
+                    raise ValidationError({
+                        'hourly': f"Invalid time '{entry.get('time')}' in hourly readings."
+                    })
 
     def __str__(self):
         return f'({self.latitude}, {self.longitude}) from {self.start_time} to {self.end_time}'

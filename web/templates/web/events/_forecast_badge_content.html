@@ -1,0 +1,16 @@
+{% include 'web/events/_weather_icon.html' with condition=summary.condition_primary %}
+{% if summary.condition_warning %}
+<span class="wx-warning-sep" aria-hidden="true">+</span>
+<span class="wx-warning-icon" title="{{ summary.condition_warning_label|capfirst }} possible">
+    {% include 'web/events/_weather_icon.html' with condition=summary.condition_warning %}
+</span>
+{% endif %}
+<span class="chip-sep" aria-hidden="true">&middot;</span>
+<span class="wx-temp" aria-hidden="true">{{ summary.temperature_display }}&nbsp;&deg;C</span>
+<span class="chip-sep" aria-hidden="true">&middot;</span>
+<span class="wx-aqhi wx-aqhi--{{ summary.aqhi_category|slugify }}" title="Air Quality Health Index (beta)" aria-hidden="true">
+    <span class="wx-aqhi-dot"></span>AQHI&nbsp;{{ summary.aqhi_category }}
+</span>
+{% if summary.aqhi_warning_category %}
+<span class="wx-aqhi-spike wx-aqhi--{{ summary.aqhi_warning_category|slugify }}" title="Spike to AQHI {{ summary.aqhi_warning_category }} possible" aria-hidden="true">&uarr;{{ summary.aqhi_warning_category }}</span>
+{% endif %}
