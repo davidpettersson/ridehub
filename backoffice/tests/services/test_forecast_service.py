@@ -66,6 +66,15 @@ def _mock_get(start, end, weather_codes=None, temperatures=None,
     return side_effect
 
 
+def _hourly_entry(time, condition='sun', temperature=10, aqhi=3):
+    return [{
+        'time': time.strftime('%Y-%m-%dT%H:%M'),
+        'condition': condition,
+        'temperature': temperature,
+        'aqhi': aqhi,
+    }]
+
+
 class ForecastServiceTestCase(TestCase):
     def setUp(self):
         self.service = ForecastService()
@@ -94,12 +103,59 @@ class ForecastServiceTestCase(TestCase):
         self.assertIsNotNone(forecast)
         self.assertEqual(forecast.start_time, self.starts_at)
         self.assertEqual(forecast.end_time, window_end)
-        self.assertEqual(forecast.conditions, 'sun,thunder,cloud')
-        self.assertEqual(forecast.temperature_min, 5)
-        self.assertEqual(forecast.temperature_max, 16)
-        self.assertEqual(forecast.aqhi_min, 3)
-        self.assertEqual(forecast.aqhi_max, 3)
+        self.assertEqual(len(forecast.hourly), 4)
+        self.assertEqual(
+            [entry['condition'] for entry in forecast.hourly],
+            ['sun', 'thunder', 'cloud', 'sun'],
+        )
+        self.assertEqual(
+            [entry['temperature'] for entry in forecast.hourly],
+            [5, 16, 10, 10],
+        )
+        self.assertEqual([entry['aqhi'] for entry in forecast.hourly], [3, 3, 3, 3])
         self.assertEqual(Forecast.objects.count(), 1)
+
+    def test_air_quality_entirely_unavailable_still_produces_forecast(self):
+        # Arrange
+        window_end = self.starts_at + timedelta(hours=1)
+
+        def side_effect(url, **kwargs):
+            if url == WEATHER_URL:
+                return _mock_response(_weather_payload(self.starts_at, window_end))
+            unrelated_start = self.starts_at - timedelta(days=3)
+            unrelated_end = unrelated_start + timedelta(hours=1)
+            return _mock_response(_air_quality_payload(unrelated_start, unrelated_end))
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = side_effect
+
+            # Act
+            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at)
+
+        # Assert
+        self.assertIsNotNone(forecast)
+        self.assertEqual(len(forecast.hourly), 2)
+        self.assertTrue(all(entry['aqhi'] is None for entry in forecast.hourly))
+
+    def test_air_quality_partially_available_keeps_hours_with_data(self):
+        # Arrange
+        window_end = self.starts_at + timedelta(hours=2)
+
+        def side_effect(url, **kwargs):
+            if url == WEATHER_URL:
+                return _mock_response(_weather_payload(self.starts_at, window_end))
+            partial_end = self.starts_at + timedelta(hours=1)
+            return _mock_response(_air_quality_payload(self.starts_at, partial_end))
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = side_effect
+
+            # Act
+            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at, window_end)
+
+        # Assert
+        self.assertIsNotNone(forecast)
+        self.assertEqual([entry['aqhi'] is not None for entry in forecast.hourly], [True, True, False])
 
     def test_missing_end_defaults_to_one_hour_window(self):
         # Arrange
@@ -119,11 +175,12 @@ class ForecastServiceTestCase(TestCase):
             longitude=self.longitude,
             start_time=self.starts_at,
             end_time=self.starts_at + timedelta(hours=1),
-            conditions='sun',
-            temperature_min=5,
-            temperature_max=15,
-            aqhi_min=3,
-            aqhi_max=3,
+            hourly=[{
+                'time': self.starts_at.strftime('%Y-%m-%dT%H:%M'),
+                'condition': 'sun',
+                'temperature': 10,
+                'aqhi': 3,
+            }],
         )
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
@@ -157,11 +214,7 @@ class ForecastServiceTestCase(TestCase):
             longitude=self.longitude,
             start_time=self.starts_at,
             end_time=self.starts_at + timedelta(hours=1),
-            conditions='sun',
-            temperature_min=5,
-            temperature_max=15,
-            aqhi_min=3,
-            aqhi_max=3,
+            hourly=_hourly_entry(self.starts_at, condition='sun'),
         )
         Forecast.objects.filter(pk=stale.pk).update(
             prepared_at=timezone.now() - timedelta(hours=2)
@@ -179,12 +232,11 @@ class ForecastServiceTestCase(TestCase):
 
         # Assert
         self.assertNotEqual(forecast.pk, stale.pk)
-        self.assertEqual(forecast.conditions, 'rain')
-        self.assertEqual(forecast.aqhi_min, 10)
-        self.assertEqual(forecast.aqhi_max, 10)
+        self.assertEqual([entry['condition'] for entry in forecast.hourly], ['rain', 'rain'])
+        self.assertEqual([entry['aqhi'] for entry in forecast.hourly], [10, 10])
         self.assertEqual(Forecast.objects.count(), 2)
         stale.refresh_from_db()
-        self.assertEqual(stale.conditions, 'sun')
+        self.assertEqual(stale.hourly[0]['condition'], 'sun')
 
     def test_latest_forecast_returned_when_multiple_exist_for_window(self):
         # Arrange
@@ -193,16 +245,12 @@ class ForecastServiceTestCase(TestCase):
             'longitude': self.longitude,
             'start_time': self.starts_at,
             'end_time': self.starts_at + timedelta(hours=1),
-            'temperature_min': 5,
-            'temperature_max': 15,
-            'aqhi_min': 3,
-            'aqhi_max': 3,
         }
-        old = Forecast.objects.create(conditions='rain', **common)
+        old = Forecast.objects.create(hourly=_hourly_entry(self.starts_at, condition='rain'), **common)
         Forecast.objects.filter(pk=old.pk).update(
             prepared_at=timezone.now() - timedelta(minutes=30)
         )
-        newer = Forecast.objects.create(conditions='sun', **common)
+        newer = Forecast.objects.create(hourly=_hourly_entry(self.starts_at, condition='sun'), **common)
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             # Act
@@ -299,11 +347,7 @@ class ForecastServiceTestCase(TestCase):
             longitude=self.longitude,
             start_time=self.starts_at,
             end_time=self.starts_at + timedelta(hours=1),
-            conditions='cloud',
-            temperature_min=5,
-            temperature_max=15,
-            aqhi_min=3,
-            aqhi_max=3,
+            hourly=_hourly_entry(self.starts_at, condition='cloud'),
         )
         Forecast.objects.filter(pk=stale.pk).update(
             prepared_at=timezone.now() - timedelta(hours=2)
@@ -354,36 +398,6 @@ class ForecastServiceTestCase(TestCase):
 
             # Assert
             self.assertEqual(result, expected, f'weather code {code}')
-
-    def test_conditions_ordered_by_prevalence(self):
-        # Arrange
-        codes = [61, 61, 61, 0, 3, 3]
-
-        # Act
-        result = ForecastService._conditions_from_weather_codes(codes)
-
-        # Assert
-        self.assertEqual(result, 'rain,cloud,sun')
-
-    def test_mostly_sun_with_some_cloud_puts_sun_first(self):
-        # Arrange
-        codes = [0, 0, 0, 3]
-
-        # Act
-        result = ForecastService._conditions_from_weather_codes(codes)
-
-        # Assert
-        self.assertEqual(result, 'sun,cloud')
-
-    def test_equally_prevalent_conditions_ordered_worst_first(self):
-        # Arrange
-        codes = [95, 0, 61, 71, 3]
-
-        # Act
-        result = ForecastService._conditions_from_weather_codes(codes)
-
-        # Assert
-        self.assertEqual(result, 'thunder,snow,rain,cloud,sun')
 
 
 class AqhiComputationTestCase(TestCase):
@@ -487,7 +501,7 @@ class AqhiComputationTestCase(TestCase):
         # Assert
         self.assertEqual(aqhi, 3)
 
-    def test_missing_event_hour_data_surfaces_as_stale_fallback(self):
+    def test_missing_pollutant_data_still_produces_forecast_without_aqhi(self):
         # Arrange
         service = ForecastService()
         latitude, longitude = YOW_LOCATION
@@ -511,8 +525,10 @@ class AqhiComputationTestCase(TestCase):
             forecast = service.get_forecast(latitude, longitude, starts_at)
 
         # Assert
-        self.assertIsNone(forecast)
-        self.assertEqual(Forecast.objects.count(), 0)
+        self.assertIsNotNone(forecast)
+        self.assertEqual(len(forecast.hourly), 2)
+        self.assertTrue(all(entry['aqhi'] is None for entry in forecast.hourly))
+        self.assertEqual(Forecast.objects.count(), 1)
 
 
 class ForecastServiceWindowsTestCase(TestCase):
@@ -587,11 +603,7 @@ class ForecastServiceHistoryTestCase(TestCase):
             longitude=self.longitude,
             start_time=start_time,
             end_time=end_time or start_time + timedelta(hours=1),
-            conditions='sun',
-            temperature_min=5,
-            temperature_max=15,
-            aqhi_min=3,
-            aqhi_max=3,
+            hourly=_hourly_entry(start_time, condition='sun'),
         )
 
     def test_returns_all_forecasts_for_window_newest_first(self):

@@ -22,7 +22,7 @@
                     {% for forecast in forecasts %}
                     <div class="list-group-item d-flex flex-wrap align-items-center justify-content-between gap-2 px-0">
                         <span class="text-muted small">{{ forecast.prepared_at|date:"M j, g:i A" }}</span>
-                        {% include 'web/events/_forecast_badge.html' %}
+                        {% include 'web/events/_forecast_badge.html' with expandable=True %}
                     </div>
                     {% empty %}
                     <p class="text-muted mb-0">No forecasts have been prepared for this event yet.</p>

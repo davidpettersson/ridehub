@@ -12,17 +12,23 @@ class ForecastModelTestCase(TestCase):
     def setUp(self):
         self.time = (timezone.now() + timedelta(days=1)).replace(minute=0, second=0, microsecond=0)
 
+    def _hourly(self, **overrides):
+        entry = {
+            'time': self.time.strftime('%Y-%m-%dT%H:%M'),
+            'condition': 'sun',
+            'temperature': 15,
+            'aqhi': 3,
+        }
+        entry.update(overrides)
+        return [entry]
+
     def _build_forecast(self, **overrides):
         fields = {
             'latitude': Decimal('45.32250'),
             'longitude': Decimal('-75.66920'),
             'start_time': self.time,
             'end_time': self.time + timedelta(hours=2),
-            'conditions': 'sun',
-            'temperature_min': 5,
-            'temperature_max': 15,
-            'aqhi_min': 3,
-            'aqhi_max': 5,
+            'hourly': self._hourly(),
         }
         fields.update(overrides)
         return Forecast(**fields)
@@ -60,15 +66,6 @@ class ForecastModelTestCase(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             forecast.full_clean()
         self.assertIn('end_time', ctx.exception.message_dict)
-
-    def test_temperature_min_above_max_rejected(self):
-        # Arrange
-        forecast = self._build_forecast(temperature_min=20, temperature_max=10)
-
-        # Act & Assert
-        with self.assertRaises(ValidationError) as ctx:
-            forecast.full_clean()
-        self.assertIn('temperature_max', ctx.exception.message_dict)
 
     def test_latitude_out_of_range_rejected(self):
         # Arrange
@@ -108,104 +105,84 @@ class ForecastModelTestCase(TestCase):
         # Assert
         self.assertEqual(Forecast.objects.count(), 2)
 
-    def test_aqhi_below_one_rejected(self):
+    def test_empty_hourly_rejected(self):
         # Arrange
-        forecast = self._build_forecast(aqhi_min=0)
+        forecast = self._build_forecast(hourly=[])
 
         # Act & Assert
         with self.assertRaises(ValidationError) as ctx:
             forecast.full_clean()
-        self.assertIn('aqhi_min', ctx.exception.message_dict)
+        self.assertIn('hourly', ctx.exception.message_dict)
 
-    def test_aqhi_above_eleven_rejected(self):
+    def test_hourly_entry_missing_keys_rejected(self):
         # Arrange
-        forecast = self._build_forecast(aqhi_max=12)
+        forecast = self._build_forecast(hourly=[{'time': self.time.strftime('%Y-%m-%dT%H:%M'), 'condition': 'sun'}])
 
         # Act & Assert
         with self.assertRaises(ValidationError) as ctx:
             forecast.full_clean()
-        self.assertIn('aqhi_max', ctx.exception.message_dict)
+        self.assertIn('hourly', ctx.exception.message_dict)
 
-    def test_aqhi_min_above_max_rejected(self):
+    def test_hourly_entry_unknown_condition_rejected(self):
         # Arrange
-        forecast = self._build_forecast(aqhi_min=7, aqhi_max=3)
+        forecast = self._build_forecast(hourly=self._hourly(condition='hail'))
 
         # Act & Assert
         with self.assertRaises(ValidationError) as ctx:
             forecast.full_clean()
-        self.assertIn('aqhi_max', ctx.exception.message_dict)
+        self.assertIn('hourly', ctx.exception.message_dict)
 
-    def test_unknown_condition_category_rejected(self):
+    def test_hourly_entry_aqhi_below_one_rejected(self):
         # Arrange
-        forecast = self._build_forecast(conditions='sun,hail')
+        forecast = self._build_forecast(hourly=self._hourly(aqhi=0))
 
         # Act & Assert
         with self.assertRaises(ValidationError) as ctx:
             forecast.full_clean()
-        self.assertIn('conditions', ctx.exception.message_dict)
+        self.assertIn('hourly', ctx.exception.message_dict)
 
-    def test_aqhi_display_collapses_equal_range(self):
+    def test_hourly_entry_aqhi_above_eleven_rejected(self):
         # Arrange
-        forecast = self._build_forecast(aqhi_min=4, aqhi_max=4)
+        forecast = self._build_forecast(hourly=self._hourly(aqhi=12))
 
         # Act & Assert
-        self.assertEqual(forecast.aqhi_display, '4')
+        with self.assertRaises(ValidationError) as ctx:
+            forecast.full_clean()
+        self.assertIn('hourly', ctx.exception.message_dict)
 
-    def test_aqhi_display_shows_range(self):
+    def test_hourly_entry_invalid_time_rejected(self):
         # Arrange
-        forecast = self._build_forecast(aqhi_min=3, aqhi_max=5)
+        forecast = self._build_forecast(hourly=self._hourly(time='not-a-time'))
 
         # Act & Assert
-        self.assertEqual(forecast.aqhi_display, '3 – 5')
+        with self.assertRaises(ValidationError) as ctx:
+            forecast.full_clean()
+        self.assertIn('hourly', ctx.exception.message_dict)
 
-    def test_aqhi_display_caps_above_ten(self):
+    def test_hourly_entry_null_aqhi_allowed(self):
         # Arrange
-        forecast = self._build_forecast(aqhi_min=9, aqhi_max=11)
+        forecast = self._build_forecast(hourly=self._hourly(aqhi=None))
 
         # Act & Assert
-        self.assertEqual(forecast.aqhi_display, '9 – 10+')
+        forecast.full_clean()
 
-    def test_temperature_display_collapses_equal_range(self):
-        # Arrange
-        forecast = self._build_forecast(temperature_min=12, temperature_max=12)
-
+    def test_format_aqhi_caps_above_ten(self):
         # Act & Assert
-        self.assertEqual(forecast.temperature_display, '12')
+        self.assertEqual(Forecast.format_aqhi(9), '9')
+        self.assertEqual(Forecast.format_aqhi(11), '10+')
 
-    def test_temperature_display_shows_range(self):
-        # Arrange
-        forecast = self._build_forecast(temperature_min=12, temperature_max=15)
-
-        # Act & Assert
-        self.assertEqual(forecast.temperature_display, '12 – 15')
-
-    def test_condition_emojis_joined_with_slash(self):
-        # Arrange
-        forecast = self._build_forecast(conditions='cloud,sun')
-
-        # Act & Assert
-        self.assertEqual(forecast.condition_emojis, '☁️/☀️')
-
-    def test_condition_display_joined_with_slash(self):
-        # Arrange
-        forecast = self._build_forecast(conditions='thunder,rain')
-
-        # Act & Assert
-        self.assertEqual(forecast.condition_display, 'Thunder/Rain')
-
-    def test_condition_emoji_mapping(self):
+    def test_aqhi_category_for_mapping(self):
         # Arrange
         expectations = {
-            'sun': '☀️',
-            'cloud': '☁️',
-            'rain': '☔',
-            'snow': '❄️',
-            'thunder': '⚡',
+            1: 'low',
+            3: 'low',
+            4: 'moderate',
+            6: 'moderate',
+            7: 'high',
+            10: 'high',
+            11: 'very high',
         }
 
-        for condition, emoji in expectations.items():
-            # Act
-            forecast = self._build_forecast(conditions=condition)
-
-            # Assert
-            self.assertEqual(forecast.condition_emojis, emoji)
+        for value, label in expectations.items():
+            # Act & Assert
+            self.assertEqual(Forecast.aqhi_category_for(value), label)

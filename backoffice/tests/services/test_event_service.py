@@ -767,11 +767,12 @@ class EventServiceForecastTestCase(TestCase):
             longitude=self.longitude,
             start_time=start_time,
             end_time=end_time or start_time + timedelta(hours=1),
-            conditions='sun',
-            temperature_min=5,
-            temperature_max=15,
-            aqhi_min=3,
-            aqhi_max=3,
+            hourly=[{
+                'time': start_time.strftime('%Y-%m-%dT%H:%M'),
+                'condition': 'sun',
+                'temperature': 10,
+                'aqhi': 3,
+            }],
         )
 
     def test_fetch_current_forecast_fetches_for_event_window(self):

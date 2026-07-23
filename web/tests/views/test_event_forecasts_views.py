@@ -28,22 +28,20 @@ class EventForecastsViewTestCase(TestCase):
             virtual=virtual,
         )
 
-    def _create_forecast(self, start_time=None, end_time=None, prepared_at=None, **overrides):
+    def _create_forecast(self, start_time=None, end_time=None, prepared_at=None, hourly=None):
         start_time = start_time or self.starts_at
         end_time = end_time or (start_time + timedelta(hours=1))
-        fields = {
-            'latitude': self.latitude,
-            'longitude': self.longitude,
-            'start_time': start_time,
-            'end_time': end_time,
-            'conditions': 'rain,cloud',
-            'temperature_min': 12,
-            'temperature_max': 15,
-            'aqhi_min': 5,
-            'aqhi_max': 5,
-            **overrides,
-        }
-        forecast = Forecast.objects.create(**fields)
+        hourly = hourly or [
+            {'time': start_time.strftime('%Y-%m-%dT%H:%M'), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
+            {'time': end_time.strftime('%Y-%m-%dT%H:%M'), 'condition': 'cloud', 'temperature': 15, 'aqhi': 5},
+        ]
+        forecast = Forecast.objects.create(
+            latitude=self.latitude,
+            longitude=self.longitude,
+            start_time=start_time,
+            end_time=end_time,
+            hourly=hourly,
+        )
         if prepared_at:
             Forecast.objects.filter(pk=forecast.pk).update(prepared_at=prepared_at)
             forecast.refresh_from_db()
@@ -60,26 +58,29 @@ class EventForecastsViewTestCase(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'web/events/forecasts.html')
-        self.assertContains(response, 'AQHI&nbsp;5')
-        self.assertContains(response, '15°')
-        self.assertContains(response, '☔/☁️')
+        self.assertContains(response, 'AQHI&nbsp;moderate')
+        self.assertContains(response, '12\u201315&nbsp;&deg;C')
+        self.assertContains(response, 'rainy')
 
     def test_shows_all_forecasts_prepared_for_window_newest_first(self):
         # Arrange
         event = self._create_event()
         self._create_forecast(
-            conditions='sun', prepared_at=timezone.now() - timedelta(minutes=30)
+            hourly=[{'time': self.starts_at.strftime('%Y-%m-%dT%H:%M'), 'condition': 'sun', 'temperature': 12, 'aqhi': 5}],
+            prepared_at=timezone.now() - timedelta(minutes=30),
         )
-        self._create_forecast(conditions='rain')
+        self._create_forecast(
+            hourly=[{'time': self.starts_at.strftime('%Y-%m-%dT%H:%M'), 'condition': 'rain', 'temperature': 12, 'aqhi': 5}],
+        )
 
         # Act
         response = self.client.get(reverse('event_forecasts', args=[event.id]))
 
         # Assert
         content = response.content.decode()
-        self.assertContains(response, '☔')
-        self.assertContains(response, '☀️')
-        self.assertLess(content.index('☔'), content.index('☀️'))
+        self.assertContains(response, 'rainy')
+        self.assertContains(response, 'sunny')
+        self.assertLess(content.index('rainy'), content.index('sunny'))
 
     def test_excludes_forecasts_for_other_windows(self):
         # Arrange
@@ -122,7 +123,7 @@ class EventForecastsViewTestCase(TestCase):
         response = self.client.get(reverse('event_forecasts', args=[event.id]))
 
         # Assert
-        self.assertContains(response, 'AQHI&nbsp;5')
+        self.assertContains(response, 'AQHI&nbsp;moderate')
 
     def test_returns_404_for_unknown_event(self):
         # Act

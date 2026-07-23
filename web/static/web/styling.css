@@ -102,6 +102,76 @@ body {
   text-decoration: underline;
 }
 
+.wx-icon {
+  vertical-align: -3px;
+  margin-right: 0.25rem;
+}
+
+.wx-arrow {
+  color: #94a3b8;
+  font-size: 0.75em;
+  margin: 0 0.15rem;
+}
+
+.chip-sep {
+  margin: 0 0.35rem;
+  color: #adb5bd;
+}
+
+.wx-temp {
+  white-space: nowrap;
+}
+
+.wx-aqhi {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.wx-aqhi-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.3rem;
+  background-color: currentColor;
+}
+
+.wx-aqhi--low { color: #0891b2; }
+.wx-aqhi--moderate { color: #d97706; }
+.wx-aqhi--high { color: #dc2626; }
+.wx-aqhi--very-high { color: #7f1d1d; }
+
+.wx-warning-sep {
+  color: #dc2626;
+  font-weight: 700;
+  margin: 0 0.15rem;
+}
+
+.wx-warning-icon {
+  display: inline-flex;
+  border-radius: 50%;
+  outline: 1.5px solid #dc2626;
+  outline-offset: 1px;
+  padding: 1px;
+}
+
+.wx-aqhi-spike {
+  margin-left: 0.3rem;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+button.meta-pill {
+  cursor: pointer;
+  font: inherit;
+}
+
+button.meta-pill:hover, button.meta-pill:focus-visible {
+  background-color: rgba(108, 117, 125, 0.2) !important;
+}
+
 .btn-danger {
   background-color: #dc2626;
   border-color: #dc2626;

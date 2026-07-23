@@ -1,6 +1,26 @@
+{% load forecast_filters %}
 {% if forecast %}
-<span class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted" style="background-color: #6c757d1A;" title="Weather forecast from Open-Meteo">
-    <span aria-hidden="true" class="me-1">{{ forecast.condition_emojis }}</span><span class="visually-hidden">{{ forecast.condition_display }},</span>
-    · {{ forecast.temperature_display }}° · AQHI&nbsp;{{ forecast.aqhi_display }}&nbsp;<span class="opacity-75">(beta)</span><span class="visually-hidden">, forecast from Open-Meteo</span>
+{% with summary=forecast|forecast_summary %}
+{% if expandable %}
+<button type="button"
+        class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted border-0 bg-transparent"
+        style="background-color: #6c757d1A;"
+        title="Weather forecast from Open-Meteo. Tap for hourly detail."
+        aria-label="{{ summary.aria_label }}. Tap for hourly detail."
+        aria-haspopup="dialog"
+        data-bs-toggle="modal"
+        data-bs-target="#forecast-hourly-{{ forecast.pk }}">
+    {% include 'web/events/_forecast_badge_content.html' with summary=summary %}
+</button>
+{% include 'web/events/_forecast_hourly_modal.html' with forecast=forecast summary=summary %}
+{% else %}
+<span class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted"
+      style="background-color: #6c757d1A;"
+      title="Weather forecast from Open-Meteo"
+      role="img"
+      aria-label="{{ summary.aria_label }}">
+    {% include 'web/events/_forecast_badge_content.html' with summary=summary %}
 </span>
+{% endif %}
+{% endwith %}
 {% endif %}

@@ -1,6 +1,5 @@
 import logging
 import math
-from collections import Counter
 from datetime import timedelta, timezone as datetime_timezone
 from decimal import Decimal
 
@@ -112,6 +111,7 @@ class ForecastService:
         weather_indexes = self._window_indexes(weather_data, time, end_time)
         weather_codes = self._series_values(weather_data, 'weather_code', weather_indexes)
         temperatures = self._series_values(weather_data, 'temperature_2m', weather_indexes)
+        times = [weather_data['hourly']['time'][index] for index in weather_indexes]
 
         air_quality = requests.get(
             AIR_QUALITY_URL,
@@ -127,21 +127,33 @@ class ForecastService:
         air_quality.raise_for_status()
         air_quality_data = air_quality.json()
 
-        aqhi_values = [
-            self._compute_aqhi(air_quality_data['hourly'], index)
-            for index in self._window_indexes(air_quality_data, time, end_time)
+        aqhi_by_time = self._aqhi_by_time(air_quality_data, time, end_time)
+
+        hourly = [
+            {
+                'time': hour_time,
+                'condition': self._condition_from_weather_code(int(code)),
+                'temperature': round(temperature),
+                'aqhi': aqhi_by_time.get(hour_time),
+            }
+            for hour_time, code, temperature in zip(times, weather_codes, temperatures)
         ]
 
-        return {
-            'conditions': self._conditions_from_weather_codes(weather_codes),
-            'temperature_min': round(min(temperatures)),
-            'temperature_max': round(max(temperatures)),
-            'aqhi_min': min(aqhi_values),
-            'aqhi_max': max(aqhi_values),
-        }
+        return {'hourly': hourly}
 
     @classmethod
-    def _window_indexes(cls, data: dict, time, end_time) -> list[int]:
+    def _aqhi_by_time(cls, air_quality_data: dict, time, end_time) -> dict:
+        aqhi_by_time = {}
+        for index in cls._window_indexes(air_quality_data, time, end_time, required=False):
+            hour_time = air_quality_data['hourly']['time'][index]
+            try:
+                aqhi_by_time[hour_time] = cls._compute_aqhi(air_quality_data['hourly'], index)
+            except ValueError:
+                continue
+        return aqhi_by_time
+
+    @classmethod
+    def _window_indexes(cls, data: dict, time, end_time, required: bool = True) -> list[int]:
         indexes = []
         hour = time
         while hour <= end_time:
@@ -151,7 +163,7 @@ class ForecastService:
             except ValueError:
                 break
             hour += timedelta(hours=1)
-        if not indexes:
+        if required and not indexes:
             raise ValueError(f'No forecast data available between {time} and {end_time}')
         return indexes
 
@@ -198,16 +210,6 @@ class ForecastService:
     def _local_keys(time, utc_offset_seconds: int) -> tuple[str, str]:
         local = time.astimezone(datetime_timezone(timedelta(seconds=utc_offset_seconds)))
         return local.strftime('%Y-%m-%dT%H:%M'), local.strftime('%Y-%m-%d')
-
-    @classmethod
-    def _conditions_from_weather_codes(cls, codes: list) -> str:
-        hour_counts = Counter(cls._condition_from_weather_code(int(code)) for code in codes)
-        severity = list(reversed(Forecast.Condition))
-        ordered = sorted(
-            hour_counts,
-            key=lambda category: (-hour_counts[category], severity.index(category)),
-        )
-        return ','.join(ordered)
 
     @staticmethod
     def _condition_from_weather_code(code: int) -> str:
