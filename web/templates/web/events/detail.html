@@ -37,7 +37,7 @@
                 {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
             </h1>
             <div class="d-flex flex-wrap gap-2 align-items-center">
-                <span class="meta-pill text-muted" style="background-color: {% if event.program.color %}{{ event.program.color }}1A{% else %}#6c757d1A{% endif %};">{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
+                <span class="meta-pill meta-pill-neutral text-muted"{% if event.program.color %} style="background-color: {{ event.program.color }}1A;"{% endif %}>{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
                 {% if event.location_url %}
                 <a href="{{ event.location_url }}"
                    class="meta-pill meta-pill-link"
@@ -45,7 +45,7 @@
                     🗺️ {% if event.location %}{{ event.location }}{% else %}See location{% endif %}&nbsp;↗
                 </a>
                 {% elif event.location %}
-                <span class="meta-pill text-muted" style="background-color: #6c757d1A;">🗺️ {{ event.location }}</span>
+                <span class="meta-pill meta-pill-neutral text-muted">🗺️ {{ event.location }}</span>
                 {% endif %}
                 {% include 'web/events/_forecast_badge.html' with expandable=True %}
                 {% if not event.external_registration_url and event.state != "announced" and event.registration_count > 0 %}

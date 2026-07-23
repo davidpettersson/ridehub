@@ -89,6 +89,10 @@ body {
   font-size: 0.75rem;
 }
 
+.meta-pill-neutral {
+  background-color: rgba(108, 117, 125, 0.1);
+}
+
 .meta-pill-link {
   background-color: rgba(108, 117, 125, 0.1);
   color: var(--bs-primary);
@@ -103,19 +107,17 @@ body {
 }
 
 .wx-icon {
-  vertical-align: -3px;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.2em;
   margin-right: 0.25rem;
+  flex-shrink: 0;
 }
 
 .wx-arrow {
   color: #94a3b8;
   font-size: 0.75em;
   margin: 0 0.15rem;
-}
-
-.chip-sep {
-  margin: 0 0.35rem;
-  color: #adb5bd;
 }
 
 .wx-temp {
@@ -127,6 +129,10 @@ body {
   align-items: center;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.meta-pill .wx-aqhi {
+  margin-left: 0.5rem;
 }
 
 .wx-aqhi-dot {
@@ -144,17 +150,8 @@ body {
 .wx-aqhi--very-high { color: #7f1d1d; }
 
 .wx-warning-sep {
-  color: #dc2626;
-  font-weight: 700;
-  margin: 0 0.15rem;
-}
-
-.wx-warning-icon {
-  display: inline-flex;
-  border-radius: 50%;
-  outline: 1.5px solid #dc2626;
-  outline-offset: 1px;
-  padding: 1px;
+  color: #adb5bd;
+  margin-right: 0.25rem;
 }
 
 .wx-aqhi-spike {
@@ -165,11 +162,12 @@ body {
 
 button.meta-pill {
   cursor: pointer;
-  font: inherit;
+  font-family: inherit;
+  border: 0;
 }
 
 button.meta-pill:hover, button.meta-pill:focus-visible {
-  background-color: rgba(108, 117, 125, 0.2) !important;
+  background-color: rgba(108, 117, 125, 0.2);
 }
 
 .btn-danger {
