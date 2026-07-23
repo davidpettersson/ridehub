@@ -29,9 +29,13 @@
               </td>
               <td>{{ hour.temperature }}&nbsp;&deg;C</td>
               <td>
+                {% if hour.aqhi_category %}
                 <span class="wx-aqhi wx-aqhi--{{ hour.aqhi_category|slugify }}">
                     <span class="wx-aqhi-dot"></span>{{ hour.aqhi_display }}&nbsp;&middot;&nbsp;{{ hour.aqhi_category }}
                 </span>
+                {% else %}
+                <span class="text-muted">&ndash;</span>
+                {% endif %}
               </td>
             </tr>
             {% endfor %}

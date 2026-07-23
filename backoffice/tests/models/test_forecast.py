@@ -159,6 +159,13 @@ class ForecastModelTestCase(TestCase):
             forecast.full_clean()
         self.assertIn('hourly', ctx.exception.message_dict)
 
+    def test_hourly_entry_null_aqhi_allowed(self):
+        # Arrange
+        forecast = self._build_forecast(hourly=self._hourly(aqhi=None))
+
+        # Act & Assert
+        forecast.full_clean()
+
     def test_format_aqhi_caps_above_ten(self):
         # Act & Assert
         self.assertEqual(Forecast.format_aqhi(9), '9')

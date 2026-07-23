@@ -221,3 +221,57 @@ class ForecastSummaryTestCase(TestCase):
         self.assertEqual(summary.hourly[1].condition, Forecast.Condition.RAIN)
         self.assertEqual(summary.hourly[1].aqhi_category, 'moderate')
         self.assertEqual(summary.hourly[1].aqhi_display, '4')
+
+    def test_aqhi_category_is_none_when_no_hour_has_data(self):
+        # Arrange
+        forecast = self._build_forecast([
+            self._hour(0, 'sun', 20, None),
+            self._hour(1, 'sun', 21, None),
+        ])
+
+        # Act
+        summary = summarize(forecast)
+
+        # Assert
+        self.assertIsNone(summary.aqhi_category)
+        self.assertIsNone(summary.aqhi_warning_category)
+
+    def test_aqhi_category_derived_only_from_available_hours(self):
+        # Arrange
+        forecast = self._build_forecast([
+            self._hour(0, 'sun', 20, 2),
+            self._hour(1, 'sun', 20, 2),
+            self._hour(2, 'sun', 20, None),
+        ])
+
+        # Act
+        summary = summarize(forecast)
+
+        # Assert
+        self.assertEqual(summary.aqhi_category, 'low')
+
+    def test_aria_label_omits_air_quality_when_unavailable(self):
+        # Arrange
+        forecast = self._build_forecast([
+            self._hour(0, 'cloud', 20, None),
+        ])
+
+        # Act
+        summary = summarize(forecast)
+
+        # Assert
+        self.assertEqual(summary.aria_label, 'Weather: cloudy, 20 degrees Celsius')
+
+    def test_hourly_reading_exposes_null_aqhi(self):
+        # Arrange
+        forecast = self._build_forecast([
+            self._hour(0, 'sun', 20, None),
+        ])
+
+        # Act
+        summary = summarize(forecast)
+
+        # Assert
+        self.assertIsNone(summary.hourly[0].aqhi)
+        self.assertIsNone(summary.hourly[0].aqhi_display)
+        self.assertIsNone(summary.hourly[0].aqhi_category)

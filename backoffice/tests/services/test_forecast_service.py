@@ -115,6 +115,48 @@ class ForecastServiceTestCase(TestCase):
         self.assertEqual([entry['aqhi'] for entry in forecast.hourly], [3, 3, 3, 3])
         self.assertEqual(Forecast.objects.count(), 1)
 
+    def test_air_quality_entirely_unavailable_still_produces_forecast(self):
+        # Arrange
+        window_end = self.starts_at + timedelta(hours=1)
+
+        def side_effect(url, **kwargs):
+            if url == WEATHER_URL:
+                return _mock_response(_weather_payload(self.starts_at, window_end))
+            unrelated_start = self.starts_at - timedelta(days=3)
+            unrelated_end = unrelated_start + timedelta(hours=1)
+            return _mock_response(_air_quality_payload(unrelated_start, unrelated_end))
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = side_effect
+
+            # Act
+            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at)
+
+        # Assert
+        self.assertIsNotNone(forecast)
+        self.assertEqual(len(forecast.hourly), 2)
+        self.assertTrue(all(entry['aqhi'] is None for entry in forecast.hourly))
+
+    def test_air_quality_partially_available_keeps_hours_with_data(self):
+        # Arrange
+        window_end = self.starts_at + timedelta(hours=2)
+
+        def side_effect(url, **kwargs):
+            if url == WEATHER_URL:
+                return _mock_response(_weather_payload(self.starts_at, window_end))
+            partial_end = self.starts_at + timedelta(hours=1)
+            return _mock_response(_air_quality_payload(self.starts_at, partial_end))
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = side_effect
+
+            # Act
+            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at, window_end)
+
+        # Assert
+        self.assertIsNotNone(forecast)
+        self.assertEqual([entry['aqhi'] is not None for entry in forecast.hourly], [True, True, False])
+
     def test_missing_end_defaults_to_one_hour_window(self):
         # Arrange
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
@@ -459,7 +501,7 @@ class AqhiComputationTestCase(TestCase):
         # Assert
         self.assertEqual(aqhi, 3)
 
-    def test_missing_event_hour_data_surfaces_as_stale_fallback(self):
+    def test_missing_pollutant_data_still_produces_forecast_without_aqhi(self):
         # Arrange
         service = ForecastService()
         latitude, longitude = YOW_LOCATION
@@ -483,8 +525,10 @@ class AqhiComputationTestCase(TestCase):
             forecast = service.get_forecast(latitude, longitude, starts_at)
 
         # Assert
-        self.assertIsNone(forecast)
-        self.assertEqual(Forecast.objects.count(), 0)
+        self.assertIsNotNone(forecast)
+        self.assertEqual(len(forecast.hourly), 2)
+        self.assertTrue(all(entry['aqhi'] is None for entry in forecast.hourly))
+        self.assertEqual(Forecast.objects.count(), 1)
 
 
 class ForecastServiceWindowsTestCase(TestCase):

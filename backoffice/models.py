@@ -480,7 +480,8 @@ class Forecast(models.Model):
         default=list,
         help_text=(
             'Per-hour readings across the forecast window: a list of '
-            '{time (ISO 8601, local), condition, temperature (Celsius), aqhi} entries.'
+            '{time (ISO 8601, local), condition, temperature (Celsius), aqhi} entries. '
+            'aqhi is null when air quality data was not yet available for that hour.'
         )
     )
 
@@ -539,9 +540,9 @@ class Forecast(models.Model):
                     raise ValidationError({
                         'hourly': f"Unknown condition '{entry['condition']}' in hourly readings."
                     })
-                if not (1 <= entry['aqhi'] <= 11):
+                if entry['aqhi'] is not None and not (1 <= entry['aqhi'] <= 11):
                     raise ValidationError({
-                        'hourly': 'AQHI in hourly readings must be between 1 and 11.'
+                        'hourly': 'AQHI in hourly readings must be between 1 and 11, or null when unavailable.'
                     })
                 try:
                     datetime.fromisoformat(entry['time'])

@@ -7,10 +7,12 @@
 {% endif %}
 <span class="chip-sep" aria-hidden="true">&middot;</span>
 <span class="wx-temp" aria-hidden="true">{{ summary.temperature_display }}&nbsp;&deg;C</span>
+{% if summary.aqhi_category %}
 <span class="chip-sep" aria-hidden="true">&middot;</span>
 <span class="wx-aqhi wx-aqhi--{{ summary.aqhi_category|slugify }}" title="Air Quality Health Index (beta)" aria-hidden="true">
     <span class="wx-aqhi-dot"></span>AQHI&nbsp;{{ summary.aqhi_category }}
 </span>
 {% if summary.aqhi_warning_category %}
 <span class="wx-aqhi-spike wx-aqhi--{{ summary.aqhi_warning_category|slugify }}" title="Spike to AQHI {{ summary.aqhi_warning_category }} possible" aria-hidden="true">&uarr;{{ summary.aqhi_warning_category }}</span>
+{% endif %}
 {% endif %}

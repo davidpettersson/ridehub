@@ -25,9 +25,9 @@ class HourlyReading:
     time: datetime
     condition: Condition
     temperature: int
-    aqhi: int
-    aqhi_display: str
-    aqhi_category: str
+    aqhi: int | None
+    aqhi_display: str | None
+    aqhi_category: str | None
 
 
 @dataclass(frozen=True)
@@ -37,7 +37,7 @@ class ForecastSummary:
     condition_warning_label: str | None
     temperature_display: str
     temperature_aria_label: str
-    aqhi_category: str
+    aqhi_category: str | None
     aqhi_warning_category: str | None
     aria_label: str
     hourly: list[HourlyReading]
@@ -81,8 +81,8 @@ def _reading(entry: dict) -> HourlyReading:
         condition=Condition(entry['condition']),
         temperature=entry['temperature'],
         aqhi=aqhi,
-        aqhi_display=Forecast.format_aqhi(aqhi),
-        aqhi_category=Forecast.aqhi_category_for(aqhi),
+        aqhi_display=Forecast.format_aqhi(aqhi) if aqhi is not None else None,
+        aqhi_category=Forecast.aqhi_category_for(aqhi) if aqhi is not None else None,
     )
 
 
@@ -111,13 +111,19 @@ def _temperature(hourly: list[HourlyReading]) -> tuple[str, str]:
     return f'{low}–{high}', f'{low} to {high} degrees Celsius'
 
 
-def _prevalent_aqhi_category(hourly: list[HourlyReading]) -> str:
-    counts = Counter(reading.aqhi_category for reading in hourly)
+def _prevalent_aqhi_category(hourly: list[HourlyReading]) -> str | None:
+    categories = [reading.aqhi_category for reading in hourly if reading.aqhi_category is not None]
+    if not categories:
+        return None
+    counts = Counter(categories)
     return max(counts, key=lambda category: (counts[category], AQHI_CATEGORY_ORDER.index(category)))
 
 
-def _aqhi_warning(hourly: list[HourlyReading], prevalent_category: str) -> str | None:
-    worst = max((reading.aqhi_category for reading in hourly), key=AQHI_CATEGORY_ORDER.index)
+def _aqhi_warning(hourly: list[HourlyReading], prevalent_category: str | None) -> str | None:
+    if prevalent_category is None:
+        return None
+    categories = [reading.aqhi_category for reading in hourly if reading.aqhi_category is not None]
+    worst = max(categories, key=AQHI_CATEGORY_ORDER.index)
     if worst in AQHI_WARNING_CATEGORIES and AQHI_CATEGORY_ORDER.index(worst) > AQHI_CATEGORY_ORDER.index(prevalent_category):
         return worst
     return None
@@ -127,13 +133,16 @@ def _aria_label(
     condition_primary: Condition,
     condition_warning_label: str | None,
     temperature_aria_label: str,
-    aqhi_category: str,
+    aqhi_category: str | None,
     aqhi_warning_category: str | None,
 ) -> str:
     condition_text = Forecast.CONDITION_ARIA_LABELS[condition_primary]
     if condition_warning_label:
         condition_text += f', {condition_warning_label} possible'
-    aqhi_text = f'air quality {aqhi_category}'
-    if aqhi_warning_category:
-        aqhi_text += f', spike to {aqhi_warning_category}'
-    return f'Weather: {condition_text}, {temperature_aria_label}, {aqhi_text}'
+    segments = [f'Weather: {condition_text}', temperature_aria_label]
+    if aqhi_category:
+        aqhi_text = f'air quality {aqhi_category}'
+        if aqhi_warning_category:
+            aqhi_text += f', spike to {aqhi_warning_category}'
+        segments.append(aqhi_text)
+    return ', '.join(segments)
