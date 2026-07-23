@@ -42,6 +42,13 @@
           </tbody>
         </table>
       </div>
+      {% if show_history_link %}
+      <div class="modal-footer justify-content-start">
+        <a href="{% url 'event_forecasts' event.id %}" class="small">
+          <i class="bi bi-clock-history me-1"></i>View forecast history
+        </a>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>

@@ -630,6 +630,18 @@ class ForecastServiceHistoryTestCase(TestCase):
         # Assert
         self.assertEqual(forecasts, [])
 
+    def test_excludes_forecasts_without_hourly_readings(self):
+        # Arrange
+        with_readings = self._create_forecast()
+        empty = self._create_forecast()
+        Forecast.objects.filter(pk=empty.pk).update(hourly=[])
+
+        # Act
+        forecasts = list(self.service.get_forecast_history(self.latitude, self.longitude, self.starts_at))
+
+        # Assert
+        self.assertEqual(forecasts, [with_readings])
+
     def test_missing_end_defaults_to_one_hour_window(self):
         # Arrange
         self._create_forecast(end_time=self.starts_at + timedelta(hours=1))
