@@ -59,7 +59,7 @@ class EventForecastsViewTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'web/events/forecasts.html')
         self.assertContains(response, 'AQHI&nbsp;moderate')
-        self.assertContains(response, '12\u201315&nbsp;&deg;C')
+        self.assertContains(response, '12\u201315&deg;')
         self.assertContains(response, 'rainy')
 
     def test_shows_all_forecasts_prepared_for_window_newest_first(self):

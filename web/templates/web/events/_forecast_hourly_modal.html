@@ -27,12 +27,10 @@
                 {% include 'web/events/_weather_icon.html' with condition=hour.condition %}
                 <span class="visually-hidden">{{ hour.condition.label }}</span>
               </td>
-              <td>{{ hour.temperature }}&nbsp;&deg;C</td>
+              <td>{{ hour.temperature }}&deg;</td>
               <td>
                 {% if hour.aqhi_category %}
-                <span class="wx-aqhi wx-aqhi--{{ hour.aqhi_category|slugify }}">
-                    <span class="wx-aqhi-dot"></span>{{ hour.aqhi_display }}&nbsp;&middot;&nbsp;{{ hour.aqhi_category }}
-                </span>
+                <span class="wx-aqhi wx-aqhi--{{ hour.aqhi_category|slugify }}">{{ hour.aqhi_display }}&nbsp;&middot;&nbsp;{{ hour.aqhi_category }}</span>
                 {% else %}
                 <span class="text-muted">&ndash;</span>
                 {% endif %}

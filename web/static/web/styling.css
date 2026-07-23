@@ -135,15 +135,6 @@ body {
   margin-left: 0.5rem;
 }
 
-.wx-aqhi-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 0.3rem;
-  background-color: currentColor;
-}
-
 .wx-aqhi--low { color: #0891b2; }
 .wx-aqhi--moderate { color: #d97706; }
 .wx-aqhi--high { color: #dc2626; }
@@ -155,9 +146,8 @@ body {
 }
 
 .wx-aqhi-spike {
-  margin-left: 0.3rem;
-  font-size: 0.85em;
-  font-weight: 600;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 button.meta-pill {
