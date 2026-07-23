@@ -122,6 +122,7 @@ body {
 
 .wx-temp {
   white-space: nowrap;
+  margin-left: 0.25rem;
 }
 
 .wx-aqhi {
