@@ -107,8 +107,11 @@ body {
 }
 
 .wx-icon {
-  vertical-align: -3px;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.2em;
   margin-right: 0.25rem;
+  flex-shrink: 0;
 }
 
 .wx-arrow {
