@@ -143,9 +143,9 @@ class ForecastSummaryTestCase(TestCase):
 
         # Assert
         self.assertEqual(summary.aqhi_category, 'low')
-        self.assertIsNone(summary.aqhi_warning_category)
+        self.assertEqual(summary.aqhi_warning_category, 'moderate')
 
-    def test_mild_aqhi_bump_does_not_warn(self):
+    def test_aqhi_bump_to_moderate_warns(self):
         # Arrange
         forecast = self._build_forecast([
             self._hour(0, 'sun', 20, 2),
@@ -157,6 +157,21 @@ class ForecastSummaryTestCase(TestCase):
         summary = summarize(forecast)
 
         # Assert
+        self.assertEqual(summary.aqhi_warning_category, 'moderate')
+
+    def test_no_aqhi_warning_when_all_hours_share_category(self):
+        # Arrange
+        forecast = self._build_forecast([
+            self._hour(0, 'sun', 20, 2),
+            self._hour(1, 'sun', 20, 3),
+            self._hour(2, 'sun', 20, 2),
+        ])
+
+        # Act
+        summary = summarize(forecast)
+
+        # Assert
+        self.assertEqual(summary.aqhi_category, 'low')
         self.assertIsNone(summary.aqhi_warning_category)
 
     def test_aqhi_spike_to_high_warns(self):

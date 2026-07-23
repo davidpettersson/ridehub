@@ -15,7 +15,6 @@ CONDITION_WARNING_LABELS = {
 }
 
 AQHI_CATEGORY_ORDER = ['low', 'moderate', 'high', 'very high']
-AQHI_WARNING_CATEGORIES = {'high', 'very high'}
 
 TEMPERATURE_COLLAPSE_SPAN = 2
 
@@ -124,7 +123,7 @@ def _aqhi_warning(hourly: list[HourlyReading], prevalent_category: str | None) -
         return None
     categories = [reading.aqhi_category for reading in hourly if reading.aqhi_category is not None]
     worst = max(categories, key=AQHI_CATEGORY_ORDER.index)
-    if worst in AQHI_WARNING_CATEGORIES and AQHI_CATEGORY_ORDER.index(worst) > AQHI_CATEGORY_ORDER.index(prevalent_category):
+    if AQHI_CATEGORY_ORDER.index(worst) > AQHI_CATEGORY_ORDER.index(prevalent_category):
         return worst
     return None
 
