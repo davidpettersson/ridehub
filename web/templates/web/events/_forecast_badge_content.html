@@ -3,12 +3,10 @@
 <span class="wx-warning-sep" aria-hidden="true">/</span>
 {% include 'web/events/_weather_icon.html' with condition=summary.condition_warning %}
 {% endif %}
-<span class="wx-temp" aria-hidden="true">{{ summary.temperature_display }}&nbsp;&deg;C</span>
+<span class="wx-temp" aria-hidden="true">{{ summary.temperature_display }}&deg;</span>
 {% if summary.aqhi_category %}
-<span class="wx-aqhi wx-aqhi--{{ summary.aqhi_category|slugify }}" aria-hidden="true">
-    <span class="wx-aqhi-dot"></span>AQHI&nbsp;{{ summary.aqhi_category }}
-</span>
+<span class="wx-aqhi wx-aqhi--{{ summary.aqhi_category|slugify }}" aria-hidden="true">AQHI&nbsp;{{ summary.aqhi_category }}</span>
 {% if summary.aqhi_warning_category %}
-<span class="wx-aqhi-spike wx-aqhi--{{ summary.aqhi_warning_category|slugify }}" aria-hidden="true">&uarr;{{ summary.aqhi_warning_category }}</span>
+<span class="wx-aqhi-spike wx-aqhi--{{ summary.aqhi_warning_category|slugify }}" aria-hidden="true">&rarr;{{ summary.aqhi_warning_category }}</span>
 {% endif %}
 {% endif %}
