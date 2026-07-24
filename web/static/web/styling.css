@@ -151,6 +151,16 @@ body {
   white-space: nowrap;
 }
 
+.wx-loading {
+  opacity: 0.6;
+}
+
+.wx-spinner {
+  width: 1.2em;
+  height: 1.2em;
+  border-width: 0.15em;
+}
+
 button.meta-pill {
   cursor: pointer;
   font-family: inherit;

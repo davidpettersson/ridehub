@@ -1,6 +1,8 @@
 from datetime import timedelta
 from unittest.mock import patch
 
+import requests
+
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -10,7 +12,7 @@ from backoffice.models import Event, Forecast, Program, Ride, Route
 from backoffice.services.forecast_service import YOW_LOCATION
 
 
-class ForecastBadgeViewTestCase(TestCase):
+class ForecastBadgeTestCase(TestCase):
     def setUp(self):
         self.program = Program.objects.create(name='Test Program')
         self.route = Route.objects.create(name='Test Route')
@@ -47,24 +49,85 @@ class ForecastBadgeViewTestCase(TestCase):
             hourly=hourly,
         )
 
+
+class UpcomingPageForecastPlaceholderTests(ForecastBadgeTestCase):
     @override_flag('weather_forecast_badges', active=True)
-    def test_upcoming_shows_badge_for_event_with_ride(self):
+    def test_upcoming_shows_placeholder_without_fetching_forecast(self):
         # Arrange
-        self._create_event()
-        self._create_forecast()
+        event = self._create_event()
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertContains(response, f'forecast-badge-{event.id}')
+        self.assertContains(response, reverse('upcoming_forecast_badges'))
+        self.assertContains(response, 'Loading weather forecast')
+        self.assertNotContains(response, 'AQHI')
+        mock_get.assert_not_called()
+
+    @override_flag('weather_forecast_badges', active=False)
+    def test_upcoming_hides_placeholder_when_flag_disabled(self):
+        # Arrange
+        event = self._create_event()
 
         # Act
         response = self.client.get(reverse('upcoming'))
 
         # Assert
+        self.assertNotContains(response, f'forecast-badge-{event.id}')
+        self.assertNotContains(response, reverse('upcoming_forecast_badges'))
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_upcoming_hides_placeholder_for_virtual_event(self):
+        # Arrange
+        event = self._create_event(virtual=True)
+
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertNotContains(response, f'forecast-badge-{event.id}')
+        self.assertNotContains(response, reverse('upcoming_forecast_badges'))
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_upcoming_hides_placeholder_for_event_beyond_window(self):
+        # Arrange
+        far_starts_at = (timezone.now() + timedelta(days=9)).replace(
+            minute=0, second=0, microsecond=0
+        )
+        event = self._create_event(starts_at=far_starts_at)
+
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertNotContains(response, f'forecast-badge-{event.id}')
+        self.assertNotContains(response, reverse('upcoming_forecast_badges'))
+
+
+class UpcomingForecastBadgesViewTests(ForecastBadgeTestCase):
+    @override_flag('weather_forecast_badges', active=True)
+    def test_badges_endpoint_returns_badge_for_event_with_ride(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('upcoming_forecast_badges'))
+
+        # Assert
+        self.assertContains(response, f'id="forecast-badge-{event.id}"')
+        self.assertContains(response, 'hx-swap-oob="outerHTML"')
         self.assertContains(response, 'AQHI&nbsp;moderate')
-        self.assertContains(response, '12\u201315&deg;')
+        self.assertContains(response, '12–15&deg;')
         self.assertNotContains(response, '(beta)')
         self.assertNotContains(response, '\U0001F327')
         self.assertContains(response, 'Open-Meteo')
 
     @override_flag('weather_forecast_badges', active=True)
-    def test_upcoming_shows_single_temperature_when_within_two_degree_span(self):
+    def test_badges_endpoint_shows_single_temperature_when_within_two_degree_span(self):
         # Arrange
         self._create_event()
         self._create_forecast(hourly=[
@@ -73,114 +136,119 @@ class ForecastBadgeViewTestCase(TestCase):
         ])
 
         # Act
-        response = self.client.get(reverse('upcoming'))
+        response = self.client.get(reverse('upcoming_forecast_badges'))
 
         # Assert
         self.assertContains(response, '12&deg;')
-        self.assertNotContains(response, '12\u201312')
+        self.assertNotContains(response, '12–12')
 
     @override_flag('weather_forecast_badges', active=False)
-    def test_upcoming_hides_badge_when_flag_disabled(self):
+    def test_badges_endpoint_returns_nothing_when_flag_disabled(self):
         # Arrange
         self._create_event()
         self._create_forecast()
 
         # Act
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            response = self.client.get(reverse('upcoming'))
+            response = self.client.get(reverse('upcoming_forecast_badges'))
 
         # Assert
-        self.assertNotContains(response, 'AQHI')
+        self.assertEqual(response.content.strip(), b'')
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=True)
-    def test_upcoming_shows_badge_for_event_without_rides(self):
+    def test_badges_endpoint_returns_badge_for_event_without_rides(self):
         # Arrange
         self._create_event(with_ride=False)
         self._create_forecast()
 
         # Act
-        response = self.client.get(reverse('upcoming'))
+        response = self.client.get(reverse('upcoming_forecast_badges'))
 
         # Assert
         self.assertContains(response, 'AQHI&nbsp;moderate')
 
     @override_flag('weather_forecast_badges', active=True)
-    def test_upcoming_hides_badge_for_virtual_event(self):
-        # Arrange
-        self._create_event(virtual=True)
-        self._create_forecast()
-
-        # Act
-        response = self.client.get(reverse('upcoming'))
-
-        # Assert
-        self.assertNotContains(response, 'AQHI')
-
-    @override_flag('weather_forecast_badges', active=True)
-    def test_detail_hides_badge_for_virtual_event(self):
+    def test_badges_endpoint_skips_virtual_event(self):
         # Arrange
         event = self._create_event(virtual=True)
         self._create_forecast()
 
         # Act
-        response = self.client.get(reverse('event_detail', args=[event.id]))
+        response = self.client.get(reverse('upcoming_forecast_badges'))
 
         # Assert
+        self.assertNotContains(response, f'forecast-badge-{event.id}')
         self.assertNotContains(response, 'AQHI')
 
     @override_flag('weather_forecast_badges', active=True)
-    def test_detail_shows_badge_for_event_with_ride(self):
+    def test_badges_endpoint_deletes_placeholder_when_forecast_unavailable(self):
         # Arrange
         event = self._create_event()
-        self._create_forecast()
 
         # Act
-        response = self.client.get(reverse('event_detail', args=[event.id]))
+        with patch('backoffice.services.forecast_service.requests.get', side_effect=requests.RequestException('down')):
+            response = self.client.get(reverse('upcoming_forecast_badges'))
 
         # Assert
-        self.assertContains(response, 'AQHI&nbsp;moderate')
-        self.assertContains(response, '(beta)')
+        self.assertContains(response, f'id="forecast-badge-{event.id}"')
+        self.assertContains(response, 'hx-swap-oob="delete"')
+        self.assertNotContains(response, 'AQHI')
 
     @override_flag('weather_forecast_badges', active=True)
-    def test_detail_popup_links_to_forecast_history(self):
-        # Arrange
-        event = self._create_event()
-        self._create_forecast()
-
-        # Act
-        response = self.client.get(reverse('event_detail', args=[event.id]))
-
-        # Assert
-        self.assertContains(response, reverse('event_forecasts', args=[event.id]))
-        self.assertContains(response, 'View forecast history')
-
-    @override_flag('weather_forecast_badges', active=True)
-    def test_upcoming_popup_has_no_forecast_history_link(self):
+    def test_badges_endpoint_has_no_forecast_history_link(self):
         # Arrange
         self._create_event()
         self._create_forecast()
 
         # Act
-        response = self.client.get(reverse('upcoming'))
+        response = self.client.get(reverse('upcoming_forecast_badges'))
 
         # Assert
         self.assertNotContains(response, 'View forecast history')
 
-    @override_flag('weather_forecast_badges', active=False)
-    def test_detail_hides_badge_when_flag_disabled(self):
+
+class DetailPageForecastPlaceholderTests(ForecastBadgeTestCase):
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_shows_placeholder_without_fetching_forecast(self):
         # Arrange
         event = self._create_event()
-        self._create_forecast()
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, f'forecast-badge-{event.id}')
+        self.assertContains(response, reverse('event_forecast_badge', args=[event.id]))
+        self.assertContains(response, 'Loading weather forecast')
+        self.assertNotContains(response, 'AQHI')
+        mock_get.assert_not_called()
+
+    @override_flag('weather_forecast_badges', active=False)
+    def test_detail_hides_placeholder_when_flag_disabled(self):
+        # Arrange
+        event = self._create_event()
 
         # Act
         response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
-        self.assertNotContains(response, 'AQHI')
+        self.assertNotContains(response, f'forecast-badge-{event.id}')
 
     @override_flag('weather_forecast_badges', active=True)
-    def test_detail_hides_badge_for_event_beyond_window(self):
+    def test_detail_hides_placeholder_for_virtual_event(self):
+        # Arrange
+        event = self._create_event(virtual=True)
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertNotContains(response, f'forecast-badge-{event.id}')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_hides_placeholder_for_event_beyond_window(self):
         # Arrange
         far_starts_at = (timezone.now() + timedelta(days=9)).replace(
             minute=0, second=0, microsecond=0
@@ -192,11 +260,95 @@ class ForecastBadgeViewTestCase(TestCase):
             response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
+        self.assertNotContains(response, f'forecast-badge-{event.id}')
+        mock_get.assert_not_called()
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_shows_placeholder_for_cancelled_event(self):
+        # Arrange
+        event = self._create_event()
+        event.cancel()
+        event.save()
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, f'forecast-badge-{event.id}')
+
+
+class EventForecastBadgeViewTests(ForecastBadgeTestCase):
+    @override_flag('weather_forecast_badges', active=True)
+    def test_badge_endpoint_returns_expandable_badge(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('event_forecast_badge', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, 'AQHI&nbsp;moderate')
+        self.assertContains(response, '(beta)')
+        self.assertContains(response, 'data-bs-toggle="modal"')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_badge_endpoint_includes_forecast_history_link(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('event_forecast_badge', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, reverse('event_forecasts', args=[event.id]))
+        self.assertContains(response, 'View forecast history')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_badge_endpoint_returns_nothing_for_virtual_event(self):
+        # Arrange
+        event = self._create_event(virtual=True)
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('event_forecast_badge', args=[event.id]))
+
+        # Assert
+        self.assertNotContains(response, 'AQHI')
+
+    @override_flag('weather_forecast_badges', active=False)
+    def test_badge_endpoint_returns_nothing_when_flag_disabled(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast()
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            response = self.client.get(reverse('event_forecast_badge', args=[event.id]))
+
+        # Assert
         self.assertNotContains(response, 'AQHI')
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=True)
-    def test_detail_shows_badge_for_cancelled_event(self):
+    def test_badge_endpoint_returns_nothing_for_event_beyond_window(self):
+        # Arrange
+        far_starts_at = (timezone.now() + timedelta(days=9)).replace(
+            minute=0, second=0, microsecond=0
+        )
+        event = self._create_event(starts_at=far_starts_at)
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            response = self.client.get(reverse('event_forecast_badge', args=[event.id]))
+
+        # Assert
+        self.assertNotContains(response, 'AQHI')
+        mock_get.assert_not_called()
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_badge_endpoint_returns_badge_for_cancelled_event(self):
         # Arrange
         event = self._create_event()
         self._create_forecast()
@@ -204,7 +356,7 @@ class ForecastBadgeViewTestCase(TestCase):
         event.save()
 
         # Act
-        response = self.client.get(reverse('event_detail', args=[event.id]))
+        response = self.client.get(reverse('event_forecast_badge', args=[event.id]))
 
         # Assert
         self.assertContains(response, 'AQHI&nbsp;moderate')

@@ -181,19 +181,58 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
             state=Registration.STATE_CONFIRMED,
         ).exists()
 
-    forecast = None
-    if flag_is_active(request, 'weather_forecast_badges'):
-        forecast = EventService().fetch_current_forecast(event)
+    forecast_placeholder = (
+        flag_is_active(request, 'weather_forecast_badges')
+        and EventService().forecast_possible(event)
+    )
 
     context = {
         'event': event,
         'rides': rides,
         'user_is_registered': user_is_registered,
         'registrations_available': _registrations_visible(event, request.user),
-        'forecast': forecast,
+        'forecast_placeholder': forecast_placeholder,
     }
 
     return render(request, 'web/events/detail.html', context)
+
+
+def event_forecast_badge(request: HttpRequest, event_id: int) -> HttpResponse:
+    event = get_object_or_404(Event, id=event_id)
+
+    forecast = None
+    if flag_is_active(request, 'weather_forecast_badges'):
+        forecast = EventService().fetch_current_forecast(event)
+
+    context = {
+        'event': event,
+        'forecast': forecast,
+        'expandable': True,
+        'show_history_link': True,
+    }
+
+    return render(request, 'web/events/_forecast_badge.html', context)
+
+
+def upcoming_forecast_badges(request: HttpRequest) -> HttpResponse:
+    if not flag_is_active(request, 'weather_forecast_badges'):
+        return HttpResponse()
+
+    _, active_query, _ = _get_filter_params(request)
+
+    service = EventService()
+    events = [
+        event for event in service.fetch_upcoming_events(query=active_query)
+        if service.forecast_possible(event)
+    ]
+    forecasts = service.fetch_forecasts(events)
+
+    context = {
+        'events': events,
+        'forecasts': forecasts,
+    }
+
+    return render(request, 'web/events/_forecast_badges_oob.html', context)
 
 
 def event_forecasts(request: HttpRequest, event_id: int) -> HttpResponse:
@@ -239,12 +278,13 @@ def event_list(request: HttpRequest) -> HttpResponse:
     today = timezone.localdate()
     tomorrow = today + timedelta(days=1)
 
-    forecasts = {}
+    forecast_event_ids = set()
     if flag_is_active(request, 'weather_forecast_badges'):
-        forecasts = EventService().fetch_forecasts(events)
+        service = EventService()
+        forecast_event_ids = {e.id for e in events if service.forecast_possible(e)}
 
     context = {
-        'forecasts': forecasts,
+        'forecast_event_ids': forecast_event_ids,
         'events_by_date': events_by_date,
         'today': today,
         'tomorrow': tomorrow,

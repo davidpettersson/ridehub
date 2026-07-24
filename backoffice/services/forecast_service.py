@@ -74,6 +74,11 @@ class ForecastService:
 
         return forecasts_by_window
 
+    def is_within_window(self, starts_at) -> bool:
+        now = timezone.now()
+        time = self._snap_to_hour(starts_at)
+        return self._snap_to_hour(now) <= time <= now + FORECAST_WINDOW
+
     def get_forecast_history(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> QuerySet:
         time = self._snap_to_hour(starts_at)
         end_time = self._snap_to_hour_ceiling(ends_at) if ends_at else time + timedelta(hours=1)
