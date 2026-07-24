@@ -116,13 +116,26 @@ class EventService:
         latitude, longitude = YOW_LOCATION
         return ForecastService().get_forecast(latitude, longitude, event.starts_at, event.starts_at + event.duration)
 
+    def fetch_cached_forecast(self, event: Event) -> Forecast | None:
+        if event.virtual:
+            return None
+        latitude, longitude = YOW_LOCATION
+        return ForecastService().get_cached_forecast(latitude, longitude, event.starts_at, event.starts_at + event.duration)
+
     def fetch_forecasts(self, events) -> dict:
+        return self._forecasts_by_event_id(events, ForecastService().get_forecasts_for_windows)
+
+    def fetch_cached_forecasts(self, events) -> dict:
+        return self._forecasts_by_event_id(events, ForecastService().get_cached_forecasts_for_windows)
+
+    @staticmethod
+    def _forecasts_by_event_id(events, lookup) -> dict:
         windows_by_event_id = {
             event.id: (event.starts_at, event.starts_at + event.duration)
             for event in events
             if not event.virtual
         }
-        forecasts_by_window = ForecastService().get_forecasts_for_windows(windows_by_event_id.values())
+        forecasts_by_window = lookup(windows_by_event_id.values())
 
         return {
             event_id: forecasts_by_window[window]

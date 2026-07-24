@@ -181,16 +181,19 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
             state=Registration.STATE_CONFIRMED,
         ).exists()
 
-    forecast_placeholder = (
-        flag_is_active(request, 'weather_forecast_badges')
-        and EventService().forecast_possible(event)
-    )
+    forecast = None
+    forecast_placeholder = False
+    service = EventService()
+    if flag_is_active(request, 'weather_forecast_badges') and service.forecast_possible(event):
+        forecast = service.fetch_cached_forecast(event)
+        forecast_placeholder = forecast is None
 
     context = {
         'event': event,
         'rides': rides,
         'user_is_registered': user_is_registered,
         'registrations_available': _registrations_visible(event, request.user),
+        'forecast': forecast,
         'forecast_placeholder': forecast_placeholder,
     }
 
@@ -278,13 +281,17 @@ def event_list(request: HttpRequest) -> HttpResponse:
     today = timezone.localdate()
     tomorrow = today + timedelta(days=1)
 
-    forecast_event_ids = set()
+    forecasts = {}
+    forecast_pending_ids = set()
     if flag_is_active(request, 'weather_forecast_badges'):
         service = EventService()
-        forecast_event_ids = {e.id for e in events if service.forecast_possible(e)}
+        eligible = [e for e in events if service.forecast_possible(e)]
+        forecasts = service.fetch_cached_forecasts(eligible)
+        forecast_pending_ids = {e.id for e in eligible if e.id not in forecasts}
 
     context = {
-        'forecast_event_ids': forecast_event_ids,
+        'forecasts': forecasts,
+        'forecast_pending_ids': forecast_pending_ids,
         'events_by_date': events_by_date,
         'today': today,
         'tomorrow': tomorrow,

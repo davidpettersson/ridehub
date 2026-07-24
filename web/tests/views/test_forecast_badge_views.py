@@ -49,6 +49,11 @@ class ForecastBadgeTestCase(TestCase):
             hourly=hourly,
         )
 
+    def _make_stale(self, forecast):
+        Forecast.objects.filter(pk=forecast.pk).update(
+            prepared_at=timezone.now() - timedelta(hours=2)
+        )
+
 
 class UpcomingPageForecastPlaceholderTests(ForecastBadgeTestCase):
     @override_flag('weather_forecast_badges', active=True)
@@ -65,6 +70,39 @@ class UpcomingPageForecastPlaceholderTests(ForecastBadgeTestCase):
         self.assertContains(response, reverse('upcoming_forecast_badges'))
         self.assertContains(response, 'Loading weather forecast')
         self.assertContains(response, 'wx-shimmer')
+        self.assertNotContains(response, 'AQHI&nbsp;moderate')
+        mock_get.assert_not_called()
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_upcoming_renders_badge_inline_when_fresh_forecast_cached(self):
+        # Arrange
+        self._create_event()
+        self._create_forecast()
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertContains(response, 'AQHI&nbsp;moderate')
+        self.assertContains(response, '12–15&deg;')
+        self.assertNotContains(response, 'Loading weather forecast')
+        self.assertNotContains(response, reverse('upcoming_forecast_badges'))
+        mock_get.assert_not_called()
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_upcoming_shows_placeholder_when_cached_forecast_stale(self):
+        # Arrange
+        event = self._create_event()
+        self._make_stale(self._create_forecast())
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertContains(response, f'forecast-badge-{event.id}')
+        self.assertContains(response, reverse('upcoming_forecast_badges'))
         self.assertNotContains(response, 'AQHI&nbsp;moderate')
         mock_get.assert_not_called()
 
@@ -224,6 +262,39 @@ class DetailPageForecastPlaceholderTests(ForecastBadgeTestCase):
         self.assertContains(response, reverse('event_forecast_badge', args=[event.id]))
         self.assertContains(response, 'Loading weather forecast')
         self.assertContains(response, 'wx-shimmer')
+        self.assertNotContains(response, 'AQHI&nbsp;moderate')
+        mock_get.assert_not_called()
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_renders_badge_inline_when_fresh_forecast_cached(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast()
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, 'AQHI&nbsp;moderate')
+        self.assertContains(response, '(beta)')
+        self.assertContains(response, 'View forecast history')
+        self.assertNotContains(response, 'Loading weather forecast')
+        mock_get.assert_not_called()
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_shows_placeholder_when_cached_forecast_stale(self):
+        # Arrange
+        event = self._create_event()
+        self._make_stale(self._create_forecast())
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, 'Loading weather forecast')
+        self.assertContains(response, reverse('event_forecast_badge', args=[event.id]))
         self.assertNotContains(response, 'AQHI&nbsp;moderate')
         mock_get.assert_not_called()
 

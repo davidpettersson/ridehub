@@ -54,7 +54,9 @@
                                 {% if event.location %}
                                 <span class="meta-pill meta-pill-sm meta-pill-neutral text-muted">🗺️ {{ event.location }}</span>
                                 {% endif %}
-                                {% if event.id in forecast_event_ids %}
+                                {% if event.id in forecasts %}
+                                {% include 'web/events/_forecast_badge.html' with forecast=forecasts|get_item:event.id compact=True %}
+                                {% elif event.id in forecast_pending_ids %}
                                 {% include 'web/events/_forecast_badge_loading.html' with compact=True %}
                                 {% endif %}
                                 {% if not event.external_registration_url and event.state != "announced" and event.registration_count > 0 %}
@@ -77,7 +79,7 @@
             {% endif %}
         </div>
         {% endfor %}
-        {% if forecast_event_ids %}
+        {% if forecast_pending_ids %}
         <div hx-get="{% url 'upcoming_forecast_badges' %}{% if active_query %}?q={{ active_query|urlencode }}{% endif %}"
              hx-trigger="load"
              hx-swap="none"></div>

@@ -115,6 +115,67 @@ class ForecastServiceTestCase(TestCase):
         self.assertEqual([entry['aqhi'] for entry in forecast.hourly], [3, 3, 3, 3])
         self.assertEqual(Forecast.objects.count(), 1)
 
+    def test_cached_forecast_returns_fresh_forecast_without_fetching(self):
+        # Arrange
+        window_end = self.starts_at + timedelta(hours=1)
+        forecast = Forecast.objects.create(
+            latitude=self.latitude,
+            longitude=self.longitude,
+            start_time=self.starts_at,
+            end_time=window_end,
+            hourly=_hourly_entry(self.starts_at),
+        )
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            cached = self.service.get_cached_forecast(
+                self.latitude, self.longitude, self.starts_at, window_end
+            )
+
+        # Assert
+        self.assertEqual(cached, forecast)
+        mock_get.assert_not_called()
+
+    def test_cached_forecast_returns_none_when_forecast_stale(self):
+        # Arrange
+        window_end = self.starts_at + timedelta(hours=1)
+        forecast = Forecast.objects.create(
+            latitude=self.latitude,
+            longitude=self.longitude,
+            start_time=self.starts_at,
+            end_time=window_end,
+            hourly=_hourly_entry(self.starts_at),
+        )
+        Forecast.objects.filter(pk=forecast.pk).update(
+            prepared_at=timezone.now() - timedelta(hours=2)
+        )
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            cached = self.service.get_cached_forecast(
+                self.latitude, self.longitude, self.starts_at, window_end
+            )
+
+        # Assert
+        self.assertIsNone(cached)
+        mock_get.assert_not_called()
+
+    def test_cached_forecast_returns_none_beyond_window(self):
+        # Arrange
+        far_starts_at = (timezone.now() + timedelta(days=9)).replace(
+            minute=0, second=0, microsecond=0
+        )
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            cached = self.service.get_cached_forecast(
+                self.latitude, self.longitude, far_starts_at
+            )
+
+        # Assert
+        self.assertIsNone(cached)
+        mock_get.assert_not_called()
+
     def test_air_quality_entirely_unavailable_still_produces_forecast(self):
         # Arrange
         window_end = self.starts_at + timedelta(hours=1)
