@@ -64,7 +64,8 @@ class UpcomingPageForecastPlaceholderTests(ForecastBadgeTestCase):
         self.assertContains(response, f'forecast-badge-{event.id}')
         self.assertContains(response, reverse('upcoming_forecast_badges'))
         self.assertContains(response, 'Loading weather forecast')
-        self.assertNotContains(response, 'AQHI')
+        self.assertContains(response, 'wx-shimmer')
+        self.assertNotContains(response, 'AQHI&nbsp;moderate')
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=False)
@@ -222,7 +223,8 @@ class DetailPageForecastPlaceholderTests(ForecastBadgeTestCase):
         self.assertContains(response, f'forecast-badge-{event.id}')
         self.assertContains(response, reverse('event_forecast_badge', args=[event.id]))
         self.assertContains(response, 'Loading weather forecast')
-        self.assertNotContains(response, 'AQHI')
+        self.assertContains(response, 'wx-shimmer')
+        self.assertNotContains(response, 'AQHI&nbsp;moderate')
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=False)
