@@ -1,5 +1,6 @@
 import logging
 import math
+from dataclasses import dataclass
 from datetime import timedelta, timezone as datetime_timezone
 from decimal import Decimal
 
@@ -21,24 +22,38 @@ WEATHER_URL = 'https://api.open-meteo.com/v1/forecast'
 AIR_QUALITY_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality'
 
 
+@dataclass(frozen=True)
+class ForecastState:
+    forecast: Forecast | None = None
+    pending: bool = False
+
+    @classmethod
+    def ready(cls, forecast: Forecast) -> 'ForecastState':
+        return cls(forecast=forecast)
+
+    @classmethod
+    def pending_fetch(cls) -> 'ForecastState':
+        return cls(pending=True)
+
+    @classmethod
+    def unavailable(cls) -> 'ForecastState':
+        return cls()
+
+    @property
+    def possible(self) -> bool:
+        return self.forecast is not None or self.pending
+
+
 class ForecastService:
     def get_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> Forecast | None:
-        time = self._snap_to_hour(starts_at)
-        end_time = self._snap_to_hour_ceiling(ends_at) if ends_at else time + timedelta(hours=1)
         now = timezone.now()
-
-        horizon = self._snap_to_hour_ceiling(now + FORECAST_WINDOW)
-        end_time = min(end_time, horizon)
-        if end_time < time:
-            end_time = time
-
-        if time < self._snap_to_hour(now) or time > now + FORECAST_WINDOW:
+        window = self._resolve_window(starts_at, ends_at, now)
+        if window is None:
             return None
+        time, end_time = window
 
-        latest = Forecast.objects.filter(
-            latitude=latitude, longitude=longitude, start_time=time, end_time=end_time
-        ).order_by('-prepared_at').first()
-        if latest and latest.prepared_at >= now - FORECAST_MAX_AGE:
+        latest = self._latest_forecast(latitude, longitude, time, end_time)
+        if latest and self._is_fresh(latest, now):
             return latest
 
         try:
@@ -58,7 +73,25 @@ class ForecastService:
             **metrics,
         )
 
+    def resolve(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> ForecastState:
+        now = timezone.now()
+        window = self._resolve_window(starts_at, ends_at, now)
+        if window is None:
+            return ForecastState.unavailable()
+        time, end_time = window
+
+        latest = self._latest_forecast(latitude, longitude, time, end_time)
+        if latest and self._is_fresh(latest, now):
+            return ForecastState.ready(latest)
+        return ForecastState.pending_fetch()
+
     def get_forecasts_for_windows(self, windows) -> dict:
+        return self._lookup_by_window(windows, self.get_forecast)
+
+    def resolve_for_windows(self, windows) -> dict:
+        return self._lookup_by_window(windows, self.resolve)
+
+    def _lookup_by_window(self, windows, lookup) -> dict:
         latitude, longitude = YOW_LOCATION
         forecasts_by_snapped_window: dict = {}
         forecasts_by_window: dict = {}
@@ -67,17 +100,37 @@ class ForecastService:
             starts_at, ends_at = window
             snapped_window = (self._snap_to_hour(starts_at), self._snap_to_hour_ceiling(ends_at))
             if snapped_window not in forecasts_by_snapped_window:
-                forecasts_by_snapped_window[snapped_window] = self.get_forecast(
+                forecasts_by_snapped_window[snapped_window] = lookup(
                     latitude, longitude, starts_at, ends_at
                 )
             forecasts_by_window[window] = forecasts_by_snapped_window[snapped_window]
 
         return forecasts_by_window
 
-    def is_within_window(self, starts_at) -> bool:
-        now = timezone.now()
-        time = self._snap_to_hour(starts_at)
-        return self._snap_to_hour(now) <= time <= now + FORECAST_WINDOW
+    @classmethod
+    def _resolve_window(cls, starts_at, ends_at, now) -> tuple | None:
+        time = cls._snap_to_hour(starts_at)
+        end_time = cls._snap_to_hour_ceiling(ends_at) if ends_at else time + timedelta(hours=1)
+
+        horizon = cls._snap_to_hour_ceiling(now + FORECAST_WINDOW)
+        end_time = min(end_time, horizon)
+        if end_time < time:
+            end_time = time
+
+        if time < cls._snap_to_hour(now) or time > now + FORECAST_WINDOW:
+            return None
+
+        return time, end_time
+
+    @staticmethod
+    def _latest_forecast(latitude: Decimal, longitude: Decimal, time, end_time) -> Forecast | None:
+        return Forecast.objects.filter(
+            latitude=latitude, longitude=longitude, start_time=time, end_time=end_time
+        ).order_by('-prepared_at').first()
+
+    @staticmethod
+    def _is_fresh(forecast: Forecast, now) -> bool:
+        return forecast.prepared_at >= now - FORECAST_MAX_AGE
 
     def get_forecast_history(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> QuerySet:
         time = self._snap_to_hour(starts_at)

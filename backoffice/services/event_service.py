@@ -4,7 +4,7 @@ from django.db.models import Count, Max, Min, Q, QuerySet
 from django.utils import timezone
 
 from backoffice.models import Event, Forecast, Registration, Ride
-from backoffice.services.forecast_service import ForecastService, YOW_LOCATION
+from backoffice.services.forecast_service import ForecastService, ForecastState, YOW_LOCATION
 
 
 class EventService:
@@ -107,8 +107,19 @@ class EventService:
 
         return new_event
 
-    def forecast_possible(self, event: Event) -> bool:
-        return not event.virtual and ForecastService().is_within_window(event.starts_at)
+    def resolve_forecast(self, event: Event) -> ForecastState:
+        return self.resolve_forecasts([event])[event.id]
+
+    def resolve_forecasts(self, events) -> dict:
+        windows_by_event_id = self._windows_by_event_id(events)
+        states_by_window = ForecastService().resolve_for_windows(windows_by_event_id.values())
+
+        return {
+            event.id: states_by_window[windows_by_event_id[event.id]]
+            if event.id in windows_by_event_id
+            else ForecastState.unavailable()
+            for event in events
+        }
 
     def fetch_current_forecast(self, event: Event) -> Forecast | None:
         if event.virtual:
@@ -117,17 +128,21 @@ class EventService:
         return ForecastService().get_forecast(latitude, longitude, event.starts_at, event.starts_at + event.duration)
 
     def fetch_forecasts(self, events) -> dict:
-        windows_by_event_id = {
-            event.id: (event.starts_at, event.starts_at + event.duration)
-            for event in events
-            if not event.virtual
-        }
+        windows_by_event_id = self._windows_by_event_id(events)
         forecasts_by_window = ForecastService().get_forecasts_for_windows(windows_by_event_id.values())
 
         return {
             event_id: forecasts_by_window[window]
             for event_id, window in windows_by_event_id.items()
             if forecasts_by_window[window]
+        }
+
+    @staticmethod
+    def _windows_by_event_id(events) -> dict:
+        return {
+            event.id: (event.starts_at, event.starts_at + event.duration)
+            for event in events
+            if not event.virtual
         }
 
     def fetch_forecast_history(self, event: Event) -> QuerySet:

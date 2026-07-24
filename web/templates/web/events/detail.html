@@ -47,7 +47,9 @@
                 {% elif event.location %}
                 <span class="meta-pill meta-pill-neutral text-muted">🗺️ {{ event.location }}</span>
                 {% endif %}
-                {% if forecast_placeholder %}
+                {% if forecast_state.forecast %}
+                {% include 'web/events/_forecast_badge.html' with forecast=forecast_state.forecast expandable=True show_history_link=True %}
+                {% elif forecast_state.pending %}
                 {% url 'event_forecast_badge' event.id as forecast_badge_url %}
                 {% include 'web/events/_forecast_badge_loading.html' with hx_get=forecast_badge_url %}
                 {% endif %}

@@ -17,6 +17,7 @@ from waffle import flag_is_active
 from audit.services import AuditService
 from backoffice.models import Event, Registration
 from backoffice.services.event_service import EventService
+from backoffice.services.forecast_service import ForecastState
 from backoffice.services.registration_service import RegistrationService
 from web.filters import PublicRegistrationFilter
 from web.tables import PublicRegistrationTable
@@ -181,17 +182,16 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
             state=Registration.STATE_CONFIRMED,
         ).exists()
 
-    forecast_placeholder = (
-        flag_is_active(request, 'weather_forecast_badges')
-        and EventService().forecast_possible(event)
-    )
+    forecast_state = ForecastState.unavailable()
+    if flag_is_active(request, 'weather_forecast_badges'):
+        forecast_state = EventService().resolve_forecast(event)
 
     context = {
         'event': event,
         'rides': rides,
         'user_is_registered': user_is_registered,
         'registrations_available': _registrations_visible(event, request.user),
-        'forecast_placeholder': forecast_placeholder,
+        'forecast_state': forecast_state,
     }
 
     return render(request, 'web/events/detail.html', context)
@@ -221,10 +221,9 @@ def upcoming_forecast_badges(request: HttpRequest) -> HttpResponse:
     _, active_query, _ = _get_filter_params(request)
 
     service = EventService()
-    events = [
-        event for event in service.fetch_upcoming_events(query=active_query)
-        if service.forecast_possible(event)
-    ]
+    events = list(service.fetch_upcoming_events(query=active_query))
+    states = service.resolve_forecasts(events)
+    events = [event for event in events if states[event.id].possible]
     forecasts = service.fetch_forecasts(events)
 
     context = {
@@ -278,13 +277,15 @@ def event_list(request: HttpRequest) -> HttpResponse:
     today = timezone.localdate()
     tomorrow = today + timedelta(days=1)
 
-    forecast_event_ids = set()
+    forecast_states = {}
+    forecasts_pending = False
     if flag_is_active(request, 'weather_forecast_badges'):
-        service = EventService()
-        forecast_event_ids = {e.id for e in events if service.forecast_possible(e)}
+        forecast_states = EventService().resolve_forecasts(events)
+        forecasts_pending = any(state.pending for state in forecast_states.values())
 
     context = {
-        'forecast_event_ids': forecast_event_ids,
+        'forecast_states': forecast_states,
+        'forecasts_pending': forecasts_pending,
         'events_by_date': events_by_date,
         'today': today,
         'tomorrow': tomorrow,
