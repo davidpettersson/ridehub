@@ -76,7 +76,7 @@ class UpcomingPageForecastPlaceholderTests(ForecastBadgeTestCase):
     @override_flag('weather_forecast_badges', active=True)
     def test_upcoming_renders_badge_inline_when_fresh_forecast_cached(self):
         # Arrange
-        self._create_event()
+        event = self._create_event()
         self._create_forecast()
 
         # Act
@@ -86,6 +86,7 @@ class UpcomingPageForecastPlaceholderTests(ForecastBadgeTestCase):
         # Assert
         self.assertContains(response, 'AQHI&nbsp;moderate')
         self.assertContains(response, '12–15&deg;')
+        self.assertContains(response, f'id="forecast-badge-{event.id}"')
         self.assertNotContains(response, 'Loading weather forecast')
         self.assertNotContains(response, reverse('upcoming_forecast_badges'))
         mock_get.assert_not_called()
