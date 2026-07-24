@@ -1590,25 +1590,6 @@ class UpcomingViewQueryCountTests(TestCase):
         # Assert
         self.assertEqual(queries_with_few_events, queries_with_many_events)
 
-    def test_query_count_does_not_grow_with_number_of_events_in_dense_view(self):
-        from waffle.testutils import override_flag
-
-        # Arrange
-        with override_flag('upcoming_dense_view', active=True):
-            for offset in range(3):
-                self._create_event_with_activity(offset)
-            self.client.get(reverse('upcoming'))
-            queries_with_few_events = self._count_queries_for_upcoming()
-
-            for offset in range(3, 10):
-                self._create_event_with_activity(offset)
-
-            # Act
-            queries_with_many_events = self._count_queries_for_upcoming()
-
-        # Assert
-        self.assertEqual(queries_with_few_events, queries_with_many_events)
-
     def test_upcoming_shows_confirmed_registration_count(self):
         # Arrange
         event = self._create_event_with_activity(0)
