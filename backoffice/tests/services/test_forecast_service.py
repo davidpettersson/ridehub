@@ -115,7 +115,7 @@ class ForecastServiceTestCase(TestCase):
         self.assertEqual([entry['aqhi'] for entry in forecast.hourly], [3, 3, 3, 3])
         self.assertEqual(Forecast.objects.count(), 1)
 
-    def test_cached_forecast_returns_fresh_forecast_without_fetching(self):
+    def test_resolve_returns_ready_state_without_fetching_when_forecast_fresh(self):
         # Arrange
         window_end = self.starts_at + timedelta(hours=1)
         forecast = Forecast.objects.create(
@@ -128,15 +128,17 @@ class ForecastServiceTestCase(TestCase):
 
         # Act
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            cached = self.service.get_cached_forecast(
+            state = self.service.resolve(
                 self.latitude, self.longitude, self.starts_at, window_end
             )
 
         # Assert
-        self.assertEqual(cached, forecast)
+        self.assertEqual(state.forecast, forecast)
+        self.assertFalse(state.pending)
+        self.assertTrue(state.possible)
         mock_get.assert_not_called()
 
-    def test_cached_forecast_returns_none_when_forecast_stale(self):
+    def test_resolve_returns_pending_state_when_forecast_stale(self):
         # Arrange
         window_end = self.starts_at + timedelta(hours=1)
         forecast = Forecast.objects.create(
@@ -152,15 +154,27 @@ class ForecastServiceTestCase(TestCase):
 
         # Act
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            cached = self.service.get_cached_forecast(
+            state = self.service.resolve(
                 self.latitude, self.longitude, self.starts_at, window_end
             )
 
         # Assert
-        self.assertIsNone(cached)
+        self.assertIsNone(state.forecast)
+        self.assertTrue(state.pending)
+        self.assertTrue(state.possible)
         mock_get.assert_not_called()
 
-    def test_cached_forecast_returns_none_beyond_window(self):
+    def test_resolve_returns_pending_state_when_no_forecast_stored(self):
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            state = self.service.resolve(self.latitude, self.longitude, self.starts_at)
+
+        # Assert
+        self.assertIsNone(state.forecast)
+        self.assertTrue(state.pending)
+        mock_get.assert_not_called()
+
+    def test_resolve_returns_unavailable_state_beyond_window(self):
         # Arrange
         far_starts_at = (timezone.now() + timedelta(days=9)).replace(
             minute=0, second=0, microsecond=0
@@ -168,12 +182,12 @@ class ForecastServiceTestCase(TestCase):
 
         # Act
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            cached = self.service.get_cached_forecast(
-                self.latitude, self.longitude, far_starts_at
-            )
+            state = self.service.resolve(self.latitude, self.longitude, far_starts_at)
 
         # Assert
-        self.assertIsNone(cached)
+        self.assertIsNone(state.forecast)
+        self.assertFalse(state.pending)
+        self.assertFalse(state.possible)
         mock_get.assert_not_called()
 
     def test_air_quality_entirely_unavailable_still_produces_forecast(self):
