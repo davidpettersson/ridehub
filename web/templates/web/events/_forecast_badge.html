@@ -13,7 +13,7 @@
 </button>
 {% include 'web/events/_forecast_hourly_modal.html' with forecast=forecast summary=summary %}
 {% else %}
-<span class="meta-pill{% if compact %} meta-pill-sm{% endif %} meta-pill-neutral text-muted"
+<span {% if oob %}id="forecast-badge-{{ event.id }}" hx-swap-oob="outerHTML" {% endif %}class="meta-pill{% if compact %} meta-pill-sm{% endif %} meta-pill-neutral text-muted"
       title="Weather forecast from Open-Meteo"
       role="img"
       aria-label="{{ summary.aria_label }}">

@@ -107,6 +107,9 @@ class EventService:
 
         return new_event
 
+    def forecast_possible(self, event: Event) -> bool:
+        return not event.virtual and ForecastService().is_within_window(event.starts_at)
+
     def fetch_current_forecast(self, event: Event) -> Forecast | None:
         if event.virtual:
             return None
