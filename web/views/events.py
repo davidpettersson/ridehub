@@ -1,5 +1,5 @@
 import calendar
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 from itertools import groupby
 from urllib.parse import urlencode
 
@@ -438,17 +438,16 @@ def event_emails(request: HttpRequest, event_id: int) -> HttpResponse:
 def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> HttpResponse:
     request.session['preferred_events_view'] = 'calendar'
 
+    today = timezone.localdate()
+
     if year is None or month is None:
-        current_date = datetime.now()
-        return redirect('calendar_month', year=current_date.year, month=current_date.month)
+        return redirect('calendar_month', year=today.year, month=today.month)
 
-    current_year = datetime.now().year
-
-    if not (1900 <= year <= current_year + 10):
-        return redirect('calendar_month', year=current_year, month=datetime.now().month)
+    if not (1900 <= year <= today.year + 10):
+        return redirect('calendar_month', year=today.year, month=today.month)
 
     if not (1 <= month <= 12):
-        return redirect('calendar_month', year=current_year, month=datetime.now().month)
+        return redirect('calendar_month', year=today.year, month=today.month)
 
     request.session['calendar_selected_year'] = year
     request.session['calendar_selected_month'] = month
@@ -517,7 +516,7 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
         'prev_year': prev_year,
         'next_month': next_month,
         'next_year': next_year,
-        'today': date.today(),
+        'today': today,
         'registered_event_ids': registered_event_ids,
         'active_query': active_query,
         'filter_query_string': filter_query_string,

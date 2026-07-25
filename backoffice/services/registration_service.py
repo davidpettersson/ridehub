@@ -301,7 +301,7 @@ class RegistrationService:
         )
 
     def fetch_current_registrations(self, user: User) -> QuerySet[Registration]:
-        today = timezone.now().date()
+        today = timezone.localdate()
 
         # Subquery to find the PK of the most recent registration for each event
         # for the given user. We assume 'pk' (auto-incrementing) indicates recency.
@@ -319,7 +319,7 @@ class RegistrationService:
         ).order_by('event__starts_at')
 
     def fetch_past_registrations(self, user: User) -> QuerySet[Registration]:
-        today = timezone.now().date()
+        today = timezone.localdate()
 
         latest_pk_subquery = Registration.objects.filter(
             user=user,
@@ -333,7 +333,7 @@ class RegistrationService:
         ).order_by('-event__starts_at')
 
     def fetch_user_statistics(self, user: User) -> dict:
-        today = timezone.now().date()
+        today = timezone.localdate()
 
         total_events_attended = Registration.objects.filter(
             user=user,

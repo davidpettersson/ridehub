@@ -117,14 +117,17 @@ class ForecastService:
         if end_time < time:
             end_time = time
 
-        if time < cls._start_of_local_day(now) or time > now + FORECAST_WINDOW:
+        if time < cls._start_of_current_day(now) or time > now + FORECAST_WINDOW:
             return None
 
         return time, end_time
 
     @staticmethod
-    def _start_of_local_day(now):
-        return timezone.localtime(now).replace(hour=0, minute=0, second=0, microsecond=0)
+    def _start_of_current_day(now):
+        local_midnight = timezone.localtime(now).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        return local_midnight.astimezone(datetime_timezone.utc)
 
     @staticmethod
     def _latest_forecast(latitude: Decimal, longitude: Decimal, time, end_time) -> Forecast | None:
@@ -162,7 +165,7 @@ class ForecastService:
                 'latitude': str(latitude),
                 'longitude': str(longitude),
                 'hourly': 'weather_code,temperature_2m',
-                'timezone': 'auto',
+                'timezone': 'UTC',
                 'forecast_days': 8,
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
@@ -170,10 +173,10 @@ class ForecastService:
         weather.raise_for_status()
         weather_data = weather.json()
 
-        weather_indexes = self._window_indexes(weather_data, time, end_time)
+        weather_hours = self._window_hours(weather_data, time, end_time)
+        weather_indexes = [index for _, index in weather_hours]
         weather_codes = self._series_values(weather_data, 'weather_code', weather_indexes)
         temperatures = self._series_values(weather_data, 'temperature_2m', weather_indexes)
-        times = [weather_data['hourly']['time'][index] for index in weather_indexes]
 
         air_quality = requests.get(
             AIR_QUALITY_URL,
@@ -181,7 +184,7 @@ class ForecastService:
                 'latitude': str(latitude),
                 'longitude': str(longitude),
                 'hourly': 'pm2_5,nitrogen_dioxide,ozone',
-                'timezone': 'auto',
+                'timezone': 'UTC',
                 'forecast_days': 7,
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
@@ -189,45 +192,44 @@ class ForecastService:
         air_quality.raise_for_status()
         air_quality_data = air_quality.json()
 
-        aqhi_by_time = self._aqhi_by_time(air_quality_data, time, end_time)
+        aqhi_by_hour = self._aqhi_by_hour(air_quality_data, time, end_time)
 
         hourly = [
             {
-                'time': hour_time,
+                'time': hour.isoformat(),
                 'condition': self._condition_from_weather_code(int(code)),
                 'temperature': round(temperature),
-                'aqhi': aqhi_by_time.get(hour_time),
+                'aqhi': aqhi_by_hour.get(hour),
             }
-            for hour_time, code, temperature in zip(times, weather_codes, temperatures)
+            for (hour, _), code, temperature in zip(weather_hours, weather_codes, temperatures)
         ]
 
         return {'hourly': hourly}
 
     @classmethod
-    def _aqhi_by_time(cls, air_quality_data: dict, time, end_time) -> dict:
-        aqhi_by_time = {}
-        for index in cls._window_indexes(air_quality_data, time, end_time, required=False):
-            hour_time = air_quality_data['hourly']['time'][index]
+    def _aqhi_by_hour(cls, air_quality_data: dict, time, end_time) -> dict:
+        aqhi_by_hour = {}
+        for hour, index in cls._window_hours(air_quality_data, time, end_time, required=False):
             try:
-                aqhi_by_time[hour_time] = cls._compute_aqhi(air_quality_data['hourly'], index)
+                aqhi_by_hour[hour] = cls._compute_aqhi(air_quality_data['hourly'], index)
             except ValueError:
                 continue
-        return aqhi_by_time
+        return aqhi_by_hour
 
     @classmethod
-    def _window_indexes(cls, data: dict, time, end_time, required: bool = True) -> list[int]:
-        indexes = []
+    def _window_hours(cls, data: dict, time, end_time, required: bool = True) -> list[tuple]:
+        hours = []
         hour = time
         while hour <= end_time:
-            hour_key, _ = cls._local_keys(hour, data['utc_offset_seconds'])
             try:
-                indexes.append(data['hourly']['time'].index(hour_key))
+                index = data['hourly']['time'].index(cls._hour_key(hour))
             except ValueError:
                 break
+            hours.append((hour.astimezone(datetime_timezone.utc), index))
             hour += timedelta(hours=1)
-        if required and not indexes:
+        if required and not hours:
             raise ValueError(f'No forecast data available between {time} and {end_time}')
-        return indexes
+        return hours
 
     @staticmethod
     def _series_values(data: dict, field: str, indexes: list[int]) -> list:
@@ -269,9 +271,8 @@ class ForecastService:
         return tuple(sum(values) / len(window) for values in zip(*window))
 
     @staticmethod
-    def _local_keys(time, utc_offset_seconds: int) -> tuple[str, str]:
-        local = time.astimezone(datetime_timezone(timedelta(seconds=utc_offset_seconds)))
-        return local.strftime('%Y-%m-%dT%H:%M'), local.strftime('%Y-%m-%d')
+    def _hour_key(time) -> str:
+        return time.astimezone(datetime_timezone.utc).strftime('%Y-%m-%dT%H:%M')
 
     @staticmethod
     def _condition_from_weather_code(code: int) -> str:

@@ -32,8 +32,8 @@ class EventForecastsViewTestCase(TestCase):
         start_time = start_time or self.starts_at
         end_time = end_time or (start_time + timedelta(hours=1))
         hourly = hourly or [
-            {'time': start_time.strftime('%Y-%m-%dT%H:%M'), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
-            {'time': end_time.strftime('%Y-%m-%dT%H:%M'), 'condition': 'cloud', 'temperature': 15, 'aqhi': 5},
+            {'time': start_time.isoformat(), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
+            {'time': end_time.isoformat(), 'condition': 'cloud', 'temperature': 15, 'aqhi': 5},
         ]
         forecast = Forecast.objects.create(
             latitude=self.latitude,
@@ -66,11 +66,11 @@ class EventForecastsViewTestCase(TestCase):
         # Arrange
         event = self._create_event()
         self._create_forecast(
-            hourly=[{'time': self.starts_at.strftime('%Y-%m-%dT%H:%M'), 'condition': 'sun', 'temperature': 12, 'aqhi': 5}],
+            hourly=[{'time': self.starts_at.isoformat(), 'condition': 'sun', 'temperature': 12, 'aqhi': 5}],
             prepared_at=timezone.now() - timedelta(minutes=30),
         )
         self._create_forecast(
-            hourly=[{'time': self.starts_at.strftime('%Y-%m-%dT%H:%M'), 'condition': 'rain', 'temperature': 12, 'aqhi': 5}],
+            hourly=[{'time': self.starts_at.isoformat(), 'condition': 'rain', 'temperature': 12, 'aqhi': 5}],
         )
 
         # Act

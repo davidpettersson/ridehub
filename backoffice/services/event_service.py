@@ -36,7 +36,7 @@ class EventService:
     def fetch_upcoming_events(self, include_archived: bool = False, only_visible: bool = True,
                               current_date: date | None = None, program_id: int | None = None,
                               query: str | None = None) -> QuerySet[Event]:
-        current_date = current_date or timezone.now().date()
+        current_date = current_date or timezone.localdate()
         qs = self._with_listing_stats(
             self.fetch_events(include_archived, only_visible)
         ).filter(starts_at__date__gte=current_date)

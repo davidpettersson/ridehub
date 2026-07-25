@@ -36,20 +36,23 @@ All data comes from [Open-Meteo](https://open-meteo.com/) (no API key):
 - **Air Quality API** (`air-quality-api.open-meteo.com/v1/air-quality`): hourly
   `pm2_5`, `nitrogen_dioxide`, `ozone`, 7 forecast days (that API's maximum).
 
-Both requests use `timezone=auto`; response hours are matched using the
-returned UTC offset. All events currently use a single fixed location, YOW
-(Ottawa airport, 45.32250, -75.66920).
+Both requests use `timezone=UTC`, so response hours are matched, stored and
+compared as absolute times; the hourly readings are rendered in the site's
+configured timezone at display time only. All events currently use a single
+fixed location, YOW (Ottawa airport, 45.32250, -75.66920).
 
 ## Forecast window
 
 1. The event start is snapped **down** to the top of the hour; the event end
    (`starts_at + duration`, where duration defaults to 1 hour when `ends_at`
    is blank) is snapped **up** to the next top of the hour.
-2. Events starting before the current local day, or more than 7 days out, get
-   no badge. Events that started earlier today keep theirs — ongoing and
+2. Events starting before the current day, or more than 7 days out, get no
+   badge. Events that started earlier today keep theirs — ongoing and
    already-finished events stay badged for as long as they remain listed under
    upcoming, and the window still covers the whole event, including hours that
-   have already passed.
+   have already passed. "Today" starts at midnight in the timezone configured
+   in `settings.TIME_ZONE`, the same boundary the upcoming list uses; the
+   comparison itself is made in UTC.
 3. The window end is clamped to the 7-day horizon so cache keys stay bounded
    and deterministic. The stored `end_time` always describes the requested
    window, not the provider's data coverage.
@@ -98,4 +101,5 @@ For each hour in the window:
 - On any fetch or parse error the latest stale row is served if one exists,
   otherwise no badge is rendered. A failure never breaks the page and a partial or
   invalid value is never stored: model validation enforces top-of-hour times,
+  UTC-offset-carrying hourly timestamps,
   ordered min/max pairs, AQHI in 1..11, and known precipitation categories.

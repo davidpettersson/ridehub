@@ -3,13 +3,17 @@ from unittest.mock import patch
 
 import requests
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from waffle.testutils import override_flag
 
 from backoffice.models import Event, Forecast, Program, Ride, Route
 from backoffice.services.forecast_service import YOW_LOCATION
+
+
+def _hour_label(time):
+    return f"{int(time.strftime('%I'))} {time.strftime('%p')}"
 
 
 def _local_hour_today(hour):
@@ -45,8 +49,8 @@ class ForecastBadgeTestCase(TestCase):
     def _create_forecast(self, time=None, hourly=None):
         time = time or self.starts_at
         hourly = hourly or [
-            {'time': time.strftime('%Y-%m-%dT%H:%M'), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
-            {'time': (time + timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M'), 'condition': 'cloud', 'temperature': 15, 'aqhi': 5},
+            {'time': time.isoformat(), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
+            {'time': (time + timedelta(hours=1)).isoformat(), 'condition': 'cloud', 'temperature': 15, 'aqhi': 5},
         ]
         return Forecast.objects.create(
             latitude=self.latitude,
@@ -192,8 +196,8 @@ class UpcomingForecastBadgesViewTests(ForecastBadgeTestCase):
         # Arrange
         self._create_event()
         self._create_forecast(hourly=[
-            {'time': self.starts_at.strftime('%Y-%m-%dT%H:%M'), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
-            {'time': (self.starts_at + timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M'), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
+            {'time': self.starts_at.isoformat(), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
+            {'time': (self.starts_at + timedelta(hours=1)).isoformat(), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
         ])
 
         # Act
@@ -398,6 +402,35 @@ class DetailPageForecastPlaceholderTests(ForecastBadgeTestCase):
         # Assert
         self.assertNotContains(response, f'forecast-badge-{event.id}')
         mock_get.assert_not_called()
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_renders_hourly_times_in_the_configured_timezone(self):
+        # Arrange
+        hour = self.starts_at.astimezone(datetime_timezone.utc).replace(hour=16)
+        event = self._create_event(starts_at=hour)
+        self._create_forecast(time=hour)
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, _hour_label(timezone.localtime(hour)))
+        self.assertNotContains(response, _hour_label(hour))
+
+    @override_settings(TIME_ZONE='America/Vancouver')
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_renders_hourly_times_in_a_western_timezone(self):
+        # Arrange
+        hour = self.starts_at.astimezone(datetime_timezone.utc).replace(hour=16)
+        event = self._create_event(starts_at=hour)
+        self._create_forecast(time=hour)
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, _hour_label(timezone.localtime(hour)))
+        self.assertNotContains(response, _hour_label(hour))
 
     @override_flag('weather_forecast_badges', active=True)
     def test_detail_shows_placeholder_for_cancelled_event(self):

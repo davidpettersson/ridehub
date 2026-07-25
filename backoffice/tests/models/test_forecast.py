@@ -14,7 +14,7 @@ class ForecastModelTestCase(TestCase):
 
     def _hourly(self, **overrides):
         entry = {
-            'time': self.time.strftime('%Y-%m-%dT%H:%M'),
+            'time': self.time.isoformat(),
             'condition': 'sun',
             'temperature': 15,
             'aqhi': 3,
@@ -116,7 +116,7 @@ class ForecastModelTestCase(TestCase):
 
     def test_hourly_entry_missing_keys_rejected(self):
         # Arrange
-        forecast = self._build_forecast(hourly=[{'time': self.time.strftime('%Y-%m-%dT%H:%M'), 'condition': 'sun'}])
+        forecast = self._build_forecast(hourly=[{'time': self.time.isoformat(), 'condition': 'sun'}])
 
         # Act & Assert
         with self.assertRaises(ValidationError) as ctx:
@@ -153,6 +153,17 @@ class ForecastModelTestCase(TestCase):
     def test_hourly_entry_invalid_time_rejected(self):
         # Arrange
         forecast = self._build_forecast(hourly=self._hourly(time='not-a-time'))
+
+        # Act & Assert
+        with self.assertRaises(ValidationError) as ctx:
+            forecast.full_clean()
+        self.assertIn('hourly', ctx.exception.message_dict)
+
+    def test_hourly_entry_without_utc_offset_rejected(self):
+        # Arrange
+        forecast = self._build_forecast(
+            hourly=self._hourly(time=self.time.strftime('%Y-%m-%dT%H:%M'))
+        )
 
         # Act & Assert
         with self.assertRaises(ValidationError) as ctx:
