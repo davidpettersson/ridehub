@@ -30,9 +30,7 @@
             </div>
         </div>
         
-        {% if filter_enabled %}
         {% include 'web/events/_event_filter_bar.html' %}
-        {% endif %}
 
         <div id="events-container">
         <div class="calendar-grid" x-data="{ selectedDay: 0 }">

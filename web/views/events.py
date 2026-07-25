@@ -218,7 +218,7 @@ def upcoming_forecast_badges(request: HttpRequest) -> HttpResponse:
     if not flag_is_active(request, 'weather_forecast_badges'):
         return HttpResponse()
 
-    _, active_query, _ = _get_filter_params(request)
+    active_query, _ = _get_filter_params(request)
 
     service = EventService()
     events = list(service.fetch_upcoming_events(query=active_query))
@@ -248,18 +248,15 @@ def event_forecasts(request: HttpRequest, event_id: int) -> HttpResponse:
 
 
 def _get_filter_params(request):
-    if not flag_is_active(request, 'event_filter_and_search'):
-        return False, '', ''
-
     active_query = request.GET.get('q', '').strip()
     filter_query_string = ('?' + urlencode({'q': active_query})) if active_query else ''
-    return True, active_query, filter_query_string
+    return active_query, filter_query_string
 
 
 def event_list(request: HttpRequest) -> HttpResponse:
     request.session['preferred_events_view'] = 'upcoming'
 
-    filter_enabled, active_query, _ = _get_filter_params(request)
+    active_query, _ = _get_filter_params(request)
 
     events = list(EventService().fetch_upcoming_events(query=active_query))
     starts_at_date = lambda event: timezone.localtime(event.starts_at).date()
@@ -290,13 +287,10 @@ def event_list(request: HttpRequest) -> HttpResponse:
         'today': today,
         'tomorrow': tomorrow,
         'registered_event_ids': registered_event_ids,
-        'filter_enabled': filter_enabled,
         'active_query': active_query,
     }
 
-    if flag_is_active(request, 'upcoming_dense_view'):
-        return render(request, 'web/events/list_dense.html', context)
-    return render(request, 'web/events/list.html', context)
+    return render(request, 'web/events/list_dense.html', context)
 
 
 def _build_registrations_context(request, event, contacts_revealed):
@@ -459,7 +453,7 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
     request.session['calendar_selected_year'] = year
     request.session['calendar_selected_month'] = month
 
-    filter_enabled, active_query, filter_query_string = _get_filter_params(request)
+    active_query, filter_query_string = _get_filter_params(request)
 
     events = list(EventService().fetch_events_for_month(year, month, query=active_query))
 
@@ -525,7 +519,6 @@ def calendar_view(request: HttpRequest, year: int = None, month: int = None) -> 
         'next_year': next_year,
         'today': date.today(),
         'registered_event_ids': registered_event_ids,
-        'filter_enabled': filter_enabled,
         'active_query': active_query,
         'filter_query_string': filter_query_string,
     }

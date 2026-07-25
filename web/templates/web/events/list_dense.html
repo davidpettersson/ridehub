@@ -11,9 +11,7 @@
             </a>
         </div>
 
-        {% if filter_enabled %}
         {% include 'web/events/_event_filter_bar.html' %}
-        {% endif %}
 
         <div id="events-container">
         {% for date, events in events_by_date %}

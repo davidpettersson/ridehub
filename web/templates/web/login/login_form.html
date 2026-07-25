@@ -1,5 +1,5 @@
 {% extends 'web/_base_bootstrap.html' %}
-{% load form_filters waffle_tags %}
+{% load form_filters %}
 {% block title %}Log in{% endblock %}
 {% block content %}
 <div class="mx-auto" style="max-width: 28rem;">
@@ -37,7 +37,6 @@
     </div>
 
     {% if not request.user.is_authenticated %}
-    {% flag "microsoft_login" %}
     <div class="mt-4 text-center">
         <p class="small text-muted mb-2">
             Club volunteer with an @ottawabicycleclub.ca account?
@@ -53,7 +52,6 @@
             Sign in with Microsoft
         </a>
     </div>
-    {% endflag %}
     {% endif %}
 </div>
 {% endblock %}

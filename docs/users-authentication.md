@@ -46,11 +46,6 @@ This is the primary authentication method for the thousands of club members who 
 
 Club board members and volunteers who have Microsoft 365 accounts can sign in directly without waiting for an email.
 
-**Feature flag**: This feature is controlled by a Waffle switch named `microsoft_login`. To enable:
-1. Go to Django Admin > Waffle > Switches
-2. Add a switch named `microsoft_login`
-3. Check the "Active" checkbox to enable
-
 **How it works**:
 1. User clicks "Sign in with Microsoft" on the login page
 2. User is redirected to Microsoft's login page
