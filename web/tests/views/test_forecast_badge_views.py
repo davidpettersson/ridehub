@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, timezone as datetime_timezone
 from unittest.mock import patch
 
 import requests
@@ -13,9 +13,10 @@ from backoffice.services.forecast_service import YOW_LOCATION
 
 
 def _local_hour_today(hour):
-    return timezone.localtime(timezone.now()).replace(
+    local = timezone.localtime(timezone.now()).replace(
         hour=hour, minute=0, second=0, microsecond=0
     )
+    return local.astimezone(datetime_timezone.utc)
 
 
 class ForecastBadgeTestCase(TestCase):

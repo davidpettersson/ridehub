@@ -468,8 +468,8 @@ class ForecastServiceTestCase(TestCase):
 
     def test_event_that_started_before_midnight_returns_none(self):
         # Arrange
-        now = _local_hour_today(2)
-        starts_at = now - timedelta(hours=3)
+        now = _local_hour_today(3)
+        starts_at = now - timedelta(hours=4)
 
         with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
             with patch('backoffice.services.forecast_service.requests.get') as mock_get:

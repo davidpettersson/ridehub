@@ -1389,6 +1389,12 @@ class AllDayEventViewTests(TestCase):
 
         self.now = timezone.now()
 
+    def _multi_day_start_date(self, span_days):
+        start = (self.now + timedelta(days=5)).date()
+        if (start + timedelta(days=span_days - 1)).month != start.month:
+            start = (start.replace(day=1) + timedelta(days=32)).replace(day=1)
+        return start
+
     def _make_all_day_event(self, name, start_date, end_date, **kwargs):
         import datetime
         starts_at = timezone.make_aware(datetime.datetime(start_date.year, start_date.month, start_date.day, 0, 0, 0))
@@ -1419,11 +1425,8 @@ class AllDayEventViewTests(TestCase):
 
     def test_calendar_expands_multi_day_all_day_event(self):
         # Arrange
-        from datetime import date
-        import datetime
-        future = self.now + timedelta(days=5)
-        start_date = future.date()
-        end_date = (future + timedelta(days=2)).date()
+        start_date = self._multi_day_start_date(span_days=3)
+        end_date = start_date + timedelta(days=2)
         event = self._make_all_day_event('Multi Day Event', start_date, end_date)
 
         # Act
@@ -1443,11 +1446,8 @@ class AllDayEventViewTests(TestCase):
 
     def test_calendar_all_day_title_has_day_suffix(self):
         # Arrange
-        from datetime import date
-        import datetime
-        future = self.now + timedelta(days=5)
-        start_date = future.date()
-        end_date = (future + timedelta(days=2)).date()
+        start_date = self._multi_day_start_date(span_days=3)
+        end_date = start_date + timedelta(days=2)
         event = self._make_all_day_event('Multi Day Event', start_date, end_date)
 
         # Act
