@@ -1,5 +1,5 @@
 {% extends 'web/_base_bootstrap.html' %}
-{% load announcement_tags dict_filters %}
+{% load announcement_tags dict_filters waffle_tags %}
 {% block title %}Events Calendar{% endblock %}
 {% block content %}
     <div class="mb-4">{% active_announcements %}</div>
@@ -21,71 +21,11 @@
             </h2>
             <div class="d-flex flex-column gap-2">
                 {% for event in events %}
-                <a href="{% url 'event_detail' event.id %}" class="text-decoration-none">
-                    <div class="card shadow-sm border h-100 event-card{% if event.state == "announced" %} event-card-announced{% endif %}"{% if event.program.color %} style="--program-color: {{ event.program.color }};"{% endif %}>
-                        {% if event.state == "announced" %}
-                        <span class="visually-hidden">Announced — registration coming soon</span>
-                        {% endif %}
-                        {% if user.is_authenticated and event.id in registered_event_ids %}
-                        <div class="registered-indicator">
-                            <i class="bi bi-check-lg" aria-hidden="true"></i>
-                            <span class="visually-hidden">You are registered</span>
-                        </div>
-                        {% endif %}
-                        <div class="card-body py-2 px-3">
-                            <div class="small text-muted" style="font-size: 0.8rem;">
-                                {% if event.all_day %}
-                                  {% if event.ends_at and event.ends_at|date:"Y-m-d" != event.starts_at|date:"Y-m-d" %}
-                                    {{ event.starts_at|date:"M j" }} – {{ event.ends_at|date:"M j" }} · All day
-                                  {% else %}
-                                    All day
-                                  {% endif %}
-                                {% else %}
-                                  {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% endif %}
-                                {% endif %}
-                            </div>
-                            <div class="fs-6 fw-medium text-dark">
-                                {% if event.cancelled %}<span class="text-decoration-line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
-                            </div>
-                            <div class="d-flex flex-wrap gap-2 align-items-center">
-                                <span class="meta-pill meta-pill-sm meta-pill-neutral text-muted"{% if event.program.color %} style="background-color: {{ event.program.color }}1A;"{% endif %}>{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}</span>
-                                {% if event.location %}
-                                <span class="meta-pill meta-pill-sm meta-pill-neutral text-muted">🗺️ {{ event.location }}</span>
-                                {% endif %}
-                                {% with forecast_state=forecast_states|get_item:event.id %}
-                                {% if forecast_state.forecast %}
-                                {% include 'web/events/_forecast_badge.html' with forecast=forecast_state.forecast compact=True %}
-                                {% elif forecast_state.pending %}
-                                {% include 'web/events/_forecast_badge_loading.html' with compact=True %}
-                                {% endif %}
-                                {% endwith %}
-                                {% if not event.external_registration_url and event.state != "announced" and event.registration_count > 0 %}
-                                <span class="meta-pill meta-pill-sm meta-pill-neutral text-muted">🚴 {{ event.registration_count }}{% if event.registration_limit %}/{{ event.registration_limit }}{% endif %} registered</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% if event.has_rides or event.distance_range %}
-                        <hr class="my-0 opacity-25">
-                        <div class="px-3 py-2">
-                            <div class="d-flex flex-wrap gap-2 text-muted" style="font-size: 0.8rem;">
-                                {% if event.has_rides %}
-                                <div class="d-inline-flex align-items-center">
-                                    <i class="bi bi-bicycle me-1"></i>
-                                    <span>{{ event.ride_count }} ride{{ event.ride_count|pluralize }}</span>
-                                </div>
-                                {% endif %}
-
-                                {% if event.distance_range %}
-                                <div class="d-inline-flex align-items-center">
-                                    <i class="bi bi-signpost-split me-1"></i>
-                                    <span>{% if event.distance_range.0 == event.distance_range.1 %}{{ event.distance_range.0 }} km{% else %}{{ event.distance_range.0 }}-{{ event.distance_range.1 }} km{% endif %}</span>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                </a>
+                {% flag "august_redesign" %}
+                {% include 'web/events/_event_card.html' %}
+                {% else %}
+                {% include 'web/events/_event_card_legacy.html' %}
+                {% endflag %}
                 {% endfor %}
             </div>
         </div>

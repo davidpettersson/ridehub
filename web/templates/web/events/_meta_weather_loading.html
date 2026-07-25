@@ -1,0 +1,9 @@
+<span id="forecast-badge-{{ event.id }}"
+      class="meta-item meta-item--weather wx-loading"
+      role="status"
+      aria-label="Loading weather forecast"
+      {% if hx_get %}hx-get="{{ hx_get }}" hx-trigger="load" hx-swap="outerHTML"{% endif %}>
+    <span class="ico wx-shimmer wx-shimmer-icon" aria-hidden="true"></span>
+    <span class="wx-temp" aria-hidden="true"><span class="wx-shimmer wx-shimmer-temp"></span>&deg;</span>
+    <span class="wx-aqhi" aria-hidden="true">AQHI&nbsp;<span class="wx-shimmer wx-shimmer-aqhi"></span></span>
+</span>

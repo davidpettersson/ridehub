@@ -1,0 +1,11 @@
+{% load design_tags %}
+{% if items %}
+<div class="event-stats">
+    {% for item in items %}
+    <span class="stat-item">
+        {% icon item.icon %}
+        <span>{{ item.text }}</span>
+    </span>
+    {% endfor %}
+</div>
+{% endif %}

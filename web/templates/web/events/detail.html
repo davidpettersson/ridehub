@@ -1,4 +1,6 @@
 {% extends 'web/_base_bootstrap.html' %}
+{% load design_tags %}
+{% load waffle_tags %}
 {% load form_filters %}
 {% load dict_filters %}
 {% load name_filters %}
@@ -36,6 +38,11 @@
             <h1 class="fs-2 fw-bold mb-2">
                 {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
             </h1>
+{% flag "august_redesign" %}
+            <div class="mb-3">{% program_pill event.program %}</div>
+            {% url 'event_forecast_badge' event.id as forecast_badge_url %}
+            {% event_meta event density="full" forecast_state=forecast_state expandable=True forecast_url=forecast_badge_url %}
+{% else %}
             <div class="d-flex flex-wrap gap-2 align-items-center">
                 <span class="meta-pill meta-pill-neutral text-muted"{% if event.program.color %} style="background-color: {{ event.program.color }}1A;"{% endif %}>{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
                 {% if event.location_url %}
@@ -59,6 +66,7 @@
                 </a>
                 {% endif %}
             </div>
+{% endflag %}
         </div>
 
         <h2 class="fs-5 fw-medium mb-3">About the event</h2>

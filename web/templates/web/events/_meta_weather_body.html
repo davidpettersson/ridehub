@@ -1,0 +1,19 @@
+{% load design_tags %}
+{% weather_icon summary %}
+{% if density == 'full' %}
+<span class="meta-body">
+    <span class="meta-text">{{ summary|weather_headline }}</span>
+    <span class="meta-sub">{% with detail=summary|weather_detail %}{% if detail %}{{ detail }}{% if summary.aqhi_category %} &middot; {% endif %}{% endif %}{% endwith %}{% if summary.aqhi_category %}AQHI
+        <span class="wx-aqhi wx-aqhi--{{ summary.aqhi_category|slugify }}">{{ summary.aqhi_category }}</span>{% if summary.aqhi_warning_category %}
+        <span class="wx-arrow">&rarr;</span>
+        <span class="wx-aqhi wx-aqhi--{{ summary.aqhi_warning_category|slugify }}">{{ summary.aqhi_warning_category }}</span>{% endif %}{% endif %}</span>
+</span>
+{% else %}
+<span class="meta-body">
+    <span class="meta-text"><span class="wx-temp" aria-hidden="true">{{ summary.temperature_display }}&deg;</span>{% if summary.aqhi_warning_category %}
+        <span class="wx-aqhi wx-aqhi--{{ summary.aqhi_category|slugify }}" aria-hidden="true">{{ summary.aqhi_category }}</span>
+        <span class="wx-arrow" aria-hidden="true">&rarr;</span>
+        <span class="wx-aqhi wx-aqhi--{{ summary.aqhi_warning_category|slugify }}" aria-hidden="true">{{ summary.aqhi_warning_category }}</span>{% elif summary.aqhi_category %}
+        <span class="wx-aqhi wx-aqhi--{{ summary.aqhi_category|slugify }}" aria-hidden="true">AQHI&nbsp;{{ summary.aqhi_category }}</span>{% endif %}</span>
+</span>
+{% endif %}

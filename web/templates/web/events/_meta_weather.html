@@ -1,0 +1,27 @@
+{% load design_tags forecast_filters %}
+{% if forecast %}
+{% with summary=forecast|forecast_summary %}
+{% if expandable %}
+<button type="button"
+        class="meta-item meta-item--weather meta-item--link"
+        aria-label="{{ summary.aria_label }}. Tap for hourly detail."
+        aria-haspopup="dialog"
+        data-bs-toggle="modal"
+        data-bs-target="#forecast-hourly-{{ forecast.pk }}">
+    {% include 'web/events/_meta_weather_body.html' with summary=summary density=density %}
+    {% icon "chevron-right" "ico-chevron" %}
+</button>
+{% include 'web/events/_forecast_hourly_modal.html' with forecast=forecast summary=summary show_history_link=True %}
+{% else %}
+<span id="forecast-badge-{{ event.id }}"{% if oob %} hx-swap-oob="outerHTML"{% endif %}
+      class="meta-item meta-item--weather"
+      title="Weather forecast from Open-Meteo"
+      role="img"
+      aria-label="{{ summary.aria_label }}">
+    {% include 'web/events/_meta_weather_body.html' with summary=summary density=density %}
+</span>
+{% endif %}
+{% endwith %}
+{% elif pending %}
+{% include 'web/events/_meta_weather_loading.html' with hx_get=forecast_url %}
+{% endif %}
