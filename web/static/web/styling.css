@@ -145,8 +145,12 @@
   overflow: hidden;
 }
 
-.event-meta--full > * + * {
+.event-meta--full .meta-item {
   border-top: 1px solid var(--line);
+}
+
+.event-meta--full .meta-item:first-child {
+  border-top: 0;
 }
 
 .event-meta .meta-item {
@@ -229,7 +233,9 @@
 .event-meta--full button.meta-item {
   width: 100%;
   background: none;
-  border: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
   font: inherit;
   text-align: left;
   cursor: pointer;
