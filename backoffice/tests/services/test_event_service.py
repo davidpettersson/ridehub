@@ -3,7 +3,7 @@ from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from backoffice.models import Event, Forecast, Program, Registration, Ride, Route, SpeedRange
@@ -104,6 +104,64 @@ class FetchEventsTests(BaseEventServiceTest):
 
         # Assert
         self.assertEqual(6, result.count(), "Should return all events regardless of visibility")
+
+
+class FetchUpcomingEventsLocalDayTests(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name='Test Program')
+        self.service = EventService()
+
+    def _create_event(self, name, starts_at):
+        return Event.objects.create(
+            program=self.program,
+            name=name,
+            starts_at=starts_at,
+            registration_closes_at=starts_at - timedelta(hours=1),
+            state=Event.STATE_LIVE,
+        )
+
+    def _now_at_local_hour(self, hour):
+        local = timezone.localtime(timezone.now()).replace(
+            hour=hour, minute=0, second=0, microsecond=0
+        )
+        return local.astimezone(datetime.timezone.utc)
+
+    def test_event_earlier_today_stays_upcoming_late_in_the_local_evening(self):
+        # Arrange
+        now = self._now_at_local_hour(23)
+        event = self._create_event('Morning ride', now - timedelta(hours=14))
+
+        # Act
+        with patch('backoffice.services.event_service.timezone.now', return_value=now):
+            result = list(self.service.fetch_upcoming_events())
+
+        # Assert
+        self.assertIn(event, result)
+
+    @override_settings(TIME_ZONE='America/Vancouver')
+    def test_event_earlier_today_stays_upcoming_in_a_western_timezone(self):
+        # Arrange
+        now = self._now_at_local_hour(23)
+        event = self._create_event('Morning ride', now - timedelta(hours=14))
+
+        # Act
+        with patch('backoffice.services.event_service.timezone.now', return_value=now):
+            result = list(self.service.fetch_upcoming_events())
+
+        # Assert
+        self.assertIn(event, result)
+
+    def test_event_from_the_previous_local_day_is_not_upcoming(self):
+        # Arrange
+        now = self._now_at_local_hour(23)
+        event = self._create_event('Yesterday ride', now - timedelta(hours=25))
+
+        # Act
+        with patch('backoffice.services.event_service.timezone.now', return_value=now):
+            result = list(self.service.fetch_upcoming_events())
+
+        # Assert
+        self.assertNotIn(event, result)
 
 
 class FetchUpcomingEventsTests(BaseEventServiceTest):
@@ -768,7 +826,7 @@ class EventServiceForecastTestCase(TestCase):
             start_time=start_time,
             end_time=end_time or start_time + timedelta(hours=1),
             hourly=[{
-                'time': start_time.strftime('%Y-%m-%dT%H:%M'),
+                'time': start_time.isoformat(),
                 'condition': 'sun',
                 'temperature': 10,
                 'aqhi': 3,

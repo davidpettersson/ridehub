@@ -480,7 +480,7 @@ class Forecast(models.Model):
         default=list,
         help_text=(
             'Per-hour readings across the forecast window: a list of '
-            '{time (ISO 8601, local), condition, temperature (Celsius), aqhi} entries. '
+            '{time (ISO 8601, UTC), condition, temperature (Celsius), aqhi} entries. '
             'aqhi is null when air quality data was not yet available for that hour.'
         )
     )
@@ -545,10 +545,14 @@ class Forecast(models.Model):
                         'hourly': 'AQHI in hourly readings must be between 1 and 11, or null when unavailable.'
                     })
                 try:
-                    datetime.fromisoformat(entry['time'])
+                    entry_time = datetime.fromisoformat(entry['time'])
                 except (TypeError, ValueError):
                     raise ValidationError({
                         'hourly': f"Invalid time '{entry.get('time')}' in hourly readings."
+                    })
+                if entry_time.tzinfo is None:
+                    raise ValidationError({
+                        'hourly': f"Time '{entry['time']}' in hourly readings must be an absolute time with a UTC offset."
                     })
 
     def __str__(self):

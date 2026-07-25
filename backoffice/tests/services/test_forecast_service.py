@@ -1,8 +1,8 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as datetime_timezone
 from unittest.mock import MagicMock, patch
 
 import requests
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from backoffice.models import Forecast
@@ -66,9 +66,16 @@ def _mock_get(start, end, weather_codes=None, temperatures=None,
     return side_effect
 
 
+def _local_hour_today(hour):
+    local = timezone.localtime(timezone.now()).replace(
+        hour=hour, minute=0, second=0, microsecond=0
+    )
+    return local.astimezone(datetime_timezone.utc)
+
+
 def _hourly_entry(time, condition='sun', temperature=10, aqhi=3):
     return [{
-        'time': time.strftime('%Y-%m-%dT%H:%M'),
+        'time': time.isoformat(),
         'condition': condition,
         'temperature': temperature,
         'aqhi': aqhi,
@@ -251,7 +258,7 @@ class ForecastServiceTestCase(TestCase):
             start_time=self.starts_at,
             end_time=self.starts_at + timedelta(hours=1),
             hourly=[{
-                'time': self.starts_at.strftime('%Y-%m-%dT%H:%M'),
+                'time': self.starts_at.isoformat(),
                 'condition': 'sun',
                 'temperature': 10,
                 'aqhi': 3,
@@ -391,13 +398,154 @@ class ForecastServiceTestCase(TestCase):
         }
         self.assertIn(forecast.end_time, expected)
 
-    def test_past_event_returns_none(self):
+    def test_ongoing_event_returns_forecast_for_full_window(self):
         # Arrange
-        past = timezone.now() - timedelta(hours=2)
+        now = _local_hour_today(12)
+        starts_at = now - timedelta(hours=1)
+        ends_at = now + timedelta(hours=1)
+
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+                mock_get.side_effect = _mock_get(starts_at, ends_at)
+
+                # Act
+                forecast = self.service.get_forecast(
+                    self.latitude, self.longitude, starts_at, ends_at
+                )
+
+        # Assert
+        self.assertIsNotNone(forecast)
+        self.assertEqual(forecast.start_time, starts_at)
+        self.assertEqual(forecast.end_time, ends_at)
+        self.assertEqual(len(forecast.hourly), 3)
+
+    def test_ongoing_event_resolves_to_pending_state(self):
+        # Arrange
+        now = _local_hour_today(12)
+        starts_at = now - timedelta(hours=1)
+        ends_at = now + timedelta(hours=1)
+
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            # Act
+            state = self.service.resolve(self.latitude, self.longitude, starts_at, ends_at)
+
+        # Assert
+        self.assertTrue(state.pending)
+        self.assertTrue(state.possible)
+
+    def test_event_finished_earlier_today_returns_forecast(self):
+        # Arrange
+        now = _local_hour_today(20)
+        starts_at = now - timedelta(hours=12)
+        ends_at = starts_at + timedelta(hours=2)
+
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+                mock_get.side_effect = _mock_get(starts_at, ends_at)
+
+                # Act
+                forecast = self.service.get_forecast(
+                    self.latitude, self.longitude, starts_at, ends_at
+                )
+
+        # Assert
+        self.assertIsNotNone(forecast)
+        self.assertEqual(forecast.start_time, starts_at)
+
+    def test_event_on_an_earlier_day_returns_none(self):
+        # Arrange
+        now = _local_hour_today(12)
+        past = now - timedelta(days=1)
+
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+                # Act
+                forecast = self.service.get_forecast(self.latitude, self.longitude, past)
+
+        # Assert
+        self.assertIsNone(forecast)
+        mock_get.assert_not_called()
+
+    @override_settings(TIME_ZONE='America/Vancouver')
+    def test_event_earlier_today_returns_forecast_in_a_western_timezone(self):
+        # Arrange
+        now = _local_hour_today(23)
+        starts_at = now - timedelta(hours=14)
+        ends_at = starts_at + timedelta(hours=2)
+
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+                mock_get.side_effect = _mock_get(starts_at, ends_at)
+
+                # Act
+                forecast = self.service.get_forecast(
+                    self.latitude, self.longitude, starts_at, ends_at
+                )
+
+        # Assert
+        self.assertIsNotNone(forecast)
+        self.assertEqual(forecast.start_time, starts_at)
+
+    @override_settings(TIME_ZONE='America/Vancouver')
+    def test_event_from_the_previous_local_day_returns_none_in_a_western_timezone(self):
+        # Arrange
+        now = _local_hour_today(23)
+        starts_at = now - timedelta(hours=25)
+
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+                # Act
+                forecast = self.service.get_forecast(
+                    self.latitude, self.longitude, starts_at, starts_at + timedelta(hours=2)
+                )
+
+        # Assert
+        self.assertIsNone(forecast)
+        mock_get.assert_not_called()
+
+    def test_hourly_readings_are_stored_in_utc(self):
+        # Arrange
+        window_end = self.starts_at + timedelta(hours=1)
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, window_end)
+
             # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, past)
+            forecast = self.service.get_forecast(
+                self.latitude, self.longitude, self.starts_at, window_end
+            )
+
+        # Assert
+        times = [datetime.fromisoformat(entry['time']) for entry in forecast.hourly]
+        self.assertEqual(times, [self.starts_at, window_end])
+        for time in times:
+            self.assertEqual(time.utcoffset(), timedelta(0))
+
+    def test_requests_forecasts_in_utc(self):
+        # Arrange
+        window_end = self.starts_at + timedelta(hours=1)
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, window_end)
+
+            # Act
+            self.service.get_forecast(self.latitude, self.longitude, self.starts_at, window_end)
+
+        # Assert
+        for call in mock_get.call_args_list:
+            self.assertEqual(call.kwargs['params']['timezone'], 'UTC')
+
+    def test_event_that_started_before_midnight_returns_none(self):
+        # Arrange
+        now = _local_hour_today(3)
+        starts_at = now - timedelta(hours=4)
+
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+                # Act
+                forecast = self.service.get_forecast(
+                    self.latitude, self.longitude, starts_at, starts_at + timedelta(hours=6)
+                )
 
         # Assert
         self.assertIsNone(forecast)

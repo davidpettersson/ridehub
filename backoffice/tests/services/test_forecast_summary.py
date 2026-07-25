@@ -14,7 +14,7 @@ class ForecastSummaryTestCase(TestCase):
 
     def _hour(self, offset, condition, temperature, aqhi):
         return {
-            'time': (self.time + timedelta(hours=offset)).strftime('%Y-%m-%dT%H:%M'),
+            'time': (self.time + timedelta(hours=offset)).isoformat(),
             'condition': condition,
             'temperature': temperature,
             'aqhi': aqhi,
