@@ -199,7 +199,11 @@ class UserMembershipNumberAdmin(AuditedAdminMixin, admin.ModelAdmin):
 class UserProfileAdmin(AuditedAdminMixin, admin.ModelAdmin):
     list_display = ('user', 'user__first_name', 'user__last_name', 'email_verified', 'name_visibility', 'legacy')
     list_filter = ('email_verified', 'name_visibility', 'legacy')
+    search_fields = ('user__first_name', 'user__last_name', 'user__email')
     readonly_fields = ('updated_at',)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 admin.site.register(Program, ProgramAdmin)
