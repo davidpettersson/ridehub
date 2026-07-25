@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, timezone as datetime_timezone
 from unittest.mock import MagicMock, patch
 
 import requests
@@ -64,6 +64,13 @@ def _mock_get(start, end, weather_codes=None, temperatures=None,
             return _mock_response(_air_quality_payload(start, end, pm2_5, nitrogen_dioxide, ozone))
         raise AssertionError(f'Unexpected URL {url}')
     return side_effect
+
+
+def _local_hour_today(hour):
+    local = timezone.localtime(timezone.now()).replace(
+        hour=hour, minute=0, second=0, microsecond=0
+    )
+    return local.astimezone(datetime_timezone.utc)
 
 
 def _hourly_entry(time, condition='sun', temperature=10, aqhi=3):
@@ -391,13 +398,85 @@ class ForecastServiceTestCase(TestCase):
         }
         self.assertIn(forecast.end_time, expected)
 
-    def test_past_event_returns_none(self):
+    def test_ongoing_event_returns_forecast_for_full_window(self):
         # Arrange
-        past = timezone.now() - timedelta(hours=2)
+        now = _local_hour_today(12)
+        starts_at = now - timedelta(hours=1)
+        ends_at = now + timedelta(hours=1)
 
-        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+                mock_get.side_effect = _mock_get(starts_at, ends_at)
+
+                # Act
+                forecast = self.service.get_forecast(
+                    self.latitude, self.longitude, starts_at, ends_at
+                )
+
+        # Assert
+        self.assertIsNotNone(forecast)
+        self.assertEqual(forecast.start_time, starts_at)
+        self.assertEqual(forecast.end_time, ends_at)
+        self.assertEqual(len(forecast.hourly), 3)
+
+    def test_ongoing_event_resolves_to_pending_state(self):
+        # Arrange
+        now = _local_hour_today(12)
+        starts_at = now - timedelta(hours=1)
+        ends_at = now + timedelta(hours=1)
+
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
             # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, past)
+            state = self.service.resolve(self.latitude, self.longitude, starts_at, ends_at)
+
+        # Assert
+        self.assertTrue(state.pending)
+        self.assertTrue(state.possible)
+
+    def test_event_finished_earlier_today_returns_forecast(self):
+        # Arrange
+        now = _local_hour_today(20)
+        starts_at = now - timedelta(hours=12)
+        ends_at = starts_at + timedelta(hours=2)
+
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+                mock_get.side_effect = _mock_get(starts_at, ends_at)
+
+                # Act
+                forecast = self.service.get_forecast(
+                    self.latitude, self.longitude, starts_at, ends_at
+                )
+
+        # Assert
+        self.assertIsNotNone(forecast)
+        self.assertEqual(forecast.start_time, starts_at)
+
+    def test_event_on_an_earlier_day_returns_none(self):
+        # Arrange
+        now = _local_hour_today(12)
+        past = now - timedelta(days=1)
+
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+                # Act
+                forecast = self.service.get_forecast(self.latitude, self.longitude, past)
+
+        # Assert
+        self.assertIsNone(forecast)
+        mock_get.assert_not_called()
+
+    def test_event_that_started_before_midnight_returns_none(self):
+        # Arrange
+        now = _local_hour_today(2)
+        starts_at = now - timedelta(hours=3)
+
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+                # Act
+                forecast = self.service.get_forecast(
+                    self.latitude, self.longitude, starts_at, starts_at + timedelta(hours=6)
+                )
 
         # Assert
         self.assertIsNone(forecast)

@@ -117,10 +117,14 @@ class ForecastService:
         if end_time < time:
             end_time = time
 
-        if time < cls._snap_to_hour(now) or time > now + FORECAST_WINDOW:
+        if time < cls._start_of_local_day(now) or time > now + FORECAST_WINDOW:
             return None
 
         return time, end_time
+
+    @staticmethod
+    def _start_of_local_day(now):
+        return timezone.localtime(now).replace(hour=0, minute=0, second=0, microsecond=0)
 
     @staticmethod
     def _latest_forecast(latitude: Decimal, longitude: Decimal, time, end_time) -> Forecast | None:

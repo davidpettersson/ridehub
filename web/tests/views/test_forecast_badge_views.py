@@ -12,6 +12,12 @@ from backoffice.models import Event, Forecast, Program, Ride, Route
 from backoffice.services.forecast_service import YOW_LOCATION
 
 
+def _local_hour_today(hour):
+    return timezone.localtime(timezone.now()).replace(
+        hour=hour, minute=0, second=0, microsecond=0
+    )
+
+
 class ForecastBadgeTestCase(TestCase):
     def setUp(self):
         self.program = Program.objects.create(name='Test Program')
@@ -130,6 +136,20 @@ class UpcomingPageForecastPlaceholderTests(ForecastBadgeTestCase):
         # Assert
         self.assertNotContains(response, f'forecast-badge-{event.id}')
         self.assertNotContains(response, reverse('upcoming_forecast_badges'))
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_upcoming_shows_placeholder_for_ongoing_event(self):
+        # Arrange
+        now = _local_hour_today(12)
+        event = self._create_event(starts_at=now - timedelta(minutes=30))
+
+        # Act
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertContains(response, f'forecast-badge-{event.id}')
+        self.assertContains(response, 'Loading weather forecast')
 
     @override_flag('weather_forecast_badges', active=True)
     def test_upcoming_hides_placeholder_for_event_beyond_window(self):
@@ -328,6 +348,47 @@ class DetailPageForecastPlaceholderTests(ForecastBadgeTestCase):
             minute=0, second=0, microsecond=0
         )
         event = self._create_event(starts_at=far_starts_at)
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertNotContains(response, f'forecast-badge-{event.id}')
+        mock_get.assert_not_called()
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_shows_placeholder_for_ongoing_event(self):
+        # Arrange
+        now = _local_hour_today(12)
+        event = self._create_event(starts_at=now - timedelta(minutes=30))
+
+        # Act
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, f'forecast-badge-{event.id}')
+        self.assertContains(response, 'Loading weather forecast')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_shows_placeholder_for_event_finished_earlier_today(self):
+        # Arrange
+        now = _local_hour_today(20)
+        event = self._create_event(starts_at=now - timedelta(hours=12))
+
+        # Act
+        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
+            response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, f'forecast-badge-{event.id}')
+        self.assertContains(response, 'Loading weather forecast')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_detail_hides_placeholder_for_event_on_an_earlier_day(self):
+        # Arrange
+        event = self._create_event(starts_at=_local_hour_today(12) - timedelta(days=1))
 
         # Act
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:

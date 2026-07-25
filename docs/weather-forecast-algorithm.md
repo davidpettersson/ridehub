@@ -6,7 +6,8 @@ events (`/upcoming` and `/event/<id>`). The implementation lives in
 
 ## What is shown
 
-All events except virtual ones that start within the next 7 days get a badge:
+All events except virtual ones that start today or within the next 7 days get a
+badge:
 
 ```
 ☁️/☀️ · 12 – 15° · AQHI 3 – 5 (beta)
@@ -44,7 +45,11 @@ returned UTC offset. All events currently use a single fixed location, YOW
 1. The event start is snapped **down** to the top of the hour; the event end
    (`starts_at + duration`, where duration defaults to 1 hour when `ends_at`
    is blank) is snapped **up** to the next top of the hour.
-2. Events starting in the past or more than 7 days out get no badge.
+2. Events starting before the current local day, or more than 7 days out, get
+   no badge. Events that started earlier today keep theirs — ongoing and
+   already-finished events stay badged for as long as they remain listed under
+   upcoming, and the window still covers the whole event, including hours that
+   have already passed.
 3. The window end is clamped to the 7-day horizon so cache keys stay bounded
    and deterministic. The stored `end_time` always describes the requested
    window, not the provider's data coverage.
