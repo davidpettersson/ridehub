@@ -12,6 +12,7 @@ from backoffice.services.registration_service import RegistrationService, Regist
 from backoffice.services.request_service import RequestService
 from backoffice.services.user_service import UserDetail, UserService
 from web.forms import RegistrationForm, MembershipNumberForm, bool_to_yes_no
+from web.views.events import _resolve_forecast_state
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,7 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     return render(request, 'web/events/registration.html', {
         'event': event,
         'form': form,
+        'forecast_state': _resolve_forecast_state(request, event),
         'selected_ride_id': selected_ride_id,
         'contact_collapsed': _is_section_collapsed(form, CONTACT_FIELDS, initial_data),
         'emergency_collapsed': (

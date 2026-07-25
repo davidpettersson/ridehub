@@ -182,9 +182,7 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
             state=Registration.STATE_CONFIRMED,
         ).exists()
 
-    forecast_state = ForecastState.unavailable()
-    if flag_is_active(request, 'weather_forecast_badges'):
-        forecast_state = EventService().resolve_forecast(event)
+    forecast_state = _resolve_forecast_state(request, event)
 
     context = {
         'event': event,
@@ -195,6 +193,12 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
     }
 
     return render(request, 'web/events/detail.html', context)
+
+
+def _resolve_forecast_state(request: HttpRequest, event: Event) -> ForecastState:
+    if not flag_is_active(request, 'weather_forecast_badges'):
+        return ForecastState.unavailable()
+    return EventService().resolve_forecast(event)
 
 
 def event_forecast_badge(request: HttpRequest, event_id: int) -> HttpResponse:
@@ -365,9 +369,12 @@ def _build_registrations_context(request, event, contacts_revealed):
 def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
+    forecast_state = _resolve_forecast_state(request, event)
+
     if not _registrations_visible(event, request.user):
         context = {
             'event': event,
+            'forecast_state': forecast_state,
             'all_riders': Registration.objects.none(),
             'is_ride_leader': False,
             'can_access_rider_contacts': False,
@@ -379,6 +386,7 @@ def event_registrations(request: HttpRequest, event_id: int) -> HttpResponse:
         return render(request, 'web/events/registrations.html', context=context)
 
     context = _build_registrations_context(request, event, contacts_revealed=False)
+    context['forecast_state'] = forecast_state
     return render(request, 'web/events/registrations.html', context=context)
 
 
