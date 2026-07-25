@@ -1647,7 +1647,6 @@ class EventDetailRegistrationButtonTests(TestCase):
         self.assertNotContains(response, f'href="/events/{self.event.id}/registration"')
         self.assertContains(response, f'/events/{self.event.id}/registration?ride={first_ride.id}')
         self.assertContains(response, f'/events/{self.event.id}/registration?ride={second_ride.id}')
-        self.assertContains(response, 'Choose a ride below to register.')
 
     def test_event_with_rides_hides_ride_buttons_when_registration_closed(self):
         # Arrange

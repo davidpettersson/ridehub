@@ -117,7 +117,6 @@
                                 Register <i class="bi bi-box-arrow-up-right ms-1 small"></i>
                             </a>
                         {% elif ride_registration_enabled %}
-                            <div class="text-muted">Choose a ride below to register.</div>
                         {% elif event.has_capacity_available %}
                             <a href="{% url 'registration_create' event.id %}" class="btn btn-primary">Register</a>
                         {% else %}
