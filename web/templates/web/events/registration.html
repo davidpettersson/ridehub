@@ -27,15 +27,15 @@
                 {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
             </h1>
             <div class="d-flex flex-wrap gap-2 align-items-center">
-                <span class="meta-pill meta-pill-neutral text-muted"{% if event.program.color %} style="background-color: {{ event.program.color }}1A;"{% endif %}>{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
+                <span class="meta-pill text-muted"{% if event.program.color %} style="background-color: {{ event.program.color }}1A;"{% endif %}>{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
                 {% if event.location_url %}
                 <a href="{{ event.location_url }}"
                    class="meta-pill meta-pill-link"
                    target="_blank" rel="noopener noreferrer">
-                    🗺️ {% if event.location %}{{ event.location }}{% else %}See location{% endif %}&nbsp;↗
+                    🗺️ {% if event.location %}{{ event.location }}{% else %}See location{% endif %}&nbsp;›
                 </a>
                 {% elif event.location %}
-                <span class="meta-pill meta-pill-neutral text-muted">🗺️ {{ event.location }}</span>
+                <span class="meta-pill text-muted">🗺️ {{ event.location }}</span>
                 {% endif %}
             </div>
         </div>

@@ -48,9 +48,9 @@
                                 {% if event.cancelled %}<span class="text-decoration-line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
                             </div>
                             <div class="d-flex flex-wrap gap-2 align-items-center">
-                                <span class="meta-pill meta-pill-sm meta-pill-neutral text-muted"{% if event.program.color %} style="background-color: {{ event.program.color }}1A;"{% endif %}>{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}</span>
+                                <span class="meta-pill meta-pill-sm text-muted"{% if event.program.color %} style="background-color: {{ event.program.color }}1A;"{% endif %}>{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program.name }}</span>
                                 {% if event.location %}
-                                <span class="meta-pill meta-pill-sm meta-pill-neutral text-muted">🗺️ {{ event.location }}</span>
+                                <span class="meta-pill meta-pill-sm text-muted">🗺️ {{ event.location }}</span>
                                 {% endif %}
                                 {% with forecast_state=forecast_states|get_item:event.id %}
                                 {% if forecast_state.forecast %}
@@ -60,7 +60,7 @@
                                 {% endif %}
                                 {% endwith %}
                                 {% if not event.external_registration_url and event.state != "announced" and event.registration_count > 0 %}
-                                <span class="meta-pill meta-pill-sm meta-pill-neutral text-muted">🚴 {{ event.registration_count }}{% if event.registration_limit %}/{{ event.registration_limit }}{% endif %} registered</span>
+                                <span class="meta-pill meta-pill-sm text-muted">🚴 {{ event.registration_count }}{% if event.registration_limit %}/{{ event.registration_limit }}{% endif %} registered</span>
                                 {% endif %}
                             </div>
                         </div>
