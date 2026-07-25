@@ -121,6 +121,10 @@ button.meta-pill:focus-visible {
   background-color: var(--obc-pill-bg-hover);
 }
 
+.meta-pill-chevron {
+  flex-shrink: 0;
+}
+
 .wx-icon {
   width: 1.2em;
   height: 1.2em;
