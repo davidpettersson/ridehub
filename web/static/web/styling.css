@@ -122,6 +122,7 @@ button.meta-pill:focus-visible {
 }
 
 .meta-pill-chevron {
+  margin-left: 0.25rem;
   flex-shrink: 0;
 }
 
