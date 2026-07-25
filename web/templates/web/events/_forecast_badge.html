@@ -9,8 +9,7 @@
         aria-haspopup="dialog"
         data-bs-toggle="modal"
         data-bs-target="#forecast-hourly-{{ forecast.pk }}">
-    {% include 'web/events/_forecast_badge_content.html' with summary=summary %}
-    <span class="meta-pill-chevron" aria-hidden="true">&nbsp;&rsaquo;</span>
+    {% include 'web/events/_forecast_badge_content.html' with summary=summary %}<span class="meta-pill-chevron" aria-hidden="true">›</span>
 </button>
 {% include 'web/events/_forecast_hourly_modal.html' with forecast=forecast summary=summary %}
 {% else %}
