@@ -129,28 +129,16 @@ class ProgramPillTests(DesignTagTestCase):
         # Assert
         self.assertNotIn('<svg', html)
 
-    def test_day_named_program_is_suppressed_on_its_own_day(self):
+    def test_day_named_program_still_renders(self):
         # Arrange
         program = Program.objects.create(name='Sunday')
-        sunday = self.starts_at + timedelta(days=(6 - self.starts_at.weekday()) % 7)
 
         # Act
-        html = render('{% program_pill program on_date=on_date %}', program=program, on_date=sunday)
-
-        # Assert
-        self.assertEqual(html.strip(), '')
-
-    def test_day_named_program_renders_on_another_day(self):
-        # Arrange
-        program = Program.objects.create(name='Sunday')
-        sunday = self.starts_at + timedelta(days=(6 - self.starts_at.weekday()) % 7)
-        monday = sunday + timedelta(days=1)
-
-        # Act
-        html = render('{% program_pill program on_date=on_date %}', program=program, on_date=monday)
+        html = render('{% program_pill program %}', program=program)
 
         # Assert
         self.assertIn('program-pill--sunday', html)
+        self.assertIn('Sunday', html)
 
 
 class EventMetaItemOrderTests(DesignTagTestCase):
@@ -289,7 +277,8 @@ class EventMetaWeatherTests(DesignTagTestCase):
         )
 
         # Assert
-        self.assertIn('Sun / thunderstorms possible', html)
+        self.assertIn('sun with storm risk', html)
+        self.assertIn('Thunderstorms possible after', html)
 
     def test_aqhi_change_across_the_window_uses_an_arrow(self):
         # Arrange
@@ -471,6 +460,117 @@ class EventMetaTimeTests(DesignTagTestCase):
 
         # Assert
         self.assertRegex(html, r'9:00 AM – \w+ \d+, 5:00 AM')
+
+
+class EventMetaFullDensityTests(DesignTagTestCase):
+    def test_full_density_carries_location_weather_and_registrations_only(self):
+        # Arrange
+        event = self.create_event()
+        self.add_ride(event, distance=54)
+
+        # Act
+        items = design.event_meta_items(
+            event, forecast_state=ForecastState.ready(self.create_forecast()), density='full'
+        )
+
+        # Assert
+        self.assertEqual(
+            [item['key'] for item in items],
+            ['location', 'weather', 'registrations'],
+        )
+
+    def test_full_density_drops_rides_distance_and_time(self):
+        # Arrange
+        event = self.create_event()
+        self.add_ride(event, distance=54)
+
+        # Act
+        html = render('{% event_meta event density="full" %}', event=event)
+
+        # Assert
+        self.assertNotIn('54 km', html)
+        self.assertNotIn('9:00 AM', html)
+        self.assertNotIn('#i-clock', html)
+
+    def test_compact_density_keeps_distance_and_time(self):
+        # Arrange
+        event = self.create_event()
+        self.add_ride(event, distance=54)
+
+        # Act
+        html = render('{% event_meta event density="compact" %}', event=event)
+
+        # Assert
+        self.assertIn('54 km', html)
+        self.assertIn('9:00 AM \u2013 12:00 PM', html)
+
+    def test_registration_summary_states_spots_left_and_closing_time(self):
+        # Arrange
+        event = self.create_event(registration_limit=40)
+        Registration.objects.create(
+            event=event, name='Alex', first_name='Alex', last_name='Rider',
+            email='alex@example.com', state=Registration.STATE_CONFIRMED,
+        )
+
+        # Act
+        html = render('{% event_meta event density="full" %}', event=event)
+
+        # Assert
+        self.assertIn('1/40 registered', html)
+        self.assertIn('39 spots left', html)
+        self.assertIn('Closes ', html)
+
+    def test_registration_summary_reports_a_closed_registration(self):
+        # Arrange
+        event = self.create_event(registration_closes_at=timezone.now() - timedelta(hours=1))
+        Registration.objects.create(
+            event=event, name='Alex', first_name='Alex', last_name='Rider',
+            email='alex@example.com', state=Registration.STATE_CONFIRMED,
+        )
+
+        # Act
+        html = render('{% event_meta event density="full" %}', event=event)
+
+        # Assert
+        self.assertIn('1 registered', html)
+        self.assertIn('Registration closed', html)
+
+    def test_registration_summary_omits_spots_when_uncapped(self):
+        # Arrange
+        event = self.create_event()
+        Registration.objects.create(
+            event=event, name='Alex', first_name='Alex', last_name='Rider',
+            email='alex@example.com', state=Registration.STATE_CONFIRMED,
+        )
+
+        # Act
+        html = render('{% event_meta event density="full" %}', event=event)
+
+        # Assert
+        self.assertIn('1 registered', html)
+        self.assertNotIn('spots left', html)
+
+    def test_location_row_offers_the_map_link(self):
+        # Arrange
+        event = self.create_event(location_url='https://maps.example.com/park')
+
+        # Act
+        html = render('{% event_meta event density="full" %}', event=event)
+
+        # Assert
+        self.assertIn('Open in Maps', html)
+        self.assertIn('meta-sub', html)
+
+    def test_compact_density_hides_the_sub_lines(self):
+        # Arrange
+        event = self.create_event(location_url='https://maps.example.com/park')
+
+        # Act
+        html = render('{% event_meta event density="compact" %}', event=event)
+
+        # Assert
+        self.assertNotIn('Open in Maps', html)
+        self.assertNotIn('meta-sub', html)
 
 
 class EventMetaRegistrationTests(DesignTagTestCase):
@@ -656,7 +756,7 @@ class EventListSurfaceTests(DesignTagTestCase):
         # Assert
         self.assertContains(response, 'class="icon-sprite"', count=1)
 
-    def test_day_named_program_is_not_repeated_under_the_day_header(self):
+    def test_day_named_program_renders_under_its_day_header(self):
         # Arrange
         sunday = self.starts_at + timedelta(days=(6 - self.starts_at.weekday()) % 7)
         self.create_event(program=Program.objects.create(name='Sunday'), starts_at=sunday,
@@ -666,7 +766,7 @@ class EventListSurfaceTests(DesignTagTestCase):
         response = self.client.get(reverse('upcoming'))
 
         # Assert
-        self.assertNotContains(response, 'program-pill--sunday')
+        self.assertContains(response, 'program-pill--sunday')
 
     @override_flag('weather_forecast_badges', active=True)
     def test_weather_placeholder_sits_inside_the_meta_block(self):

@@ -34,26 +34,37 @@ def condition_icon(condition):
 
 
 @register.filter
-def weather_words(summary):
+def weather_headline(summary):
     if summary is None:
         return ''
-    return design.weather_words(summary)
+    return design.weather_headline(summary)
+
+
+@register.filter
+def weather_detail(summary):
+    if summary is None:
+        return ''
+    return design.weather_detail(summary)
 
 
 @register.inclusion_tag('web/events/_program_pill.html')
-def program_pill(program, on_date=None):
-    if program is None or design.program_repeats_day(program, on_date):
+def program_pill(program):
+    if program is None:
         return {'program': None}
     return {'program': program, 'palette': design.program_palette(program)}
 
 
 @register.inclusion_tag('web/events/_event_meta.html')
-def event_meta(event, density='compact', forecast_state=None, omit=''):
+def event_meta(event, density='compact', forecast_state=None, omit='', expandable=False, forecast_url=''):
     omitted = {key.strip() for key in omit.split(',') if key.strip()}
     return {
         'event': event,
         'density': density,
-        'items': design.event_meta_items(event, forecast_state=forecast_state, omit=omitted),
+        'expandable': expandable,
+        'forecast_url': forecast_url,
+        'items': design.event_meta_items(
+            event, forecast_state=forecast_state, omit=omitted, density=density
+        ),
     }
 
 

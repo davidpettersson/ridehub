@@ -3,12 +3,13 @@
 <div class="event-meta event-meta--{{ density }}">
     {% for item in items %}
     {% if item.key == 'weather' %}
-    {% include 'web/events/_meta_weather.html' with event=event forecast=item.forecast pending=item.pending density=density %}
-    {% elif item.key == 'location' and item.url and density == 'full' %}
-    <a class="meta-item meta-item--location meta-item--link" href="{{ item.url }}" target="_blank" rel="noopener noreferrer">
+    {% include 'web/events/_meta_weather.html' with event=event forecast=item.forecast pending=item.pending density=density expandable=expandable forecast_url=forecast_url %}
+    {% elif item.url and density == 'full' %}
+    <a class="meta-item meta-item--{{ item.key }} meta-item--link" href="{{ item.url }}"{% if item.external %} target="_blank" rel="noopener noreferrer"{% endif %}>
         {% icon item.icon %}
         <span class="meta-body">
-            <span class="meta-text">{{ item.text }}</span>
+            <span class="meta-text">{{ item.text }}{% if item.full %}<span class="meta-full"> &middot; Full</span>{% endif %}</span>
+            {% if item.sub %}<span class="meta-sub">{{ item.sub }}</span>{% endif %}
         </span>
         {% icon "chevron-right" "ico-chevron" %}
     </a>
@@ -17,6 +18,7 @@
         {% icon item.icon %}
         <span class="meta-body">
             <span class="meta-text{% if item.truncates and density == 'compact' %} meta-text--truncate{% endif %}">{{ item.text }}{% if item.full %}<span class="meta-full"> &middot; Full</span>{% endif %}</span>
+            {% if item.sub and density == 'full' %}<span class="meta-sub">{{ item.sub }}</span>{% endif %}
         </span>
     </span>
     {% endif %}

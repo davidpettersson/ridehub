@@ -263,7 +263,7 @@ class DetailPageForecastPlaceholderTests(ForecastBadgeTestCase):
         self.assertContains(response, reverse('event_forecast_badge', args=[event.id]))
         self.assertContains(response, 'Loading weather forecast')
         self.assertContains(response, 'wx-shimmer')
-        self.assertNotContains(response, 'AQHI&nbsp;moderate')
+        self.assertNotContains(response, 'wx-aqhi--moderate')
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=True)
@@ -277,7 +277,8 @@ class DetailPageForecastPlaceholderTests(ForecastBadgeTestCase):
             response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
-        self.assertContains(response, 'AQHI&nbsp;moderate')
+        self.assertContains(response, 'wx-aqhi--moderate')
+        self.assertContains(response, '12–15°, rain')
         self.assertContains(response, '(beta)')
         self.assertContains(response, 'View forecast history')
         self.assertNotContains(response, 'Loading weather forecast')
@@ -296,7 +297,7 @@ class DetailPageForecastPlaceholderTests(ForecastBadgeTestCase):
         # Assert
         self.assertContains(response, 'Loading weather forecast')
         self.assertContains(response, reverse('event_forecast_badge', args=[event.id]))
-        self.assertNotContains(response, 'AQHI&nbsp;moderate')
+        self.assertNotContains(response, 'wx-aqhi--moderate')
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=False)
@@ -362,7 +363,7 @@ class EventForecastBadgeViewTests(ForecastBadgeTestCase):
         response = self.client.get(reverse('event_forecast_badge', args=[event.id]))
 
         # Assert
-        self.assertContains(response, 'AQHI&nbsp;moderate')
+        self.assertContains(response, 'wx-aqhi--moderate')
         self.assertContains(response, '(beta)')
         self.assertContains(response, 'data-bs-toggle="modal"')
 
@@ -433,4 +434,4 @@ class EventForecastBadgeViewTests(ForecastBadgeTestCase):
         response = self.client.get(reverse('event_forecast_badge', args=[event.id]))
 
         # Assert
-        self.assertContains(response, 'AQHI&nbsp;moderate')
+        self.assertContains(response, 'wx-aqhi--moderate')

@@ -1,4 +1,5 @@
 {% extends 'web/_base_bootstrap.html' %}
+{% load design_tags %}
 {% load form_filters %}
 {% load dict_filters %}
 {% load name_filters %}
@@ -36,29 +37,9 @@
             <h1 class="fs-2 fw-bold mb-2">
                 {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
             </h1>
-            <div class="d-flex flex-wrap gap-2 align-items-center">
-                <span class="meta-pill meta-pill-neutral text-muted"{% if event.program.color %} style="background-color: {{ event.program.color }}1A;"{% endif %}>{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
-                {% if event.location_url %}
-                <a href="{{ event.location_url }}"
-                   class="meta-pill meta-pill-link"
-                   target="_blank" rel="noopener noreferrer">
-                    🗺️ {% if event.location %}{{ event.location }}{% else %}See location{% endif %}&nbsp;↗
-                </a>
-                {% elif event.location %}
-                <span class="meta-pill meta-pill-neutral text-muted">🗺️ {{ event.location }}</span>
-                {% endif %}
-                {% if forecast_state.forecast %}
-                {% include 'web/events/_forecast_badge.html' with forecast=forecast_state.forecast expandable=True show_history_link=True %}
-                {% elif forecast_state.pending %}
-                {% url 'event_forecast_badge' event.id as forecast_badge_url %}
-                {% include 'web/events/_forecast_badge_loading.html' with hx_get=forecast_badge_url %}
-                {% endif %}
-                {% if not event.external_registration_url and event.state != "announced" and event.registration_count > 0 %}
-                <a href="{% url 'riders_list' event.id %}" class="meta-pill meta-pill-link">
-                    🚴 {{ event.registration_count }}{% if event.registration_limit %}/{{ event.registration_limit }}{% endif %} registered&nbsp;›
-                </a>
-                {% endif %}
-            </div>
+            <div class="mb-3">{% program_pill event.program %}</div>
+            {% url 'event_forecast_badge' event.id as forecast_badge_url %}
+            {% event_meta event density="full" forecast_state=forecast_state expandable=True forecast_url=forecast_badge_url %}
         </div>
 
         <h2 class="fs-5 fw-medium mb-3">About the event</h2>

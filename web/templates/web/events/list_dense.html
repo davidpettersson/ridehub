@@ -37,7 +37,7 @@
                             <div class="event-card-title">
                                 {% if event.cancelled %}<span class="text-decoration-line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
                             </div>
-                            {% program_pill event.program on_date=event.starts_at %}
+                            {% program_pill event.program %}
                             {% event_meta event density="compact" forecast_state=forecast_states|get_item:event.id omit="distance,time" %}
                         </div>
                         {% event_stats event %}
