@@ -1475,3 +1475,58 @@ class RegistrationEmailLockdownTests(TestCase):
         self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
         registered_user = User.objects.get(email='entered@example.com')
         self.assertFalse(registered_user.profile.email_verified)
+
+
+class RegistrationRidePreselectionTests(TestCase):
+    def setUp(self):
+        now = timezone.now()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Test Event",
+            program=self.program,
+            starts_at=now + timezone.timedelta(days=3),
+            registration_closes_at=now + timezone.timedelta(days=2),
+        )
+        self.route = Route.objects.create(name="Test Route")
+        self.ride = Ride.objects.create(name="Short Ride", event=self.event, route=self.route)
+        self.other_ride = Ride.objects.create(name="Long Ride", event=self.event, route=self.route)
+        self.url = reverse('registration_create', args=[self.event.id])
+
+    def test_ride_query_parameter_preselects_ride(self):
+        # Act
+        response = self.client.get(self.url, {'ride': self.ride.id})
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form'].initial['ride'], self.ride.id)
+
+    def test_without_ride_query_parameter_no_ride_is_preselected(self):
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertIsNone(response.context['form'].initial.get('ride'))
+
+    def test_ride_from_another_event_is_ignored(self):
+        # Arrange
+        other_event = Event.objects.create(
+            name="Other Event",
+            program=self.program,
+            starts_at=timezone.now() + timezone.timedelta(days=5),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=4),
+        )
+        foreign_ride = Ride.objects.create(name="Foreign Ride", event=other_event, route=self.route)
+
+        # Act
+        response = self.client.get(self.url, {'ride': foreign_ride.id})
+
+        # Assert
+        self.assertIsNone(response.context['form'].initial.get('ride'))
+
+    def test_non_numeric_ride_query_parameter_is_ignored(self):
+        # Act
+        response = self.client.get(self.url, {'ride': 'abc'})
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['form'].initial.get('ride'))
