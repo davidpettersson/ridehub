@@ -1,0 +1,22 @@
+{% load design_tags forecast_filters %}
+{% if forecast %}
+{% with summary=forecast|forecast_summary %}
+<span id="forecast-badge-{{ event.id }}"{% if oob %} hx-swap-oob="outerHTML"{% endif %}
+      class="meta-item meta-item--weather"
+      title="Weather forecast from Open-Meteo"
+      role="img"
+      aria-label="{{ summary.aria_label }}">
+    {% weather_icon summary %}
+    <span class="meta-body">
+        <span class="meta-text"><span class="wx-temp" aria-hidden="true">{{ summary.temperature_display }}&deg;</span>{% if summary.aqhi_category %}
+            <span class="wx-aqhi wx-aqhi--{{ summary.aqhi_category|slugify }}" aria-hidden="true">AQHI&nbsp;{{ summary.aqhi_display }}</span>{% if summary.aqhi_warning_category %}
+            <span class="wx-aqhi-spike wx-aqhi--{{ summary.aqhi_warning_category|slugify }}" aria-hidden="true">&rarr;{{ summary.aqhi_warning_display }}</span>{% endif %}{% endif %}</span>
+        {% if density == 'full' %}
+        <span class="meta-sub" aria-hidden="true">{{ summary|weather_words }}</span>
+        {% endif %}
+    </span>
+</span>
+{% endwith %}
+{% elif pending %}
+{% include 'web/events/_forecast_badge_loading.html' with meta=True %}
+{% endif %}

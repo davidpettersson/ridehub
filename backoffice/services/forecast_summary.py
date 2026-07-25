@@ -37,7 +37,9 @@ class ForecastSummary:
     temperature_display: str
     temperature_aria_label: str
     aqhi_category: str | None
+    aqhi_display: str | None
     aqhi_warning_category: str | None
+    aqhi_warning_display: str | None
     aria_label: str
     hourly: list[HourlyReading]
 
@@ -53,6 +55,8 @@ def summarize(forecast: Forecast) -> ForecastSummary:
 
     aqhi_category = _prevalent_aqhi_category(hourly)
     aqhi_warning_category = _aqhi_warning(hourly, aqhi_category)
+    aqhi_display = _aqhi_display(hourly, aqhi_category)
+    aqhi_warning_display = _aqhi_display(hourly, aqhi_warning_category)
 
     aria_label = _aria_label(
         condition_primary, condition_warning_label,
@@ -67,7 +71,9 @@ def summarize(forecast: Forecast) -> ForecastSummary:
         temperature_display=temperature_display,
         temperature_aria_label=temperature_aria_label,
         aqhi_category=aqhi_category,
+        aqhi_display=aqhi_display,
         aqhi_warning_category=aqhi_warning_category,
+        aqhi_warning_display=aqhi_warning_display,
         aria_label=aria_label,
         hourly=hourly,
     )
@@ -116,6 +122,15 @@ def _prevalent_aqhi_category(hourly: list[HourlyReading]) -> str | None:
         return None
     counts = Counter(categories)
     return max(counts, key=lambda category: (counts[category], AQHI_CATEGORY_ORDER.index(category)))
+
+
+def _aqhi_display(hourly: list[HourlyReading], category: str | None) -> str | None:
+    if category is None:
+        return None
+    values = [reading.aqhi for reading in hourly if reading.aqhi_category == category]
+    if not values:
+        return None
+    return Forecast.format_aqhi(max(values))
 
 
 def _aqhi_warning(hourly: list[HourlyReading], prevalent_category: str | None) -> str | None:

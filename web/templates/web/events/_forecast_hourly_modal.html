@@ -1,3 +1,4 @@
+{% load design_tags %}
 <div class="modal fade" id="forecast-hourly-{{ forecast.pk }}" tabindex="-1" aria-labelledby="forecast-hourly-{{ forecast.pk }}-label" aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable">
     <div class="modal-content">
@@ -24,7 +25,7 @@
             <tr>
               <td>{{ hour.time|date:"g A" }}</td>
               <td>
-                {% include 'web/events/_weather_icon.html' with condition=hour.condition %}
+                {% condition_icon hour.condition %}
                 <span class="visually-hidden">{{ hour.condition.label }}</span>
               </td>
               <td>{{ hour.temperature }}&deg;</td>

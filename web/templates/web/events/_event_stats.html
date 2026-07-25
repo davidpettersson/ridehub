@@ -1,0 +1,11 @@
+{% load design_tags %}
+{% if items %}
+<div class="event-stats">
+    {% for item in items %}
+    <span class="stat-item{% if item.invitation %} stat-item--invitation{% endif %}">
+        {% icon item.icon %}
+        <span>{{ item.text }}{% if item.full %}<span class="stat-full"> · Full</span>{% endif %}</span>
+    </span>
+    {% endfor %}
+</div>
+{% endif %}

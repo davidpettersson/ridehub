@@ -2,7 +2,7 @@
 {% for event in events %}
 {% with forecast=forecasts|get_item:event.id %}
 {% if forecast %}
-{% include 'web/events/_forecast_badge.html' with forecast=forecast compact=True oob=True %}
+{% include 'web/events/_meta_weather.html' with event=event forecast=forecast oob=True %}
 {% else %}
 <span id="forecast-badge-{{ event.id }}" hx-swap-oob="delete"></span>
 {% endif %}
