@@ -446,6 +446,90 @@ class DetailPageForecastPlaceholderTests(ForecastBadgeTestCase):
         self.assertContains(response, f'forecast-badge-{event.id}')
 
 
+class RegistrationPagesForecastBadgeTests(ForecastBadgeTestCase):
+    @override_flag('weather_forecast_badges', active=True)
+    def test_registrations_renders_badge_inline_when_fresh_forecast_cached(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('riders_list', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, 'AQHI&nbsp;moderate')
+        self.assertNotContains(response, 'Loading weather forecast')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_registrations_shows_placeholder_without_fetching_forecast(self):
+        # Arrange
+        event = self._create_event()
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            response = self.client.get(reverse('riders_list', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, f'forecast-badge-{event.id}')
+        self.assertContains(response, reverse('event_forecast_badge', args=[event.id]))
+        self.assertContains(response, 'Loading weather forecast')
+        mock_get.assert_not_called()
+
+    @override_flag('weather_forecast_badges', active=False)
+    def test_registrations_hides_badge_when_flag_disabled(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('riders_list', args=[event.id]))
+
+        # Assert
+        self.assertNotContains(response, f'forecast-badge-{event.id}')
+        self.assertNotContains(response, 'AQHI')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_registration_form_renders_badge_inline_when_fresh_forecast_cached(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('registration_create', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, 'AQHI&nbsp;moderate')
+        self.assertNotContains(response, 'Loading weather forecast')
+
+    @override_flag('weather_forecast_badges', active=True)
+    def test_registration_form_shows_placeholder_without_fetching_forecast(self):
+        # Arrange
+        event = self._create_event()
+
+        # Act
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            response = self.client.get(reverse('registration_create', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, f'forecast-badge-{event.id}')
+        self.assertContains(response, reverse('event_forecast_badge', args=[event.id]))
+        self.assertContains(response, 'Loading weather forecast')
+        mock_get.assert_not_called()
+
+    @override_flag('weather_forecast_badges', active=False)
+    def test_registration_form_hides_badge_when_flag_disabled(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast()
+
+        # Act
+        response = self.client.get(reverse('registration_create', args=[event.id]))
+
+        # Assert
+        self.assertNotContains(response, f'forecast-badge-{event.id}')
+        self.assertNotContains(response, 'AQHI')
+
+
 class EventForecastBadgeViewTests(ForecastBadgeTestCase):
     @override_flag('weather_forecast_badges', active=True)
     def test_badge_endpoint_returns_expandable_badge(self):

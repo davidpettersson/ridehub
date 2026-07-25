@@ -2,6 +2,7 @@
 {% load form_filters %}
 {% load dict_filters %}
 {% load name_filters %}
+{% load forecast_filters %}
 {% block title %}{{ event.name }} - Event Details{% endblock %}
 {% block content %}
     <div class="mb-4">
@@ -47,12 +48,7 @@
                 {% elif event.location %}
                 <span class="meta-pill text-muted">🗺️ {{ event.location }}</span>
                 {% endif %}
-                {% if forecast_state.forecast %}
-                {% include 'web/events/_forecast_badge.html' with forecast=forecast_state.forecast expandable=True show_history_link=True %}
-                {% elif forecast_state.pending %}
-                {% url 'event_forecast_badge' event.id as forecast_badge_url %}
-                {% include 'web/events/_forecast_badge_loading.html' with hx_get=forecast_badge_url %}
-                {% endif %}
+                {% forecast_badge event %}
                 {% if not event.external_registration_url and event.state != "announced" and event.registration_count > 0 %}
                 <a href="{% url 'riders_list' event.id %}" class="meta-pill meta-pill-link">
                     🚴 {{ event.registration_count }}{% if event.registration_limit %}/{{ event.registration_limit }}{% endif %} registered&nbsp;›
