@@ -8,9 +8,11 @@
       aria-label="{{ summary.aria_label }}">
     {% weather_icon summary %}
     <span class="meta-body">
-        <span class="meta-text"><span class="wx-temp" aria-hidden="true">{{ summary.temperature_display }}&deg;</span>{% if summary.aqhi_category %}
-            <span class="wx-aqhi wx-aqhi--{{ summary.aqhi_category|slugify }}" aria-hidden="true">AQHI&nbsp;{{ summary.aqhi_display }}</span>{% if summary.aqhi_warning_category %}
-            <span class="wx-aqhi-spike wx-aqhi--{{ summary.aqhi_warning_category|slugify }}" aria-hidden="true">&rarr;{{ summary.aqhi_warning_display }}</span>{% endif %}{% endif %}</span>
+        <span class="meta-text"><span class="wx-temp" aria-hidden="true">{{ summary.temperature_display }}&deg;</span>{% if summary.aqhi_warning_category %}
+            <span class="wx-aqhi wx-aqhi--{{ summary.aqhi_category|slugify }}" aria-hidden="true">{{ summary.aqhi_category }}</span>
+            <span class="wx-arrow" aria-hidden="true">&rarr;</span>
+            <span class="wx-aqhi wx-aqhi--{{ summary.aqhi_warning_category|slugify }}" aria-hidden="true">{{ summary.aqhi_warning_category }}</span>{% elif summary.aqhi_category %}
+            <span class="wx-aqhi wx-aqhi--{{ summary.aqhi_category|slugify }}" aria-hidden="true">AQHI&nbsp;{{ summary.aqhi_category }}</span>{% endif %}</span>
         {% if density == 'full' %}
         <span class="meta-sub" aria-hidden="true">{{ summary|weather_words }}</span>
         {% endif %}

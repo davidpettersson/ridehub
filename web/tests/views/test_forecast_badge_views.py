@@ -70,7 +70,7 @@ class UpcomingPageForecastPlaceholderTests(ForecastBadgeTestCase):
         self.assertContains(response, reverse('upcoming_forecast_badges'))
         self.assertContains(response, 'Loading weather forecast')
         self.assertContains(response, 'wx-shimmer')
-        self.assertNotContains(response, 'AQHI&nbsp;5')
+        self.assertNotContains(response, 'AQHI&nbsp;moderate')
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=True)
@@ -84,7 +84,7 @@ class UpcomingPageForecastPlaceholderTests(ForecastBadgeTestCase):
             response = self.client.get(reverse('upcoming'))
 
         # Assert
-        self.assertContains(response, 'AQHI&nbsp;5')
+        self.assertContains(response, 'AQHI&nbsp;moderate')
         self.assertContains(response, '12–15&deg;')
         self.assertContains(response, f'id="forecast-badge-{event.id}"')
         self.assertNotContains(response, 'Loading weather forecast')
@@ -104,7 +104,7 @@ class UpcomingPageForecastPlaceholderTests(ForecastBadgeTestCase):
         # Assert
         self.assertContains(response, f'forecast-badge-{event.id}')
         self.assertContains(response, reverse('upcoming_forecast_badges'))
-        self.assertNotContains(response, 'AQHI&nbsp;5')
+        self.assertNotContains(response, 'AQHI&nbsp;moderate')
         mock_get.assert_not_called()
 
     @override_flag('weather_forecast_badges', active=False)
@@ -160,7 +160,7 @@ class UpcomingForecastBadgesViewTests(ForecastBadgeTestCase):
         # Assert
         self.assertContains(response, f'id="forecast-badge-{event.id}"')
         self.assertContains(response, 'hx-swap-oob="outerHTML"')
-        self.assertContains(response, 'AQHI&nbsp;5')
+        self.assertContains(response, 'AQHI&nbsp;moderate')
         self.assertContains(response, '12–15&deg;')
         self.assertNotContains(response, '(beta)')
         self.assertNotContains(response, '\U0001F327')
@@ -206,7 +206,7 @@ class UpcomingForecastBadgesViewTests(ForecastBadgeTestCase):
         response = self.client.get(reverse('upcoming_forecast_badges'))
 
         # Assert
-        self.assertContains(response, 'AQHI&nbsp;5')
+        self.assertContains(response, 'AQHI&nbsp;moderate')
 
     @override_flag('weather_forecast_badges', active=True)
     def test_badges_endpoint_skips_virtual_event(self):

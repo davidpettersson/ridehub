@@ -13,10 +13,10 @@
         {% icon "chevron-right" "ico-chevron" %}
     </a>
     {% else %}
-    <span class="meta-item meta-item--{{ item.key }}">
+    <span class="meta-item meta-item--{{ item.key }}{% if item.invitation %} meta-item--invitation{% endif %}">
         {% icon item.icon %}
         <span class="meta-body">
-            <span class="meta-text{% if item.truncates and density == 'compact' %} meta-text--truncate{% endif %}">{{ item.text }}</span>
+            <span class="meta-text{% if item.truncates and density == 'compact' %} meta-text--truncate{% endif %}">{{ item.text }}{% if item.full %}<span class="meta-full"> &middot; Full</span>{% endif %}</span>
         </span>
     </span>
     {% endif %}

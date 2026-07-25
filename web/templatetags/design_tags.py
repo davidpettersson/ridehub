@@ -60,3 +60,8 @@ def event_meta(event, density='compact', forecast_state=None, omit=''):
 @register.inclusion_tag('web/events/_event_stats.html')
 def event_stats(event):
     return {'event': event, 'items': design.event_stats_items(event)}
+
+
+@register.simple_tag
+def event_time(event):
+    return design.event_time_text(event)

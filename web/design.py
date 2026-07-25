@@ -100,6 +100,7 @@ def event_meta_items(event, forecast_state=None, omit=()) -> list[dict]:
     candidates = [
         _location_item(event),
         _weather_item(forecast_state),
+        _registrations_item(event),
         _distance_item(event),
         _time_item(event),
     ]
@@ -110,9 +111,13 @@ def event_stats_items(event) -> list[dict]:
     candidates = [
         _rides_item(event),
         _distance_item(event),
-        _registrations_item(event),
     ]
     return [item for item in candidates if item]
+
+
+def event_time_text(event) -> str:
+    item = _time_item(event)
+    return item['text'] if item else ''
 
 
 def _location_item(event) -> dict | None:

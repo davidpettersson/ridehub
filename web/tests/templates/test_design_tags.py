@@ -163,7 +163,10 @@ class EventMetaItemOrderTests(DesignTagTestCase):
         items = design.event_meta_items(event, forecast_state=ForecastState.ready(self.create_forecast()))
 
         # Assert
-        self.assertEqual([item['key'] for item in items], ['location', 'weather', 'distance', 'time'])
+        self.assertEqual(
+            [item['key'] for item in items],
+            ['location', 'weather', 'registrations', 'distance', 'time'],
+        )
 
     def test_missing_data_is_omitted(self):
         # Arrange
@@ -173,7 +176,7 @@ class EventMetaItemOrderTests(DesignTagTestCase):
         items = design.event_meta_items(event)
 
         # Assert
-        self.assertEqual([item['key'] for item in items], ['time'])
+        self.assertEqual([item['key'] for item in items], ['registrations', 'time'])
 
     def test_omit_argument_drops_an_item(self):
         # Arrange
@@ -306,10 +309,12 @@ class EventMetaWeatherTests(DesignTagTestCase):
         )
 
         # Assert
-        self.assertIn('AQHI&nbsp;2', html)
+        self.assertIn('>low</span>', html)
+        self.assertIn('&rarr;', html)
+        self.assertIn('>high</span>', html)
         self.assertIn('wx-aqhi--low', html)
-        self.assertIn('&rarr;8', html)
         self.assertIn('wx-aqhi--high', html)
+        self.assertNotIn('AQHI&nbsp;', html)
 
     def test_pending_forecast_renders_the_meta_placeholder(self):
         # Arrange
@@ -468,46 +473,31 @@ class EventMetaTimeTests(DesignTagTestCase):
         self.assertRegex(html, r'9:00 AM – \w+ \d+, 5:00 AM')
 
 
-class EventStatsTests(DesignTagTestCase):
+class EventMetaRegistrationTests(DesignTagTestCase):
     def confirm_registration(self, event, name):
         return Registration.objects.create(
             event=event, name=name, first_name=name, last_name='Rider',
             email=f'{name.lower()}@example.com', state=Registration.STATE_CONFIRMED,
         )
 
-    def test_rides_and_distance_render_without_chrome(self):
-        # Arrange
-        event = self.create_event()
-        self.add_ride(event, distance=40)
-        self.add_ride(event, distance=70)
-
-        # Act
-        html = render('{% event_stats event %}', event=event)
-
-        # Assert
-        self.assertIn('2 rides', html)
-        self.assertIn('40–70 km', html)
-        self.assertNotIn('meta-pill', html)
-        self.assertNotIn('badge', html)
-
     def test_zero_registrations_reads_as_an_invitation(self):
         # Arrange
         event = self.create_event()
 
         # Act
-        html = render('{% event_stats event %}', event=event)
+        html = render('{% event_meta event %}', event=event)
 
         # Assert
         self.assertIn('Be the first to register', html)
         self.assertNotIn('0 registered', html)
-        self.assertIn('stat-item--invitation', html)
+        self.assertIn('meta-item--invitation', html)
 
     def test_zero_registrations_is_silent_once_registration_closed(self):
         # Arrange
         event = self.create_event(registration_closes_at=timezone.now() - timedelta(hours=1))
 
         # Act
-        html = render('{% event_stats event %}', event=event)
+        html = render('{% event_meta event %}', event=event)
 
         # Assert
         self.assertNotIn('Be the first to register', html)
@@ -519,7 +509,7 @@ class EventStatsTests(DesignTagTestCase):
         self.confirm_registration(event, 'Alex')
 
         # Act
-        html = render('{% event_stats event %}', event=event)
+        html = render('{% event_meta event %}', event=event)
 
         # Assert
         self.assertIn('1/10 registered', html)
@@ -532,11 +522,11 @@ class EventStatsTests(DesignTagTestCase):
         self.confirm_registration(event, 'Blair')
 
         # Act
-        html = render('{% event_stats event %}', event=event)
+        html = render('{% event_meta event %}', event=event)
 
         # Assert
         self.assertIn('2/2 registered', html)
-        self.assertIn('stat-full', html)
+        self.assertIn('meta-full', html)
         self.assertNotIn('program-pill', html)
         self.assertNotIn('meta-pill', html)
 
@@ -546,7 +536,7 @@ class EventStatsTests(DesignTagTestCase):
         self.confirm_registration(event, 'Alex')
 
         # Act
-        html = render('{% event_stats event %}', event=event)
+        html = render('{% event_meta event %}', event=event)
 
         # Assert
         self.assertNotIn('registered', html)
@@ -557,14 +547,43 @@ class EventStatsTests(DesignTagTestCase):
         self.confirm_registration(event, 'Alex')
 
         # Act
-        html = render('{% event_stats event %}', event=event)
+        html = render('{% event_meta event %}', event=event)
 
         # Assert
         self.assertNotIn('registered', html)
 
+
+class EventStatsTests(DesignTagTestCase):
+    def test_rides_and_distance_render_without_chrome(self):
+        # Arrange
+        event = self.create_event()
+        self.add_ride(event, distance=40)
+        self.add_ride(event, distance=70)
+
+        # Act
+        html = render('{% event_stats event %}', event=event)
+
+        # Assert
+        self.assertIn('2 rides', html)
+        self.assertIn('40\u201370 km', html)
+        self.assertNotIn('meta-pill', html)
+        self.assertNotIn('badge', html)
+
+    def test_stats_carry_no_registration_count(self):
+        # Arrange
+        event = self.create_event()
+        self.add_ride(event, distance=40)
+
+        # Act
+        html = render('{% event_stats event %}', event=event)
+
+        # Assert
+        self.assertNotIn('registered', html)
+        self.assertNotIn('Be the first to register', html)
+
     def test_empty_stats_render_nothing(self):
         # Arrange
-        event = self.create_event(external_registration_url='https://example.com/signup')
+        event = self.create_event()
 
         # Act
         html = render('{% event_stats event %}', event=event)

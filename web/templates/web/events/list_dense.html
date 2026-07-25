@@ -32,12 +32,13 @@
                             <span class="visually-hidden">You are registered</span>
                         </div>
                         {% endif %}
-                        <div class="card-body py-2 px-3">
-                            {% program_pill event.program on_date=event.starts_at %}
-                            <div class="fs-6 fw-medium text-dark">
+                        <div class="card-body py-3 px-3">
+                            <div class="event-card-time">{% event_time event %}</div>
+                            <div class="event-card-title">
                                 {% if event.cancelled %}<span class="text-decoration-line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
                             </div>
-                            {% event_meta event density="compact" forecast_state=forecast_states|get_item:event.id omit="distance" %}
+                            {% program_pill event.program on_date=event.starts_at %}
+                            {% event_meta event density="compact" forecast_state=forecast_states|get_item:event.id omit="distance,time" %}
                         </div>
                         {% event_stats event %}
                     </div>
