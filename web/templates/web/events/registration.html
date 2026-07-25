@@ -1,6 +1,7 @@
 {% extends 'web/_base_bootstrap.html' %}
 {% load form_filters %}
 {% load phone_filters %}
+{% load forecast_filters %}
 {% block title %}Register for {{ event.name }}{% endblock %}
 {% block content %}
     <div class="mb-4">
@@ -37,6 +38,7 @@
                 {% elif event.location %}
                 <span class="meta-pill text-muted">🗺️ {{ event.location }}</span>
                 {% endif %}
+                {% forecast_badge event %}
             </div>
         </div>
 

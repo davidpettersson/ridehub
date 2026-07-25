@@ -17,7 +17,6 @@ from waffle import flag_is_active
 from audit.services import AuditService
 from backoffice.models import Event, Registration
 from backoffice.services.event_service import EventService
-from backoffice.services.forecast_service import ForecastState
 from backoffice.services.registration_service import RegistrationService
 from web.filters import PublicRegistrationFilter
 from web.tables import PublicRegistrationTable
@@ -182,16 +181,11 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
             state=Registration.STATE_CONFIRMED,
         ).exists()
 
-    forecast_state = ForecastState.unavailable()
-    if flag_is_active(request, 'weather_forecast_badges'):
-        forecast_state = EventService().resolve_forecast(event)
-
     context = {
         'event': event,
         'rides': rides,
         'user_is_registered': user_is_registered,
         'registrations_available': _registrations_visible(event, request.user),
-        'forecast_state': forecast_state,
     }
 
     return render(request, 'web/events/detail.html', context)
