@@ -28,11 +28,6 @@ def weather_icon(summary):
     return format_html(SVG, classes, glyph)
 
 
-@register.simple_tag
-def condition_icon(condition):
-    return format_html(SVG, 'ico ico-wx', design.weather_glyph(condition))
-
-
 @register.filter
 def weather_headline(summary):
     if summary is None:

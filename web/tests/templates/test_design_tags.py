@@ -692,6 +692,7 @@ class EventStatsTests(DesignTagTestCase):
         self.assertEqual(html.strip(), '')
 
 
+@override_flag('august_redesign', active=True)
 class EventListSurfaceTests(DesignTagTestCase):
     def setUp(self):
         super().setUp()
@@ -793,3 +794,69 @@ class EventListSurfaceTests(DesignTagTestCase):
         # Assert
         self.assertNotIn('x-data', card_markup)
         self.assertNotIn('hx-', card_markup)
+
+
+class RedesignFlagTests(DesignTagTestCase):
+    def setUp(self):
+        super().setUp()
+        self.event = self.create_event()
+        self.add_ride(self.event, distance=50)
+
+    @override_flag('august_redesign', active=False)
+    def test_event_list_keeps_the_previous_card_when_the_flag_is_off(self):
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertContains(response, 'meta-pill')
+        self.assertNotContains(response, 'program-pill')
+        self.assertNotContains(response, 'event-meta')
+        self.assertNotContains(response, 'icon-sprite')
+
+    @override_flag('august_redesign', active=True)
+    def test_event_list_uses_the_redesigned_card_when_the_flag_is_on(self):
+        # Act
+        response = self.client.get(reverse('upcoming'))
+
+        # Assert
+        self.assertContains(response, 'program-pill')
+        self.assertContains(response, 'event-meta--compact')
+        self.assertContains(response, 'icon-sprite')
+        self.assertNotContains(response, 'meta-pill')
+
+    @override_flag('august_redesign', active=False)
+    def test_event_detail_keeps_the_previous_header_when_the_flag_is_off(self):
+        # Act
+        response = self.client.get(reverse('event_detail', args=[self.event.id]))
+
+        # Assert
+        self.assertContains(response, 'meta-pill')
+        self.assertNotContains(response, 'event-meta--full')
+
+    @override_flag('august_redesign', active=True)
+    def test_event_detail_uses_the_redesigned_header_when_the_flag_is_on(self):
+        # Act
+        response = self.client.get(reverse('event_detail', args=[self.event.id]))
+
+        # Assert
+        self.assertContains(response, 'event-meta--full')
+        self.assertContains(response, 'program-pill')
+        self.assertNotContains(response, 'meta-pill')
+
+    @override_flag('august_redesign', active=False)
+    @override_flag('weather_forecast_badges', active=True)
+    def test_forecast_endpoint_returns_the_previous_badge_when_the_flag_is_off(self):
+        # Arrange
+        Forecast.objects.create(
+            latitude=self.latitude, longitude=self.longitude,
+            start_time=self.starts_at, end_time=self.starts_at + timedelta(hours=3),
+            hourly=[{'time': self.starts_at.strftime('%Y-%m-%dT%H:%M'),
+                     'condition': 'cloud', 'temperature': 18, 'aqhi': 4}],
+        )
+
+        # Act
+        response = self.client.get(reverse('event_forecast_badge', args=[self.event.id]))
+
+        # Assert
+        self.assertContains(response, 'meta-pill')
+        self.assertNotContains(response, 'meta-item--weather')

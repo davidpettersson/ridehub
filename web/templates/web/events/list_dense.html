@@ -1,5 +1,5 @@
 {% extends 'web/_base_bootstrap.html' %}
-{% load announcement_tags design_tags dict_filters %}
+{% load announcement_tags dict_filters waffle_tags %}
 {% block title %}Events Calendar{% endblock %}
 {% block content %}
     <div class="mb-4">{% active_announcements %}</div>
@@ -21,28 +21,11 @@
             </h2>
             <div class="d-flex flex-column gap-2">
                 {% for event in events %}
-                <a href="{% url 'event_detail' event.id %}" class="text-decoration-none">
-                    <div class="card shadow-sm border h-100 event-card{% if event.state == "announced" %} event-card-announced{% endif %}">
-                        {% if event.state == "announced" %}
-                        <span class="visually-hidden">Announced — registration coming soon</span>
-                        {% endif %}
-                        {% if user.is_authenticated and event.id in registered_event_ids %}
-                        <div class="registered-indicator">
-                            <i class="bi bi-check-lg" aria-hidden="true"></i>
-                            <span class="visually-hidden">You are registered</span>
-                        </div>
-                        {% endif %}
-                        <div class="card-body py-3 px-3">
-                            <div class="event-card-time">{% event_time event %}</div>
-                            <div class="event-card-title">
-                                {% if event.cancelled %}<span class="text-decoration-line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
-                            </div>
-                            {% program_pill event.program %}
-                            {% event_meta event density="compact" forecast_state=forecast_states|get_item:event.id omit="distance,time" %}
-                        </div>
-                        {% event_stats event %}
-                    </div>
-                </a>
+                {% flag "august_redesign" %}
+                {% include 'web/events/_event_card.html' %}
+                {% else %}
+                {% include 'web/events/_event_card_legacy.html' %}
+                {% endflag %}
                 {% endfor %}
             </div>
         </div>

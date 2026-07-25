@@ -1,8 +1,12 @@
-{% load dict_filters %}
+{% load dict_filters waffle_tags %}
 {% for event in events %}
 {% with forecast=forecasts|get_item:event.id %}
 {% if forecast %}
+{% flag "august_redesign" %}
 {% include 'web/events/_meta_weather.html' with event=event forecast=forecast oob=True %}
+{% else %}
+{% include 'web/events/_forecast_badge.html' with forecast=forecast compact=True oob=True %}
+{% endflag %}
 {% else %}
 <span id="forecast-badge-{{ event.id }}" hx-swap-oob="delete"></span>
 {% endif %}

@@ -212,7 +212,10 @@ def event_forecast_badge(request: HttpRequest, event_id: int) -> HttpResponse:
         'show_history_link': True,
     }
 
-    return render(request, 'web/events/_meta_weather.html', context)
+    if flag_is_active(request, 'august_redesign'):
+        return render(request, 'web/events/_meta_weather.html', context)
+
+    return render(request, 'web/events/_forecast_badge.html', context)
 
 
 def upcoming_forecast_badges(request: HttpRequest) -> HttpResponse:
