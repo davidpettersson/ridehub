@@ -103,7 +103,7 @@ body {
 .meta-pill-link:hover, .meta-pill-link:focus {
   background-color: rgba(108, 117, 125, 0.2);
   color: var(--bs-primary-hover);
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .wx-icon {
