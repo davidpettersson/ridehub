@@ -3,7 +3,7 @@
 {% with summary=forecast|forecast_summary %}
 {% if expandable %}
 <button type="button"
-        class="meta-pill{% if compact %} meta-pill-sm{% endif %} meta-pill-neutral text-muted"
+        class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted"
         title="Weather forecast from Open-Meteo. Tap for hourly detail."
         aria-label="{{ summary.aria_label }}. Tap for hourly detail."
         aria-haspopup="dialog"
@@ -14,7 +14,7 @@
 {% include 'web/events/_forecast_hourly_modal.html' with forecast=forecast summary=summary %}
 {% else %}
 <span id="forecast-badge-{{ event.id }}"{% if oob %} hx-swap-oob="outerHTML"{% endif %}
-      class="meta-pill{% if compact %} meta-pill-sm{% endif %} meta-pill-neutral text-muted"
+      class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted"
       title="Weather forecast from Open-Meteo"
       role="img"
       aria-label="{{ summary.aria_label }}">

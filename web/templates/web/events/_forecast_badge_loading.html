@@ -1,5 +1,5 @@
 <span id="forecast-badge-{{ event.id }}"
-      class="meta-pill{% if compact %} meta-pill-sm{% endif %} meta-pill-neutral text-muted wx-loading"
+      class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted wx-loading"
       role="status"
       aria-label="Loading weather forecast"
       {% if hx_get %}hx-get="{{ hx_get }}" hx-trigger="load" hx-swap="outerHTML"{% endif %}>
