@@ -192,6 +192,14 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
         'user_is_registered': user_is_registered,
         'registrations_available': _registrations_visible(event, request.user),
         'forecast_state': forecast_state,
+        'ride_registration_enabled': (
+            event.ride_set.exists()
+            and event.registration_enabled
+            and event.registration_open
+            and event.has_capacity_available
+            and not event.external_registration_url
+            and not user_is_registered
+        ),
     }
 
     return render(request, 'web/events/detail.html', context)

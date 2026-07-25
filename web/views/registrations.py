@@ -103,6 +103,12 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
             'emergency_contact_phone': user.profile.emergency_contact_phone,
         }
 
+    if request.method == 'GET':
+        requested_ride_id = request.GET.get('ride')
+        if requested_ride_id and requested_ride_id.isdigit():
+            if event.ride_set.filter(id=requested_ride_id).exists():
+                initial_data['ride'] = int(requested_ride_id)
+
     form = RegistrationForm(request.POST or None, event=event, user=user, initial=initial_data)
 
     if request.method == 'POST':

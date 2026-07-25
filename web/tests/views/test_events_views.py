@@ -1610,3 +1610,53 @@ class UpcomingViewQueryCountTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '2 registered')
+
+
+class EventDetailRegistrationButtonTests(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name='Test Program')
+        now = timezone.now()
+        self.event = Event.objects.create(
+            program=self.program,
+            name='Test Event',
+            description='Test Description',
+            starts_at=now + timedelta(days=7),
+            registration_closes_at=now + timedelta(days=1),
+        )
+        self.route = Route.objects.create(name='Test Route')
+
+    def test_event_without_rides_shows_register_button_in_about_card(self):
+        # Act
+        response = self.client.get(reverse('event_detail', args=[self.event.id]))
+
+        # Assert
+        self.assertFalse(response.context['ride_registration_enabled'])
+        self.assertContains(response, f'href="/events/{self.event.id}/registration"')
+        self.assertNotContains(response, 'Register for this ride')
+
+    def test_event_with_rides_shows_register_button_per_ride(self):
+        # Arrange
+        first_ride = Ride.objects.create(name='Short Ride', event=self.event, route=self.route)
+        second_ride = Ride.objects.create(name='Long Ride', event=self.event, route=self.route)
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[self.event.id]))
+
+        # Assert
+        self.assertTrue(response.context['ride_registration_enabled'])
+        self.assertNotContains(response, f'href="/events/{self.event.id}/registration"')
+        self.assertContains(response, f'/events/{self.event.id}/registration?ride={first_ride.id}')
+        self.assertContains(response, f'/events/{self.event.id}/registration?ride={second_ride.id}')
+
+    def test_event_with_rides_hides_ride_buttons_when_registration_closed(self):
+        # Arrange
+        Ride.objects.create(name='Short Ride', event=self.event, route=self.route)
+        self.event.registration_closes_at = timezone.now() - timedelta(days=1)
+        self.event.save()
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[self.event.id]))
+
+        # Assert
+        self.assertFalse(response.context['ride_registration_enabled'])
+        self.assertNotContains(response, 'Register for this ride')

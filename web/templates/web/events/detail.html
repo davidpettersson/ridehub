@@ -116,6 +116,7 @@
                             <a href="{{ event.external_registration_url }}" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
                                 Register <i class="bi bi-box-arrow-up-right ms-1 small"></i>
                             </a>
+                        {% elif ride_registration_enabled %}
                         {% elif event.has_capacity_available %}
                             <a href="{% url 'registration_create' event.id %}" class="btn btn-primary">Register</a>
                         {% else %}
@@ -166,6 +167,12 @@
                             {{ride.route.name}}<i class="bi bi-box-arrow-up-right ms-1 small"></i>
                         </a>
                     </div>
+
+                    {% if ride_registration_enabled %}
+                    <div class="mt-4">
+                        <a href="{% url 'registration_create' event.id %}?ride={{ ride.id }}" class="btn btn-primary">Register for this ride</a>
+                    </div>
+                    {% endif %}
 
                     {% if not registrations_available %}
                     <p class="text-muted small mt-4 mb-0">Registration details are no longer available for this event.</p>
