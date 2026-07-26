@@ -3,8 +3,10 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.cache import never_cache
 from django_tables2 import RequestConfig
 
+from audit.services import AuditService
 from backoffice.models import Event, Registration
 from backoffice.services.registration_service import RegistrationDetail, RegistrationService
 from backoffice.services.user_service import UserDetail
@@ -19,6 +21,7 @@ def _require_staff(user):
 
 
 @login_required
+@never_cache
 def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpResponse:
     _require_staff(request.user)
 
@@ -26,6 +29,8 @@ def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpRespo
 
     if event.external_registration_url:
         return redirect('event_detail', event_id=event.id)
+
+    AuditService().log(request.user, 'registration_management_viewed', target=event)
 
     registrations = Registration.objects.filter(
         event_id=event_id,

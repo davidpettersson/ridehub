@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from audit.models import AuditEvent
 from backoffice.models import Event, Program, Registration, Ride, Route, SpeedRange
 
 
@@ -207,6 +208,75 @@ class ManagePageAccessTests(BaseManageTestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Unverified')
+
+
+class ManagePageAuditTests(BaseManageTestCase):
+    def _manage_url(self):
+        return reverse('event_registrations_manage', args=[self.event.id])
+
+    def test_staff_visit_logs_audit_event(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        self.client.get(self._manage_url())
+
+        # Assert
+        self.assertEqual(AuditEvent.objects.count(), 1)
+        audit_event = AuditEvent.objects.get()
+        self.assertEqual(audit_event.action, 'registration_management_viewed')
+        self.assertEqual(audit_event.actor, self.staff_user)
+        self.assertEqual(audit_event.target, self.event)
+
+    def test_each_visit_logs_a_separate_audit_event(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        self.client.get(self._manage_url())
+        self.client.get(self._manage_url())
+
+        # Assert
+        self.assertEqual(AuditEvent.objects.count(), 2)
+
+    def test_non_staff_denied_logs_no_audit_event(self):
+        # Arrange
+        self.client.login(username='regular@example.com', password='password123')
+
+        # Act
+        self.client.get(self._manage_url())
+
+        # Assert
+        self.assertEqual(AuditEvent.objects.count(), 0)
+
+    def test_anonymous_visit_logs_no_audit_event(self):
+        # Act
+        self.client.get(self._manage_url())
+
+        # Assert
+        self.assertEqual(AuditEvent.objects.count(), 0)
+
+    def test_external_registration_redirect_logs_no_audit_event(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+        self.event.external_registration_url = 'https://example.com/register'
+        self.event.save(update_fields=['external_registration_url'])
+
+        # Act
+        self.client.get(self._manage_url())
+
+        # Assert
+        self.assertEqual(AuditEvent.objects.count(), 0)
+
+    def test_response_is_not_cacheable(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.get(self._manage_url())
+
+        # Assert
+        self.assertIn('no-store', response['Cache-Control'])
 
 
 class ManagePageFilterAndSortRegressionTests(BaseManageTestCase):
