@@ -16,6 +16,10 @@ def _hour_label(time):
     return f"{int(time.strftime('%I'))} {time.strftime('%p')}"
 
 
+def _hour_cell(time):
+    return f"<td>{_hour_label(time)}</td>"
+
+
 def _local_hour_today(hour):
     local = timezone.localtime(timezone.now()).replace(
         hour=hour, minute=0, second=0, microsecond=0
@@ -414,8 +418,8 @@ class DetailPageForecastPlaceholderTests(ForecastBadgeTestCase):
         response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
-        self.assertContains(response, _hour_label(timezone.localtime(hour)))
-        self.assertNotContains(response, _hour_label(hour))
+        self.assertContains(response, _hour_cell(timezone.localtime(hour)))
+        self.assertNotContains(response, _hour_cell(hour))
 
     @override_settings(TIME_ZONE='America/Vancouver')
     @override_flag('weather_forecast_badges', active=True)
@@ -429,8 +433,8 @@ class DetailPageForecastPlaceholderTests(ForecastBadgeTestCase):
         response = self.client.get(reverse('event_detail', args=[event.id]))
 
         # Assert
-        self.assertContains(response, _hour_label(timezone.localtime(hour)))
-        self.assertNotContains(response, _hour_label(hour))
+        self.assertContains(response, _hour_cell(timezone.localtime(hour)))
+        self.assertNotContains(response, _hour_cell(hour))
 
     @override_flag('weather_forecast_badges', active=True)
     def test_detail_shows_placeholder_for_cancelled_event(self):

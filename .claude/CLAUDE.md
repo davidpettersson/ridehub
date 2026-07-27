@@ -24,6 +24,14 @@ Django web application for managing cycling events, deployed to Heroku.
 - Always use `uv` to run commands
 - Run tests: `uv run python manage.py test`
 
+## Testing
+- Zero tolerance for failing tests
+- Always run the full suite (`uv run python manage.py test`) before pushing to GitHub
+- The suite must report zero failures and zero errors; never push otherwise
+- Never skip, comment out, or weaken a test to get to green
+- A failure that predates your changes is still a failure: fix it, and say so in the commit message
+- See `.claude/rules/testing.md` for how to write tests
+
 ## Frontend
 - Mobile-first responsive design for all pages
 - Bootstrap CSS with global stylesheet at `web/static/web/styling.css`

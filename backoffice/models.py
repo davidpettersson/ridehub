@@ -197,6 +197,11 @@ class Event(models.Model):
         help_text='When the event was archived.'
     )
 
+    archival_reason = models.TextField(
+        blank=True,
+        help_text='Reason for archival.'
+    )
+
     organizer_email = models.EmailField(
         blank=True,
         help_text='When set, members will be able to reach out to the organizer at this email.'
@@ -359,7 +364,9 @@ class Event(models.Model):
     def cancel(self):
         self.cancelled_at = timezone.now()
 
-    @transition(field=state, source=[STATE_LIVE, STATE_CANCELLED], target=STATE_ARCHIVED)
+    @transition(field=state, source=STATE_CANCELLED, target=STATE_ARCHIVED)
+    @transition(field=state, source=[STATE_DRAFT, STATE_ANNOUNCED, STATE_LIVE], target=STATE_ARCHIVED,
+                conditions=[has_no_confirmed_registrations])
     def archive(self):
         self.archived_at = timezone.now()
 

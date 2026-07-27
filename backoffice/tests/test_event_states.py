@@ -169,16 +169,31 @@ class EventStatesTestCase(TestCase):
         with self.assertRaises(TransitionNotAllowed):
             event.cancel()
 
-    def test_cannot_archive_from_draft(self):
+    def test_archive_from_draft(self):
         event = self.create_event(state=Event.STATE_DRAFT)
         self.assertEqual(event.state, Event.STATE_DRAFT)
 
-        with self.assertRaises(TransitionNotAllowed):
-            event.archive()
+        event.archive()
+        event.save()
 
-    def test_cannot_archive_from_announced(self):
+        self.assertEqual(event.state, Event.STATE_ARCHIVED)
+        self.assertTrue(event.archived)
+        self.assertIsNotNone(event.archived_at)
+
+    def test_archive_from_announced(self):
         event = self.create_event(state=Event.STATE_ANNOUNCED)
         self.assertEqual(event.state, Event.STATE_ANNOUNCED)
+
+        event.archive()
+        event.save()
+
+        self.assertEqual(event.state, Event.STATE_ARCHIVED)
+        self.assertTrue(event.archived)
+        self.assertIsNotNone(event.archived_at)
+
+    def test_cannot_archive_from_archived(self):
+        event = self.create_event(state=Event.STATE_ARCHIVED)
+        self.assertEqual(event.state, Event.STATE_ARCHIVED)
 
         with self.assertRaises(TransitionNotAllowed):
             event.archive()
@@ -245,6 +260,39 @@ class EventStatesTestCase(TestCase):
 
         self.assertEqual(event.state, Event.STATE_ANNOUNCED)
 
+    def test_cannot_archive_from_live_with_registrations(self):
+        event = self.create_event(state=Event.STATE_LIVE)
+        self._add_confirmed_registration(event)
+
+        with self.assertRaises(TransitionNotAllowed):
+            event.archive()
+
+    def test_cannot_archive_from_draft_with_registrations(self):
+        event = self.create_event(state=Event.STATE_DRAFT)
+        self._add_confirmed_registration(event)
+
+        with self.assertRaises(TransitionNotAllowed):
+            event.archive()
+
+    def test_cannot_archive_from_announced_with_registrations(self):
+        event = self.create_event(state=Event.STATE_ANNOUNCED)
+        self._add_confirmed_registration(event)
+
+        with self.assertRaises(TransitionNotAllowed):
+            event.archive()
+
+    def test_can_archive_from_cancelled_with_registrations(self):
+        event = self.create_event(state=Event.STATE_LIVE)
+        self._add_confirmed_registration(event)
+        event.cancel()
+        event.save()
+
+        event.archive()
+        event.save()
+
+        self.assertEqual(event.state, Event.STATE_ARCHIVED)
+        self.assertIsNotNone(event.archived_at)
+
     def test_visible_property_by_state(self):
         for state, expected in [
             (Event.STATE_DRAFT, False),
@@ -304,6 +352,9 @@ class EventAdminFieldsetsTestCase(TestCase):
         if state == Event.STATE_CANCELLED:
             event.cancel()
             event.save()
+        elif state == Event.STATE_ARCHIVED:
+            event.archive()
+            event.save()
         return event
 
     def get_fieldset_names(self, fieldsets):
@@ -340,3 +391,39 @@ class EventAdminFieldsetsTestCase(TestCase):
         fieldset_names = self.get_fieldset_names(fieldsets)
 
         self.assertIn('Cancellation information', fieldset_names)
+
+    def test_archival_fieldset_hidden_for_live_event(self):
+        from backoffice.admin import EventAdmin
+
+        event = self.create_event(state=Event.STATE_LIVE)
+        admin = EventAdmin(Event, None)
+
+        fieldsets = admin.get_fieldsets(None, obj=event)
+        fieldset_names = self.get_fieldset_names(fieldsets)
+
+        self.assertNotIn('Archival information', fieldset_names)
+
+    def test_archival_fieldset_shown_for_archived_event(self):
+        from backoffice.admin import EventAdmin
+
+        event = self.create_event(state=Event.STATE_ARCHIVED)
+        admin = EventAdmin(Event, None)
+
+        fieldsets = admin.get_fieldsets(None, obj=event)
+        fieldset_names = self.get_fieldset_names(fieldsets)
+
+        self.assertIn('Archival information', fieldset_names)
+
+    def test_cancellation_fieldset_still_shown_after_archiving(self):
+        from backoffice.admin import EventAdmin
+
+        event = self.create_event(state=Event.STATE_CANCELLED)
+        event.archive()
+        event.save()
+        admin = EventAdmin(Event, None)
+
+        fieldsets = admin.get_fieldsets(None, obj=event)
+        fieldset_names = self.get_fieldset_names(fieldsets)
+
+        self.assertIn('Cancellation information', fieldset_names)
+        self.assertIn('Archival information', fieldset_names)
