@@ -15,9 +15,29 @@ from backoffice.models import Registration
 from backoffice.forms import EventDuplicationFormSet
 
 
+def _cancel_confirmation_page(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet,
+                              cancellation_reason: str = '', error: str = ''):
+    context = {
+        'title': 'Cancel selected events',
+        'queryset': query_set,
+        'opts': admin.model._meta,
+        'action_checkbox_name': ACTION_CHECKBOX_NAME,
+        'cancellation_reason': cancellation_reason,
+        'error': error,
+    }
+
+    return TemplateResponse(request, 'admin/backoffice/event/cancel_selected.html', context)
+
+
 def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
     if request.method == 'POST' and 'post' in request.POST:
-        cancellation_reason = request.POST.get('cancellation_reason', '')
+        cancellation_reason = request.POST.get('cancellation_reason', '').strip()
+
+        if not cancellation_reason:
+            return _cancel_confirmation_page(
+                admin, request, query_set,
+                error='A cancellation reason is required.',
+            )
 
         cancel_count = 0
         skipped = []
@@ -65,15 +85,8 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
 
         admin.message_user(request, message, messages.SUCCESS)
         return redirect('admin:backoffice_event_changelist')
-        
-    context = {
-        'title': 'Cancel selected events',
-        'queryset': query_set,
-        'opts': admin.model._meta,
-        'action_checkbox_name': ACTION_CHECKBOX_NAME,
-    }
-    
-    return TemplateResponse(request, 'admin/backoffice/event/cancel_selected.html', context)
+
+    return _cancel_confirmation_page(admin, request, query_set)
 
 
 cancel_event.short_description = "Cancel selected events"

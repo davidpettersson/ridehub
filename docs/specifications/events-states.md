@@ -81,8 +81,7 @@ Archival is a permanent administrative cleanup step, not a member-facing one:
 - Archiving is irreversible. There is no transition out of `archived`, and re-archiving an already
   archived event is reported back to the admin as a no-op rather than an error.
 - `archived_at` records when it happened; `archival_reason` records why. Both are read-only in the
-  admin and only ever set through the Archive Event action. The reason is required: a blank or
-  whitespace-only reason redisplays the confirmation page with an error.
+  admin and only ever set through the Archive Event action, which requires a non-blank reason.
 - No email is sent when an event is archived.
 - Archived events remain visible in the admin changelist and can still be duplicated. A duplicate of
   an archived event is created as a `draft` and carries over neither `archived_at` nor
@@ -98,4 +97,7 @@ The state field is:
 - Invalid transitions or guard failures show validation errors in the admin UI
 
 `cancelled` and `archived` are not offered in the state dropdown. Both are reached only through
-their respective changelist actions, which collect a reason and show a confirmation page first.
+their respective changelist actions, which show a confirmation page first. Both actions require a
+reason: the submitted value is stripped, and a blank or whitespace-only reason redisplays the
+confirmation page with an error rather than relying on the HTML `required` attribute. Nothing is
+transitioned and no email is sent when the reason is rejected.

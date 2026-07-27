@@ -62,6 +62,81 @@ class EventAdminActionsTestCase(TestCase):
         self.assertEqual(event.state, Event.STATE_CANCELLED)
         self.assertEqual(event.cancellation_reason, 'Bad weather')
 
+    def test_cancel_action_rejects_blank_reason(self):
+        event = self.create_event()
+        changelist_url = reverse('admin:backoffice_event_changelist')
+
+        response = self.client.post(changelist_url, {
+            'action': 'cancel_event',
+            '_selected_action': [event.pk],
+            'post': 'yes',
+            'cancellation_reason': '',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'A cancellation reason is required.')
+        event.refresh_from_db()
+        self.assertEqual(event.state, Event.STATE_LIVE)
+
+    def test_cancel_action_rejects_whitespace_only_reason(self):
+        event = self.create_event()
+        changelist_url = reverse('admin:backoffice_event_changelist')
+
+        response = self.client.post(changelist_url, {
+            'action': 'cancel_event',
+            '_selected_action': [event.pk],
+            'post': 'yes',
+            'cancellation_reason': '   \n\t  ',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'A cancellation reason is required.')
+        event.refresh_from_db()
+        self.assertEqual(event.state, Event.STATE_LIVE)
+
+    def test_cancel_action_sends_no_email_when_reason_is_blank(self):
+        event = self.create_event()
+        changelist_url = reverse('admin:backoffice_event_changelist')
+        mail.outbox = []
+
+        self.client.post(changelist_url, {
+            'action': 'cancel_event',
+            '_selected_action': [event.pk],
+            'post': 'yes',
+            'cancellation_reason': '',
+        })
+
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_cancel_action_strips_surrounding_whitespace_from_reason(self):
+        event = self.create_event()
+        changelist_url = reverse('admin:backoffice_event_changelist')
+
+        self.client.post(changelist_url, {
+            'action': 'cancel_event',
+            '_selected_action': [event.pk],
+            'post': 'yes',
+            'cancellation_reason': '  Bad weather  ',
+        })
+
+        event.refresh_from_db()
+        self.assertEqual(event.cancellation_reason, 'Bad weather')
+
+    def test_cancel_action_redisplays_selection_after_blank_reason(self):
+        event = self.create_event()
+        changelist_url = reverse('admin:backoffice_event_changelist')
+
+        response = self.client.post(changelist_url, {
+            'action': 'cancel_event',
+            '_selected_action': [event.pk],
+            'post': 'yes',
+            'cancellation_reason': '',
+        })
+
+        self.assertContains(response, 'Cancel selected events')
+        self.assertContains(response, event.name)
+        self.assertContains(response, f'value="{event.pk}"')
+
     def test_duplicate_action_shows_form(self):
         event = self.create_event()
         changelist_url = reverse('admin:backoffice_event_changelist')
