@@ -17,6 +17,9 @@
 {% block content %}
 <div id="content-main">
     {% if queryset %}
+    {% if error %}
+    <p class="errornote">{{ error }}</p>
+    {% endif %}
     <form method="post">{% csrf_token %}
         <div>
             <p>{% blocktranslate %}Are you sure you want to archive the selected {{ queryset.count }} events?{% endblocktranslate %}</p>
@@ -29,9 +32,9 @@
                 <li>{% blocktranslate %}The event remains available in the admin, and can still be duplicated{% endblocktranslate %}</li>
             </ul>
 
-            <div class="form-row">
+            <div class="form-row{% if error %} errors{% endif %}">
                 <label for="id_archival_reason">{% blocktranslate %}Archival reason:{% endblocktranslate %}</label>
-                <textarea name="archival_reason" id="id_archival_reason" rows="5" cols="80" required></textarea>
+                <textarea name="archival_reason" id="id_archival_reason" rows="5" cols="80" required>{{ archival_reason }}</textarea>
                 <div class="help">{% blocktranslate %}This is recorded on the event for administrators. It is never shown to members.{% endblocktranslate %}</div>
             </div>
 

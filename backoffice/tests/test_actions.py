@@ -212,6 +212,72 @@ class ArchiveEventActionTestCase(TestCase):
         self.assertEqual(self.event.archival_reason, 'Created by mistake')
         self.assertIsNotNone(self.event.archived_at)
 
+    def test_archive_action_rejects_blank_reason(self):
+        response = self.client.post(self.changelist_url, {
+            'action': 'archive_event',
+            '_selected_action': [self.event.pk],
+            'post': 'yes',
+            'archival_reason': '',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'An archival reason is required.')
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.state, Event.STATE_LIVE)
+
+    def test_archive_action_rejects_whitespace_only_reason(self):
+        response = self.client.post(self.changelist_url, {
+            'action': 'archive_event',
+            '_selected_action': [self.event.pk],
+            'post': 'yes',
+            'archival_reason': '   \n\t  ',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'An archival reason is required.')
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.state, Event.STATE_LIVE)
+
+    def test_archive_action_strips_surrounding_whitespace_from_reason(self):
+        self.client.post(self.changelist_url, {
+            'action': 'archive_event',
+            '_selected_action': [self.event.pk],
+            'post': 'yes',
+            'archival_reason': '  Created by mistake  ',
+        })
+
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.archival_reason, 'Created by mistake')
+
+    def test_archive_action_redisplays_selection_after_blank_reason(self):
+        response = self.client.post(self.changelist_url, {
+            'action': 'archive_event',
+            '_selected_action': [self.event.pk],
+            'post': 'yes',
+            'archival_reason': '',
+        })
+
+        self.assertContains(response, 'Archive selected events')
+        self.assertContains(response, self.event.name)
+        self.assertContains(response, f'value="{self.event.pk}"')
+
+    def test_archive_action_reports_already_archived_event_distinctly(self):
+        self.event.archival_reason = 'Created by mistake'
+        self.event.archive()
+        self.event.save()
+
+        response = self.client.post(self.changelist_url, {
+            'action': 'archive_event',
+            '_selected_action': [self.event.pk],
+            'post': 'yes',
+            'archival_reason': 'Second attempt',
+        }, follow=True)
+
+        self.assertContains(response, 'Already archived')
+        self.assertNotContains(response, 'must be cancelled before')
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.archival_reason, 'Created by mistake')
+
     def test_archive_action_skips_event_with_confirmed_registrations(self):
         self._add_confirmed_registration(self.event)
 

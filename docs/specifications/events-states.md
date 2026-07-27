@@ -6,13 +6,19 @@ This document describes the event lifecycle state machine. The `state` field is 
 
 The Event model has five possible states, defined as class constants (e.g., `Event.STATE_LIVE`):
 
-| State       | Description                                    | Visibility | Registration |
-|-------------|------------------------------------------------|------------|--------------|
-| `draft`     | Event is being prepared                        | Admin-only | Closed       |
-| `announced` | Event is visible but not open for registration | Public     | Closed       |
-| `live`      | Event is live and accepting registrations      | Public     | Open         |
-| `cancelled` | Event has been cancelled                       | Public     | Closed       |
-| `archived`  | Event has been removed/deleted                 | Admin-only | Closed       |
+| State       | Description                                    | Listed publicly | Public detail page      | Registration |
+|-------------|------------------------------------------------|-----------------|-------------------------|--------------|
+| `draft`     | Event is being prepared                        | No              | Full page               | Closed       |
+| `announced` | Event is visible but not open for registration | Yes             | Full page               | Closed       |
+| `live`      | Event is live and accepting registrations      | Yes             | Full page               | Open         |
+| `cancelled` | Event has been cancelled                       | Yes             | Full page               | Closed       |
+| `archived`  | Event has been removed/deleted                 | No              | "Archived" message only | Closed       |
+
+"Listed publicly" covers the upcoming-events list and the calendar. The public detail URL stays
+resolvable in every state — it is never a 404 — so a `draft` or `archived` event is still reachable
+by anyone holding its link. For `draft` that link is the full page, which is what makes sharing a
+work-in-progress event with a colleague possible. For `archived` the URL resolves to a short
+"this event has been archived" message that exposes nothing about the event, not even its name.
 
 ## Computed Properties
 
@@ -70,10 +76,13 @@ Archival is a permanent administrative cleanup step, not a member-facing one:
 - Archived events are excluded from public event listings and the calendar.
   `EventService.fetch_events` excludes them by default.
 - The public event detail page for an archived event renders `web/events/archived.html`, a short
-  message stating the event has been archived. The archival reason is never shown there.
-- Archiving is irreversible. There is no transition out of `archived`.
+  message stating the event has been archived. It shows neither the event name nor the archival
+  reason, so the URL leaks nothing to whoever still holds it.
+- Archiving is irreversible. There is no transition out of `archived`, and re-archiving an already
+  archived event is reported back to the admin as a no-op rather than an error.
 - `archived_at` records when it happened; `archival_reason` records why. Both are read-only in the
-  admin and only ever set through the Archive Event action.
+  admin and only ever set through the Archive Event action. The reason is required: a blank or
+  whitespace-only reason redisplays the confirmation page with an error.
 - No email is sent when an event is archived.
 - Archived events remain visible in the admin changelist and can still be duplicated. A duplicate of
   an archived event is created as a `draft` and carries over neither `archived_at` nor

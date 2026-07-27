@@ -134,29 +134,62 @@ def duplicate_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet
 
 duplicate_event.short_description = "Duplicate selected events"
 
+def _archive_confirmation_page(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet,
+                               archival_reason: str = '', error: str = ''):
+    context = {
+        'title': 'Archive selected events',
+        'queryset': query_set,
+        'opts': admin.model._meta,
+        'action_checkbox_name': ACTION_CHECKBOX_NAME,
+        'archival_reason': archival_reason,
+        'error': error,
+    }
+
+    return TemplateResponse(request, 'admin/backoffice/event/archive_selected.html', context)
+
+
 def archive_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
     if request.method == 'POST' and 'post' in request.POST:
-        archival_reason = request.POST.get('archival_reason', '')
+        archival_reason = request.POST.get('archival_reason', '').strip()
+
+        if not archival_reason:
+            return _archive_confirmation_page(
+                admin, request, query_set,
+                error='An archival reason is required.',
+            )
 
         archive_count = 0
-        skipped = []
+        already_archived = []
+        blocked = []
         for event in query_set:
+            if event.archived:
+                already_archived.append(event.name)
+                continue
+
             try:
                 event.archival_reason = archival_reason
                 event.archive()
                 event.save()
             except TransitionNotAllowed:
-                skipped.append(event.name)
+                blocked.append(event.name)
                 continue
 
             AuditService().log(request.user, 'archived', target=event)
 
             archive_count += 1
 
-        if skipped:
+        if already_archived:
             admin.message_user(
                 request,
-                f"Could not archive: {', '.join(skipped)}. "
+                f"Already archived: {', '.join(already_archived)}. "
+                f"Archiving cannot be repeated or undone.",
+                messages.WARNING,
+            )
+
+        if blocked:
+            admin.message_user(
+                request,
+                f"Could not archive: {', '.join(blocked)}. "
                 f"Events with confirmed registrations must be cancelled before they can be archived.",
                 messages.ERROR,
             )
@@ -171,14 +204,7 @@ def archive_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
         admin.message_user(request, message, messages.SUCCESS)
         return redirect('admin:backoffice_event_changelist')
 
-    context = {
-        'title': 'Archive selected events',
-        'queryset': query_set,
-        'opts': admin.model._meta,
-        'action_checkbox_name': ACTION_CHECKBOX_NAME,
-    }
-
-    return TemplateResponse(request, 'admin/backoffice/event/archive_selected.html', context)
+    return _archive_confirmation_page(admin, request, query_set)
 
 
 archive_event.short_description = "Archive selected events"
