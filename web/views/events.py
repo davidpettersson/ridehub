@@ -168,6 +168,9 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
         Event,
         id=event_id)
 
+    if event.archived:
+        return render(request, 'web/events/archived.html', {'event': event})
+
     if _registrations_visible(event, request.user):
         rides = _get_rides_with_riders_for_event(event_id, request.user)
     else:

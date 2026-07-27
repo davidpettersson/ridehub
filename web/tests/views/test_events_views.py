@@ -1079,6 +1079,42 @@ class EventDetailViewTests(BaseEventViewTestCase):
         self.assertTemplateUsed(response, 'web/events/detail.html')
 
 
+class ArchivedEventDetailViewTests(BaseEventViewTestCase):
+    """Tests for the event_detail view when the event is archived."""
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('event_detail', kwargs={'event_id': self.event.id})
+        self.event.cancel()
+        self.event.save()
+        self.event.archive()
+        self.event.save()
+
+    def test_archived_event_shows_archived_message(self):
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/events/archived.html')
+        self.assertContains(response, 'This event has been archived')
+
+    def test_archived_event_does_not_render_detail_page(self):
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertTemplateNotUsed(response, 'web/events/detail.html')
+        self.assertNotContains(response, self.event.description)
+
+    def test_archived_event_hidden_from_event_list(self):
+        # Act
+        response = self.client.get(reverse('events'), follow=True)
+
+        # Assert
+        self.assertNotContains(response, self.event.name)
+
+
 class EventViewTimezoneTests(TestCase):
     """Tests for timezone handling in event views."""
 

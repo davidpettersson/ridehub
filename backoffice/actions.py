@@ -135,35 +135,50 @@ def duplicate_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet
 duplicate_event.short_description = "Duplicate selected events"
 
 def archive_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
-    archive_count = 0
-    skipped = []
+    if request.method == 'POST' and 'post' in request.POST:
+        archival_reason = request.POST.get('archival_reason', '')
 
-    for event in query_set:
-        try:
-            event.archive()
-            event.save()
-        except TransitionNotAllowed:
-            skipped.append(event.name)
-            continue
+        archive_count = 0
+        skipped = []
+        for event in query_set:
+            try:
+                event.archival_reason = archival_reason
+                event.archive()
+                event.save()
+            except TransitionNotAllowed:
+                skipped.append(event.name)
+                continue
 
-        AuditService().log(request.user, 'archived', target=event)
+            AuditService().log(request.user, 'archived', target=event)
 
-        archive_count += 1
+            archive_count += 1
 
-    if skipped:
-        admin.message_user(
-            request,
-            f"Could not archive: {', '.join(skipped)}. Only live or cancelled events can be archived.",
-            messages.ERROR,
-        )
+        if skipped:
+            admin.message_user(
+                request,
+                f"Could not archive: {', '.join(skipped)}. "
+                f"Events with confirmed registrations must be cancelled before they can be archived.",
+                messages.ERROR,
+            )
 
-    if archive_count == 1:
-        message = "1 event was successfully archived."
-    elif archive_count > 1:
-        message = f"{archive_count} events were successfully archived."
-    else:
-        return
+        if archive_count == 1:
+            message = "1 event was successfully archived."
+        elif archive_count > 1:
+            message = f"{archive_count} events were successfully archived."
+        else:
+            return redirect('admin:backoffice_event_changelist')
 
-    admin.message_user(request, message, messages.SUCCESS)
+        admin.message_user(request, message, messages.SUCCESS)
+        return redirect('admin:backoffice_event_changelist')
+
+    context = {
+        'title': 'Archive selected events',
+        'queryset': query_set,
+        'opts': admin.model._meta,
+        'action_checkbox_name': ACTION_CHECKBOX_NAME,
+    }
+
+    return TemplateResponse(request, 'admin/backoffice/event/archive_selected.html', context)
+
 
 archive_event.short_description = "Archive selected events"

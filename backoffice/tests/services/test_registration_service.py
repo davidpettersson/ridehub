@@ -33,7 +33,7 @@ class FetchCurrentRegistrationsTestCase(TestCase):
         self.program = Program.objects.create(
             name="Test Program"
         )
-        self.test_today_date = timezone.now().date()
+        self.test_today_date = timezone.localdate()
         self.noon_time = datetime.time(12, 0, 0) # Store noon_time for re-use
         self.test_today_datetime_noon = timezone.make_aware( # Renamed for clarity
             datetime.datetime.combine(self.test_today_date, self.noon_time)
@@ -658,7 +658,7 @@ class FetchConfirmedEventIdsTestCase(TestCase):
             password='password'
         )
         self.program = Program.objects.create(name="Test Program")
-        self.test_today_date = timezone.now().date()
+        self.test_today_date = timezone.localdate()
         self.noon_time = datetime.time(12, 0, 0)
         self.test_today_datetime_noon = timezone.make_aware(
             datetime.datetime.combine(self.test_today_date, self.noon_time)
@@ -913,7 +913,7 @@ class FetchPastRegistrationsTestCase(TestCase):
         self.program = Program.objects.create(
             name="Test Program"
         )
-        self.test_today_date = timezone.now().date()
+        self.test_today_date = timezone.localdate()
         self.noon_time = datetime.time(12, 0, 0)
         self.test_today_datetime_noon = timezone.make_aware(
             datetime.datetime.combine(self.test_today_date, self.noon_time)
@@ -1081,7 +1081,7 @@ class FetchUserStatisticsTestCase(TestCase):
         self.program = Program.objects.create(
             name="Test Program"
         )
-        self.test_today_date = timezone.now().date()
+        self.test_today_date = timezone.localdate()
         self.noon_time = datetime.time(12, 0, 0)
         self.test_today_datetime_noon = timezone.make_aware(
             datetime.datetime.combine(self.test_today_date, self.noon_time)
