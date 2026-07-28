@@ -189,7 +189,62 @@ class ForecastSummaryTestCase(TestCase):
         self.assertEqual(summary.aqhi_category, 'low')
         self.assertEqual(summary.aqhi_warning_category, 'high')
 
-    def test_aria_label_combines_all_segments_without_warnings(self):
+    def test_aqhi_hidden_when_low_throughout(self):
+        # Arrange
+        forecast = self._build_forecast([
+            self._hour(0, 'sun', 20, 2),
+            self._hour(1, 'sun', 20, 3),
+        ])
+
+        # Act
+        summary = summarize(forecast)
+
+        # Assert
+        self.assertEqual(summary.aqhi_category, 'low')
+        self.assertFalse(summary.aqhi_visible)
+
+    def test_aqhi_shown_when_low_spikes_out_of_low(self):
+        # Arrange
+        forecast = self._build_forecast([
+            self._hour(0, 'sun', 20, 2),
+            self._hour(1, 'sun', 20, 2),
+            self._hour(2, 'sun', 20, 5),
+        ])
+
+        # Act
+        summary = summarize(forecast)
+
+        # Assert
+        self.assertEqual(summary.aqhi_category, 'low')
+        self.assertTrue(summary.aqhi_visible)
+
+    def test_aqhi_shown_when_prevalent_category_is_moderate(self):
+        # Arrange
+        forecast = self._build_forecast([
+            self._hour(0, 'sun', 20, 5),
+            self._hour(1, 'sun', 20, 5),
+        ])
+
+        # Act
+        summary = summarize(forecast)
+
+        # Assert
+        self.assertEqual(summary.aqhi_category, 'moderate')
+        self.assertTrue(summary.aqhi_visible)
+
+    def test_aqhi_hidden_when_unavailable(self):
+        # Arrange
+        forecast = self._build_forecast([
+            self._hour(0, 'sun', 20, None),
+        ])
+
+        # Act
+        summary = summarize(forecast)
+
+        # Assert
+        self.assertFalse(summary.aqhi_visible)
+
+    def test_aria_label_omits_air_quality_when_low_throughout(self):
         # Arrange
         forecast = self._build_forecast([
             self._hour(0, 'cloud', 20, 2),
@@ -200,7 +255,35 @@ class ForecastSummaryTestCase(TestCase):
         summary = summarize(forecast)
 
         # Assert
-        self.assertEqual(summary.aria_label, 'Weather: cloudy, 21 degrees Celsius, air quality low')
+        self.assertEqual(summary.aria_label, 'Weather: cloudy, 21 degrees Celsius')
+
+    def test_hourly_readings_keep_low_aqhi(self):
+        # Arrange
+        forecast = self._build_forecast([
+            self._hour(0, 'sun', 20, 2),
+            self._hour(1, 'sun', 20, 3),
+        ])
+
+        # Act
+        summary = summarize(forecast)
+
+        # Assert
+        self.assertFalse(summary.aqhi_visible)
+        self.assertEqual([reading.aqhi_display for reading in summary.hourly], ['2', '3'])
+        self.assertEqual([reading.aqhi_category for reading in summary.hourly], ['low', 'low'])
+
+    def test_aria_label_combines_all_segments_without_warnings(self):
+        # Arrange
+        forecast = self._build_forecast([
+            self._hour(0, 'cloud', 20, 5),
+            self._hour(1, 'cloud', 21, 5),
+        ])
+
+        # Act
+        summary = summarize(forecast)
+
+        # Assert
+        self.assertEqual(summary.aria_label, 'Weather: cloudy, 21 degrees Celsius, air quality moderate')
 
     def test_aria_label_includes_warnings_when_present(self):
         # Arrange

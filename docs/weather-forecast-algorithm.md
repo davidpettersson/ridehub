@@ -22,7 +22,10 @@ badge:
   collapsed to a single number when they are equal.
 - **AQHI**: minimum and maximum Canadian Air Quality Health Index across the
   event's duration, collapsed to a single value when they are equal, and shown
-  as `10+` above 10.
+  as `10+` above 10. It is omitted from the badge when the prevalent category is
+  low and no hour rises above it, since a low reading is not actionable; a
+  moderate or worse prevalent category, or a spike out of low, is always shown.
+  The hourly forecast always lists AQHI, whatever the category.
 
 The badge is gated behind the `weather_forecast_badges` waffle flag and
 credits its source: Open-Meteo.
