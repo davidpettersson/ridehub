@@ -10,22 +10,29 @@ All events except virtual ones that start today or within the next 7 days get a
 badge:
 
 ```
-☁️/☀️ · 12 – 15° · AQHI 3 – 5 (beta)
+☁️/⚡ · 12–15° · AQHI moderate →high
 ```
 
-- **Conditions**: every weather condition that occurs during the event
-  (thunder ⚡, snow ❄️, rain ☔, cloud ☁️, sun ☀️), slash-separated and
-  ordered by prevalence — the condition covering the most hours of the
-  window comes first. Conditions covering the same number of hours are
-  ordered worst first.
+The badge summarizes the event's hours; `backoffice/services/forecast_summary.py`
+reduces the stored hourly readings to the values below.
+
+- **Condition**: one icon for the prevalent condition — the one covering the
+  most hours of the window (thunder ⚡, snow ❄️, rain ☔, cloud ☁️, sun ☀️),
+  ties broken toward the worse condition. A second icon follows when a notable
+  condition (rain, snow, thunder) appears in some hour and is worse than the
+  prevalent one.
 - **Temperature**: minimum and maximum in °C across the event's duration,
-  collapsed to a single number when they are equal.
-- **AQHI**: minimum and maximum Canadian Air Quality Health Index across the
-  event's duration, collapsed to a single value when they are equal, and shown
-  as `10+` above 10. It is omitted from the badge when the prevalent category is
-  low and no hour rises above it, since a low reading is not actionable; a
-  moderate or worse prevalent category, or a spike out of low, is always shown.
-  The hourly forecast always lists AQHI, whatever the category.
+  collapsed to a single midpoint when they span two degrees or less.
+- **AQHI**: the prevalent Canadian Air Quality Health Index *category* (low,
+  moderate, high, very high) rather than a number, plus a spike category when
+  some hour lands in a worse category than the prevalent one. The badge omits
+  AQHI entirely when the prevalent category is low and no hour rises above it,
+  since a low reading is not actionable; a moderate or worse prevalent
+  category, or a spike out of low, is always shown.
+
+The hourly forecast modal is unaffected by that suppression: it lists each
+hour's numeric AQHI (shown as `10+` above 10) and its category, whatever the
+category is.
 
 The badge is gated behind the `weather_forecast_badges` waffle flag and
 credits its source: Open-Meteo.
