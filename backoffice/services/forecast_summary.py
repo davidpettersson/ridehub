@@ -38,6 +38,7 @@ class ForecastSummary:
     temperature_aria_label: str
     aqhi_category: str | None
     aqhi_warning_category: str | None
+    aqhi_visible: bool
     aria_label: str
     hourly: list[HourlyReading]
 
@@ -53,11 +54,12 @@ def summarize(forecast: Forecast) -> ForecastSummary:
 
     aqhi_category = _prevalent_aqhi_category(hourly)
     aqhi_warning_category = _aqhi_warning(hourly, aqhi_category)
+    aqhi_visible = _aqhi_visible(aqhi_category, aqhi_warning_category)
 
     aria_label = _aria_label(
         condition_primary, condition_warning_label,
         temperature_aria_label,
-        aqhi_category, aqhi_warning_category,
+        aqhi_category if aqhi_visible else None, aqhi_warning_category,
     )
 
     return ForecastSummary(
@@ -68,6 +70,7 @@ def summarize(forecast: Forecast) -> ForecastSummary:
         temperature_aria_label=temperature_aria_label,
         aqhi_category=aqhi_category,
         aqhi_warning_category=aqhi_warning_category,
+        aqhi_visible=aqhi_visible,
         aria_label=aria_label,
         hourly=hourly,
     )
@@ -126,6 +129,12 @@ def _aqhi_warning(hourly: list[HourlyReading], prevalent_category: str | None) -
     if AQHI_CATEGORY_ORDER.index(worst) > AQHI_CATEGORY_ORDER.index(prevalent_category):
         return worst
     return None
+
+
+def _aqhi_visible(category: str | None, warning_category: str | None) -> bool:
+    if category is None:
+        return False
+    return category != 'low' or warning_category is not None
 
 
 def _aria_label(
