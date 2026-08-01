@@ -4,7 +4,28 @@
     <div class="row justify-content-center py-5">
         <div class="col-12 col-sm-8 col-md-6 col-lg-5">
             <div class="card">
-                <div class="card-body p-4 text-center">
+                <div class="card-body p-4 text-center"
+                     {% if auto_redirect %}
+                     x-data="{
+                         remaining: {{ redirect_seconds }},
+                         timer: null,
+                         start() {
+                             this.timer = setInterval(() => {
+                                 this.remaining -= 1;
+                                 if (this.remaining <= 0) {
+                                     this.stop();
+                                     window.location.replace('{% url 'event_detail' event.id %}');
+                                 }
+                             }, 1000);
+                         },
+                         stop() {
+                             clearInterval(this.timer);
+                             this.remaining = null;
+                         }
+                     }"
+                     x-init="start()"
+                     @pageshow.window="if ($event.persisted) stop()"
+                     {% endif %}>
                     <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success bg-opacity-10 mb-4" style="width: 64px; height: 64px;">
                         <i class="bi bi-check-lg text-success fs-2"></i>
                     </div>
@@ -12,16 +33,26 @@
                     <h1 class="fs-4 fw-bold mb-3">Registration Successful</h1>
 
                     <p class="text-secondary mb-3">
-                        Your registration has been submitted successfully! Please expect a confirmation email within a couple of minutes.
+                        Your registration for {{ event.name }} has been submitted successfully! Please expect a confirmation email within a couple of minutes.
                     </p>
 
+                    {% if auto_redirect %}
+                        <p class="text-secondary small mb-3" x-show="remaining !== null" x-cloak>
+                            Taking you back to the event in <span x-text="remaining"></span> seconds.
+                            <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @click="stop()">Stay here</button>
+                        </p>
+                    {% endif %}
+
                     <div class="mt-4 d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                        <a href="{% url 'event_detail' event.id %}" class="btn btn-primary">
+                            Back to event
+                        </a>
                         {% if user.is_authenticated %}
-                        <a href="{% url 'profile' %}" class="btn btn-primary">
+                        <a href="{% url 'profile' %}" class="btn btn-outline-primary">
                             View profile
                         </a>
                         {% endif %}
-                        <a href="{% url 'events' %}" class="btn btn-primary">
+                        <a href="{% url 'events' %}" class="btn btn-outline-primary">
                             View event list
                         </a>
                     </div>
