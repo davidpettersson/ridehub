@@ -281,6 +281,44 @@ class RegistrationEditSubmissionTests(BaseRegistrationEditViewTestCase):
         self.assertTrue(response.context['form'].errors)
         self.assertEqual('Original Contact', self._reload().emergency_contact_name)
 
+    def test_invalid_post_keeps_a_cleared_ride_cleared(self):
+        # Arrange
+        self._login()
+
+        # Act
+        response = self.client.post(
+            self.url, self._post_data(ride='', emergency_contact_name='')
+        )
+
+        # Assert
+        self.assertEqual(200, response.status_code)
+        self.assertIsNone(response.context['selected_ride_id'])
+
+    def test_invalid_post_keeps_a_cleared_speed_range_cleared(self):
+        # Arrange
+        self._login()
+
+        # Act
+        response = self.client.post(
+            self.url, self._post_data(speed_range_preference='', emergency_contact_name='')
+        )
+
+        # Assert
+        self.assertEqual(200, response.status_code)
+        self.assertIsNone(response.context['selected_speed_range_id'])
+
+    def test_invalid_post_keeps_a_changed_ride_selected(self):
+        # Arrange
+        self._login()
+
+        # Act
+        response = self.client.post(
+            self.url, self._post_data(ride=self.other_ride.id, emergency_contact_name='')
+        )
+
+        # Assert
+        self.assertEqual(self.other_ride.id, response.context['selected_ride_id'])
+
     def test_unchanged_post_records_nothing(self):
         # Arrange
         self._login()

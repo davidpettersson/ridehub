@@ -174,6 +174,16 @@ def _safe_redirect_target(request: HttpRequest) -> str | None:
     return None
 
 
+def _submitted_selection(request: HttpRequest, field_name: str, current_id: int | None) -> int | None:
+    if request.method != 'POST' or field_name not in request.POST:
+        return current_id
+
+    try:
+        return int(request.POST[field_name])
+    except (ValueError, TypeError):
+        return None
+
+
 def _get_edit_initial(registration: Registration) -> dict:
     initial = {
         'ride': registration.ride_id,
@@ -227,21 +237,10 @@ def registration_edit(request: HttpRequest, registration_id: int) -> HttpRespons
         )
         return redirect(redirect_target or 'profile')
 
-    selected_ride_id = registration.ride_id
-
-    if request.method == 'POST' and request.POST.get('ride'):
-        try:
-            selected_ride_id = int(request.POST['ride'])
-        except (ValueError, TypeError):
-            pass
-
-    selected_speed_range_id = registration.speed_range_preference_id
-
-    if request.method == 'POST' and request.POST.get('speed_range_preference'):
-        try:
-            selected_speed_range_id = int(request.POST['speed_range_preference'])
-        except (ValueError, TypeError):
-            pass
+    selected_ride_id = _submitted_selection(request, 'ride', registration.ride_id)
+    selected_speed_range_id = _submitted_selection(
+        request, 'speed_range_preference', registration.speed_range_preference_id
+    )
 
     return render(request, 'web/registrations/edit.html', {
         'event': event,

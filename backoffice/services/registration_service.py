@@ -465,14 +465,14 @@ class RegistrationService:
         return amendment
 
     def _apply_registration_changes(self, registration: Registration, actor: User | None,
-                                    action: str, fields: dict) -> bool:
+                                    action: str, fields: dict) -> list[str]:
         changed_fields = [
             field_name for field_name, value in fields.items()
             if self._field_has_changed(registration, field_name, value)
         ]
 
         if not changed_fields:
-            return False
+            return []
 
         with transaction.atomic():
             self._create_amendment(registration, actor, changed_fields)
@@ -488,19 +488,21 @@ class RegistrationService:
 
             self.audit_service.log(actor, action, target=registration)
 
-        return True
+        return changed_fields
 
-    def staff_update_registration(self, registration: Registration, staff_user, **fields) -> bool:
-        changed = self._apply_registration_changes(registration, staff_user, 'staff_edited', fields)
+    def staff_update_registration(self, registration: Registration, staff_user, **fields) -> list[str]:
+        changed_fields = self._apply_registration_changes(
+            registration, staff_user, 'staff_edited', fields
+        )
 
-        if changed:
+        if changed_fields:
             logger.info(
-                "Staff updated registration %d for %s (event %s, id=%d): %s",
-                registration.id, registration.email, registration.event.name,
-                registration.event.id, list(fields.keys()),
+                "Staff changed %s on registration %d for %s (event %s, id=%d)",
+                changed_fields, registration.id, registration.email,
+                registration.event.name, registration.event.id,
             )
 
-        return changed
+        return changed_fields
 
     def has_editable_fields(self, event: Event) -> bool:
         return any([
@@ -555,23 +557,25 @@ class RegistrationService:
         return fields
 
     def edit_registration(self, registration: Registration, user: User,
-                          registration_detail: RegistrationDetail) -> bool:
+                          registration_detail: RegistrationDetail) -> list[str]:
         allowed, reason = self.is_registration_editable(registration)
 
         if not allowed:
             raise ValueError(reason)
 
         fields = self._editable_fields(registration.event, registration_detail)
-        changed = self._apply_registration_changes(registration, user, 'registration_edited', fields)
+        changed_fields = self._apply_registration_changes(
+            registration, user, 'registration_edited', fields
+        )
 
-        if changed:
+        if changed_fields:
             logger.info(
-                "User %s (id=%d) edited registration %d for event %s (id=%d): %s",
-                user.email, user.id, registration.id,
-                registration.event.name, registration.event.id, list(fields.keys()),
+                "User %s (id=%d) changed %s on registration %d for event %s (id=%d)",
+                user.email, user.id, changed_fields, registration.id,
+                registration.event.name, registration.event.id,
             )
 
-        return changed
+        return changed_fields
 
     def _send_withdrawal_email(self, registration: Registration) -> None:
         context = {

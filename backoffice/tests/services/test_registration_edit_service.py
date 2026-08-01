@@ -102,6 +102,25 @@ class EditRegistrationTests(BaseRegistrationEditTestCase):
         self.assertTrue(changed)
         self.assertEqual(self.other_ride, self.registration.ride)
 
+    def test_edit_returns_only_the_fields_that_changed(self):
+        # Act
+        changed_fields = self.service.edit_registration(
+            self.registration, self.user,
+            self._detail(ride=self.other_ride, emergency_contact_name='New Contact'),
+        )
+
+        # Assert
+        self.assertEqual({'ride', 'emergency_contact_name'}, set(changed_fields))
+
+    def test_edit_without_changes_returns_no_fields(self):
+        # Act
+        changed_fields = self.service.edit_registration(
+            self.registration, self.user, self._detail()
+        )
+
+        # Assert
+        self.assertEqual([], changed_fields)
+
     def test_edit_keeps_the_same_registration(self):
         # Arrange
         registration_id = self.registration.id
@@ -384,6 +403,15 @@ class StaffUpdateAmendmentTests(BaseRegistrationEditTestCase):
         self.assertEqual('Rider', amendment.first_name)
         self.assertEqual(self.ride, amendment.ride)
         self.assertEqual({'first_name', 'ride'}, set(amendment.changed_fields))
+
+    def test_staff_edit_returns_only_the_fields_that_changed(self):
+        # Act
+        changed_fields = self.service.staff_update_registration(
+            self.registration, self.staff_user, first_name='Renamed', ride=self.ride
+        )
+
+        # Assert
+        self.assertEqual(['first_name'], changed_fields)
 
     def test_staff_edit_still_updates_the_registration(self):
         # Act
