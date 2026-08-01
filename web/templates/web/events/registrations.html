@@ -208,7 +208,7 @@
     <div class="p-3 mb-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded d-print-none">
         <p class="text-muted small mb-0">
             <i class="bi bi-envelope-exclamation me-1" aria-hidden="true"></i>
-            There {{ unverified_riders|length|pluralize:"is,are" }} {{ unverified_riders|length }} unconfirmed registration{{ unverified_riders|length|pluralize }}:
+            Pending confirmation{{ unverified_riders|length|pluralize }} from {{ unverified_riders|length }} rider{{ unverified_riders|length|pluralize }}:
             {% for registration in unverified_riders %}{{ registration.user.get_full_name }} &lt;{{ registration.user.email }}&gt;{% if not forloop.last %}, {% endif %}{% endfor %}
         </p>
     </div>

@@ -215,7 +215,7 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         response = self.client.get(self.url)
 
         # Assert
-        self.assertContains(response, 'There is 1 unconfirmed registration:')
+        self.assertContains(response, 'Pending confirmation from 1 rider:')
         self.assertContains(response, 'Bob Bobson &lt;bob@bobson.com&gt;')
 
     def test_ride_leader_does_not_see_unverified_registrations_notice(self):
@@ -228,7 +228,7 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
 
         # Assert
         self.assertEqual(response.context['unverified_riders'], [])
-        self.assertNotContains(response, 'unconfirmed registration')
+        self.assertNotContains(response, 'Pending confirmation')
         self.assertNotContains(response, 'bob@bobson.com')
 
     def test_staff_sees_no_notice_without_unverified_registrations(self):
@@ -239,7 +239,7 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         response = self.client.get(self.url)
 
         # Assert
-        self.assertNotContains(response, 'unconfirmed registration')
+        self.assertNotContains(response, 'Pending confirmation')
 
     def _add_confirmed_registration(self, user, days_offset):
         event = Event.objects.create(
@@ -1754,4 +1754,5 @@ class UpcomingViewQueryCountTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '2 registered')
+
 
