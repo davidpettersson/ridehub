@@ -896,7 +896,7 @@ class Registration(models.Model):
                 })
 
 
-class RegistrationAmendment(models.Model):
+class RegistrationSnapshot(models.Model):
     SNAPSHOT_FIELDS = (
         'first_name',
         'last_name',
@@ -913,7 +913,7 @@ class RegistrationAmendment(models.Model):
     registration = models.ForeignKey(
         Registration,
         on_delete=models.CASCADE,
-        related_name='amendments'
+        related_name='snapshots'
     )
 
     actor = models.ForeignKey(
@@ -921,14 +921,18 @@ class RegistrationAmendment(models.Model):
         on_delete=models.PROTECT,
         null=True,
         blank=True,
-        related_name='registration_amendments'
+        related_name='registration_snapshots',
+        help_text='Who made the change that superseded this state.'
     )
 
     changed_fields = models.JSONField(
-        help_text='Names of the registration fields this amendment changed.'
+        help_text='Names of the registration fields that the superseding change altered.'
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    superseded_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text='When this state stopped being current.'
+    )
 
     first_name = models.CharField(
         max_length=128
@@ -983,13 +987,13 @@ class RegistrationAmendment(models.Model):
     )
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-superseded_at']
         indexes = [
-            models.Index(fields=['registration', '-created_at']),
+            models.Index(fields=['registration', '-superseded_at']),
         ]
 
     def __str__(self):
-        return f"Amendment of registration #{self.registration_id} at {self.created_at}"
+        return f"Registration #{self.registration_id} as it was until {self.superseded_at}"
 
     def clean(self):
         if not isinstance(self.changed_fields, list) or not self.changed_fields:

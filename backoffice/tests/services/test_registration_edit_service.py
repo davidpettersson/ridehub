@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from audit.models import AuditEvent
 from backoffice.models import (
-    Event, Program, Registration, RegistrationAmendment, Ride, Route, SpeedRange,
+    Event, Program, Registration, RegistrationSnapshot, Ride, Route, SpeedRange,
 )
 from backoffice.services.registration_service import RegistrationDetail, RegistrationService
 
@@ -180,14 +180,14 @@ class EditRegistrationTests(BaseRegistrationEditTestCase):
         )
 
         # Assert
-        amendment = RegistrationAmendment.objects.get(registration=self.registration)
-        self.assertEqual(self.user, amendment.actor)
-        self.assertEqual(self.ride, amendment.ride)
-        self.assertEqual(self.speed_range, amendment.speed_range_preference)
-        self.assertEqual('Original Contact', amendment.emergency_contact_name)
-        self.assertEqual('+16135550111', amendment.emergency_contact_phone)
-        self.assertEqual('Rider', amendment.first_name)
-        self.assertEqual('rider@example.com', amendment.email)
+        snapshot = RegistrationSnapshot.objects.get(registration=self.registration)
+        self.assertEqual(self.user, snapshot.actor)
+        self.assertEqual(self.ride, snapshot.ride)
+        self.assertEqual(self.speed_range, snapshot.speed_range_preference)
+        self.assertEqual('Original Contact', snapshot.emergency_contact_name)
+        self.assertEqual('+16135550111', snapshot.emergency_contact_phone)
+        self.assertEqual('Rider', snapshot.first_name)
+        self.assertEqual('rider@example.com', snapshot.email)
 
     def test_edit_records_which_fields_changed(self):
         # Act
@@ -197,10 +197,10 @@ class EditRegistrationTests(BaseRegistrationEditTestCase):
         )
 
         # Assert
-        amendment = RegistrationAmendment.objects.get(registration=self.registration)
-        self.assertEqual({'ride', 'emergency_contact_name'}, set(amendment.changed_fields))
+        snapshot = RegistrationSnapshot.objects.get(registration=self.registration)
+        self.assertEqual({'ride', 'emergency_contact_name'}, set(snapshot.changed_fields))
 
-    def test_repeated_edits_accumulate_amendments(self):
+    def test_repeated_edits_accumulate_snapshots(self):
         # Act
         self.service.edit_registration(
             self.registration, self.user, self._detail(ride=self.other_ride)
@@ -211,10 +211,10 @@ class EditRegistrationTests(BaseRegistrationEditTestCase):
         )
 
         # Assert
-        amendments = list(RegistrationAmendment.objects.filter(registration=self.registration))
-        self.assertEqual(2, len(amendments))
-        self.assertEqual(['emergency_contact_name'], amendments[0].changed_fields)
-        self.assertEqual(['ride'], amendments[1].changed_fields)
+        snapshots = list(RegistrationSnapshot.objects.filter(registration=self.registration))
+        self.assertEqual(2, len(snapshots))
+        self.assertEqual(['emergency_contact_name'], snapshots[0].changed_fields)
+        self.assertEqual(['ride'], snapshots[1].changed_fields)
 
     def test_edit_without_changes_records_nothing(self):
         # Act
@@ -222,7 +222,7 @@ class EditRegistrationTests(BaseRegistrationEditTestCase):
 
         # Assert
         self.assertFalse(changed)
-        self.assertEqual(0, RegistrationAmendment.objects.count())
+        self.assertEqual(0, RegistrationSnapshot.objects.count())
         self.assertEqual(0, AuditEvent.objects.filter(action='registration_edited').count())
 
     def test_edit_can_change_ride_leader_preference(self):
@@ -272,7 +272,7 @@ class EditRegistrationTests(BaseRegistrationEditTestCase):
         # Assert
         self.registration = self._reload()
         self.assertEqual(self.ride, self.registration.ride)
-        self.assertEqual(0, RegistrationAmendment.objects.count())
+        self.assertEqual(0, RegistrationSnapshot.objects.count())
 
 
 class RegistrationEditabilityTests(BaseRegistrationEditTestCase):
@@ -390,7 +390,7 @@ class RegistrationEditabilityTests(BaseRegistrationEditTestCase):
         self.assertTrue(registrations[0].editable)
 
 
-class StaffUpdateAmendmentTests(BaseRegistrationEditTestCase):
+class StaffUpdateSnapshotTests(BaseRegistrationEditTestCase):
     def test_staff_edit_records_previous_details(self):
         # Act
         self.service.staff_update_registration(
@@ -398,11 +398,11 @@ class StaffUpdateAmendmentTests(BaseRegistrationEditTestCase):
         )
 
         # Assert
-        amendment = RegistrationAmendment.objects.get(registration=self.registration)
-        self.assertEqual(self.staff_user, amendment.actor)
-        self.assertEqual('Rider', amendment.first_name)
-        self.assertEqual(self.ride, amendment.ride)
-        self.assertEqual({'first_name', 'ride'}, set(amendment.changed_fields))
+        snapshot = RegistrationSnapshot.objects.get(registration=self.registration)
+        self.assertEqual(self.staff_user, snapshot.actor)
+        self.assertEqual('Rider', snapshot.first_name)
+        self.assertEqual(self.ride, snapshot.ride)
+        self.assertEqual({'first_name', 'ride'}, set(snapshot.changed_fields))
 
     def test_staff_edit_returns_only_the_fields_that_changed(self):
         # Act
@@ -434,5 +434,5 @@ class StaffUpdateAmendmentTests(BaseRegistrationEditTestCase):
 
         # Assert
         self.assertFalse(changed)
-        self.assertEqual(0, RegistrationAmendment.objects.count())
+        self.assertEqual(0, RegistrationSnapshot.objects.count())
         self.assertEqual(0, AuditEvent.objects.filter(action='staff_edited').count())

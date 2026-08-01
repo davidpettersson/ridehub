@@ -12,7 +12,7 @@ from django.db.models import QuerySet, Subquery, OuterRef, Count
 from django.utils import timezone
 
 from audit.services import AuditService
-from backoffice.models import Event, Registration, RegistrationAmendment, SpeedRange, Ride, UserProfile
+from backoffice.models import Event, Registration, RegistrationSnapshot, SpeedRange, Ride, UserProfile
 from backoffice.services.email_service import EmailService
 from backoffice.services.request_service import RequestDetail
 from backoffice.services.user_service import UserService, UserDetail
@@ -449,20 +449,20 @@ class RegistrationService:
 
         return str(current or '') != str(value or '')
 
-    def _create_amendment(self, registration: Registration, actor: User | None,
-                          changed_fields: list[str]) -> RegistrationAmendment:
-        amendment = RegistrationAmendment(
+    def _create_snapshot(self, registration: Registration, actor: User | None,
+                          changed_fields: list[str]) -> RegistrationSnapshot:
+        snapshot = RegistrationSnapshot(
             registration=registration,
             actor=actor,
             changed_fields=changed_fields,
         )
 
-        for field_name in RegistrationAmendment.SNAPSHOT_FIELDS:
-            setattr(amendment, field_name, getattr(registration, field_name))
+        for field_name in RegistrationSnapshot.SNAPSHOT_FIELDS:
+            setattr(snapshot, field_name, getattr(registration, field_name))
 
-        amendment.full_clean()
-        amendment.save()
-        return amendment
+        snapshot.full_clean()
+        snapshot.save()
+        return snapshot
 
     def _apply_registration_changes(self, registration: Registration, actor: User | None,
                                     action: str, fields: dict) -> list[str]:
@@ -475,7 +475,7 @@ class RegistrationService:
             return []
 
         with transaction.atomic():
-            self._create_amendment(registration, actor, changed_fields)
+            self._create_snapshot(registration, actor, changed_fields)
 
             for field_name, value in fields.items():
                 setattr(registration, field_name, value)

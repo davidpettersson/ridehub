@@ -3,10 +3,10 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
-from backoffice.models import Event, Program, Registration, RegistrationAmendment
+from backoffice.models import Event, Program, Registration, RegistrationSnapshot
 
 
-class RegistrationAmendmentTests(TestCase):
+class RegistrationSnapshotTests(TestCase):
     def setUp(self):
         # Arrange
         self.program = Program.objects.create(name="Test Program")
@@ -30,7 +30,7 @@ class RegistrationAmendmentTests(TestCase):
             phone='+16135550100',
         )
 
-    def _create_amendment(self, **overrides) -> RegistrationAmendment:
+    def _create_snapshot(self, **overrides) -> RegistrationSnapshot:
         values = {
             'registration': self.registration,
             'actor': self.user,
@@ -41,64 +41,64 @@ class RegistrationAmendmentTests(TestCase):
             'phone': '+16135550100',
         }
         values.update(overrides)
-        return RegistrationAmendment(**values)
+        return RegistrationSnapshot(**values)
 
-    def test_valid_amendment_passes_validation(self):
+    def test_valid_snapshot_passes_validation(self):
         # Arrange
-        amendment = self._create_amendment()
+        snapshot = self._create_snapshot()
 
         # Act
-        amendment.full_clean()
+        snapshot.full_clean()
 
         # Assert
-        self.assertEqual(['ride'], amendment.changed_fields)
+        self.assertEqual(['ride'], snapshot.changed_fields)
 
     def test_empty_changed_fields_is_rejected(self):
         # Arrange
-        amendment = self._create_amendment(changed_fields=[])
+        snapshot = self._create_snapshot(changed_fields=[])
 
         # Act & Assert
         with self.assertRaises(ValidationError) as context:
-            amendment.full_clean()
+            snapshot.full_clean()
         self.assertIn('changed_fields', context.exception.message_dict)
 
     def test_unknown_changed_field_is_rejected(self):
         # Arrange
-        amendment = self._create_amendment(changed_fields=['state'])
+        snapshot = self._create_snapshot(changed_fields=['state'])
 
         # Act & Assert
         with self.assertRaises(ValidationError) as context:
-            amendment.full_clean()
+            snapshot.full_clean()
         self.assertIn('changed_fields', context.exception.message_dict)
 
     def test_non_list_changed_fields_is_rejected(self):
         # Arrange
-        amendment = self._create_amendment(changed_fields={'ride': 'x'})
+        snapshot = self._create_snapshot(changed_fields={'ride': 'x'})
 
         # Act & Assert
         with self.assertRaises(ValidationError) as context:
-            amendment.full_clean()
+            snapshot.full_clean()
         self.assertIn('changed_fields', context.exception.message_dict)
 
-    def test_amendments_are_deleted_with_the_registration(self):
+    def test_snapshots_are_deleted_with_the_registration(self):
         # Arrange
-        self._create_amendment().save()
+        self._create_snapshot().save()
 
         # Act
         self.registration.delete()
 
         # Assert
-        self.assertEqual(0, RegistrationAmendment.objects.count())
+        self.assertEqual(0, RegistrationSnapshot.objects.count())
 
-    def test_amendments_are_ordered_most_recent_first(self):
+    def test_snapshots_are_ordered_most_recent_first(self):
         # Arrange
-        older = self._create_amendment(changed_fields=['ride'])
+        older = self._create_snapshot(changed_fields=['ride'])
         older.save()
-        newer = self._create_amendment(changed_fields=['emergency_contact_name'])
+        newer = self._create_snapshot(changed_fields=['emergency_contact_name'])
         newer.save()
 
         # Act
-        amendments = list(RegistrationAmendment.objects.all())
+        snapshots = list(RegistrationSnapshot.objects.all())
 
         # Assert
-        self.assertEqual([newer.id, older.id], [amendment.id for amendment in amendments])
+        self.assertEqual([newer.id, older.id], [snapshot.id for snapshot in snapshots])

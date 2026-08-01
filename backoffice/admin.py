@@ -6,7 +6,7 @@ from django.utils.html import format_html
 
 from audit.context import actor
 from backoffice.actions import archive_event, cancel_event, duplicate_event
-from backoffice.models import Forecast, Ride, Route, Event, Program, SpeedRange, Registration, RegistrationAmendment, Announcement, UserProfile, UserMembershipNumber
+from backoffice.models import Forecast, Ride, Route, Event, Program, SpeedRange, Registration, RegistrationSnapshot, Announcement, UserProfile, UserMembershipNumber
 from .forms import EventAdminForm
 
 
@@ -185,18 +185,18 @@ class RegistrationAdmin(AuditedAdminMixin, admin.ModelAdmin):
         return obj.user
 
 
-class RegistrationAmendmentAdmin(admin.ModelAdmin):
-    list_display = ('created_at', 'registration', 'actor', 'summary')
-    list_filter = ('created_at',)
+class RegistrationSnapshotAdmin(admin.ModelAdmin):
+    list_display = ('superseded_at', 'registration', 'actor', 'summary')
+    list_filter = ('superseded_at',)
     search_fields = ('registration__email', 'registration__event__name', 'actor__email')
-    ordering = ('-created_at',)
+    ordering = ('-superseded_at',)
 
     readonly_fields = (
         'registration',
         'actor',
         'changed_fields',
-        'created_at',
-    ) + RegistrationAmendment.SNAPSHOT_FIELDS
+        'superseded_at',
+    ) + RegistrationSnapshot.SNAPSHOT_FIELDS
 
     fields = readonly_fields
 
@@ -251,6 +251,6 @@ admin.site.register(Route, RouteAdmin)
 admin.site.register(SpeedRange, SpeedRangeAdmin)
 admin.site.register(Event, EventAdmin)
 admin.site.register(Registration, RegistrationAdmin)
-admin.site.register(RegistrationAmendment, RegistrationAmendmentAdmin)
+admin.site.register(RegistrationSnapshot, RegistrationSnapshotAdmin)
 admin.site.register(Announcement, AnnouncementAdmin)
 admin.site.register(UserMembershipNumber, UserMembershipNumberAdmin)

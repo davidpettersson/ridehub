@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from audit.models import AuditEvent
 from backoffice.models import (
-    Event, Program, Registration, RegistrationAmendment, Ride, Route, SpeedRange,
+    Event, Program, Registration, RegistrationSnapshot, Ride, Route, SpeedRange,
 )
 
 
@@ -217,7 +217,7 @@ class RegistrationEditSubmissionTests(BaseRegistrationEditViewTestCase):
         # Assert
         self.assertEqual(0, len(mail.outbox))
 
-    def test_post_records_an_amendment_and_audit_event(self):
+    def test_post_records_an_snapshot_and_audit_event(self):
         # Arrange
         self._login()
 
@@ -225,8 +225,8 @@ class RegistrationEditSubmissionTests(BaseRegistrationEditViewTestCase):
         self.client.post(self.url, self._post_data(ride=self.other_ride.id))
 
         # Assert
-        amendment = RegistrationAmendment.objects.get(registration=self.registration)
-        self.assertEqual(self.ride, amendment.ride)
+        snapshot = RegistrationSnapshot.objects.get(registration=self.registration)
+        self.assertEqual(self.ride, snapshot.ride)
         self.assertEqual(1, AuditEvent.objects.filter(action='registration_edited').count())
 
     def test_post_can_change_emergency_contact(self):
@@ -328,7 +328,7 @@ class RegistrationEditSubmissionTests(BaseRegistrationEditViewTestCase):
 
         # Assert
         self.assertRedirects(response, reverse('profile'))
-        self.assertEqual(0, RegistrationAmendment.objects.count())
+        self.assertEqual(0, RegistrationSnapshot.objects.count())
         self.assertEqual(0, AuditEvent.objects.filter(action='registration_edited').count())
 
     def test_next_parameter_returns_to_the_event_page(self):
