@@ -18,7 +18,7 @@ from web.forms import RegistrationForm, RegistrationEditForm, MembershipNumberFo
 logger = logging.getLogger(__name__)
 
 
-REGISTRATION_SUBMITTED_REDIRECT_SECONDS = 5
+REGISTRATION_SUBMITTED_REDIRECT_SECONDS = 10
 
 
 def registration_submitted(request: HttpRequest, event_id: int) -> HttpResponse:
