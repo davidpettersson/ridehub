@@ -10,7 +10,7 @@ Background work runs on the `worker` dyno, which also carries the beat scheduler
 | `backoffice.tasks.alert_unconfirmed_registrations` | Beat, hourly at :05 | Emails `REGISTRATION_ALERT_EMAILS` about registrations stuck in `submitted` or `unverified` for more than one hour |
 | `backoffice.tasks.fetch_forecast` | Enqueued by the web dyno | Fetches weather and air quality from Open-Meteo off the request path |
 | `backoffice.tasks.check_registrations` | Beat, every 15 minutes | Logs registrations stuck in `submitted` |
-| `backoffice.tasks.debug_ping` | `POST /debug/trigger-task` | Logs a message; used to confirm the worker is consuming the queue |
+| `backoffice.tasks.debug_ping` | `/debug/trigger-task` | Logs a message; used to confirm the worker is consuming the queue |
 
 ## Unconfirmed registration alerts
 
@@ -66,10 +66,14 @@ To turn on async forecast fetching, add the `async_forecast_fetch` flag at
 
 ## Verifying the worker
 
+Sign in as staff and open `/debug/trigger-task`. The page has a message field and
+a Queue task button; submitting it shows the queued task id, and the worker log
+shows `debug_ping received <message>`.
+
 ```
-curl -X POST https://<host>/debug/trigger-task -d 'message=hello' -b '<staff session cookie>'
 heroku logs --tail --dyno worker
 ```
 
-The endpoint is staff-only and returns the task id as JSON; the worker logs
-`debug_ping received hello`.
+If the broker is unreachable the page shows the connection error instead of
+returning a 500, which distinguishes "no worker running" from "cannot reach
+Redis at all".
