@@ -218,6 +218,28 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertContains(response, 'Pending confirmation from 1 rider:')
         self.assertContains(response, 'Bob Bobson &lt;bob@bobson.com&gt;')
 
+    def test_staff_notice_lists_unverified_registration_without_user(self):
+        # Arrange
+        Registration.objects.create(
+            first_name='Alice',
+            last_name='Alison',
+            name='Alice Alison',
+            email='alice@alison.com',
+            event=self.event,
+            ride=self.ride,
+            speed_range_preference=self.speed_range,
+            ride_leader_preference=Registration.RideLeaderPreference.NO,
+            user=None,
+            state=Registration.STATE_UNVERIFIED
+        )
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'Alice Alison &lt;alice@alison.com&gt;')
+
     def test_ride_leader_does_not_see_unverified_registrations_notice(self):
         # Arrange
         self._add_unverified_registration()

@@ -324,7 +324,7 @@ def _build_registrations_context(request, event, contacts_revealed):
         unverified_riders = list(Registration.objects.filter(
             event_id=event.id,
             state=Registration.STATE_UNVERIFIED
-        ).select_related('user').order_by('user__first_name', 'user__last_name'))
+        ).order_by('first_name', 'last_name'))
 
     registration_filter = PublicRegistrationFilter(
         request.GET, queryset=all_riders, event=event
