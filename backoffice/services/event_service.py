@@ -1,10 +1,16 @@
+import logging
 from datetime import date, datetime, timedelta
 
+from django.core.cache import cache
 from django.db.models import Count, Max, Min, Q, QuerySet
 from django.utils import timezone
 
 from backoffice.models import Event, Forecast, Registration, Ride
 from backoffice.services.forecast_service import ForecastService, ForecastState, YOW_LOCATION
+
+logger = logging.getLogger(__name__)
+
+FORECAST_REQUEST_LOCK_SECONDS = 60
 
 
 class EventService:
@@ -126,6 +132,55 @@ class EventService:
             return None
         latitude, longitude = YOW_LOCATION
         return ForecastService().get_forecast(latitude, longitude, event.starts_at, event.starts_at + event.duration)
+
+    def request_forecast(self, event: Event) -> None:
+        self.request_forecasts([event])
+
+    def request_forecasts(self, events) -> None:
+        from backoffice.tasks import fetch_forecast
+
+        windows_by_event_id = self._windows_by_event_id(events)
+        states_by_window = ForecastService().resolve_for_windows(windows_by_event_id.values())
+
+        latitude, longitude = YOW_LOCATION
+
+        for window, state in states_by_window.items():
+            if not state.pending:
+                continue
+
+            starts_at, ends_at = window
+            key = self._forecast_request_key(window)
+            if not cache.add(key, True, FORECAST_REQUEST_LOCK_SECONDS):
+                continue
+
+            try:
+                fetch_forecast.delay(str(latitude), str(longitude), starts_at.isoformat(), ends_at.isoformat())
+            except Exception as e:
+                cache.delete(key)
+                logger.warning('Could not queue forecast fetch for %s to %s: %s', starts_at, ends_at, e)
+
+    @staticmethod
+    def _forecast_request_key(window) -> str:
+        starts_at, ends_at = window
+        return f'forecast-requested:{starts_at.isoformat()}:{ends_at.isoformat()}'
+
+    def fetch_cached_forecast(self, event: Event) -> Forecast | None:
+        if event.virtual:
+            return None
+        latitude, longitude = YOW_LOCATION
+        return ForecastService().get_cached_forecast(
+            latitude, longitude, event.starts_at, event.starts_at + event.duration
+        )
+
+    def fetch_cached_forecasts(self, events) -> dict:
+        windows_by_event_id = self._windows_by_event_id(events)
+        forecasts_by_window = ForecastService().get_cached_forecasts_for_windows(windows_by_event_id.values())
+
+        return {
+            event_id: forecasts_by_window[window]
+            for event_id, window in windows_by_event_id.items()
+            if forecasts_by_window[window]
+        }
 
     def fetch_forecasts(self, events) -> dict:
         windows_by_event_id = self._windows_by_event_id(events)

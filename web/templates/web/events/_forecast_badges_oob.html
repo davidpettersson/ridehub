@@ -3,8 +3,14 @@
 {% with forecast=forecasts|get_item:event.id %}
 {% if forecast %}
 {% include 'web/events/_forecast_badge.html' with forecast=forecast compact=True oob=True %}
-{% else %}
+{% elif not poll_url %}
 <span id="forecast-badge-{{ event.id }}" hx-swap-oob="delete"></span>
 {% endif %}
 {% endwith %}
 {% endfor %}
+{% if poll_url %}
+<div id="forecast-badges-poller" hx-swap-oob="outerHTML"
+     hx-get="{{ poll_url }}"
+     hx-trigger="load delay:2s"
+     hx-swap="none"></div>
+{% endif %}

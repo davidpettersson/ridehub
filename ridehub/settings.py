@@ -4,6 +4,9 @@ from pathlib import Path
 
 import dj_database_url
 import sentry_sdk
+from celery.schedules import crontab
+
+from ridehub.redis_url import redis_url
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
 
@@ -231,6 +234,43 @@ CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 CELERY_WORKER_LOG_FORMAT = '[%(asctime)s: %(levelname)s/%(processName)s] %(message)s'
 CELERY_WORKER_TASK_LOG_FORMAT = '[%(asctime)s: %(levelname)s/%(processName)s][%(task_name)s(%(task_id)s)] %(message)s'
+CELERY_BROKER_POOL_LIMIT = 3
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_CONNECTION_TIMEOUT = 2
+CELERY_BROKER_TRANSPORT_OPTIONS = {'socket_connect_timeout': 2, 'socket_timeout': 2}
+CELERY_TASK_PUBLISH_RETRY = False
+CELERY_TASK_IGNORE_RESULT = False
+CELERY_RESULT_EXPIRES = 60 * 60
+CELERY_TASK_ALWAYS_EAGER = 'test' in sys.argv or 'behave' in sys.argv
+
+CELERY_BEAT_SCHEDULE = {
+    'check-registrations': {
+        'task': 'backoffice.tasks.check_registrations',
+        'schedule': crontab(minute='*/15'),
+    },
+    'alert-unconfirmed-registrations': {
+        'task': 'backoffice.tasks.alert_unconfirmed_registrations',
+        'schedule': crontab(minute=5),
+    },
+}
+
+if os.environ.get('REDIS_URL'):
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': redis_url(),
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
+
+REGISTRATION_ALERT_EMAILS = [
+    e.strip() for e in os.environ.get('REGISTRATION_ALERT_EMAILS', '').split(',') if e.strip()
+]
 
 # Django-allauth Configuration
 ACCOUNT_LOGIN_METHODS = {'email'}

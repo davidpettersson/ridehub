@@ -1,0 +1,26 @@
+{% extends 'email/_base_email.html' %}
+
+{% block title %}Unconfirmed registrations{% endblock %}
+
+{% block content %}
+    <h1>Unconfirmed registrations</h1>
+
+    <p>The following registration{{ registrations|length|pluralize }} ha{{ registrations|length|pluralize:"s,ve" }} been waiting more than {{ threshold_hours }} hour{{ threshold_hours|pluralize }} without being confirmed.</p>
+
+    <ul>
+        {% for registration in registrations %}
+        <li>
+            <a href="{{ base_url }}{% url 'event_registrations_manage' registration.event_id %}">{{ registration.name }}</a>
+            &mdash; {{ registration.event.name }} on {{ registration.event.starts_at|date:"l, M j" }}
+            (submitted {{ registration.submitted_at|date:"M j, H:i" }}, {{ registration.get_state_display|lower }})
+        </li>
+        {% endfor %}
+    </ul>
+
+    <p>This alert repeats every hour until these registrations are confirmed or withdrawn.</p>
+{% endblock %}
+
+{% block footer %}
+    <p>Ottawa Bicycle Club</p>
+    {{ block.super }}
+{% endblock %}

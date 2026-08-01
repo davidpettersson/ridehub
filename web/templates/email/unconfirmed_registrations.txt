@@ -1,0 +1,11 @@
+Unconfirmed registrations
+
+The following registration{{ registrations|length|pluralize }} ha{{ registrations|length|pluralize:"s,ve" }} been waiting more than {{ threshold_hours }} hour{{ threshold_hours|pluralize }} without being confirmed.
+
+{% for registration in registrations %}- {{ registration.name }} - {{ registration.event.name }} on {{ registration.event.starts_at|date:"l, M j" }} (submitted {{ registration.submitted_at|date:"M j, H:i" }}, {{ registration.get_state_display|lower }})
+  {{ base_url }}{% url 'event_registrations_manage' registration.event_id %}
+{% endfor %}
+
+This alert repeats every hour until these registrations are confirmed or withdrawn.
+
+Ottawa Bicycle Club
