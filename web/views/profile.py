@@ -1,7 +1,10 @@
+import logging
+
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils.http import url_has_allowed_host_and_scheme
 from waffle import flag_is_active
 
 from backoffice.models import Registration, UserProfile
@@ -10,12 +13,16 @@ from backoffice.services.registration_service import RegistrationService, NAME_M
 from backoffice.services.user_service import UserService
 from web.forms import MembershipNumberForm, NameVisibilityForm
 
+logger = logging.getLogger(__name__)
+
 
 @login_required
 def profile(request: HttpRequest) -> HttpResponse:
     registration_service = RegistrationService()
-    registrations = registration_service.mark_editable(
-        list(registration_service.fetch_current_registrations(request.user))
+    registrations = registration_service.mark_withdrawable(
+        registration_service.mark_editable(
+            list(registration_service.fetch_current_registrations(request.user))
+        )
     )
     past_registrations = registration_service.fetch_past_registrations(request.user)
 
@@ -40,11 +47,25 @@ def profile(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def registration_withdraw(request: HttpRequest, registration_id: int) -> HttpResponseRedirect:
-    registration = get_object_or_404(Registration, id=registration_id, user=request.user)
+    registration = get_object_or_404(
+        Registration.objects.select_related('event'), id=registration_id, user=request.user)
 
-    if registration.state == 'confirmed' and request.method == 'POST':
-        registration.withdraw()
-        registration.save()
+    registration_service = RegistrationService()
+    allowed, reason = registration_service.is_registration_withdrawable(registration)
+
+    if request.method == 'POST':
+        if not allowed:
+            logger.warning(
+                "Registration withdrawal not allowed",
+                extra={'registration': registration.id, 'reason': reason},
+            )
+        else:
+            registration_service.withdraw_registration(registration, request.user)
+
+    target = request.POST.get('next')
+    if target and url_has_allowed_host_and_scheme(
+            target, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return redirect(target)
 
     return redirect('profile')
 

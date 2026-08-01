@@ -186,7 +186,9 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
 
     if user_registration is not None:
         user_registration.event = event
-        RegistrationService().mark_editable([user_registration])
+        registration_service = RegistrationService()
+        registration_service.mark_editable([user_registration])
+        registration_service.mark_withdrawable([user_registration])
 
     context = {
         'event': event,

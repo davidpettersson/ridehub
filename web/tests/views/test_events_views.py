@@ -1051,7 +1051,8 @@ class EventDetailViewTests(BaseEventViewTestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['user_is_registered'])
-        self.assertContains(response, 'You are registered for this event')
+        self.assertContains(response, "You're registered for this event")
+        self.assertContains(response, 'Withdraw')
 
     def test_unauthenticated_user_does_not_see_registration_status(self):
         # Act
@@ -1060,7 +1061,58 @@ class EventDetailViewTests(BaseEventViewTestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context['user_is_registered'])
-        self.assertNotContains(response, 'You are registered for this event')
+        self.assertNotContains(response, "You're registered for this event")
+
+    def test_registered_user_does_not_see_registration_status_for_cancelled_event(self):
+        # Arrange
+        self.event.cancel()
+        self.event.save()
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "You're registered for this event")
+        self.assertContains(response, 'Event Cancelled')
+
+    def test_registered_user_keeps_actions_after_registration_closes(self):
+        # Arrange
+        self.event.registration_closes_at = timezone.now() - timedelta(hours=1)
+        self.event.save()
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "You're registered for this event")
+        self.assertContains(response, 'Withdraw')
+        self.assertNotContains(response, 'Sorry, registration closed')
+
+    def test_unregistered_user_sees_registration_closed_message(self):
+        # Arrange
+        self.event.registration_closes_at = timezone.now() - timedelta(hours=1)
+        self.event.save()
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Sorry, registration closed')
+
+    def test_registered_user_is_redirected_from_registration_form_to_event(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(reverse('registration_create', args=[self.event.id]))
+
+        # Assert
+        self.assertRedirects(response, reverse('event_detail', args=[self.event.id]))
 
     def test_event_detail_with_external_registration_url_and_no_registration_closes_at(self):
         now = timezone.now()

@@ -1,6 +1,6 @@
 import logging
 
-from django.contrib.auth import login
+from django.contrib.auth import login, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect, HttpResponseBadRequest
@@ -89,6 +89,11 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     event = get_object_or_404(Event, id=event_id)
     registration_service = RegistrationService()
 
+    user = request.user if request.user.is_authenticated else None
+
+    if user and registration_service.has_active_registration(user, event):
+        return redirect('event_detail', event_id=event.id)
+
     allowed, reason = registration_service.is_registration_allowed(event)
     if not allowed:
         logger.warning("Registration not allowed", extra={'event': event, 'reason': reason})
@@ -96,7 +101,6 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
 
     # OK, proceed
     request_service = RequestService()
-    user = request.user if request.user.is_authenticated else None
 
     initial_data = {}
     if user:
@@ -123,6 +127,10 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
                 event=event,
                 request_detail=request_detail,
                 acting_user=request.user if request.user.is_authenticated else None)
+
+            if request.user.is_authenticated:
+                request.user.refresh_from_db()
+                update_session_auth_hash(request, request.user)
 
             if result == RegistrationResult.VERIFICATION_REQUIRED:
                 return redirect('registration_verification_sent')

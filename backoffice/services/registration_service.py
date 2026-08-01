@@ -205,6 +205,12 @@ class RegistrationService:
 
         return registration, None
 
+    def has_active_registration(self, user: User, event: Event) -> bool:
+        return Registration.objects.filter(
+            user=user, event=event,
+            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
+        ).exists()
+
     def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event,
                  request_detail: RequestDetail | None = None,
                  acting_user: User | None = None) -> RegistrationResult:
@@ -215,12 +221,7 @@ class RegistrationService:
         )
         user = self.user_service.find_by_email_or_create(user_detail, update_existing=update_existing)
 
-        active_registrations = Registration.objects.filter(
-            user=user, event=event,
-            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
-        )
-
-        if active_registrations.exists():
+        if self.has_active_registration(user, event):
             logger.info(
                 f"User {user.email} (id={user.id}) attempted to register for event {event.name} (id={event.id}) but already has an active registration"
             )
@@ -389,6 +390,25 @@ class RegistrationService:
 
         return errors
 
+    def withdraw_registration(self, registration: Registration, user: User) -> None:
+        allowed, reason = self.is_registration_withdrawable(registration)
+
+        if not allowed:
+            raise ValueError(reason)
+
+        registration.withdraw()
+        registration.save()
+
+        logger.info(
+            "User %s (id=%d) withdrew registration %d from event %s (id=%d)",
+            user.email, user.id, registration.id,
+            registration.event.name, registration.event.id,
+        )
+
+        self.audit_service.log(user, 'registration_withdrawn', target=registration)
+
+        self._send_withdrawal_email(registration, withdrawn_by_organizer=False)
+
     def staff_withdraw(self, registration: Registration, staff_user) -> None:
         if registration.state not in [Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED]:
             raise ValueError(f"Cannot withdraw registration in state '{registration.state}'")
@@ -537,6 +557,28 @@ class RegistrationService:
             registration.editable = self.is_registration_editable(registration)[0]
         return registrations
 
+    def is_registration_withdrawable(self, registration: Registration) -> tuple[bool, str | None]:
+        if registration.state != Registration.STATE_CONFIRMED:
+            return False, 'Only confirmed registrations can be withdrawn.'
+
+        event = registration.event
+
+        if event.cancelled:
+            return False, 'Event is cancelled.'
+
+        if event.archived:
+            return False, 'Event is archived.'
+
+        if timezone.now() >= event.starts_at:
+            return False, 'Event has already started.'
+
+        return True, None
+
+    def mark_withdrawable(self, registrations: list[Registration]) -> list[Registration]:
+        for registration in registrations:
+            registration.withdrawable = self.is_registration_withdrawable(registration)[0]
+        return registrations
+
     def _editable_fields(self, event: Event, registration_detail: RegistrationDetail) -> dict:
         fields = {}
 
@@ -577,10 +619,12 @@ class RegistrationService:
 
         return changed_fields
 
-    def _send_withdrawal_email(self, registration: Registration) -> None:
+    def _send_withdrawal_email(self, registration: Registration,
+                               withdrawn_by_organizer: bool = True) -> None:
         context = {
             'base_url': f"https://{settings.WEB_HOST}",
             'registration': registration,
+            'withdrawn_by_organizer': withdrawn_by_organizer,
         }
 
         self.email_service.send_email(
