@@ -105,8 +105,14 @@
                         {% if user_is_registered %}
                             <div class="p-4 bg-success bg-opacity-10 border border-success border-opacity-25 rounded">
                                 <p class="text-success mb-0">
-                                    You are registered for this event. You can cancel your registration on your <a href="{% url 'profile' %}" class="text-primary text-decoration-underline">profile page</a>.
+                                    You are registered for this event.{% if user_registration.editable %} You can change your details below and keep your spot.{% endif %} You can cancel your registration on your <a href="{% url 'profile' %}" class="text-primary text-decoration-underline">profile page</a>.
                                 </p>
+                                {% if user_registration.editable %}
+                                <a href="{% url 'registration_edit' user_registration.id %}?next={{ request.path|urlencode }}"
+                                   class="btn btn-outline-success btn-sm mt-3">
+                                    Edit registration
+                                </a>
+                                {% endif %}
                             </div>
                         {% elif event.external_registration_url %}
                             <a href="{{ event.external_registration_url }}" class="btn btn-primary" target="_blank" rel="noopener noreferrer">

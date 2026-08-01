@@ -11,7 +11,32 @@ def bool_to_yes_no(value, choices_class):
     return choices_class.YES if value else choices_class.NO
 
 
-class RegistrationForm(forms.Form):
+class EventRegistrationFieldsMixin:
+    def _apply_widget_classes(self):
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs['class'] = 'form-check-input'
+            elif isinstance(field.widget, forms.Select) and not isinstance(field.widget, forms.RadioSelect):
+                field.widget.attrs['class'] = 'form-select'
+            elif not isinstance(field.widget, (forms.HiddenInput, forms.RadioSelect)):
+                field.widget.attrs['class'] = 'form-control'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        ride = cleaned_data.get('ride')
+        speed_range_preference = cleaned_data.get('speed_range_preference')
+
+        registration_service = RegistrationService()
+        errors = registration_service.validate_registration_selections(
+            self.event, ride, speed_range_preference
+        )
+        for field, message in errors.items():
+            self.add_error(field, message)
+
+        return cleaned_data
+
+
+class RegistrationForm(EventRegistrationFieldsMixin, forms.Form):
     first_name = forms.CharField(
         max_length=128,
         required=True,
@@ -114,30 +139,10 @@ class RegistrationForm(forms.Form):
                 }
             )
 
-        for field_name, field in self.fields.items():
-            if isinstance(field.widget, forms.CheckboxInput):
-                field.widget.attrs['class'] = 'form-check-input'
-            elif isinstance(field.widget, forms.Select) and not isinstance(field.widget, forms.RadioSelect):
-                field.widget.attrs['class'] = 'form-select'
-            elif not isinstance(field.widget, (forms.HiddenInput, forms.RadioSelect)):
-                field.widget.attrs['class'] = 'form-control'
-
-    def clean(self):
-        cleaned_data = super().clean()
-        ride = cleaned_data.get('ride')
-        speed_range_preference = cleaned_data.get('speed_range_preference')
-
-        registration_service = RegistrationService()
-        errors = registration_service.validate_registration_selections(
-            self.event, ride, speed_range_preference
-        )
-        for field, message in errors.items():
-            self.add_error(field, message)
-
-        return cleaned_data
+        self._apply_widget_classes()
 
 
-class StaffRegistrationForm(forms.Form):
+class StaffRegistrationForm(EventRegistrationFieldsMixin, forms.Form):
     first_name = forms.CharField(
         max_length=128,
         required=True,
@@ -211,27 +216,68 @@ class StaffRegistrationForm(forms.Form):
                 required=False,
             )
 
-        for field_name, field in self.fields.items():
-            if isinstance(field.widget, forms.CheckboxInput):
-                field.widget.attrs['class'] = 'form-check-input'
-            elif isinstance(field.widget, forms.Select) and not isinstance(field.widget, forms.RadioSelect):
-                field.widget.attrs['class'] = 'form-select'
-            elif not isinstance(field.widget, (forms.HiddenInput, forms.RadioSelect)):
-                field.widget.attrs['class'] = 'form-control'
+        self._apply_widget_classes()
 
-    def clean(self):
-        cleaned_data = super().clean()
-        ride = cleaned_data.get('ride')
-        speed_range_preference = cleaned_data.get('speed_range_preference')
+
+class RegistrationEditForm(EventRegistrationFieldsMixin, forms.Form):
+    def __init__(self, *args, **kwargs):
+        event: Event = kwargs.pop('event', None)
+        super().__init__(*args, **kwargs)
+
+        assert event
+        self.event = event
 
         registration_service = RegistrationService()
-        errors = registration_service.validate_registration_selections(
-            self.event, ride, speed_range_preference
-        )
-        for field, message in errors.items():
-            self.add_error(field, message)
+        requirements = registration_service.get_event_requirements(event)
+        rides = registration_service.get_rides_for_event(event)
 
-        return cleaned_data
+        if requirements.requires_emergency_contact:
+            self.fields['emergency_contact_name'] = forms.CharField(
+                max_length=128,
+                min_length=2,
+                label="Emergency contact name",
+                required=True,
+                widget=forms.TextInput(attrs={
+                    'autocomplete': 'off'
+                })
+            )
+            self.fields['emergency_contact_phone'] = forms.CharField(
+                max_length=128,
+                min_length=2,
+                label="Emergency contact phone",
+                required=True,
+                widget=forms.TextInput(attrs={
+                    'type': 'tel',
+                    'autocomplete': 'off'
+                })
+            )
+
+        if rides.exists():
+            self.fields['ride'] = forms.ModelChoiceField(
+                queryset=rides,
+                label="Ride",
+                required=True
+            )
+
+            self.fields['speed_range_preference'] = forms.ModelChoiceField(
+                queryset=SpeedRange.objects.all(),
+                label="Speed range preference",
+                required=False
+            )
+
+        if requirements.ride_leaders_wanted:
+            self.fields['ride_leader_preference'] = forms.BooleanField(
+                label="Willing to be a ride leader",
+                required=False,
+            )
+
+        if requirements.ask_first_time_attendee:
+            self.fields['first_time_attendee'] = forms.BooleanField(
+                label=f"First time attending {event.program.get_article_display()} {event.program.name} event",
+                required=False,
+            )
+
+        self._apply_widget_classes()
 
 
 class MembershipNumberForm(forms.Form):
