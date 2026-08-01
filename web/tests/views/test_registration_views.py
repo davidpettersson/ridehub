@@ -1536,13 +1536,15 @@ class RegistrationSubmittedRedirectTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context['auto_redirect'])
 
-    def test_submitted_page_without_event_still_renders(self):
+    def test_submitted_page_names_the_event(self):
+        # Arrange
+        self.client.force_login(self.user)
+
         # Act
-        response = self.client.get(reverse('registration_submitted'))
+        response = self.client.get(reverse('registration_submitted', args=[self.event.id]))
 
         # Assert
-        self.assertEqual(response.status_code, 200)
-        self.assertIsNone(response.context['event'])
+        self.assertContains(response, self.event.name)
 
     def test_submitted_page_with_unknown_event_returns_not_found(self):
         # Act

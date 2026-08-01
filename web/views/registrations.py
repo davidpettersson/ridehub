@@ -21,13 +21,12 @@ logger = logging.getLogger(__name__)
 REGISTRATION_SUBMITTED_REDIRECT_SECONDS = 5
 
 
-def registration_submitted(request: HttpRequest, event_id: int | None = None) -> HttpResponse:
-    event = get_object_or_404(Event, id=event_id) if event_id else None
-    auto_redirect = event is not None and request.user.is_authenticated
+def registration_submitted(request: HttpRequest, event_id: int) -> HttpResponse:
+    event = get_object_or_404(Event, id=event_id)
 
     return render(request, 'web/registrations/submitted.html', {
         'event': event,
-        'auto_redirect': auto_redirect,
+        'auto_redirect': request.user.is_authenticated,
         'redirect_seconds': REGISTRATION_SUBMITTED_REDIRECT_SECONDS,
     })
 

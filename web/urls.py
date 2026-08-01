@@ -46,7 +46,6 @@ urlpatterns = [
     path('events.ics', EventFeed(), name='event_feed'),
     path('registrations/<int:registration_id>/edit', registration_edit, name='registration_edit'),
     path('registrations/<int:registration_id>/withdraw', registration_withdraw, name='registration_withdraw'),
-    path('registrations/submitted', registration_submitted, name='registration_submitted'),
     path('events/<int:event_id>/registrations/submitted', registration_submitted, name='registration_submitted'),
     path('registrations/verify', registration_verify, name='registration_verify'),
     path('registrations/verification-sent', registration_verification_sent, name='registration_verification_sent'),
