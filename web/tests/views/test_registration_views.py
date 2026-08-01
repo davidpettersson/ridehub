@@ -571,12 +571,20 @@ class RegistrationWithdrawAccessControlTests(TestCase):
         self.registration_a = Registration.objects.create(
             event=self.event,
             user=self.user_a,
+            name='User A',
+            first_name='User',
+            last_name='A',
+            email='user_a@example.com',
             state='confirmed'
         )
 
         self.registration_b = Registration.objects.create(
             event=self.event,
             user=self.user_b,
+            name='User B',
+            first_name='User',
+            last_name='B',
+            email='user_b@example.com',
             state='confirmed'
         )
 
@@ -590,6 +598,20 @@ class RegistrationWithdrawAccessControlTests(TestCase):
         self.assertEqual(response.status_code, 302)
         updated_registration = Registration.objects.get(id=self.registration_a.id)
         self.assertEqual(updated_registration.state, 'withdrawn')
+
+    def test_withdrawing_sends_confirmation_email_to_the_user(self):
+        # Arrange
+        self.client.force_login(self.user_a)
+        mail.outbox = []
+
+        # Act
+        self.client.post(
+            reverse('registration_withdraw', kwargs={'registration_id': self.registration_a.id})
+        )
+
+        # Assert
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.registration_a.email])
 
     def test_user_cannot_withdraw_after_event_has_started(self):
         # Arrange
@@ -1619,3 +1641,97 @@ class RegistrationSubmittedRedirectTests(TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 404)
+
+
+class SignedInRegistrationRoundTripTests(TestCase):
+    def setUp(self):
+        # Arrange
+        now = timezone.now()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Round Trip Event",
+            program=self.program,
+            starts_at=now + timedelta(days=7),
+            registration_closes_at=now + timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=True,
+            requires_membership=False
+        )
+        self.user = User.objects.create_user(
+            username='rider',
+            email='rider@example.com',
+            password='password123',
+            first_name='Rider',
+            last_name='One'
+        )
+        self.user.profile.phone = '+16135550100'
+        self.user.profile.save()
+        self.event_url = reverse('event_detail', kwargs={'event_id': self.event.id})
+
+    def _register(self):
+        return self.client.post(reverse('registration_create', args=[self.event.id]), {
+            'first_name': 'Rider',
+            'last_name': 'One',
+            'email': 'rider@example.com',
+            'phone': '+16135550100',
+        })
+
+    def test_register_then_withdraw_returns_user_to_a_registerable_event_page(self):
+        # Arrange
+        self.client.force_login(self.user)
+
+        # Act - register
+        response = self._register()
+
+        # Assert - lands on the submitted page for this event
+        self.assertRedirects(
+            response, reverse('registration_submitted', args=[self.event.id])
+        )
+
+        # Act - follow through to the event page
+        response = self.client.get(self.event_url)
+
+        # Assert - registered notice with both actions
+        self.assertContains(response, "You're registered for this event")
+        self.assertContains(response, 'Edit registration')
+        self.assertContains(response, 'Withdraw')
+        self.assertNotContains(response, 'class="btn btn-primary">Register</a>')
+
+        # Act - returning to the form redirects back to the event
+        response = self.client.get(reverse('registration_create', args=[self.event.id]))
+
+        # Assert
+        self.assertRedirects(response, self.event_url)
+
+        # Act - withdraw from the event page
+        registration = Registration.objects.get(event=self.event, user=self.user)
+        mail.outbox = []
+        response = self.client.post(
+            reverse('registration_withdraw', kwargs={'registration_id': registration.id}),
+            {'next': self.event_url}
+        )
+
+        # Assert - back on the event page, notice gone, able to register again
+        self.assertRedirects(response, self.event_url)
+        self.assertEqual(
+            Registration.objects.get(id=registration.id).state, Registration.STATE_WITHDRAWN
+        )
+        self.assertEqual(len(mail.outbox), 1)
+
+        response = self.client.get(self.event_url)
+        self.assertNotContains(response, "You're registered for this event")
+        self.assertContains(response, 'Register')
+
+        # Act - re-registering after withdrawing works
+        response = self._register()
+
+        # Assert
+        self.assertRedirects(
+            response, reverse('registration_submitted', args=[self.event.id])
+        )
+        self.assertEqual(
+            Registration.objects.filter(
+                event=self.event, user=self.user, state=Registration.STATE_CONFIRMED
+            ).count(),
+            1,
+        )

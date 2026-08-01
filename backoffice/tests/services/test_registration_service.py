@@ -2817,6 +2817,93 @@ class AuditLoggingTestCase(TestCase):
         self.assertEqual(audit_event.action, 'staff_withdrew')
         self.assertEqual(audit_event.target, registration)
 
+    def test_withdraw_registration_creates_audit_event(self):
+        # Arrange
+        user = User.objects.create_user(username='selfwithdraw', email='selfwithdraw@example.com')
+        registration = Registration.objects.create(
+            user=user, event=self.event, name="Self Withdraw",
+            first_name="Self", last_name="Withdraw", email="selfwithdraw@example.com",
+            state=Registration.STATE_SUBMITTED,
+        )
+        registration.confirm()
+        registration.save()
+
+        # Act
+        self.service.withdraw_registration(registration, user)
+
+        # Assert
+        audit_event = AuditEvent.objects.get()
+        self.assertEqual(audit_event.actor, user)
+        self.assertEqual(audit_event.action, 'registration_withdrawn')
+        self.assertEqual(audit_event.target, registration)
+
+    def test_withdraw_registration_sends_email_without_blaming_organizer(self):
+        # Arrange
+        user = User.objects.create_user(username='mailwithdraw', email='mailwithdraw@example.com')
+        registration = Registration.objects.create(
+            user=user, event=self.event, name="Mail Withdraw",
+            first_name="Mail", last_name="Withdraw", email="mailwithdraw@example.com",
+            state=Registration.STATE_SUBMITTED,
+        )
+        registration.confirm()
+        registration.save()
+
+        # Act
+        self.service.withdraw_registration(registration, user)
+
+        # Assert
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertEqual(message.to, ['mailwithdraw@example.com'])
+        self.assertIn('Registration withdrawn for Test Event', message.subject)
+        self.assertIn('has been withdrawn', message.body)
+        self.assertNotIn('by the event organizer', message.body)
+
+    def test_staff_withdraw_email_still_names_the_organizer(self):
+        # Arrange
+        user = User.objects.create_user(username='staffmail', email='staffmail@example.com')
+        registration = Registration.objects.create(
+            user=user, event=self.event, name="Staff Mail",
+            first_name="Staff", last_name="Mail", email="staffmail@example.com",
+            state=Registration.STATE_SUBMITTED,
+        )
+        registration.confirm()
+        registration.save()
+
+        # Act
+        self.service.staff_withdraw(registration, self.staff_user)
+
+        # Assert
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('by the event organizer', mail.outbox[0].body)
+
+    def test_withdraw_registration_rejects_started_event(self):
+        # Arrange
+        started_event = Event.objects.create(
+            program=self.program,
+            name="Started Event",
+            starts_at=timezone.now() - timezone.timedelta(hours=1),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+        )
+        user = User.objects.create_user(username='toolate', email='toolate@example.com')
+        registration = Registration.objects.create(
+            user=user, event=started_event, name="Too Late",
+            first_name="Too", last_name="Late", email="toolate@example.com",
+            state=Registration.STATE_SUBMITTED,
+        )
+        registration.confirm()
+        registration.save()
+
+        # Act / Assert
+        with self.assertRaises(ValueError):
+            self.service.withdraw_registration(registration, user)
+
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(
+            Registration.objects.get(id=registration.id).state, Registration.STATE_CONFIRMED
+        )
+
     def test_staff_update_registration_creates_audit_event(self):
         # Arrange
         user = User.objects.create_user(username='updateme', email='updateme@example.com')

@@ -390,6 +390,25 @@ class RegistrationService:
 
         return errors
 
+    def withdraw_registration(self, registration: Registration, user: User) -> None:
+        allowed, reason = self.is_registration_withdrawable(registration)
+
+        if not allowed:
+            raise ValueError(reason)
+
+        registration.withdraw()
+        registration.save()
+
+        logger.info(
+            "User %s (id=%d) withdrew registration %d from event %s (id=%d)",
+            user.email, user.id, registration.id,
+            registration.event.name, registration.event.id,
+        )
+
+        self.audit_service.log(user, 'registration_withdrawn', target=registration)
+
+        self._send_withdrawal_email(registration, withdrawn_by_organizer=False)
+
     def staff_withdraw(self, registration: Registration, staff_user) -> None:
         if registration.state not in [Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED]:
             raise ValueError(f"Cannot withdraw registration in state '{registration.state}'")
@@ -600,10 +619,12 @@ class RegistrationService:
 
         return changed_fields
 
-    def _send_withdrawal_email(self, registration: Registration) -> None:
+    def _send_withdrawal_email(self, registration: Registration,
+                               withdrawn_by_organizer: bool = True) -> None:
         context = {
             'base_url': f"https://{settings.WEB_HOST}",
             'registration': registration,
+            'withdrawn_by_organizer': withdrawn_by_organizer,
         }
 
         self.email_service.send_email(
