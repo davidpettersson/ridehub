@@ -6,7 +6,7 @@ from django.test import TestCase
 from phonenumber_field.phonenumber import PhoneNumber
 
 from backoffice.models import UserProfile
-from web.templatetags.phone_filters import national_phone
+from web.templatetags.phone_filters import national_phone, phone_uri
 
 
 class NationalPhoneFilterTests(TestCase):
@@ -71,3 +71,55 @@ class NationalPhoneFilterTests(TestCase):
 
         self.assertNotEqual('None', result.strip())
         self.assertIn('613', result.strip())
+
+
+class PhoneUriFilterTests(TestCase):
+    def test_formats_phone_number_object_in_e164(self):
+        # Arrange
+        phone = PhoneNumber.from_string('+16135550100')
+
+        # Act
+        result = phone_uri(phone)
+
+        # Assert
+        self.assertEqual('+16135550100', result)
+
+    def test_formats_spaced_string_in_e164(self):
+        # Arrange
+        value = '613 555 0100'
+
+        # Act
+        result = phone_uri(value)
+
+        # Assert
+        self.assertEqual('+16135550100', result)
+
+    def test_strips_spaces_from_unparseable_value(self):
+        # Arrange
+        value = 'call 613 555 0100 ext 12'
+
+        # Act
+        result = phone_uri(value)
+
+        # Assert
+        self.assertNotIn(' ', result)
+
+    def test_returns_none_unchanged(self):
+        # Arrange
+        value = None
+
+        # Act
+        result = phone_uri(value)
+
+        # Assert
+        self.assertIsNone(result)
+
+    def test_returns_empty_string_unchanged(self):
+        # Arrange
+        value = ''
+
+        # Act
+        result = phone_uri(value)
+
+        # Assert
+        self.assertEqual('', result)

@@ -23,7 +23,7 @@
                         <dd class="col-12 col-lg-7 mb-2 text-break">{{ user.email }}</dd>
 
                         <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Phone</dt>
-                        <dd class="col-12 col-lg-7 mb-2">{% if user.profile.phone %}<a href="tel:{{ user.profile.phone }}" class="text-decoration-none">{{ user.profile.phone|national_phone }}</a>{% else %}Not provided{% endif %}</dd>
+                        <dd class="col-12 col-lg-7 mb-2">{% if user.profile.phone %}<a href="tel:{{ user.profile.phone|phone_uri }}" class="text-decoration-none">{{ user.profile.phone|national_phone }}</a>{% else %}Not provided{% endif %}</dd>
 
                         {% flag "capture_membership_number" %}
                         <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Membership number</dt>
@@ -49,7 +49,7 @@
                         <dd class="col-12 col-lg-7 mb-2">{% if user.profile.emergency_contact_name %}{{ user.profile.emergency_contact_name }}{% else %}Not provided{% endif %}</dd>
 
                         <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Emergency phone</dt>
-                        <dd class="col-12 col-lg-7 mb-0">{% if user.profile.emergency_contact_phone %}<a href="tel:{{ user.profile.emergency_contact_phone }}" class="text-decoration-none">{{ user.profile.emergency_contact_phone|national_phone }}</a>{% else %}Not provided{% endif %}</dd>
+                        <dd class="col-12 col-lg-7 mb-0">{% if user.profile.emergency_contact_phone %}<a href="tel:{{ user.profile.emergency_contact_phone|phone_uri }}" class="text-decoration-none">{{ user.profile.emergency_contact_phone|national_phone }}</a>{% else %}Not provided{% endif %}</dd>
                     </dl>
 
                     <div class="text-muted small">
