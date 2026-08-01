@@ -185,6 +185,62 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertNotContains(response, '123-456-7890')  # The actual emergency contact phone
         self.assertNotContains(response, 'mailto:regular@example.com')  # Email links
 
+    def _add_unverified_registration(self):
+        unverified_user = User.objects.create_user(
+            username='bob_user',
+            email='bob@bobson.com',
+            password='password123',
+            first_name='Bob',
+            last_name='Bobson'
+        )
+        return Registration.objects.create(
+            first_name='Bob',
+            last_name='Bobson',
+            name='Bob Bobson',
+            email='bob@bobson.com',
+            event=self.event,
+            ride=self.ride,
+            speed_range_preference=self.speed_range,
+            ride_leader_preference=Registration.RideLeaderPreference.NO,
+            user=unverified_user,
+            state=Registration.STATE_UNVERIFIED
+        )
+
+    def test_staff_sees_unverified_registrations_notice(self):
+        # Arrange
+        self._add_unverified_registration()
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'There is 1 unverified registration:')
+        self.assertContains(response, 'Bob Bobson &lt;bob@bobson.com&gt;')
+
+    def test_ride_leader_does_not_see_unverified_registrations_notice(self):
+        # Arrange
+        self._add_unverified_registration()
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.context['unverified_riders'], [])
+        self.assertNotContains(response, 'unverified registration')
+        self.assertNotContains(response, 'bob@bobson.com')
+
+    def test_staff_sees_no_notice_without_unverified_registrations(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertNotContains(response, 'unverified registration')
+
     def _add_confirmed_registration(self, user, days_offset):
         event = Event.objects.create(
             program=self.program,
