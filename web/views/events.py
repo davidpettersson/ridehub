@@ -304,9 +304,13 @@ def _build_registrations_context(request, event, contacts_revealed):
     can_access_rider_contacts = is_ride_leader or is_staff
     can_reveal_contacts = can_access_rider_contacts
 
+    visible_states = [Registration.STATE_CONFIRMED]
+    if is_staff:
+        visible_states.append(Registration.STATE_UNVERIFIED)
+
     all_riders = Registration.objects.filter(
         event_id=event.id,
-        state=Registration.STATE_CONFIRMED
+        state__in=visible_states
     ).select_related(
         'ride',
         'speed_range_preference',
@@ -318,13 +322,6 @@ def _build_registrations_context(request, event, contacts_revealed):
         'user__first_name',
         'user__last_name'
     )
-
-    unverified_riders = []
-    if is_staff:
-        unverified_riders = list(Registration.objects.filter(
-            event_id=event.id,
-            state=Registration.STATE_UNVERIFIED
-        ).order_by('first_name', 'last_name'))
 
     registration_filter = PublicRegistrationFilter(
         request.GET, queryset=all_riders, event=event
@@ -367,10 +364,10 @@ def _build_registrations_context(request, event, contacts_revealed):
         'contacts_revealed': contacts_revealed,
         'has_ride_leaders': any(
             rider.ride_leader_preference == Registration.RideLeaderPreference.YES
+            and rider.state == Registration.STATE_CONFIRMED
             for rider in all_riders
         ),
         'registrations_available': True,
-        'unverified_riders': unverified_riders,
     }
 
 

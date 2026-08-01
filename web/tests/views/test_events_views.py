@@ -206,41 +206,20 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
             state=Registration.STATE_UNVERIFIED
         )
 
-    def test_staff_sees_unverified_registrations_notice(self):
+    def test_staff_sees_unverified_rider_with_badge(self):
         # Arrange
-        self._add_unverified_registration()
+        unverified = self._add_unverified_registration()
         self.client.login(username='staff_user', password='password123')
 
         # Act
         response = self.client.get(self.url)
 
         # Assert
-        self.assertContains(response, 'Pending confirmation from 1 rider:')
-        self.assertContains(response, 'Bob Bobson &lt;bob@bobson.com&gt;')
+        self.assertIn(unverified, response.context['filtered_riders'])
+        self.assertContains(response, 'Bob Bobson')
+        self.assertContains(response, '>Unverified</span>')
 
-    def test_staff_notice_lists_unverified_registration_without_user(self):
-        # Arrange
-        Registration.objects.create(
-            first_name='Alice',
-            last_name='Alison',
-            name='Alice Alison',
-            email='alice@alison.com',
-            event=self.event,
-            ride=self.ride,
-            speed_range_preference=self.speed_range,
-            ride_leader_preference=Registration.RideLeaderPreference.NO,
-            user=None,
-            state=Registration.STATE_UNVERIFIED
-        )
-        self.client.login(username='staff_user', password='password123')
-
-        # Act
-        response = self.client.get(self.url)
-
-        # Assert
-        self.assertContains(response, 'Alice Alison &lt;alice@alison.com&gt;')
-
-    def test_ride_leader_does_not_see_unverified_registrations_notice(self):
+    def test_ride_leader_does_not_see_unverified_rider(self):
         # Arrange
         self._add_unverified_registration()
         self.client.login(username='leader_user', password='password123')
@@ -249,19 +228,34 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         response = self.client.get(self.url)
 
         # Assert
-        self.assertEqual(response.context['unverified_riders'], [])
-        self.assertNotContains(response, 'Pending confirmation')
-        self.assertNotContains(response, 'bob@bobson.com')
+        self.assertNotIn('Bob Bobson', response.content.decode())
+        self.assertNotContains(response, 'Unverified')
 
-    def test_staff_sees_no_notice_without_unverified_registrations(self):
+    def test_anonymous_does_not_see_unverified_rider(self):
         # Arrange
+        self._add_unverified_registration()
+
+        # Act
+        response = Client().get(self.url)
+
+        # Assert
+        self.assertNotIn('Bob Bobson', response.content.decode())
+        self.assertNotContains(response, 'Unverified')
+
+    def test_unverified_rider_does_not_enable_ride_leader_emails(self):
+        # Arrange
+        unverified = self._add_unverified_registration()
+        unverified.ride_leader_preference = Registration.RideLeaderPreference.YES
+        unverified.save()
+        self.leader_registration.ride_leader_preference = Registration.RideLeaderPreference.NO
+        self.leader_registration.save()
         self.client.login(username='staff_user', password='password123')
 
         # Act
         response = self.client.get(self.url)
 
         # Assert
-        self.assertNotContains(response, 'Pending confirmation')
+        self.assertFalse(response.context['has_ride_leaders'])
 
     def _add_confirmed_registration(self, user, days_offset):
         event = Event.objects.create(

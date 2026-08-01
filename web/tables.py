@@ -121,6 +121,13 @@ class PublicRegistrationTable(tables.Table):
                 '{} <span class="badge badge-ride-leader">Leader</span>', html
             )
 
+        if record.state == Registration.STATE_UNVERIFIED:
+            html = format_html(
+                '{} <span class="badge bg-warning text-dark" '
+                'title="This user has not verified their email address">Unverified</span>',
+                html,
+            )
+
         count = self.ride_counts.get(record.user_id)
         if count in self.RIDE_COUNT_LABELS:
             html = format_html(
