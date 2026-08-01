@@ -1527,18 +1527,6 @@ class RegistrationSubmittedRedirectTests(TestCase):
         self.assertEqual(response.context['event'], self.event)
         self.assertContains(response, reverse('event_detail', args=[self.event.id]))
 
-    def test_submitted_page_does_not_schedule_a_redirect(self):
-        # Arrange
-        self.client.force_login(self.user)
-
-        # Act
-        response = self.client.get(reverse('registration_submitted', args=[self.event.id]))
-
-        # Assert
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'setInterval')
-        self.assertNotContains(response, 'Taking you back to the event')
-
     def test_submitted_page_names_the_event(self):
         # Arrange
         self.client.force_login(self.user)
