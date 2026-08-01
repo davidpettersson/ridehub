@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime, date
+﻿from datetime import timedelta, datetime, date
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth.models import User
@@ -215,7 +215,7 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         response = self.client.get(self.url)
 
         # Assert
-        self.assertContains(response, 'There is 1 unverified registration:')
+        self.assertContains(response, 'There is 1 unconfirmed registration:')
         self.assertContains(response, 'Bob Bobson &lt;bob@bobson.com&gt;')
 
     def test_ride_leader_does_not_see_unverified_registrations_notice(self):
@@ -228,7 +228,7 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
 
         # Assert
         self.assertEqual(response.context['unverified_riders'], [])
-        self.assertNotContains(response, 'unverified registration')
+        self.assertNotContains(response, 'unconfirmed registration')
         self.assertNotContains(response, 'bob@bobson.com')
 
     def test_staff_sees_no_notice_without_unverified_registrations(self):
@@ -239,7 +239,7 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         response = self.client.get(self.url)
 
         # Assert
-        self.assertNotContains(response, 'unverified registration')
+        self.assertNotContains(response, 'unconfirmed registration')
 
     def _add_confirmed_registration(self, user, days_offset):
         event = Event.objects.create(
@@ -1676,7 +1676,7 @@ class AllDayEventViewTests(TestCase):
 class UpcomingViewQueryCountTests(TestCase):
     def setUp(self):
         self.client = Client()
-        self.program = Program.objects.create(name='Query Count Program', emoji='🚴', color='#ff0000')
+        self.program = Program.objects.create(name='Query Count Program', emoji='ðŸš´', color='#ff0000')
         self.speed_range = SpeedRange.objects.create(lower_limit=25, upper_limit=30)
         self.user = User.objects.create_user(
             username='query_count_user',
@@ -1754,3 +1754,4 @@ class UpcomingViewQueryCountTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '2 registered')
+
