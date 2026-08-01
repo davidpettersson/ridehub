@@ -18,8 +18,18 @@ from web.forms import RegistrationForm, RegistrationEditForm, MembershipNumberFo
 logger = logging.getLogger(__name__)
 
 
-def registration_submitted(request: HttpRequest) -> HttpResponse:
-    return render(request, 'web/registrations/submitted.html')
+REGISTRATION_SUBMITTED_REDIRECT_SECONDS = 5
+
+
+def registration_submitted(request: HttpRequest, event_id: int | None = None) -> HttpResponse:
+    event = get_object_or_404(Event, id=event_id) if event_id else None
+    auto_redirect = event is not None and request.user.is_authenticated
+
+    return render(request, 'web/registrations/submitted.html', {
+        'event': event,
+        'auto_redirect': auto_redirect,
+        'redirect_seconds': REGISTRATION_SUBMITTED_REDIRECT_SECONDS,
+    })
 
 
 def registration_verification_sent(request: HttpRequest) -> HttpResponse:
@@ -125,7 +135,7 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
 
             if result == RegistrationResult.DUPLICATE:
                 if request.user.is_authenticated:
-                    return redirect('registration_submitted')
+                    return redirect('registration_submitted', event_id=event.id)
                 return redirect('registration_verification_sent')
 
             if (flag_is_active(request, 'capture_membership_number')
@@ -134,11 +144,11 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
                 registered_user = user_service.find_by_email(user_detail.email).unwrap()
                 membership_service = MembershipService()
                 if request.user.is_authenticated and membership_service.has_current_membership_number(registered_user):
-                    return redirect('registration_submitted')
+                    return redirect('registration_submitted', event_id=event.id)
                 request.session['membership_capture_user_id'] = registered_user.id
                 return redirect('membership_number_capture', event_id=event.id)
 
-            return redirect('registration_submitted')
+            return redirect('registration_submitted', event_id=event.id)
 
     # Determine the selected ride (if any) to pre-select speed ranges
     selected_ride_id = None
@@ -259,18 +269,18 @@ def membership_number_capture(request: HttpRequest, event_id: int) -> HttpRespon
     event = get_object_or_404(Event, id=event_id)
 
     if not flag_is_active(request, 'capture_membership_number') or not event.requires_membership:
-        return redirect('registration_submitted')
+        return redirect('registration_submitted', event_id=event.id)
 
     user_id = request.session.get('membership_capture_user_id')
 
     if not user_id:
-        return redirect('registration_submitted')
+        return redirect('registration_submitted', event_id=event.id)
 
     if request.method == 'POST':
         # Skip button bypasses validation and cleans up session
         if 'skip' in request.POST:
             request.session.pop('membership_capture_user_id', None)
-            return redirect('registration_submitted')
+            return redirect('registration_submitted', event_id=event.id)
 
         form = MembershipNumberForm(request.POST)
         if form.is_valid():
@@ -279,7 +289,7 @@ def membership_number_capture(request: HttpRequest, event_id: int) -> HttpRespon
             if not membership_service.has_current_membership_number(user):
                 membership_service.save_membership_number(user, form.cleaned_data['membership_number'])
             request.session.pop('membership_capture_user_id', None)
-            return redirect('registration_submitted')
+            return redirect('registration_submitted', event_id=event.id)
     else:
         form = MembershipNumberForm()
 

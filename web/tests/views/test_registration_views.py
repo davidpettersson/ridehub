@@ -1475,3 +1475,78 @@ class RegistrationEmailLockdownTests(TestCase):
         self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
         registered_user = User.objects.get(email='entered@example.com')
         self.assertFalse(registered_user.profile.email_verified)
+
+
+class RegistrationSubmittedRedirectTests(TestCase):
+    def setUp(self):
+        now = timezone.now()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Test Event",
+            program=self.program,
+            starts_at=now + timezone.timedelta(days=3),
+            registration_closes_at=now + timezone.timedelta(days=2),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+        )
+        self.user = User.objects.create_user(
+            username='rider@example.com',
+            email='rider@example.com',
+            first_name='Rider',
+            last_name='User',
+        )
+        self.user.profile.email_verified = True
+        self.user.profile.save()
+
+    def test_signed_in_registration_redirects_to_event_scoped_submitted_page(self):
+        # Arrange
+        self.client.force_login(self.user)
+        form_data = {
+            'first_name': 'Rider',
+            'last_name': 'User',
+            'email': 'rider@example.com',
+            'phone': '+16135550100',
+        }
+
+        # Act
+        response = self.client.post(reverse('registration_create', args=[self.event.id]), form_data)
+
+        # Assert
+        self.assertRedirects(response, reverse('registration_submitted', args=[self.event.id]))
+
+    def test_submitted_page_auto_redirects_for_signed_in_user(self):
+        # Arrange
+        self.client.force_login(self.user)
+
+        # Act
+        response = self.client.get(reverse('registration_submitted', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['auto_redirect'])
+        self.assertEqual(response.context['event'], self.event)
+        self.assertContains(response, reverse('event_detail', args=[self.event.id]))
+
+    def test_submitted_page_does_not_auto_redirect_for_anonymous_user(self):
+        # Act
+        response = self.client.get(reverse('registration_submitted', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['auto_redirect'])
+
+    def test_submitted_page_without_event_still_renders(self):
+        # Act
+        response = self.client.get(reverse('registration_submitted'))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['event'])
+
+    def test_submitted_page_with_unknown_event_returns_not_found(self):
+        # Act
+        response = self.client.get(reverse('registration_submitted', args=[999999]))
+
+        # Assert
+        self.assertEqual(response.status_code, 404)
