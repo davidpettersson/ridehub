@@ -12,7 +12,7 @@ from audit.services import AuditService
 from backoffice.services.email_service import EmailService
 from backoffice.services.event_service import EventService
 from backoffice.models import Registration
-from backoffice.forms import EventDuplicationFormSet
+from backoffice.forms import EventDuplicationFormSet, EventRescheduleForm
 
 
 def _cancel_confirmation_page(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet,
@@ -90,6 +90,86 @@ def cancel_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
 
 
 cancel_event.short_description = "Cancel selected events"
+
+
+def _reschedule_page(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet, event, form):
+    context = {
+        'title': 'Reschedule event',
+        'queryset': query_set,
+        'event': event,
+        'form': form,
+        'opts': admin.model._meta,
+        'action_checkbox_name': ACTION_CHECKBOX_NAME,
+    }
+
+    return TemplateResponse(request, 'admin/backoffice/event/reschedule_selected.html', context)
+
+
+def reschedule_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):
+    events = list(query_set)
+
+    if len(events) != 1:
+        admin.message_user(
+            request,
+            'Select exactly one event to reschedule.',
+            messages.ERROR,
+        )
+        return redirect('admin:backoffice_event_changelist')
+
+    event = events[0]
+
+    if not event.reschedulable:
+        admin.message_user(
+            request,
+            f"Could not reschedule {event.name}. Only draft, announced and live events can be rescheduled.",
+            messages.ERROR,
+        )
+        return redirect('admin:backoffice_event_changelist')
+
+    if request.method == 'POST' and 'post' in request.POST:
+        form = EventRescheduleForm(request.POST, event=event)
+
+        if form.is_valid():
+            EventService().reschedule_event(
+                event,
+                starts_at=form.cleaned_data['starts_at'],
+                ends_at=form.cleaned_data['ends_at'],
+                registration_closes_at=form.cleaned_data['registration_closes_at'],
+                reason=form.cleaned_data['reschedule_reason'],
+            )
+
+            AuditService().log(request.user, 'rescheduled', target=event)
+
+            if form.cleaned_data['notify_registrants']:
+                notified = EventService().notify_registrants_of_reschedule(
+                    event,
+                    base_url=f"https://{request.get_host()}",
+                )
+                message = (
+                    f"{event.name} was rescheduled and {notified} registrant"
+                    f"{'' if notified == 1 else 's'} were notified."
+                )
+            else:
+                message = f"{event.name} was rescheduled. No notifications were sent."
+
+            admin.message_user(request, message, messages.SUCCESS)
+            return redirect('admin:backoffice_event_changelist')
+
+        return _reschedule_page(admin, request, query_set, event, form)
+
+    form = EventRescheduleForm(
+        event=event,
+        initial={
+            'starts_at': event.starts_at,
+            'ends_at': event.ends_at,
+            'registration_closes_at': event.registration_closes_at,
+        },
+    )
+
+    return _reschedule_page(admin, request, query_set, event, form)
+
+
+reschedule_event.short_description = "Reschedule selected event"
 
 
 def duplicate_event(admin: ModelAdmin, request: HttpRequest, query_set: QuerySet):

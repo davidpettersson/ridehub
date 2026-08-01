@@ -534,3 +534,67 @@ class EventAllDayTestCase(TestCase):
         # Act / Assert
         self.assertFalse(event.registrations_available)
 
+
+
+class EventRescheduleValidationTestCase(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.now = timezone.now()
+        self.tomorrow = self.now + timedelta(days=1)
+
+        self.event = Event.objects.create(
+            program=self.program,
+            name="Test Event",
+            starts_at=self.tomorrow,
+            ends_at=self.tomorrow + timedelta(hours=2),
+            registration_closes_at=self.now,
+        )
+
+    def test_rescheduled_property_false_by_default(self):
+        self.assertFalse(self.event.rescheduled)
+
+    def test_rescheduled_property_true_when_rescheduled_at_set(self):
+        # Arrange
+        self.event.rescheduled_at = self.now
+
+        # Act & Assert
+        self.assertTrue(self.event.rescheduled)
+
+    def test_reschedulable_for_draft_announced_and_live(self):
+        for state in (Event.STATE_DRAFT, Event.STATE_ANNOUNCED, Event.STATE_LIVE):
+            with self.subTest(state=state):
+                self.event.state = state
+                self.assertTrue(self.event.reschedulable)
+
+    def test_not_reschedulable_for_cancelled_and_archived(self):
+        for state in (Event.STATE_CANCELLED, Event.STATE_ARCHIVED):
+            with self.subTest(state=state):
+                self.event.state = state
+                self.assertFalse(self.event.reschedulable)
+
+    def test_clean_requires_previous_starts_at_when_rescheduled(self):
+        # Arrange
+        self.event.rescheduled_at = self.now
+        self.event.reschedule_reason = 'Thunderstorms'
+
+        # Act & Assert
+        with self.assertRaises(ValidationError):
+            self.event.clean()
+
+    def test_clean_requires_reason_when_rescheduled(self):
+        # Arrange
+        self.event.rescheduled_at = self.now
+        self.event.previous_starts_at = self.tomorrow
+
+        # Act & Assert
+        with self.assertRaises(ValidationError):
+            self.event.clean()
+
+    def test_clean_passes_for_complete_reschedule_data(self):
+        # Arrange
+        self.event.rescheduled_at = self.now
+        self.event.previous_starts_at = self.tomorrow
+        self.event.reschedule_reason = 'Thunderstorms'
+
+        # Act & Assert
+        self.event.clean()

@@ -191,6 +191,29 @@ class Event(models.Model):
         help_text='Reason for cancellation.'
     )
 
+    rescheduled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the event was last rescheduled.'
+    )
+
+    reschedule_reason = models.TextField(
+        blank=True,
+        help_text='Reason for the latest reschedule.'
+    )
+
+    previous_starts_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Start time of the event before the latest reschedule.'
+    )
+
+    previous_ends_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='End time of the event before the latest reschedule.'
+    )
+
     archived_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -229,6 +252,14 @@ class Event(models.Model):
     @property
     def archived(self) -> bool:
         return self.state == self.STATE_ARCHIVED
+
+    @property
+    def rescheduled(self) -> bool:
+        return self.rescheduled_at is not None
+
+    @property
+    def reschedulable(self) -> bool:
+        return self.state in (self.STATE_DRAFT, self.STATE_ANNOUNCED, self.STATE_LIVE)
 
     @property
     def duration(self) -> timedelta:
@@ -342,6 +373,16 @@ class Event(models.Model):
                 raise ValidationError({
                     'registration_closes_at': 'Registration cannot close after the event starts.'
                 })
+
+        if self.rescheduled_at and not self.previous_starts_at:
+            raise ValidationError({
+                'previous_starts_at': 'A rescheduled event must record its previous start time.'
+            })
+
+        if self.rescheduled_at and not self.reschedule_reason:
+            raise ValidationError({
+                'reschedule_reason': 'A rescheduled event must record a reschedule reason.'
+            })
 
     def has_no_confirmed_registrations(self):
         return self.registration_count == 0

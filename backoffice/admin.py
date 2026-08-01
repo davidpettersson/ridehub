@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from audit.context import actor
-from backoffice.actions import archive_event, cancel_event, duplicate_event
+from backoffice.actions import archive_event, cancel_event, duplicate_event, reschedule_event
 from backoffice.models import Forecast, Ride, Route, Event, Program, SpeedRange, Registration, Announcement, UserProfile, UserMembershipNumber
 from .forms import EventAdminForm
 
@@ -51,8 +51,9 @@ class EventAdmin(AuditedAdminMixin, SortableAdminBase, admin.ModelAdmin):
     date_hierarchy = 'starts_at'
     list_filter = ('starts_at', 'program', 'state',)
     search_fields = ('name',)
-    actions = [cancel_event, archive_event, duplicate_event]
-    readonly_fields = ('cancelled_at', 'cancellation_reason', 'archived_at', 'archival_reason')
+    actions = [cancel_event, reschedule_event, archive_event, duplicate_event]
+    readonly_fields = ('cancelled_at', 'cancellation_reason', 'archived_at', 'archival_reason',
+                       'rescheduled_at', 'reschedule_reason', 'previous_starts_at', 'previous_ends_at')
     form = EventAdminForm
 
     def get_queryset(self, request):
@@ -101,6 +102,14 @@ class EventAdmin(AuditedAdminMixin, SortableAdminBase, admin.ModelAdmin):
                 ('Cancellation information', {
                     'fields': ('cancelled_at', 'cancellation_reason'),
                     'description': 'These fields are read-only and can only be modified through the Cancel Event action.'
+                })
+            )
+
+        if obj and obj.rescheduled:
+            fieldsets.append(
+                ('Reschedule information', {
+                    'fields': ('rescheduled_at', 'reschedule_reason', 'previous_starts_at', 'previous_ends_at'),
+                    'description': 'These fields are read-only and can only be modified through the Reschedule Event action.'
                 })
             )
 

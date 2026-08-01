@@ -35,7 +35,7 @@
                 {% endif %}
             </div>
             <h1 class="fs-2 fw-bold mb-2">
-                {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
+                {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% if event.rescheduled %} (rescheduled){% endif %}{% endif %}
             </h1>
             <div class="d-flex flex-wrap gap-2 align-items-center">
                 <span class="meta-pill text-muted"{% if event.program.color %} style="background-color: {{ event.program.color }}1A;"{% endif %}>{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
@@ -71,6 +71,39 @@
                         <div class="mt-2 text-danger">
                             <p class="fw-medium">Reason:</p>
                             <p>{{ event.cancellation_reason }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if event.rescheduled %}
+                <div class="mb-4 p-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded">
+                    <div>
+                        <h3 class="fs-5 fw-medium">Event Rescheduled</h3>
+                        <p class="mb-2">
+                            This event was rescheduled on {{ event.rescheduled_at|date:"F j, Y" }} at {{ event.rescheduled_at|date:"g:i A" }}.
+                        </p>
+                        <p class="mb-1">
+                            <span class="fw-medium">Was:</span>
+                            {% if event.all_day %}
+                            {{ event.previous_starts_at|date:"l, F j, Y" }} · All day
+                            {% else %}
+                            {{ event.previous_starts_at|date:"l, F j, Y" }} at {{ event.previous_starts_at|date:"g:i A" }}{% if event.previous_ends_at %} - {{ event.previous_ends_at|date:"g:i A" }}{% endif %}
+                            {% endif %}
+                        </p>
+                        <p class="mb-0">
+                            <span class="fw-medium">Now:</span>
+                            {% if event.all_day %}
+                            {{ event.starts_at|date:"l, F j, Y" }} · All day
+                            {% else %}
+                            {{ event.starts_at|date:"l, F j, Y" }} at {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% endif %}
+                            {% endif %}
+                        </p>
+                        {% if event.reschedule_reason %}
+                        <div class="mt-2">
+                            <p class="fw-medium mb-1">Reason:</p>
+                            <p class="mb-0">{{ event.reschedule_reason }}</p>
                         </div>
                         {% endif %}
                     </div>

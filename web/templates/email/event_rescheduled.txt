@@ -1,0 +1,18 @@
+EVENT RESCHEDULED: {{ event.name }}
+
+The following event has been rescheduled:
+
+Event: {{ event.name }}
+Previously: {{ event.previous_starts_at|date:"l, F j, Y" }} at {{ event.previous_starts_at|date:"g:i A" }}
+Now: {{ event.starts_at|date:"l, F j, Y" }} at {{ event.starts_at|date:"g:i A" }}
+{% if event.ends_at %}Ends: {{ event.ends_at|date:"l, F j, Y" }} at {{ event.ends_at|date:"g:i A" }}{% endif %}
+{% if event.location %}Location: {{ event.location }}{% endif %}
+
+REASON FOR RESCHEDULING:
+{{ reschedule_reason }}
+
+Your registration has been kept. If the new time does not work for you, please withdraw from the event.
+
+You can view the event at: {{ base_url }}{% url 'event_detail' event.id %}
+
+Ottawa Bicycle Club
