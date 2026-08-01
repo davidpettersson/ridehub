@@ -18,16 +18,11 @@ from web.forms import RegistrationForm, RegistrationEditForm, MembershipNumberFo
 logger = logging.getLogger(__name__)
 
 
-REGISTRATION_SUBMITTED_REDIRECT_SECONDS = 10
-
-
 def registration_submitted(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
     return render(request, 'web/registrations/submitted.html', {
         'event': event,
-        'auto_redirect': request.user.is_authenticated,
-        'redirect_seconds': REGISTRATION_SUBMITTED_REDIRECT_SECONDS,
     })
 
 
