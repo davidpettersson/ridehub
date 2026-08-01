@@ -804,6 +804,12 @@ class Registration(models.Model):
     confirmed_at = models.DateTimeField(null=True, blank=True)
     withdrawn_at = models.DateTimeField(null=True, blank=True)
 
+    unconfirmed_alert_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When staff were alerted that this registration had not been confirmed.'
+    )
+
     user = models.ForeignKey(
         User,
         on_delete=models.PROTECT,

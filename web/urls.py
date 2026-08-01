@@ -3,6 +3,7 @@ from django.urls import path
 from web.views.events import event_detail, event_forecast_badge, event_forecasts, event_list, event_registrations, \
     event_emergency_contacts, event_emails, event_registrations_print, calendar_view, events_redirect, \
     upcoming_forecast_badges
+from web.views.debug import trigger_task
 from web.views.events_ical import EventFeed
 from web.views.helpers import changes_email_addresses
 from web.views.login import LoginFormView, logout_view, CustomLoginView
@@ -55,6 +56,7 @@ urlpatterns = [
     path('profile/membership-number', profile_membership_number, name='profile_membership_number'),
     path('profile/name-visibility', profile_name_visibility, name='profile_name_visibility'),
     path('reviews/2025', review_2025, name='review_2025'),
+    path('debug/trigger-task', trigger_task, name='debug_trigger_task'),
     path('robots.txt', robots_txt, name='robots_txt'),
     path('announcements', active_announcements, name='active_announcements'),
     path('help', page_detail, {'slug': 'help'}, name='help'),

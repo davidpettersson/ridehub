@@ -100,7 +100,8 @@
         </div>
         {% endfor %}
         {% if forecasts_pending %}
-        <div hx-get="{% url 'upcoming_forecast_badges' %}{% if active_query %}?q={{ active_query|urlencode }}{% endif %}"
+        <div id="forecast-badges-poller"
+             hx-get="{% url 'upcoming_forecast_badges' %}{% if active_query %}?q={{ active_query|urlencode }}{% endif %}"
              hx-trigger="load"
              hx-swap="none"></div>
         {% endif %}

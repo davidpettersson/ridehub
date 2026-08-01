@@ -3,37 +3,36 @@ from urllib.parse import urlparse, parse_qs, urlencode
 
 from celery import Celery
 
-# Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ridehub.settings')
 
-app = Celery('ridehub')
 
-redis_url = os.environ.get('REDIS_URL', 'redis://')
+def _broker_url() -> str:
+    redis_url = os.environ.get('REDIS_URL')
 
-# If using rediss:// (SSL), add the required ssl_cert_reqs parameter if not present
-if redis_url.startswith('rediss://'):
+    if not redis_url:
+        if 'DYNO' in os.environ:
+            raise RuntimeError('REDIS_URL is not set; attach a Redis add-on to this Heroku app')
+        redis_url = 'redis://localhost:6379/0'
+
+    if not redis_url.startswith('rediss://'):
+        return redis_url
+
     parsed_url = urlparse(redis_url)
     query_params = parse_qs(parsed_url.query)
 
-    # Only add ssl_cert_reqs if it's not already present
-    if 'ssl_cert_reqs' not in query_params:
-        query_params['ssl_cert_reqs'] = ['CERT_NONE']
+    if 'ssl_cert_reqs' in query_params:
+        return redis_url
 
-        # Rebuild the URL with the added parameter
-        new_query = urlencode(query_params, doseq=True)
-        parsed_url = parsed_url._replace(query=new_query)
+    query_params['ssl_cert_reqs'] = ['CERT_NONE']
+    parsed_url = parsed_url._replace(query=urlencode(query_params, doseq=True))
+    return parsed_url.geturl()
 
-        # Convert back to string
-        redis_url = parsed_url.geturl()
 
-# Basic Redis config
-app.conf.update(broker_url=redis_url, result_backend=redis_url)
+app = Celery('ridehub')
 
-# Using a string here means the worker doesn't have to serialize
-# the configuration object to child processes.
-# - namespace='CELERY' means all celery-related configuration keys
-#   should have a `CELERY_` prefix.
+broker_url = _broker_url()
+app.conf.update(broker_url=broker_url, result_backend=broker_url)
+
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
-# Load task modules from all registered Django apps.
 app.autodiscover_tasks()

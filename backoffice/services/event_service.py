@@ -127,6 +127,43 @@ class EventService:
         latitude, longitude = YOW_LOCATION
         return ForecastService().get_forecast(latitude, longitude, event.starts_at, event.starts_at + event.duration)
 
+    def request_forecast(self, event: Event) -> None:
+        self.request_forecasts([event])
+
+    def request_forecasts(self, events) -> None:
+        from backoffice.tasks import fetch_forecast
+
+        windows_by_event_id = self._windows_by_event_id(events)
+        states_by_window = ForecastService().resolve_for_windows(windows_by_event_id.values())
+
+        latitude, longitude = YOW_LOCATION
+        requested = set()
+
+        for window, state in states_by_window.items():
+            if not state.pending or window in requested:
+                continue
+            requested.add(window)
+            starts_at, ends_at = window
+            fetch_forecast.delay(str(latitude), str(longitude), starts_at.isoformat(), ends_at.isoformat())
+
+    def fetch_cached_forecast(self, event: Event) -> Forecast | None:
+        if event.virtual:
+            return None
+        latitude, longitude = YOW_LOCATION
+        return ForecastService().get_cached_forecast(
+            latitude, longitude, event.starts_at, event.starts_at + event.duration
+        )
+
+    def fetch_cached_forecasts(self, events) -> dict:
+        windows_by_event_id = self._windows_by_event_id(events)
+        forecasts_by_window = ForecastService().get_cached_forecasts_for_windows(windows_by_event_id.values())
+
+        return {
+            event_id: forecasts_by_window[window]
+            for event_id, window in windows_by_event_id.items()
+            if forecasts_by_window[window]
+        }
+
     def fetch_forecasts(self, events) -> dict:
         windows_by_event_id = self._windows_by_event_id(events)
         forecasts_by_window = ForecastService().get_forecasts_for_windows(windows_by_event_id.values())
