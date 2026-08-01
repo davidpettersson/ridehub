@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
+from kombu.exceptions import OperationalError
 from django.utils import timezone
 from waffle.testutils import override_flag
 
@@ -168,6 +169,47 @@ class EventForecastBadgeAsyncTests(AsyncForecastTestCase):
         # Assert
         delay.assert_called_once()
 
+    @override_flag('async_forecast_fetch', active=True)
+    def test_still_renders_when_the_broker_is_unreachable(self):
+        # Arrange
+        url = reverse('event_forecast_badge', args=[self.event.id])
+
+        # Act
+        with patch('backoffice.tasks.fetch_forecast.delay', side_effect=OperationalError('broker down')):
+            response = self.client.get(url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+
+    @override_flag('async_forecast_fetch', active=True)
+    def test_serves_the_cached_forecast_when_the_broker_is_unreachable(self):
+        # Arrange
+        forecast = self._create_forecast()
+        self._make_stale(forecast)
+        url = reverse('event_forecast_badge', args=[self.event.id])
+
+        # Act
+        with patch('backoffice.tasks.fetch_forecast.delay', side_effect=OperationalError('broker down')):
+            response = self.client.get(url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'forecast-hourly-{forecast.pk}')
+
+    @override_flag('async_forecast_fetch', active=True)
+    def test_releases_the_lock_so_a_later_attempt_can_retry(self):
+        # Arrange
+        url = reverse('event_forecast_badge', args=[self.event.id])
+
+        # Act
+        with patch('backoffice.tasks.fetch_forecast.delay', side_effect=OperationalError('broker down')):
+            self.client.get(url)
+        with patch('backoffice.tasks.fetch_forecast.delay') as delay:
+            self.client.get(f'{url}?attempt=1')
+
+        # Assert
+        delay.assert_called_once()
+
     def test_falls_back_to_synchronous_fetching_when_the_flag_is_off(self):
         # Arrange
         url = reverse('event_forecast_badge', args=[self.event.id])
@@ -277,6 +319,18 @@ class UpcomingForecastBadgesAsyncTests(AsyncForecastTestCase):
 
         # Assert
         delay.assert_called_once()
+
+    @override_flag('async_forecast_fetch', active=True)
+    def test_still_renders_when_the_broker_is_unreachable(self):
+        # Arrange
+        url = reverse('upcoming_forecast_badges')
+
+        # Act
+        with patch('backoffice.tasks.fetch_forecast.delay', side_effect=OperationalError('broker down')):
+            response = self.client.get(url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
 
     def test_falls_back_to_synchronous_fetching_when_the_flag_is_off(self):
         # Arrange

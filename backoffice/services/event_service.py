@@ -1,3 +1,4 @@
+import logging
 from datetime import date, datetime, timedelta
 
 from django.core.cache import cache
@@ -6,6 +7,8 @@ from django.utils import timezone
 
 from backoffice.models import Event, Forecast, Registration, Ride
 from backoffice.services.forecast_service import ForecastService, ForecastState, YOW_LOCATION
+
+logger = logging.getLogger(__name__)
 
 FORECAST_REQUEST_LOCK_SECONDS = 60
 
@@ -146,10 +149,15 @@ class EventService:
                 continue
 
             starts_at, ends_at = window
-            if not cache.add(self._forecast_request_key(window), True, FORECAST_REQUEST_LOCK_SECONDS):
+            key = self._forecast_request_key(window)
+            if not cache.add(key, True, FORECAST_REQUEST_LOCK_SECONDS):
                 continue
 
-            fetch_forecast.delay(str(latitude), str(longitude), starts_at.isoformat(), ends_at.isoformat())
+            try:
+                fetch_forecast.delay(str(latitude), str(longitude), starts_at.isoformat(), ends_at.isoformat())
+            except Exception as e:
+                cache.delete(key)
+                logger.warning('Could not queue forecast fetch for %s to %s: %s', starts_at, ends_at, e)
 
     @staticmethod
     def _forecast_request_key(window) -> str:

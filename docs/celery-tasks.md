@@ -44,6 +44,23 @@ window. `CACHES` points at `REDIS_URL` when it is set, so the lock holds across
 dynos; local development without Redis falls back to in-memory caching, which
 only deduplicates within a single process.
 
+## Behaviour without a worker
+
+Nothing in the request path depends on a worker being up.
+
+With `async_forecast_fetch` off — the default — no task is enqueued at all, so
+the site behaves exactly as it did before this was added.
+
+With the flag on and no worker consuming the queue, badges poll five times, find
+nothing, and disappear for that page load. Pages render normally and the next
+page load tries again. Beat tasks simply do not run, so no alert emails are sent.
+
+If the broker itself is unreachable, `request_forecasts` logs a warning, releases
+its lock so a later request can retry, and the page still renders — serving a
+stale cached forecast when one exists. Publishing is configured to fail fast
+(`CELERY_TASK_PUBLISH_RETRY = False`, 2s socket timeouts) so a dead broker does
+not stall web requests behind connection retries.
+
 ## Heroku setup
 
 ```
