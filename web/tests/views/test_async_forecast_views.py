@@ -1,10 +1,12 @@
 from datetime import timedelta
 from unittest.mock import patch
 
-from django.core.cache import cache
+from django.conf import settings
+from django.core.cache import caches
 from django.test import TestCase
 from django.urls import reverse
 from kombu.exceptions import OperationalError
+from redis.exceptions import RedisError
 from django.utils import timezone
 from waffle.testutils import override_flag
 
@@ -14,7 +16,7 @@ from backoffice.services.forecast_service import YOW_LOCATION
 
 class AsyncForecastTestCase(TestCase):
     def setUp(self):
-        cache.clear()
+        caches[settings.FORECAST_CACHE_ALIAS].clear()
         self.program = Program.objects.create(name='Test Program')
         self.route = Route.objects.create(name='Test Route')
         self.starts_at = (timezone.now() + timedelta(days=1)).replace(
@@ -177,6 +179,31 @@ class EventForecastBadgeAsyncTests(AsyncForecastTestCase):
         # Act
         with patch('backoffice.tasks.fetch_forecast.delay', side_effect=OperationalError('broker down')):
             response = self.client.get(url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+
+    @override_flag('async_forecast_fetch', active=True)
+    def test_still_renders_when_the_forecast_cache_is_unreachable(self):
+        # Arrange
+        url = reverse('event_forecast_badge', args=[self.event.id])
+        broken_cache = caches[settings.FORECAST_CACHE_ALIAS]
+
+        # Act
+        with patch.object(broken_cache, 'add', side_effect=RedisError('cache down')), \
+                patch('backoffice.tasks.fetch_forecast.delay'):
+            response = self.client.get(url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+
+    def test_event_list_renders_when_the_forecast_cache_is_unreachable(self):
+        # Arrange
+        broken_cache = caches[settings.FORECAST_CACHE_ALIAS]
+
+        # Act
+        with patch.object(broken_cache, 'add', side_effect=RedisError('cache down')):
+            response = self.client.get(reverse('upcoming'))
 
         # Assert
         self.assertEqual(response.status_code, 200)

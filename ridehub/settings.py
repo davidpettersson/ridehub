@@ -6,7 +6,7 @@ import dj_database_url
 import sentry_sdk
 from celery.schedules import crontab
 
-from ridehub.redis_url import redis_url
+from ridehub.redis_url import cache_redis_url
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
 
@@ -254,18 +254,22 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+FORECAST_CACHE_ALIAS = 'forecast'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    },
+    FORECAST_CACHE_ALIAS: {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'forecast',
+    },
+}
+
 if os.environ.get('REDIS_URL'):
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': redis_url(),
-        }
-    }
-else:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        }
+    CACHES[FORECAST_CACHE_ALIAS] = {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': cache_redis_url(),
     }
 
 REGISTRATION_ALERT_EMAILS = [

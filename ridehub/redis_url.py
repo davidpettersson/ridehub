@@ -3,8 +3,11 @@ from urllib.parse import urlparse, parse_qs, urlencode
 
 LOCAL_REDIS_URL = 'redis://localhost:6379/0'
 
+KOMBU_CERT_NONE = 'CERT_NONE'
+REDIS_PY_CERT_NONE = 'none'
 
-def redis_url() -> str:
+
+def redis_url(cert_reqs: str = KOMBU_CERT_NONE) -> str:
     url = os.environ.get('REDIS_URL')
 
     if not url:
@@ -21,6 +24,14 @@ def redis_url() -> str:
     if 'ssl_cert_reqs' in query_params:
         return url
 
-    query_params['ssl_cert_reqs'] = ['CERT_NONE']
+    query_params['ssl_cert_reqs'] = [cert_reqs]
     parsed_url = parsed_url._replace(query=urlencode(query_params, doseq=True))
     return parsed_url.geturl()
+
+
+def celery_redis_url() -> str:
+    return redis_url(KOMBU_CERT_NONE)
+
+
+def cache_redis_url() -> str:
+    return redis_url(REDIS_PY_CERT_NONE)

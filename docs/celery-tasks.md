@@ -37,12 +37,21 @@ Events with no possible forecast — virtual events, and events outside the
 seven-day horizon — render an empty badge instead of polling for a forecast that
 will never arrive.
 
-Enqueueing is deduplicated through the Django cache: a window that has been
-requested is locked for `FORECAST_REQUEST_LOCK_SECONDS` (60s), so repeated poll
-attempts and concurrent visitors do not pile up duplicate tasks for the same
-window. `CACHES` points at `REDIS_URL` when it is set, so the lock holds across
-dynos; local development without Redis falls back to in-memory caching, which
-only deduplicates within a single process.
+Enqueueing is deduplicated through a cache lock: a window that has been requested
+is locked for `FORECAST_REQUEST_LOCK_SECONDS` (60s), so repeated poll attempts
+and concurrent visitors do not pile up duplicate tasks for the same window.
+
+The lock uses its own cache alias (`forecast`), backed by Redis when `REDIS_URL`
+is set so it holds across dynos. The `default` cache stays in-process on purpose:
+waffle reads every flag through it, so putting it on Redis would make flag
+evaluation — and therefore most page renders — depend on Redis being reachable.
+A failing forecast cache is caught and logged; the page still renders.
+
+Note that the two Redis URLs are not interchangeable. Celery goes through kombu,
+which wants `ssl_cert_reqs=CERT_NONE`; the Django cache goes through redis-py,
+which only accepts `none`, `optional`, or `required` and raises on anything else.
+`ridehub/redis_url.py` exposes `celery_redis_url()` and `cache_redis_url()` for
+this reason.
 
 ## Behaviour without a worker
 

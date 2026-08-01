@@ -1,7 +1,8 @@
 import logging
 from datetime import date, datetime, timedelta
 
-from django.core.cache import cache
+from django.conf import settings
+from django.core.cache import caches
 from django.db.models import Count, Max, Min, Q, QuerySet
 from django.utils import timezone
 
@@ -150,14 +151,29 @@ class EventService:
 
             starts_at, ends_at = window
             key = self._forecast_request_key(window)
-            if not cache.add(key, True, FORECAST_REQUEST_LOCK_SECONDS):
-                continue
+
+            try:
+                if not self._cache().add(key, True, FORECAST_REQUEST_LOCK_SECONDS):
+                    continue
+            except Exception as e:
+                logger.warning('Forecast request cache unavailable: %s', e)
 
             try:
                 fetch_forecast.delay(str(latitude), str(longitude), starts_at.isoformat(), ends_at.isoformat())
             except Exception as e:
-                cache.delete(key)
+                self._release_forecast_request(key)
                 logger.warning('Could not queue forecast fetch for %s to %s: %s', starts_at, ends_at, e)
+
+    @staticmethod
+    def _cache():
+        return caches[settings.FORECAST_CACHE_ALIAS]
+
+    @classmethod
+    def _release_forecast_request(cls, key: str) -> None:
+        try:
+            cls._cache().delete(key)
+        except Exception:
+            pass
 
     @staticmethod
     def _forecast_request_key(window) -> str:
