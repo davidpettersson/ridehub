@@ -15,62 +15,42 @@
                 <div class="card-body p-4">
                     <h3 class="fs-5 fw-medium mb-3">Details on file</h3>
 
-                    <div class="mb-2">
-                        <div class="d-flex align-items-center">
-                            <span class="fw-medium me-2">Name:</span>
-                            <span>{{ user.first_name }} {{ user.last_name }}</span>
-                        </div>
-                    </div>
+                    <dl class="row g-0 mb-3">
+                        <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Name</dt>
+                        <dd class="col-12 col-lg-7 mb-2">{{ user.first_name }} {{ user.last_name }}</dd>
 
-                    <div class="mb-2">
-                        <div class="d-flex align-items-center">
-                            <span class="fw-medium me-2">Email:</span>
-                            <span>{{ user.email }}</span>
-                        </div>
-                    </div>
+                        <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Email</dt>
+                        <dd class="col-12 col-lg-7 mb-2 text-break">{{ user.email }}</dd>
 
-                    <div class="mb-2">
-                        <div class="d-flex align-items-center">
-                            <span class="fw-medium me-2">Phone:</span>
-                            <span>{% if user.profile.phone %}{{ user.profile.phone|national_phone }}{% else %}Not provided{% endif %}</span>
-                        </div>
-                    </div>
+                        <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Phone</dt>
+                        <dd class="col-12 col-lg-7 mb-2">{% if user.profile.phone %}<a href="tel:{{ user.profile.phone|phone_uri }}" class="text-decoration-none">{{ user.profile.phone|national_phone }}</a>{% else %}Not provided{% endif %}</dd>
 
-                    {% flag "capture_membership_number" %}
-                    <div class="mb-3">
-                        <div class="d-flex align-items-center">
-                            <span class="fw-medium me-2">Membership number:</span>
+                        {% flag "capture_membership_number" %}
+                        <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Membership number</dt>
+                        <dd class="col-12 col-lg-7 mb-2">
                             {% if membership_number %}
-                                <span>{{ membership_number.number }} ({{ membership_number.year }})</span>
+                                {{ membership_number.number }} ({{ membership_number.year }})
                             {% else %}
                                 <span id="membership-number-link">
                                     <a href="#" onclick="document.getElementById('membership-number-link').style.display='none'; document.getElementById('membership-number-form').style.display='block'; return false;" class="text-decoration-none">Enter membership number</a>
                                 </span>
                                 <span id="membership-number-form" style="display: none;">
-                                    <form method="post" action="{% url 'profile_membership_number' %}" class="d-inline-flex align-items-center gap-2">
+                                    <form method="post" action="{% url 'profile_membership_number' %}" class="d-flex flex-wrap align-items-center gap-2">
                                         {% csrf_token %}
-                                        <input type="text" name="membership_number" class="form-control form-control-sm" style="width: 160px;" placeholder="e.g. OBC-12345" maxlength="32" required>
+                                        <input type="text" name="membership_number" class="form-control form-control-sm" style="max-width: 160px;" placeholder="e.g. OBC-12345" maxlength="32" required>
                                         <button type="submit" class="btn btn-primary btn-sm">Save</button>
                                     </form>
                                 </span>
                             {% endif %}
-                        </div>
-                    </div>
-                    {% endflag %}
+                        </dd>
+                        {% endflag %}
 
-                    <div class="mb-2">
-                        <div class="d-flex align-items-center">
-                            <span class="fw-medium me-2">Emergency contact:</span>
-                            <span>{% if user.profile.emergency_contact_name %}{{ user.profile.emergency_contact_name }}{% else %}Not provided{% endif %}</span>
-                        </div>
-                    </div>
+                        <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Emergency contact</dt>
+                        <dd class="col-12 col-lg-7 mb-2">{% if user.profile.emergency_contact_name %}{{ user.profile.emergency_contact_name }}{% else %}Not provided{% endif %}</dd>
 
-                    <div class="mb-3">
-                        <div class="d-flex align-items-center">
-                            <span class="fw-medium me-2">Emergency contact phone:</span>
-                            <span>{% if user.profile.emergency_contact_phone %}{{ user.profile.emergency_contact_phone|national_phone }}{% else %}Not provided{% endif %}</span>
-                        </div>
-                    </div>
+                        <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Emergency phone</dt>
+                        <dd class="col-12 col-lg-7 mb-0">{% if user.profile.emergency_contact_phone %}<a href="tel:{{ user.profile.emergency_contact_phone|phone_uri }}" class="text-decoration-none">{{ user.profile.emergency_contact_phone|national_phone }}</a>{% else %}Not provided{% endif %}</dd>
+                    </dl>
 
                     <div class="text-muted small">
                         <p class="mb-0">These details are automatically updated when you register for events and will be prefilled to save you time.</p>

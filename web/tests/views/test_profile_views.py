@@ -24,9 +24,23 @@ class ProfileEmergencyContactTests(TestCase):
         response = self.client.get(reverse('profile'))
 
         # Assert
-        self.assertContains(response, 'Emergency contact:')
+        self.assertContains(response, 'Emergency contact')
         self.assertContains(response, 'Erin Emergency')
-        self.assertContains(response, 'Emergency contact phone:')
+        self.assertContains(response, 'Emergency phone')
+        self.assertContains(response, '(613) 555-1234')
+        self.assertContains(response, 'href="tel:+16135551234"')
+
+    def test_emergency_contact_phone_with_spaces_is_a_dialable_link(self):
+        # Arrange
+        self.user.profile.emergency_contact_name = 'Erin Emergency'
+        self.user.profile.emergency_contact_phone = '613 555 1234'
+        self.user.profile.save()
+
+        # Act
+        response = self.client.get(reverse('profile'))
+
+        # Assert
+        self.assertContains(response, 'href="tel:+16135551234"')
         self.assertContains(response, '(613) 555-1234')
 
     def test_emergency_contact_details_are_not_provided(self):
@@ -39,5 +53,5 @@ class ProfileEmergencyContactTests(TestCase):
         response = self.client.get(reverse('profile'))
 
         # Assert
-        self.assertContains(response, 'Emergency contact:')
+        self.assertContains(response, 'Emergency contact')
         self.assertContains(response, 'Not provided', count=3)
