@@ -57,12 +57,12 @@
             </div>
         </div>
 
-        {% if user_is_registered %}
+        {% if user_is_registered and not event.cancelled %}
         <div class="p-4 mb-4 bg-success bg-opacity-10 border border-success border-opacity-25 rounded">
             <p class="text-success fw-medium mb-0">
                 <i class="bi bi-check-circle-fill me-1"></i>You're registered for this event.
             </p>
-            {% if user_registration.editable or not event.cancelled %}
+            {% if user_registration.editable or user_registration.withdrawable %}
             <div class="d-flex flex-wrap gap-2 mt-3">
                 {% if user_registration.editable %}
                 <a href="{% url 'registration_edit' user_registration.id %}?next={{ request.path|urlencode }}"
@@ -70,7 +70,7 @@
                     Edit registration
                 </a>
                 {% endif %}
-                {% if not event.cancelled %}
+                {% if user_registration.withdrawable %}
                 <form method="post" action="{% url 'registration_withdraw' user_registration.id %}"
                       onsubmit="return confirm('Are you sure you want to withdraw your registration for this event?');">
                     {% csrf_token %}

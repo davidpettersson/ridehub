@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.core.signing import TimestampSigner
 from django.test import TestCase
 from django.contrib.auth.models import User
@@ -530,9 +532,19 @@ class RegistrationWithdrawAccessControlTests(TestCase):
         self.event = Event.objects.create(
             name="Test Event",
             program=program,
-            starts_at=now,
-            ends_at=now,
-            registration_closes_at=now,
+            starts_at=now + timedelta(days=7),
+            ends_at=now + timedelta(days=7, hours=3),
+            registration_closes_at=now + timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False
+        )
+
+        self.started_event = Event.objects.create(
+            name="Started Event",
+            program=program,
+            starts_at=now - timedelta(hours=1),
+            ends_at=now + timedelta(hours=2),
             requires_emergency_contact=False,
             ride_leaders_wanted=False,
             requires_membership=False
@@ -578,6 +590,41 @@ class RegistrationWithdrawAccessControlTests(TestCase):
         self.assertEqual(response.status_code, 302)
         updated_registration = Registration.objects.get(id=self.registration_a.id)
         self.assertEqual(updated_registration.state, 'withdrawn')
+
+    def test_user_cannot_withdraw_after_event_has_started(self):
+        # Arrange
+        registration = Registration.objects.create(
+            event=self.started_event,
+            user=self.user_a,
+            state='confirmed'
+        )
+        self.client.force_login(self.user_a)
+
+        # Act
+        response = self.client.post(
+            reverse('registration_withdraw', kwargs={'registration_id': registration.id})
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        updated_registration = Registration.objects.get(id=registration.id)
+        self.assertEqual(updated_registration.state, 'confirmed')
+
+    def test_user_cannot_withdraw_from_cancelled_event(self):
+        # Arrange
+        self.event.cancel()
+        self.event.save()
+        self.client.force_login(self.user_a)
+
+        # Act
+        response = self.client.post(
+            reverse('registration_withdraw', kwargs={'registration_id': self.registration_a.id})
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        updated_registration = Registration.objects.get(id=self.registration_a.id)
+        self.assertEqual(updated_registration.state, 'confirmed')
 
     def test_withdraw_redirects_to_safe_next_target(self):
         self.client.force_login(self.user_a)

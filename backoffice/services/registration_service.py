@@ -205,6 +205,12 @@ class RegistrationService:
 
         return registration, None
 
+    def has_active_registration(self, user: User, event: Event) -> bool:
+        return Registration.objects.filter(
+            user=user, event=event,
+            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
+        ).exists()
+
     def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event,
                  request_detail: RequestDetail | None = None,
                  acting_user: User | None = None) -> RegistrationResult:
@@ -215,12 +221,7 @@ class RegistrationService:
         )
         user = self.user_service.find_by_email_or_create(user_detail, update_existing=update_existing)
 
-        active_registrations = Registration.objects.filter(
-            user=user, event=event,
-            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
-        )
-
-        if active_registrations.exists():
+        if self.has_active_registration(user, event):
             logger.info(
                 f"User {user.email} (id={user.id}) attempted to register for event {event.name} (id={event.id}) but already has an active registration"
             )
@@ -535,6 +536,28 @@ class RegistrationService:
     def mark_editable(self, registrations: list[Registration]) -> list[Registration]:
         for registration in registrations:
             registration.editable = self.is_registration_editable(registration)[0]
+        return registrations
+
+    def is_registration_withdrawable(self, registration: Registration) -> tuple[bool, str | None]:
+        if registration.state != Registration.STATE_CONFIRMED:
+            return False, 'Only confirmed registrations can be withdrawn.'
+
+        event = registration.event
+
+        if event.cancelled:
+            return False, 'Event is cancelled.'
+
+        if event.archived:
+            return False, 'Event is archived.'
+
+        if timezone.now() >= event.starts_at:
+            return False, 'Event has already started.'
+
+        return True, None
+
+    def mark_withdrawable(self, registrations: list[Registration]) -> list[Registration]:
+        for registration in registrations:
+            registration.withdrawable = self.is_registration_withdrawable(registration)[0]
         return registrations
 
     def _editable_fields(self, event: Event, registration_detail: RegistrationDetail) -> dict:

@@ -94,6 +94,11 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     event = get_object_or_404(Event, id=event_id)
     registration_service = RegistrationService()
 
+    user = request.user if request.user.is_authenticated else None
+
+    if user and registration_service.has_active_registration(user, event):
+        return redirect('event_detail', event_id=event.id)
+
     allowed, reason = registration_service.is_registration_allowed(event)
     if not allowed:
         logger.warning("Registration not allowed", extra={'event': event, 'reason': reason})
@@ -101,7 +106,6 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
 
     # OK, proceed
     request_service = RequestService()
-    user = request.user if request.user.is_authenticated else None
 
     initial_data = {}
     if user:
