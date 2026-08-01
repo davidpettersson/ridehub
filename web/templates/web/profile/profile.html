@@ -58,6 +58,20 @@
                     </div>
                     {% endflag %}
 
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center">
+                            <span class="fw-medium me-2">Emergency contact:</span>
+                            <span>{% if user.profile.emergency_contact_name %}{{ user.profile.emergency_contact_name }}{% else %}Not provided{% endif %}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="fw-medium me-2">Emergency contact phone:</span>
+                            <span>{% if user.profile.emergency_contact_phone %}{{ user.profile.emergency_contact_phone|national_phone }}{% else %}Not provided{% endif %}</span>
+                        </div>
+                    </div>
+
                     <div class="text-muted small">
                         <p class="mb-0">These details are automatically updated when you register for events and will be prefilled to save you time.</p>
                     </div>
