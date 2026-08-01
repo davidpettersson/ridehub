@@ -57,6 +57,22 @@
             </div>
         </div>
 
+        {% if event.cancelled %}
+        <div class="p-4 mb-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded">
+            <p class="text-danger fw-medium mb-0">
+                <i class="bi bi-x-circle-fill me-1" aria-hidden="true"></i>This event was cancelled on {{ event.cancelled_at|date:"F j, Y" }} at {{ event.cancelled_at|date:"g:i A" }}.
+            </p>
+            {% if event.cancellation_reason %}
+            <p class="text-danger mb-0 mt-3">Reason: {{ event.cancellation_reason }}</p>
+            {% endif %}
+            {% if event.organizer_email %}
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <a href="mailto:{{ event.organizer_email }}" class="btn btn-outline-danger btn-sm">Contact the organizer</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         {% if user_is_registered and not event.cancelled %}
         <div class="p-4 mb-4 bg-success bg-opacity-10 border border-success border-opacity-25 rounded">
             <p class="text-success fw-medium mb-0">
@@ -99,23 +115,6 @@
         <h2 class="fs-5 fw-medium mb-3">About the event</h2>
         <div class="card shadow-sm mb-4">
             <div class="card-body p-4">
-                {% if event.cancelled %}
-                <div class="mb-4 p-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded">
-                    <div>
-                        <h3 class="fs-5 fw-medium text-danger">Event Cancelled</h3>
-                        <p class="text-danger">
-                            This event was cancelled on {{ event.cancelled_at|date:"F j, Y" }} at {{ event.cancelled_at|date:"g:i A" }}.
-                        </p>
-                        {% if event.cancellation_reason %}
-                        <div class="mt-2 text-danger">
-                            <p class="fw-medium">Reason:</p>
-                            <p>{{ event.cancellation_reason }}</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-
                 <div class="prose mb-0">
                     <p>{{ event.description|safe }}</p>
                 </div>

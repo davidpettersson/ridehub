@@ -1075,7 +1075,7 @@ class EventDetailViewTests(BaseEventViewTestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "You're registered for this event")
-        self.assertContains(response, 'Event Cancelled')
+        self.assertContains(response, 'This event was cancelled on')
 
     def test_registered_user_keeps_actions_after_registration_closes(self):
         # Arrange
