@@ -36,3 +36,5 @@ Django web application for managing cycling events, deployed to Heroku.
 - Mobile-first responsive design for all pages
 - Bootstrap CSS with global stylesheet at `web/static/web/styling.css`
 - Fully migrated from Tailwind to Bootstrap; do not introduce Tailwind
+- Never interpolate a raw model field into a URI or HTML attribute; normalize it through a filter first
+- Phone numbers rendered as `tel:` links must go through `phone_uri`; `national_phone` is for display text only
