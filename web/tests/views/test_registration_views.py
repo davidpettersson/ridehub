@@ -658,6 +658,19 @@ class RegistrationWithdrawAccessControlTests(TestCase):
 
         self.assertRedirects(response, f'/events/{self.event.id}')
 
+    def test_withdraw_ignores_next_target_from_query_string(self):
+        # Arrange
+        self.client.force_login(self.user_a)
+
+        # Act
+        response = self.client.get(
+            reverse('registration_withdraw', kwargs={'registration_id': self.registration_a.id})
+            + f'?next=/events/{self.event.id}'
+        )
+
+        # Assert
+        self.assertRedirects(response, reverse('profile'))
+
     def test_withdraw_ignores_external_next_target(self):
         self.client.force_login(self.user_a)
 

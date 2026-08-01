@@ -62,7 +62,7 @@ def registration_withdraw(request: HttpRequest, registration_id: int) -> HttpRes
         else:
             registration_service.withdraw_registration(registration, request.user)
 
-    target = request.POST.get('next') or request.GET.get('next')
+    target = request.POST.get('next')
     if target and url_has_allowed_host_and_scheme(
             target, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
         return redirect(target)
