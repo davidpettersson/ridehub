@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime, date
+﻿from datetime import timedelta, datetime, date
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth.models import User
@@ -184,6 +184,84 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertNotContains(response, 'Emergency Contact')  # The actual emergency contact name
         self.assertNotContains(response, '123-456-7890')  # The actual emergency contact phone
         self.assertNotContains(response, 'mailto:regular@example.com')  # Email links
+
+    def _add_unverified_registration(self):
+        unverified_user = User.objects.create_user(
+            username='bob_user',
+            email='bob@bobson.com',
+            password='password123',
+            first_name='Bob',
+            last_name='Bobson'
+        )
+        return Registration.objects.create(
+            first_name='Bob',
+            last_name='Bobson',
+            name='Bob Bobson',
+            email='bob@bobson.com',
+            event=self.event,
+            ride=self.ride,
+            speed_range_preference=self.speed_range,
+            ride_leader_preference=Registration.RideLeaderPreference.NO,
+            user=unverified_user,
+            state=Registration.STATE_UNVERIFIED
+        )
+
+    def test_staff_sees_unverified_registrations_notice(self):
+        # Arrange
+        self._add_unverified_registration()
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'Pending confirmation from 1 rider:')
+        self.assertContains(response, 'Bob Bobson &lt;bob@bobson.com&gt;')
+
+    def test_staff_notice_lists_unverified_registration_without_user(self):
+        # Arrange
+        Registration.objects.create(
+            first_name='Alice',
+            last_name='Alison',
+            name='Alice Alison',
+            email='alice@alison.com',
+            event=self.event,
+            ride=self.ride,
+            speed_range_preference=self.speed_range,
+            ride_leader_preference=Registration.RideLeaderPreference.NO,
+            user=None,
+            state=Registration.STATE_UNVERIFIED
+        )
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'Alice Alison &lt;alice@alison.com&gt;')
+
+    def test_ride_leader_does_not_see_unverified_registrations_notice(self):
+        # Arrange
+        self._add_unverified_registration()
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.context['unverified_riders'], [])
+        self.assertNotContains(response, 'Pending confirmation')
+        self.assertNotContains(response, 'bob@bobson.com')
+
+    def test_staff_sees_no_notice_without_unverified_registrations(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertNotContains(response, 'Pending confirmation')
 
     def _add_confirmed_registration(self, user, days_offset):
         event = Event.objects.create(
@@ -1620,7 +1698,7 @@ class AllDayEventViewTests(TestCase):
 class UpcomingViewQueryCountTests(TestCase):
     def setUp(self):
         self.client = Client()
-        self.program = Program.objects.create(name='Query Count Program', emoji='🚴', color='#ff0000')
+        self.program = Program.objects.create(name='Query Count Program', emoji='ðŸš´', color='#ff0000')
         self.speed_range = SpeedRange.objects.create(lower_limit=25, upper_limit=30)
         self.user = User.objects.create_user(
             username='query_count_user',
@@ -1698,3 +1776,5 @@ class UpcomingViewQueryCountTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '2 registered')
+
+
