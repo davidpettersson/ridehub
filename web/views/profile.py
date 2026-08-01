@@ -14,7 +14,9 @@ from web.forms import MembershipNumberForm, NameVisibilityForm
 @login_required
 def profile(request: HttpRequest) -> HttpResponse:
     registration_service = RegistrationService()
-    registrations = registration_service.fetch_current_registrations(request.user)
+    registrations = registration_service.mark_editable(
+        list(registration_service.fetch_current_registrations(request.user))
+    )
     past_registrations = registration_service.fetch_past_registrations(request.user)
 
     masked_first_name, masked_last_name = NAME_MASKING_STRATEGY(request.user)

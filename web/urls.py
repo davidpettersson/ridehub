@@ -13,7 +13,7 @@ from web.views.registration_manage import (
     staff_registration_edit, staff_registration_withdraw,
 )
 from web.views.registrations import (
-    registration_create, registration_submitted, membership_number_capture,
+    registration_create, registration_edit, registration_submitted, membership_number_capture,
     registration_verification_sent, registration_verify,
 )
 from web.views.rides import ride_speed_ranges
@@ -44,6 +44,7 @@ urlpatterns = [
     path('events/<int:event_id>/forecasts', event_forecasts, name='event_forecasts'),
     path('events/<int:event_id>', event_detail, name='event_detail'),
     path('events.ics', EventFeed(), name='event_feed'),
+    path('registrations/<int:registration_id>/edit', registration_edit, name='registration_edit'),
     path('registrations/<int:registration_id>/withdraw', registration_withdraw, name='registration_withdraw'),
     path('registrations/submitted', registration_submitted, name='registration_submitted'),
     path('registrations/verify', registration_verify, name='registration_verify'),

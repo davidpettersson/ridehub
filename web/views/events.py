@@ -176,18 +176,23 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
     else:
         rides = {}
 
-    user_is_registered = False
+    user_registration = None
     if request.user.is_authenticated:
-        user_is_registered = Registration.objects.filter(
+        user_registration = Registration.objects.filter(
             event_id=event_id,
             user=request.user,
             state=Registration.STATE_CONFIRMED,
-        ).exists()
+        ).order_by('-pk').first()
+
+    if user_registration is not None:
+        user_registration.event = event
+        RegistrationService().mark_editable([user_registration])
 
     context = {
         'event': event,
         'rides': rides,
-        'user_is_registered': user_is_registered,
+        'user_is_registered': user_registration is not None,
+        'user_registration': user_registration,
         'registrations_available': _registrations_visible(event, request.user),
     }
 

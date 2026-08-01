@@ -1,9 +1,11 @@
 import logging
 
 from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpRequest, HttpResponseRedirect, HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils.http import url_has_allowed_host_and_scheme
 from waffle import flag_is_active
 
 from backoffice.models import Event, Registration
@@ -11,7 +13,7 @@ from backoffice.services.membership_service import MembershipService
 from backoffice.services.registration_service import RegistrationService, RegistrationDetail, RegistrationResult
 from backoffice.services.request_service import RequestService
 from backoffice.services.user_service import UserDetail, UserService
-from web.forms import RegistrationForm, MembershipNumberForm, bool_to_yes_no
+from web.forms import RegistrationForm, RegistrationEditForm, MembershipNumberForm, bool_to_yes_no
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +55,7 @@ def _is_section_collapsed(form: RegistrationForm, field_names: tuple, initial_da
     return True
 
 
-def _get_registration_detail(form: RegistrationForm) -> RegistrationDetail:
+def _get_registration_detail(form: RegistrationForm | RegistrationEditForm) -> RegistrationDetail:
     ride_leader_raw = form.cleaned_data.get('ride_leader_preference')
     first_time_raw = form.cleaned_data.get('first_time_attendee')
     return RegistrationDetail(
@@ -158,6 +160,97 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
         ),
         'has_event_fields': any(
             name not in CONTACT_FIELDS + EMERGENCY_CONTACT_FIELDS for name in form.fields
+        ),
+    })
+
+
+def _safe_redirect_target(request: HttpRequest) -> str | None:
+    target = request.POST.get('next') or request.GET.get('next')
+
+    if target and url_has_allowed_host_and_scheme(
+            target, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return target
+
+    return None
+
+
+def _submitted_selection(request: HttpRequest, field_name: str, current_id: int | None) -> int | None:
+    if request.method != 'POST' or field_name not in request.POST:
+        return current_id
+
+    try:
+        return int(request.POST[field_name])
+    except (ValueError, TypeError):
+        return None
+
+
+def _get_edit_initial(registration: Registration) -> dict:
+    initial = {
+        'ride': registration.ride_id,
+        'speed_range_preference': registration.speed_range_preference_id,
+        'emergency_contact_name': registration.emergency_contact_name,
+        'emergency_contact_phone': registration.emergency_contact_phone,
+    }
+
+    if registration.event.ride_leaders_wanted:
+        initial['ride_leader_preference'] = (
+            registration.ride_leader_preference == Registration.RideLeaderPreference.YES
+        )
+
+    if registration.event.ask_first_time_attendee:
+        initial['first_time_attendee'] = (
+            registration.first_time_attendee == Registration.FirstTimeAttendee.YES
+        )
+
+    return initial
+
+
+@login_required
+def registration_edit(request: HttpRequest, registration_id: int) -> HttpResponseRedirect | HttpResponse:
+    registration = get_object_or_404(
+        Registration.objects.select_related('event'),
+        id=registration_id,
+        user=request.user,
+    )
+
+    registration_service = RegistrationService()
+    allowed, reason = registration_service.is_registration_editable(registration)
+
+    if not allowed:
+        logger.warning(
+            "Registration edit not allowed",
+            extra={'registration': registration.id, 'reason': reason},
+        )
+        return redirect('profile')
+
+    event = registration.event
+    redirect_target = _safe_redirect_target(request)
+    form = RegistrationEditForm(
+        request.POST or None,
+        event=event,
+        initial=_get_edit_initial(registration),
+    )
+
+    if request.method == 'POST' and form.is_valid():
+        registration_service.edit_registration(
+            registration, request.user, _get_registration_detail(form)
+        )
+        return redirect(redirect_target or 'profile')
+
+    selected_ride_id = _submitted_selection(request, 'ride', registration.ride_id)
+    selected_speed_range_id = _submitted_selection(
+        request, 'speed_range_preference', registration.speed_range_preference_id
+    )
+
+    return render(request, 'web/registrations/edit.html', {
+        'event': event,
+        'registration': registration,
+        'form': form,
+        'selected_ride_id': selected_ride_id,
+        'selected_speed_range_id': selected_speed_range_id,
+        'next': redirect_target,
+        'has_event_fields': any(
+            name not in EMERGENCY_CONTACT_FIELDS for name in form.fields
         ),
     })
 

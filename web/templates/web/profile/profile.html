@@ -98,7 +98,7 @@
     <div class="card shadow-sm mb-4">
         <div class="card-body p-4">
             <h2 class="fs-4 fw-medium mb-3">Current registrations</h2>
-            <p class="text-muted small mb-3">If something is wrong with your registration, simply withdraw and register again. Only current registrations are shown here. Note that registrations using external systems won't appear here.</p>
+            <p class="text-muted small mb-3">If something is wrong with your registration, edit it — you keep your spot. Editing is possible until the event starts. Only current registrations are shown here. Note that registrations using external systems won't appear here.</p>
             
             {% if registrations %}
                 <!-- Mobile view (card-based layout) -->
@@ -149,6 +149,12 @@
                                     </div>
                                     
                                     <div class="d-flex gap-2 mt-2">
+                                        {% if registration.editable %}
+                                        <a href="{% url 'registration_edit' registration.id %}" class="btn btn-outline-primary btn-sm">
+                                            Edit
+                                        </a>
+                                        {% endif %}
+
                                         {% if registration.state == 'confirmed' and not registration.event.cancelled %}
                                         <form method="post" action="{% url 'registration_withdraw' registration.id %}" onsubmit="return confirm('Are you sure you want to withdraw your registration for this event?');">
                                             {% csrf_token %}
@@ -215,6 +221,12 @@
                                     </td>
                                     <td class="small">
                                         <div class="d-flex gap-1">
+                                            {% if registration.editable %}
+                                            <a href="{% url 'registration_edit' registration.id %}" class="btn btn-outline-secondary btn-sm">
+                                                Edit
+                                            </a>
+                                            {% endif %}
+
                                             {% if registration.state == 'confirmed' and not registration.event.cancelled %}
                                             <form method="post" action="{% url 'registration_withdraw' registration.id %}" onsubmit="return confirm('Are you sure you want to withdraw your registration for this event?');" class="d-inline">
                                                 {% csrf_token %}

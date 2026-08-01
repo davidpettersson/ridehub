@@ -1,0 +1,171 @@
+{% extends 'web/_base_bootstrap.html' %}
+{% load form_filters %}
+{% load phone_filters %}
+{% load forecast_filters %}
+{% block title %}Edit registration for {{ event.name }}{% endblock %}
+{% block content %}
+    <div class="mb-4">
+        <div class="mb-4">
+            <a href="{% url 'event_detail' event.id %}"
+               class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center">
+                <i class="bi bi-arrow-left me-2"></i> Back to event detail
+            </a>
+        </div>
+
+        <div class="mb-4">
+            <div class="text-muted small mb-2">
+                {% if event.all_day %}
+                  {% if event.ends_at and event.ends_at|date:"Y-m-d" != event.starts_at|date:"Y-m-d" %}
+                    {{ event.starts_at|date:"l, F j" }} – {{ event.ends_at|date:"l, F j" }} · All day
+                  {% else %}
+                    {{ event.starts_at|date:"l, F j" }} · All day
+                  {% endif %}
+                {% else %}
+                  {{ event.starts_at|date:"l, F j" }} · {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% if event.starts_at|date:"Y-m-d" != event.ends_at|date:"Y-m-d" %}<sup>+1</sup>{% endif %}{% endif %}
+                {% endif %}
+            </div>
+            <h1 class="fs-2 fw-bold mb-2">{{ event.name }}</h1>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="meta-pill text-muted"{% if event.program.color %} style="background-color: {{ event.program.color }}1A;"{% endif %}>{% if event.program.emoji %}{{ event.program.emoji }} {% endif %}{{ event.program }}</span>
+                {% if event.location_url %}
+                <a href="{{ event.location_url }}"
+                   class="meta-pill meta-pill-link"
+                   target="_blank" rel="noopener noreferrer">
+                    🗺️ {% if event.location %}{{ event.location }}{% else %}See location{% endif %}&nbsp;›
+                </a>
+                {% elif event.location %}
+                <span class="meta-pill text-muted">🗺️ {{ event.location }}</span>
+                {% endif %}
+                {% forecast_badge event %}
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+            <h2 class="fs-5 fw-medium mb-3">Edit your registration</h2>
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+
+                    <p class="text-muted small mb-4">
+                        You keep your spot when you edit. To change your name, email or phone number,
+                        please contact the organizer.
+                    </p>
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger mb-4">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="mb-4">
+                        <h3 class="fs-6 fw-semibold mb-3">Your details</h3>
+                        <div class="border rounded p-3 bg-body-tertiary mb-3">
+                            <div class="fw-medium">{{ registration.first_name }} {{ registration.last_name }}</div>
+                            <div class="text-muted small">{{ registration.email }}</div>
+                            <div class="text-muted small">{{ registration.phone|national_phone }}</div>
+                        </div>
+
+                        {% if form.emergency_contact_name %}
+                            <h3 class="fs-6 fw-semibold mb-3 mt-4">Emergency contact</h3>
+                            {% include 'web/events/_registration_field.html' with field=form.emergency_contact_name %}
+                            {% include 'web/events/_registration_field.html' with field=form.emergency_contact_phone %}
+                        {% endif %}
+
+                        {% if has_event_fields %}
+                            <hr class="my-4 opacity-25">
+                            <h3 class="fs-6 fw-semibold mb-3">Event details</h3>
+                        {% endif %}
+
+                        {% for field in form %}
+                            {% if field.name == 'emergency_contact_name' or field.name == 'emergency_contact_phone' %}
+                            {% elif field.name == 'ride_leader_preference' or field.name == 'first_time_attendee' %}
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ field }}
+                                        <label class="form-check-label" for="{{ field.id_for_label }}">
+                                            {{ field.label }}
+                                        </label>
+                                    </div>
+                                    {% if field.errors %}
+                                        <div class="small text-danger mt-1">{{ field.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            {% elif field.name == 'ride' %}
+                                <div class="mb-3">
+                                    <label for="{{ field.id_for_label }}"
+                                           class="form-label fw-medium">{{ field.label }}</label>
+                                    <select name="ride" id="id_ride" class="form-select">
+                                        <option value="">Select a ride</option>
+                                        {% for ride in field.field.queryset %}
+                                            <option value="{{ ride.id }}"
+                                                    {% if selected_ride_id|stringformat:"s" == ride.id|stringformat:"s" %}selected{% endif %}
+                                            >{{ ride }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if field.errors %}
+                                        <div class="small text-danger mt-1">{{ field.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            {% elif field.name == 'speed_range_preference' %}
+                                <div class="mb-3">
+                                    <label for="{{ field.id_for_label }}"
+                                           class="form-label fw-medium">{{ field.label }}</label>
+                                    <div id="speed-range-container"
+                                         data-selected="{{ selected_speed_range_id|default_if_none:'' }}">
+                                        <select name="speed_range_preference" id="id_speed_range_preference" class="form-select" disabled>
+                                            <option value="">Please select a ride first</option>
+                                        </select>
+                                    </div>
+                                    {% if field.errors %}
+                                        <div class="small text-danger mt-1">{{ field.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="mb-3">
+                                    <label for="{{ field.id_for_label }}"
+                                           class="form-label fw-medium">{{ field.label }}</label>
+                                    {{ field|addclass:"form-control" }}
+                                    {% if field.errors %}
+                                        <div class="small text-danger mt-1">{{ field.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                        <a href="{% if next %}{{ next }}{% else %}{% url 'profile' %}{% endif %}"
+                           class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rideSelect = document.getElementById('id_ride');
+            const speedRangeContainer = document.getElementById('speed-range-container');
+
+            if (rideSelect && speedRangeContainer) {
+                let selectedSpeedRange = speedRangeContainer.dataset.selected || '';
+
+                function loadSpeedRanges() {
+                    const rideId = rideSelect.value || 0;
+                    let url = '/rides/' + rideId + '/speed-ranges';
+                    if (selectedSpeedRange) {
+                        url += '?selected=' + encodeURIComponent(selectedSpeedRange);
+                    }
+                    htmx.ajax('GET', url, {target: speedRangeContainer});
+                }
+
+                rideSelect.addEventListener('change', function () {
+                    selectedSpeedRange = '';
+                    loadSpeedRanges();
+                });
+
+                loadSpeedRanges();
+            }
+        });
+    </script>
+{% endblock %}

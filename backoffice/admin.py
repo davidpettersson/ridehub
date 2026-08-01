@@ -6,7 +6,7 @@ from django.utils.html import format_html
 
 from audit.context import actor
 from backoffice.actions import archive_event, cancel_event, duplicate_event
-from backoffice.models import Forecast, Ride, Route, Event, Program, SpeedRange, Registration, Announcement, UserProfile, UserMembershipNumber
+from backoffice.models import Forecast, Ride, Route, Event, Program, SpeedRange, Registration, RegistrationSnapshot, Announcement, UserProfile, UserMembershipNumber
 from .forms import EventAdminForm
 
 
@@ -185,6 +185,35 @@ class RegistrationAdmin(AuditedAdminMixin, admin.ModelAdmin):
         return obj.user
 
 
+class RegistrationSnapshotAdmin(admin.ModelAdmin):
+    list_display = ('superseded_at', 'registration', 'actor', 'summary')
+    list_filter = ('superseded_at',)
+    search_fields = ('registration__email', 'registration__event__name', 'actor__email')
+    ordering = ('-superseded_at',)
+
+    readonly_fields = (
+        'registration',
+        'actor',
+        'changed_fields',
+        'superseded_at',
+    ) + RegistrationSnapshot.SNAPSHOT_FIELDS
+
+    fields = readonly_fields
+
+    @admin.display(description='Changed fields')
+    def summary(self, obj):
+        return ', '.join(obj.changed_fields)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class AnnouncementAdmin(AuditedAdminMixin, admin.ModelAdmin):
     list_display = ('title', 'type', 'audience', 'begin_at', 'end_at',)
     search_fields = ('title', 'text',)
@@ -222,5 +251,6 @@ admin.site.register(Route, RouteAdmin)
 admin.site.register(SpeedRange, SpeedRangeAdmin)
 admin.site.register(Event, EventAdmin)
 admin.site.register(Registration, RegistrationAdmin)
+admin.site.register(RegistrationSnapshot, RegistrationSnapshotAdmin)
 admin.site.register(Announcement, AnnouncementAdmin)
 admin.site.register(UserMembershipNumber, UserMembershipNumberAdmin)
