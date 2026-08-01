@@ -16,18 +16,18 @@
                     <h3 class="fs-5 fw-medium mb-3">Details on file</h3>
 
                     <dl class="row g-0 mb-3">
-                        <dt class="col-6 col-sm-5 pe-2 fw-medium">Name</dt>
-                        <dd class="col-6 col-sm-7 mb-2">{{ user.first_name }} {{ user.last_name }}</dd>
+                        <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Name</dt>
+                        <dd class="col-12 col-lg-7 mb-2">{{ user.first_name }} {{ user.last_name }}</dd>
 
-                        <dt class="col-6 col-sm-5 pe-2 fw-medium">Email</dt>
-                        <dd class="col-6 col-sm-7 mb-2 text-break">{{ user.email }}</dd>
+                        <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Email</dt>
+                        <dd class="col-12 col-lg-7 mb-2 text-break">{{ user.email }}</dd>
 
-                        <dt class="col-6 col-sm-5 pe-2 fw-medium">Phone</dt>
-                        <dd class="col-6 col-sm-7 mb-2">{% if user.profile.phone %}{{ user.profile.phone|national_phone }}{% else %}Not provided{% endif %}</dd>
+                        <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Phone</dt>
+                        <dd class="col-12 col-lg-7 mb-2">{% if user.profile.phone %}<a href="tel:{{ user.profile.phone }}" class="text-decoration-none">{{ user.profile.phone|national_phone }}</a>{% else %}Not provided{% endif %}</dd>
 
                         {% flag "capture_membership_number" %}
-                        <dt class="col-6 col-sm-5 pe-2 fw-medium">Membership number</dt>
-                        <dd class="col-6 col-sm-7 mb-2">
+                        <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Membership number</dt>
+                        <dd class="col-12 col-lg-7 mb-2">
                             {% if membership_number %}
                                 {{ membership_number.number }} ({{ membership_number.year }})
                             {% else %}
@@ -45,11 +45,11 @@
                         </dd>
                         {% endflag %}
 
-                        <dt class="col-6 col-sm-5 pe-2 fw-medium">Emergency contact</dt>
-                        <dd class="col-6 col-sm-7 mb-2">{% if user.profile.emergency_contact_name %}{{ user.profile.emergency_contact_name }}{% else %}Not provided{% endif %}</dd>
+                        <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Emergency contact</dt>
+                        <dd class="col-12 col-lg-7 mb-2">{% if user.profile.emergency_contact_name %}{{ user.profile.emergency_contact_name }}{% else %}Not provided{% endif %}</dd>
 
-                        <dt class="col-6 col-sm-5 pe-2 fw-medium">Emergency phone</dt>
-                        <dd class="col-6 col-sm-7 mb-0">{% if user.profile.emergency_contact_phone %}{{ user.profile.emergency_contact_phone|national_phone }}{% else %}Not provided{% endif %}</dd>
+                        <dt class="col-12 col-lg-5 pe-lg-2 fw-medium">Emergency phone</dt>
+                        <dd class="col-12 col-lg-7 mb-0">{% if user.profile.emergency_contact_phone %}<a href="tel:{{ user.profile.emergency_contact_phone }}" class="text-decoration-none">{{ user.profile.emergency_contact_phone|national_phone }}</a>{% else %}Not provided{% endif %}</dd>
                     </dl>
 
                     <div class="text-muted small">
