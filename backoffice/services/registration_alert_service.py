@@ -39,9 +39,6 @@ class RegistrationAlertService:
             recipient_list=recipients,
         )
 
-        now = timezone.now()
-        Registration.objects.filter(id__in=[r.id for r in stale]).update(unconfirmed_alert_sent_at=now)
-
         logger.info('Alerted %s about %s unconfirmed registrations', recipients, len(stale))
         return len(stale)
 
@@ -52,5 +49,4 @@ class RegistrationAlertService:
         return Registration.objects.filter(
             state__in=UNCONFIRMED_STATES,
             submitted_at__lte=cutoff,
-            unconfirmed_alert_sent_at__isnull=True,
         ).select_related('event').order_by('submitted_at')

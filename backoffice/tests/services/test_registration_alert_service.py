@@ -96,7 +96,7 @@ class RegistrationAlertServiceTests(TestCase):
         self.assertEqual(alerted, 0)
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_does_not_alert_twice_about_the_same_registration(self):
+    def test_alerts_again_while_the_registration_stays_unconfirmed(self):
         # Arrange
         self._create_registration(Registration.STATE_UNVERIFIED, timedelta(hours=2))
         self.service.alert_unconfirmed_registrations()
@@ -105,19 +105,22 @@ class RegistrationAlertServiceTests(TestCase):
         alerted = self.service.alert_unconfirmed_registrations()
 
         # Assert
-        self.assertEqual(alerted, 0)
-        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(alerted, 1)
+        self.assertEqual(len(mail.outbox), 2)
 
-    def test_records_when_the_alert_was_sent(self):
+    def test_stops_alerting_once_the_registration_is_confirmed(self):
         # Arrange
         registration = self._create_registration(Registration.STATE_UNVERIFIED, timedelta(hours=2))
+        self.service.alert_unconfirmed_registrations()
+        registration.confirm()
+        registration.save()
 
         # Act
-        self.service.alert_unconfirmed_registrations()
+        alerted = self.service.alert_unconfirmed_registrations()
 
         # Assert
-        registration = Registration.objects.get(id=registration.id)
-        self.assertIsNotNone(registration.unconfirmed_alert_sent_at)
+        self.assertEqual(alerted, 0)
+        self.assertEqual(len(mail.outbox), 1)
 
     def test_sends_a_single_digest_for_multiple_registrations(self):
         # Arrange

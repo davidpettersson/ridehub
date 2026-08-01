@@ -14,10 +14,10 @@ Background work runs on the `worker` dyno, which also carries the beat scheduler
 
 ## Unconfirmed registration alerts
 
-Each registration is alerted on once — `Registration.unconfirmed_alert_sent_at`
-records when — so a registration that stays unconfirmed does not generate an
-email every hour. Confirming or withdrawing a registration before the threshold
-means no alert is ever sent.
+The alert is a digest of everything currently over the threshold, and it repeats
+every hour until each registration is confirmed or withdrawn. There is no
+per-registration alert state, so a registration that stays unconfirmed appears in
+every hourly email until it is dealt with.
 
 Recipients come from `REGISTRATION_ALERT_EMAILS`, a comma-separated list. When it
 is empty the task logs a warning and sends nothing.

@@ -6,6 +6,6 @@ The following registration{{ registrations|length|pluralize }} ha{{ registration
   {{ base_url }}{% url 'event_registrations_manage' registration.event_id %}
 {% endfor %}
 
-You will not be alerted about these registrations again.
+This alert repeats every hour until these registrations are confirmed or withdrawn.
 
 Ottawa Bicycle Club
