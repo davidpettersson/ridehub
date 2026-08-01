@@ -1090,7 +1090,7 @@ class EventDetailViewTests(BaseEventViewTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "You're registered for this event")
         self.assertContains(response, 'Withdraw')
-        self.assertNotContains(response, 'Sorry, registration closed')
+        self.assertNotContains(response, 'Registration for this event is closed')
 
     def test_unregistered_user_sees_registration_closed_message(self):
         # Arrange
@@ -1102,7 +1102,7 @@ class EventDetailViewTests(BaseEventViewTestCase):
 
         # Assert
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Sorry, registration closed')
+        self.assertContains(response, 'Registration for this event is closed')
 
     def test_registered_user_is_redirected_from_registration_form_to_event(self):
         # Arrange

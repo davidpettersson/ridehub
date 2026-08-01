@@ -44,7 +44,7 @@
                                   {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% endif %}
                                 {% endif %}
                             </div>
-                            <div class="fs-6 fw-medium text-dark">
+                            <div class="fs-6 fw-medium text-dark mb-1">
                                 {% if event.cancelled %}<span class="text-decoration-line-through">{{event.name}}</span> (cancelled){% else %}{{event.name}}{% endif %}
                             </div>
                             <div class="d-flex flex-wrap gap-2 align-items-center">
