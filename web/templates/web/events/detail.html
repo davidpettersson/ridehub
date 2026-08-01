@@ -57,6 +57,22 @@
             </div>
         </div>
 
+        {% if event.cancelled %}
+        <div class="p-4 mb-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded">
+            <p class="text-danger fw-medium mb-0">
+                <i class="bi bi-x-circle-fill me-1" aria-hidden="true"></i>This event was cancelled on {{ event.cancelled_at|date:"F j, Y" }} at {{ event.cancelled_at|date:"g:i A" }}.
+            </p>
+            {% if event.cancellation_reason %}
+            <p class="text-danger mb-0 mt-3">Reason: {{ event.cancellation_reason }}</p>
+            {% endif %}
+            {% if event.organizer_email %}
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <a href="mailto:{{ event.organizer_email }}" class="btn btn-outline-danger btn-sm">Contact the organizer</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         {% if user_is_registered and not event.cancelled %}
         <div class="p-4 mb-4 bg-success bg-opacity-10 border border-success border-opacity-25 rounded">
             <p class="text-success fw-medium mb-0">
@@ -83,32 +99,32 @@
         </div>
         {% endif %}
 
+        {% if event.registration_enabled and not user_is_registered and not event.registration_open and not event.cancelled and event.state != "announced" %}
+        <div class="p-4 mb-4 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded">
+            <p class="text-primary fw-medium mb-0">
+                <i class="bi bi-info-circle-fill me-1" aria-hidden="true"></i>Registration for this event is closed.
+            </p>
+            {% if event.organizer_email %}
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <a href="mailto:{{ event.organizer_email }}" class="btn btn-outline-primary btn-sm">Contact the organizer</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <h2 class="fs-5 fw-medium mb-3">About the event</h2>
         <div class="card shadow-sm mb-4">
             <div class="card-body p-4">
-                {% if event.cancelled %}
-                <div class="mb-4 p-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded">
-                    <div>
-                        <h3 class="fs-5 fw-medium text-danger">Event Cancelled</h3>
-                        <p class="text-danger">
-                            This event was cancelled on {{ event.cancelled_at|date:"F j, Y" }} at {{ event.cancelled_at|date:"g:i A" }}.
-                        </p>
-                        {% if event.cancellation_reason %}
-                        <div class="mt-2 text-danger">
-                            <p class="fw-medium">Reason:</p>
-                            <p>{{ event.cancellation_reason }}</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-
-                <div class="prose{% if event.organizer_email or event.registration_open or not event.cancelled %} mb-4{% endif %}">
+                <div class="prose mb-0">
                     <p>{{ event.description|safe }}</p>
                 </div>
 
-                {% if event.organizer_email or event.registration_open or not event.cancelled %}
-                <hr>
+                {% if event.organizer_email %}
+                <hr class="mt-4">
+                {% elif event.registration_enabled and not user_is_registered %}
+                {% if event.registration_open or event.state == "announced" %}
+                <hr class="mt-4">
+                {% endif %}
                 {% endif %}
 
                 {% if event.organizer_email %}
@@ -122,12 +138,7 @@
                 {% if event.registration_enabled and not user_is_registered %}
                 {% if event.registration_open %}
                 <div class="mt-4">
-                    {% if event.has_capacity_available and event.registration_closes_at %}
-                    <div class="d-flex align-items-center mb-4">
-                        <div class="text-muted">Registration closes {{ event.registration_closes_at|date:"F j, g:i A" }}.</div>
-                    </div>
-                    {% endif %}
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex flex-wrap gap-3 align-items-center">
                         {% if event.external_registration_url %}
                             <a href="{{ event.external_registration_url }}" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
                                 Register <i class="bi bi-box-arrow-up-right ms-1 small"></i>
@@ -139,15 +150,14 @@
                                 <p class="text-warning mb-0">Sorry, the event has reached maximum capacity.</p>
                             </div>
                         {% endif %}
+                        {% if event.has_capacity_available and event.registration_closes_at %}
+                        <div class="text-muted">Registration closes {{ event.registration_closes_at|date:"F j, g:i A" }}.</div>
+                        {% endif %}
                     </div>
                 </div>
                 {% elif event.state == "announced" %}
                 <div class="mt-4 p-4 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded">
                     <p class="text-primary mb-0">Registration is coming soon. Please check back later.</p>
-                </div>
-                {% elif not event.cancelled %}
-                <div class="mt-4 p-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded">
-                    <p class="text-danger mb-0">Sorry, registration closed.</p>
                 </div>
                 {% endif %}
                 {% endif %}
