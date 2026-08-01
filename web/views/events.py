@@ -228,6 +228,10 @@ def event_forecast_badge(request: HttpRequest, event_id: int) -> HttpResponse:
             'show_history_link': True,
         })
 
+    state = service.resolve_forecast(event)
+    if not state.possible:
+        return render(request, 'web/events/_forecast_badge.html', {'event': event, 'forecast': None})
+
     forecast = service.fetch_cached_forecast(event)
     service.request_forecast(event)
 

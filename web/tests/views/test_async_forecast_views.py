@@ -1,6 +1,7 @@
 from datetime import timedelta
 from unittest.mock import patch
 
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -12,6 +13,7 @@ from backoffice.services.forecast_service import YOW_LOCATION
 
 class AsyncForecastTestCase(TestCase):
     def setUp(self):
+        cache.clear()
         self.program = Program.objects.create(name='Test Program')
         self.route = Route.objects.create(name='Test Route')
         self.starts_at = (timezone.now() + timedelta(days=1)).replace(
@@ -20,13 +22,15 @@ class AsyncForecastTestCase(TestCase):
         self.latitude, self.longitude = YOW_LOCATION
         self.event = self._create_event()
 
-    def _create_event(self, name='Test Event'):
+    def _create_event(self, name='Test Event', starts_at=None, virtual=False):
+        starts_at = starts_at or self.starts_at
         event = Event.objects.create(
             program=self.program,
             name=name,
             description='Description',
-            starts_at=self.starts_at,
-            registration_closes_at=self.starts_at - timedelta(hours=1),
+            starts_at=starts_at,
+            registration_closes_at=starts_at - timedelta(hours=1),
+            virtual=virtual,
         )
         Ride.objects.create(name=f'{name} ride', event=event, route=self.route)
         return event
@@ -118,6 +122,52 @@ class EventForecastBadgeAsyncTests(AsyncForecastTestCase):
         self.assertContains(response, f'forecast-hourly-{forecast.pk}')
         delay.assert_called_once()
 
+    @override_flag('async_forecast_fetch', active=True)
+    def test_does_not_poll_for_a_virtual_event(self):
+        # Arrange
+        virtual_event = self._create_event(name='Virtual Event', virtual=True)
+        url = reverse('event_forecast_badge', args=[virtual_event.id])
+
+        # Act
+        with patch('backoffice.tasks.fetch_forecast.delay') as delay:
+            response = self.client.get(url)
+
+        # Assert
+        self.assertNotContains(response, 'attempt=1')
+        self.assertNotContains(response, 'wx-loading')
+        delay.assert_not_called()
+
+    @override_flag('async_forecast_fetch', active=True)
+    def test_does_not_poll_for_an_event_beyond_the_forecast_horizon(self):
+        # Arrange
+        distant_event = self._create_event(
+            name='Distant Event', starts_at=self.starts_at + timedelta(days=30)
+        )
+        url = reverse('event_forecast_badge', args=[distant_event.id])
+
+        # Act
+        with patch('backoffice.tasks.fetch_forecast.delay') as delay:
+            response = self.client.get(url)
+
+        # Assert
+        self.assertNotContains(response, 'attempt=1')
+        self.assertNotContains(response, 'wx-loading')
+        delay.assert_not_called()
+
+    @override_flag('async_forecast_fetch', active=True)
+    def test_does_not_enqueue_a_duplicate_task_while_one_is_in_flight(self):
+        # Arrange
+        url = reverse('event_forecast_badge', args=[self.event.id])
+
+        # Act
+        with patch('backoffice.tasks.fetch_forecast.delay') as delay:
+            self.client.get(url)
+            self.client.get(f'{url}?attempt=1')
+            self.client.get(f'{url}?attempt=2')
+
+        # Assert
+        delay.assert_called_once()
+
     def test_falls_back_to_synchronous_fetching_when_the_flag_is_off(self):
         # Arrange
         url = reverse('event_forecast_badge', args=[self.event.id])
@@ -200,6 +250,33 @@ class UpcomingForecastBadgesAsyncTests(AsyncForecastTestCase):
 
         # Assert
         self.assertNotContains(response, 'forecast-badges-poller')
+
+    @override_flag('async_forecast_fetch', active=True)
+    def test_does_not_enqueue_duplicate_tasks_across_poll_attempts(self):
+        # Arrange
+        url = reverse('upcoming_forecast_badges')
+
+        # Act
+        with patch('backoffice.tasks.fetch_forecast.delay') as delay:
+            self.client.get(url)
+            self.client.get(f'{url}?attempt=1')
+            self.client.get(f'{url}?attempt=2')
+
+        # Assert
+        delay.assert_called_once()
+
+    @override_flag('async_forecast_fetch', active=True)
+    def test_enqueues_one_task_per_window_for_events_sharing_a_window(self):
+        # Arrange
+        self._create_event(name='Second Event')
+        url = reverse('upcoming_forecast_badges')
+
+        # Act
+        with patch('backoffice.tasks.fetch_forecast.delay') as delay:
+            self.client.get(url)
+
+        # Assert
+        delay.assert_called_once()
 
     def test_falls_back_to_synchronous_fetching_when_the_flag_is_off(self):
         # Arrange

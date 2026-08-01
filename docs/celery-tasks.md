@@ -33,6 +33,17 @@ window that needs refreshing. The badge re-polls every two seconds, up to five
 attempts, and then gives up for that page load. A stale cached forecast is shown
 immediately rather than held back while the refresh runs.
 
+Events with no possible forecast — virtual events, and events outside the
+seven-day horizon — render an empty badge instead of polling for a forecast that
+will never arrive.
+
+Enqueueing is deduplicated through the Django cache: a window that has been
+requested is locked for `FORECAST_REQUEST_LOCK_SECONDS` (60s), so repeated poll
+attempts and concurrent visitors do not pile up duplicate tasks for the same
+window. `CACHES` points at `REDIS_URL` when it is set, so the lock holds across
+dynos; local development without Redis falls back to in-memory caching, which
+only deduplicates within a single process.
+
 ## Heroku setup
 
 ```

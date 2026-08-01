@@ -5,6 +5,8 @@ from pathlib import Path
 import dj_database_url
 import sentry_sdk
 from celery.schedules import crontab
+
+from ridehub.redis_url import redis_url
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
 
@@ -248,6 +250,20 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(minute=5),
     },
 }
+
+if os.environ.get('REDIS_URL'):
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': redis_url(),
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
 
 REGISTRATION_ALERT_EMAILS = [
     e.strip() for e in os.environ.get('REGISTRATION_ALERT_EMAILS', '').split(',') if e.strip()

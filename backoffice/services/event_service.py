@@ -1,10 +1,13 @@
 from datetime import date, datetime, timedelta
 
+from django.core.cache import cache
 from django.db.models import Count, Max, Min, Q, QuerySet
 from django.utils import timezone
 
 from backoffice.models import Event, Forecast, Registration, Ride
 from backoffice.services.forecast_service import ForecastService, ForecastState, YOW_LOCATION
+
+FORECAST_REQUEST_LOCK_SECONDS = 60
 
 
 class EventService:
@@ -137,14 +140,21 @@ class EventService:
         states_by_window = ForecastService().resolve_for_windows(windows_by_event_id.values())
 
         latitude, longitude = YOW_LOCATION
-        requested = set()
 
         for window, state in states_by_window.items():
-            if not state.pending or window in requested:
+            if not state.pending:
                 continue
-            requested.add(window)
+
             starts_at, ends_at = window
+            if not cache.add(self._forecast_request_key(window), True, FORECAST_REQUEST_LOCK_SECONDS):
+                continue
+
             fetch_forecast.delay(str(latitude), str(longitude), starts_at.isoformat(), ends_at.isoformat())
+
+    @staticmethod
+    def _forecast_request_key(window) -> str:
+        starts_at, ends_at = window
+        return f'forecast-requested:{starts_at.isoformat()}:{ends_at.isoformat()}'
 
     def fetch_cached_forecast(self, event: Event) -> Forecast | None:
         if event.virtual:
