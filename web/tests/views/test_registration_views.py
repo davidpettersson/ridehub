@@ -579,6 +579,26 @@ class RegistrationWithdrawAccessControlTests(TestCase):
         updated_registration = Registration.objects.get(id=self.registration_a.id)
         self.assertEqual(updated_registration.state, 'withdrawn')
 
+    def test_withdraw_redirects_to_safe_next_target(self):
+        self.client.force_login(self.user_a)
+
+        response = self.client.post(
+            reverse('registration_withdraw', kwargs={'registration_id': self.registration_a.id}),
+            {'next': f'/events/{self.event.id}'}
+        )
+
+        self.assertRedirects(response, f'/events/{self.event.id}')
+
+    def test_withdraw_ignores_external_next_target(self):
+        self.client.force_login(self.user_a)
+
+        response = self.client.post(
+            reverse('registration_withdraw', kwargs={'registration_id': self.registration_a.id}),
+            {'next': 'https://evil.example.com/'}
+        )
+
+        self.assertRedirects(response, reverse('profile'))
+
     def test_user_cannot_withdraw_other_user_registration(self):
         self.client.force_login(self.user_a)
 

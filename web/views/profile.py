@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils.http import url_has_allowed_host_and_scheme
 from waffle import flag_is_active
 
 from backoffice.models import Registration, UserProfile
@@ -45,6 +46,11 @@ def registration_withdraw(request: HttpRequest, registration_id: int) -> HttpRes
     if registration.state == 'confirmed' and request.method == 'POST':
         registration.withdraw()
         registration.save()
+
+    target = request.POST.get('next') or request.GET.get('next')
+    if target and url_has_allowed_host_and_scheme(
+            target, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return redirect(target)
 
     return redirect('profile')
 

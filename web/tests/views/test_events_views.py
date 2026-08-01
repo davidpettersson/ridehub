@@ -1051,7 +1051,8 @@ class EventDetailViewTests(BaseEventViewTestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['user_is_registered'])
-        self.assertContains(response, 'You are registered for this event')
+        self.assertContains(response, "You're registered for this event")
+        self.assertContains(response, 'Withdraw')
 
     def test_unauthenticated_user_does_not_see_registration_status(self):
         # Act

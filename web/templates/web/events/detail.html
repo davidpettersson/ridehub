@@ -57,6 +57,32 @@
             </div>
         </div>
 
+        {% if user_is_registered %}
+        <div class="p-4 mb-4 bg-success bg-opacity-10 border border-success border-opacity-25 rounded">
+            <p class="text-success fw-medium mb-0">
+                <i class="bi bi-check-circle-fill me-1"></i>You're registered for this event.
+            </p>
+            {% if user_registration.editable or not event.cancelled %}
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                {% if user_registration.editable %}
+                <a href="{% url 'registration_edit' user_registration.id %}?next={{ request.path|urlencode }}"
+                   class="btn btn-outline-success btn-sm">
+                    Edit registration
+                </a>
+                {% endif %}
+                {% if not event.cancelled %}
+                <form method="post" action="{% url 'registration_withdraw' user_registration.id %}"
+                      onsubmit="return confirm('Are you sure you want to withdraw your registration for this event?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="btn btn-outline-success btn-sm">Withdraw</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <h2 class="fs-5 fw-medium mb-3">About the event</h2>
         <div class="card shadow-sm mb-4">
             <div class="card-body p-4">
@@ -93,28 +119,16 @@
                 </div>
                 {% endif %}
 
-                {% if event.registration_enabled %}
+                {% if event.registration_enabled and not user_is_registered %}
                 {% if event.registration_open %}
                 <div class="mt-4">
-                    {% if event.has_capacity_available and not user_is_registered and event.registration_closes_at %}
+                    {% if event.has_capacity_available and event.registration_closes_at %}
                     <div class="d-flex align-items-center mb-4">
                         <div class="text-muted">Registration closes {{ event.registration_closes_at|date:"F j, g:i A" }}.</div>
                     </div>
                     {% endif %}
                     <div class="d-flex align-items-center">
-                        {% if user_is_registered %}
-                            <div class="p-4 bg-success bg-opacity-10 border border-success border-opacity-25 rounded">
-                                <p class="text-success mb-0">
-                                    You are registered for this event.{% if user_registration.editable %} You can change your details below and keep your spot.{% endif %} You can cancel your registration on your <a href="{% url 'profile' %}" class="text-primary text-decoration-underline">profile page</a>.
-                                </p>
-                                {% if user_registration.editable %}
-                                <a href="{% url 'registration_edit' user_registration.id %}?next={{ request.path|urlencode }}"
-                                   class="btn btn-outline-success btn-sm mt-3">
-                                    Edit registration
-                                </a>
-                                {% endif %}
-                            </div>
-                        {% elif event.external_registration_url %}
+                        {% if event.external_registration_url %}
                             <a href="{{ event.external_registration_url }}" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
                                 Register <i class="bi bi-box-arrow-up-right ms-1 small"></i>
                             </a>
