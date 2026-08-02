@@ -1,0 +1,70 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} delete-confirmation{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; {% translate 'Reschedule event' %}
+</div>
+{% endblock %}
+
+{% block nav-sidebar %}{% include "admin/nav_sidebar.html" %}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    {% if form.non_field_errors %}
+    {% for error in form.non_field_errors %}
+    <p class="errornote">{{ error }}</p>
+    {% endfor %}
+    {% endif %}
+    <form method="post">{% csrf_token %}
+        <div>
+            <p>{% blocktranslate with event_name=event.name %}You are rescheduling {{ event_name }}.{% endblocktranslate %}</p>
+            <p>{% blocktranslate %}When you reschedule an event:{% endblocktranslate %}</p>
+            <ul>
+                <li>{% blocktranslate %}The event keeps its current state and all existing registrations{% endblocktranslate %}</li>
+                <li>{% blocktranslate %}The event page shows a notice with the previous and new times{% endblocktranslate %}</li>
+                <li>{% blocktranslate %}Confirmed registrations receive an email if you leave the notification box checked{% endblocktranslate %}</li>
+            </ul>
+
+            <div class="form-row">
+                <h3>{% translate "Current schedule" %}</h3>
+                <ul>
+                    <li>{% translate "Starts" %}: {{ event.starts_at|date:"Y-m-d H:i" }}</li>
+                    <li>{% translate "Ends" %}: {% if event.ends_at %}{{ event.ends_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}</li>
+                    <li>{% translate "Registration closes" %}: {% if event.registration_closes_at %}{{ event.registration_closes_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}</li>
+                </ul>
+            </div>
+
+            {% for field in form %}
+            <div class="form-row{% if field.errors %} errors{% endif %}">
+                {% if field.errors %}
+                <ul class="errorlist">
+                    {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+                </ul>
+                {% endif %}
+                <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                {{ field }}
+                {% if field.help_text %}
+                <div class="help">{{ field.help_text }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <div class="submit-row">
+                {% for obj in queryset %}
+                <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}" />
+                {% endfor %}
+                <input type="hidden" name="action" value="reschedule_event" />
+                <input type="hidden" name="post" value="yes" />
+                <input type="submit" value="{% translate 'Reschedule event' %}" class="default" />
+                <a href="{% url opts|admin_urlname:'changelist' %}" class="button cancel-link">{% translate 'No, take me back' %}</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

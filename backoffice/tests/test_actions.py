@@ -429,3 +429,211 @@ class ArchiveEventActionTestCase(TestCase):
         self.assertEqual(duplicated.state, Event.STATE_DRAFT)
         self.assertIsNone(duplicated.archived_at)
         self.assertEqual(duplicated.archival_reason, '')
+
+
+class EventRescheduleActionTestCase(TestCase):
+    def setUp(self):
+        # Arrange
+        self.program = Program.objects.create(name="Test Program")
+        self.now = timezone.now()
+        self.tomorrow = self.now + timedelta(days=1)
+        self.next_week = self.now + timedelta(days=7)
+        self.changelist_url = reverse('admin:backoffice_event_changelist')
+
+        User = get_user_model()
+        self.admin_user = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass'
+        )
+        self.client.login(username='admin', password='adminpass')
+
+        self.event = self.create_event()
+
+    def create_event(self, name='Test Event'):
+        return Event.objects.create(
+            program=self.program,
+            name=name,
+            starts_at=self.tomorrow,
+            ends_at=self.tomorrow + timedelta(hours=2),
+            registration_closes_at=self.now,
+            state=Event.STATE_LIVE,
+        )
+
+    def create_confirmed_registration(self, email='rider@example.com'):
+        return Registration.objects.create(
+            event=self.event,
+            name='Rider',
+            email=email,
+            state=Registration.STATE_CONFIRMED,
+        )
+
+    def local_input(self, moment):
+        return timezone.localtime(moment).strftime('%Y-%m-%dT%H:%M')
+
+    def post_reschedule(self, **overrides):
+        data = {
+            'action': 'reschedule_event',
+            '_selected_action': [self.event.pk],
+            'post': 'yes',
+            'starts_at': self.local_input(self.next_week),
+            'ends_at': self.local_input(self.next_week + timedelta(hours=2)),
+            'registration_closes_at': self.local_input(self.next_week - timedelta(hours=1)),
+            'reschedule_reason': 'Thunderstorms',
+            'notify_registrants': 'on',
+        }
+        data.update(overrides)
+        return self.client.post(self.changelist_url, data)
+
+    def test_action_shows_reschedule_page(self):
+        # Act
+        response = self.client.post(self.changelist_url, {
+            'action': 'reschedule_event',
+            '_selected_action': [self.event.pk],
+        })
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Reschedule event')
+        self.assertContains(response, 'reschedule_reason')
+        self.assertContains(response, self.event.name)
+
+    def test_action_reschedules_event(self):
+        # Act
+        response = self.post_reschedule()
+
+        # Assert
+        self.assertRedirects(response, self.changelist_url)
+        event = Event.objects.get(pk=self.event.pk)
+        self.assertEqual(event.previous_starts_at, self.tomorrow)
+        self.assertEqual(event.reschedule_reason, 'Thunderstorms')
+        self.assertTrue(event.rescheduled)
+
+    def test_action_notifies_confirmed_registrants(self):
+        # Arrange
+        self.create_confirmed_registration()
+
+        # Act
+        self.post_reschedule()
+
+        # Assert
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('RIDE RESCHEDULED', mail.outbox[0].subject)
+
+    def test_action_skips_notification_when_unchecked(self):
+        # Arrange
+        self.create_confirmed_registration()
+
+        # Act
+        response = self.post_reschedule(notify_registrants='')
+
+        # Assert
+        self.assertRedirects(response, self.changelist_url)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_action_creates_audit_event(self):
+        # Act
+        self.post_reschedule()
+
+        # Assert
+        audit_event = AuditEvent.objects.get(action='rescheduled')
+        self.assertEqual(audit_event.actor, self.admin_user)
+        self.assertEqual(audit_event.target, Event.objects.get(pk=self.event.pk))
+
+    def test_action_requires_exactly_one_event(self):
+        # Arrange
+        other_event = self.create_event(name='Other Event')
+
+        # Act
+        response = self.client.post(self.changelist_url, {
+            'action': 'reschedule_event',
+            '_selected_action': [self.event.pk, other_event.pk],
+        })
+
+        # Assert
+        self.assertRedirects(response, self.changelist_url)
+        self.assertFalse(Event.objects.get(pk=self.event.pk).rescheduled)
+
+    def test_action_rejects_cancelled_event(self):
+        # Arrange
+        self.event.cancellation_reason = 'Snow'
+        self.event.cancel()
+        self.event.save()
+
+        # Act
+        response = self.client.post(self.changelist_url, {
+            'action': 'reschedule_event',
+            '_selected_action': [self.event.pk],
+        })
+
+        # Assert
+        self.assertRedirects(response, self.changelist_url)
+        self.assertFalse(Event.objects.get(pk=self.event.pk).rescheduled)
+
+    def test_action_rejects_start_in_the_past(self):
+        # Act
+        response = self.post_reschedule(starts_at=self.local_input(self.now - timedelta(days=1)))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'cannot start in the past')
+        self.assertFalse(Event.objects.get(pk=self.event.pk).rescheduled)
+
+    def test_action_rejects_unchanged_start(self):
+        # Act
+        response = self.post_reschedule(starts_at=self.local_input(self.tomorrow))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'must differ from the current start time')
+
+    def test_action_rejects_registration_closing_after_start(self):
+        # Act
+        response = self.post_reschedule(
+            registration_closes_at=self.local_input(self.next_week + timedelta(hours=1))
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Registration cannot close after the event starts')
+        self.assertFalse(Event.objects.get(pk=self.event.pk).rescheduled)
+
+    def test_action_rejects_end_before_start(self):
+        # Act
+        response = self.post_reschedule(ends_at=self.local_input(self.next_week - timedelta(hours=2)))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'End time cannot be before the start time')
+
+    def test_action_rejects_missing_reason(self):
+        # Act
+        response = self.post_reschedule(reschedule_reason='   ')
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Event.objects.get(pk=self.event.pk).rescheduled)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_duplicate_does_not_carry_over_reschedule_status(self):
+        # Arrange
+        self.post_reschedule()
+        new_date = (self.next_week + timedelta(days=7)).strftime('%Y-%m-%d')
+
+        # Act
+        self.client.post(self.changelist_url, {
+            'action': 'duplicate_event',
+            '_selected_action': [self.event.pk],
+            'post': 'yes',
+            'form-TOTAL_FORMS': '1',
+            'form-INITIAL_FORMS': '0',
+            'form-0-event_id': self.event.pk,
+            'form-0-new_name': 'Fresh Event',
+            'form-0-new_date': new_date,
+        })
+
+        # Assert
+        duplicated = Event.objects.get(name='Fresh Event')
+        self.assertFalse(duplicated.rescheduled)
+        self.assertIsNone(duplicated.previous_starts_at)
+        self.assertEqual(duplicated.reschedule_reason, '')

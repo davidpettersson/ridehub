@@ -330,3 +330,66 @@ class TestUnconfirmedRegistrationsEmail(BaseEmailTestCase):
 
         manage_url = f"{self.base_url}{reverse('event_registrations_manage', kwargs={'event_id': self.event.id})}"
         self.assertIn(manage_url, text_content)
+
+
+class TestEventRescheduledEmail(BaseEmailTestCase):
+    def setUp(self):
+        super().setUp()
+        self.program = Program.objects.create(name="Test Program")
+
+        original_start = datetime(2024, 12, 25, 10, 0, tzinfo=timezone.utc)
+        new_start = datetime(2025, 1, 8, 10, 0, tzinfo=timezone.utc)
+        self.event = Event.objects.create(
+            name="Rescheduled Event",
+            starts_at=new_start,
+            ends_at=new_start + timedelta(hours=2),
+            registration_closes_at=new_start - timedelta(hours=1),
+            previous_starts_at=original_start,
+            previous_ends_at=original_start + timedelta(hours=2),
+            rescheduled_at=datetime(2024, 12, 20, 9, 0, tzinfo=timezone.utc),
+            reschedule_reason='Thunderstorms in the forecast',
+            program=self.program,
+            location="Test Location",
+            description="Test Description"
+        )
+        self.context = {
+            'event': self.event,
+            'reschedule_reason': self.event.reschedule_reason,
+            'base_url': self.base_url
+        }
+
+    def test_contains_event_name(self):
+        html_content = render_to_string('email/event_rescheduled.html', self.context)
+        self.assertIn(self.event.name, html_content)
+
+        text_content = render_to_string('email/event_rescheduled.txt', self.context)
+        self.assertIn(self.event.name, text_content)
+
+    def test_contains_reschedule_reason(self):
+        html_content = render_to_string('email/event_rescheduled.html', self.context)
+        self.assertIn(self.event.reschedule_reason, html_content)
+
+        text_content = render_to_string('email/event_rescheduled.txt', self.context)
+        self.assertIn(self.event.reschedule_reason, text_content)
+
+    def test_contains_previous_and_new_dates(self):
+        html_content = render_to_string('email/event_rescheduled.html', self.context)
+        self.assertIn('December 25, 2024', html_content)
+        self.assertIn('January 8, 2025', html_content)
+
+        text_content = render_to_string('email/event_rescheduled.txt', self.context)
+        self.assertIn('December 25, 2024', text_content)
+        self.assertIn('January 8, 2025', text_content)
+
+    def test_links_are_absolute(self):
+        html_content = render_to_string('email/event_rescheduled.html', self.context)
+        self.assert_all_links_absolute(html_content)
+
+        event_url = f"{self.base_url}{reverse('event_detail', args=[self.event.id])}"
+        self.assertRegex(html_content, rf'href="{re.escape(event_url)}"')
+
+    def test_text_version_has_absolute_urls(self):
+        text_content = render_to_string('email/event_rescheduled.txt', self.context)
+
+        event_url = f"{self.base_url}{reverse('event_detail', args=[self.event.id])}"
+        self.assertIn(event_url, text_content)

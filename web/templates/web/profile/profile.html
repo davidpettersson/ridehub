@@ -111,6 +111,8 @@
                                         </a>
                                         {% if registration.event.cancelled %}
                                             <span class="badge bg-danger ms-2">Cancelled</span>
+                                        {% elif registration.event.rescheduled %}
+                                            <span class="badge bg-warning text-dark ms-2">Rescheduled</span>
                                         {% endif %}
                                         {% if registration.ride_leader_preference == 'y' %}
                                             <span class="badge bg-primary ms-2">Ride leader</span>
@@ -199,6 +201,8 @@
                                         </a>
                                         {% if registration.event.cancelled %}
                                             <span class="badge bg-danger ms-2">Cancelled</span>
+                                        {% elif registration.event.rescheduled %}
+                                            <span class="badge bg-warning text-dark ms-2">Rescheduled</span>
                                         {% endif %}
                                         {% if registration.ride_leader_preference == 'y' %}
                                             <span class="badge bg-primary ms-2">Ride leader</span>

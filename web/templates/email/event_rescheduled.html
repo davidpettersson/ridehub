@@ -1,0 +1,31 @@
+{% extends 'email/_base_email.html' %}
+
+{% block title %}Event rescheduled{% endblock %}
+
+{% block content %}
+    <h1>Event rescheduled: {{ event.name }}</h1>
+
+    <div class="cancellation-notice">
+        <p><strong>This event has been rescheduled.</strong></p>
+        <p>Your registration has been kept. If the new time does not work for you, please withdraw from the event.</p>
+    </div>
+
+    <div class="event-details">
+        <p><strong>Event:</strong> {{ event.name }}</p>
+        <p><strong>Previously:</strong> {{ event.previous_starts_at|date:"l, F j, Y" }} at {{ event.previous_starts_at|date:"g:i A" }}</p>
+        <p><strong>Now:</strong> {{ event.starts_at|date:"l, F j, Y" }} at {{ event.starts_at|date:"g:i A" }}</p>
+        {% if event.ends_at %}
+        <p><strong>Ends:</strong> {{ event.ends_at|date:"l, F j, Y" }} at {{ event.ends_at|date:"g:i A" }}</p>
+        {% endif %}
+        {% if event.location %}
+        <p><strong>Location:</strong> {{ event.location }}</p>
+        {% endif %}
+    </div>
+
+    <h2>Reason for rescheduling</h2>
+    <p>{{ reschedule_reason }}</p>
+
+    <p>
+        <a href="{{ base_url }}{% url 'event_detail' event.id %}" class="button">View the event</a>
+    </p>
+{% endblock %}

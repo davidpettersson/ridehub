@@ -141,7 +141,7 @@
             {{ event.starts_at|date:"l, F j" }} · {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% if event.starts_at|date:"Y-m-d" != event.ends_at|date:"Y-m-d" %}<sup>+1</sup>{% endif %}{% endif %}
         </div>
         <h1 class="fs-2 fw-bold mb-2">
-            {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% endif %}
+            {% if event.cancelled %}<span class="text-decoration-line-through">{{ event.name }}</span> (cancelled){% else %}{{ event.name }}{% if event.rescheduled %} (rescheduled){% endif %}{% endif %}
         </h1>
     </div>
 

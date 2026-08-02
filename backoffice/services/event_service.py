@@ -7,6 +7,7 @@ from django.db.models import Count, Max, Min, Q, QuerySet
 from django.utils import timezone
 
 from backoffice.models import Event, Forecast, Registration, Ride
+from backoffice.services.email_service import EmailService
 from backoffice.services.forecast_service import ForecastService, ForecastState, YOW_LOCATION
 
 logger = logging.getLogger(__name__)
@@ -113,6 +114,45 @@ class EventService:
         self._copy_rides(source_event, new_event)
 
         return new_event
+
+    def reschedule_event(self, event: Event, starts_at: datetime, ends_at: datetime | None,
+                         registration_closes_at: datetime | None, reason: str) -> Event:
+        if not event.reschedulable:
+            raise ValueError(f'An event in state {event.state} cannot be rescheduled.')
+
+        event.previous_starts_at = event.starts_at
+        event.previous_ends_at = event.ends_at
+        event.starts_at = starts_at
+        event.ends_at = ends_at
+        event.registration_closes_at = registration_closes_at
+        event.reschedule_reason = reason
+        event.rescheduled_at = timezone.now()
+        event.clean()
+        event.save()
+
+        return event
+
+    def notify_registrants_of_reschedule(self, event: Event, base_url: str) -> int:
+        registrations = event.registration_set.filter(state=Registration.STATE_CONFIRMED)
+
+        notified = 0
+        for registration in registrations:
+            context = {
+                'event': event,
+                'registration': registration,
+                'reschedule_reason': event.reschedule_reason,
+                'base_url': base_url,
+            }
+
+            EmailService().send_email(
+                template_name='event_rescheduled',
+                context=context,
+                subject=f'RIDE RESCHEDULED {event.name}',
+                recipient_list=[registration.email],
+            )
+            notified += 1
+
+        return notified
 
     def resolve_forecast(self, event: Event) -> ForecastState:
         return self.resolve_forecasts([event])[event.id]
