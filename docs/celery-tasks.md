@@ -36,17 +36,24 @@ coordinates — cost one fetch, not one per event.
 The task is the only thing that calls Open-Meteo. Nothing in the request path
 fetches: pages read stored `Forecast` rows and nothing else.
 
-A forecast is displayable for six hours, measured from the event start or from
-now, whichever comes first. For an upcoming event that means the usual freshness
-rule: nothing older than six hours. For an event that has already started it means
-the last forecast prepared in the six hours before it began, which keeps showing
-indefinitely — an old event's badge is a record of what was predicted, and it
-never goes stale. In steady state an upcoming event's data is at most one hour
-old, so its badge only goes dark after roughly six consecutive failed runs.
+How often a window is actually refetched depends on how far out the event is:
+one hour when it starts within a day, twelve hours when it is seven days out,
+interpolated linearly and rounded to the closest hour in between (48h out → 3h,
+96h out → 6h, 144h out → 10h). A forecast is stale once it is older than twice
+that interval, measured from the event start or from now, whichever comes first.
+See `docs/weather-forecast-algorithm.md` for the formula.
 
-Each run always writes new rows rather than skipping windows that already have
-recent data; history is append-only, and `/events/<id>/forecasts` shows every
-revision regardless of age.
+Each run checks freshness first and fetches only the windows whose latest row is
+stale. Running the task several times in a row — a beat run landing near a manual
+`/debug/tasks-refresh-forecasts` trigger, say — costs one set of requests, not
+one per run. Rows are still append-only: a refetch adds a revision rather than
+replacing one, and `/events/<id>/forecasts` shows every revision regardless of
+age.
+
+For an event that has already started, the stale rule anchors on its start, where
+the interval is one hour: it keeps the last forecast prepared in the two hours
+before it began, and that keeps showing indefinitely — an old event's badge is a
+record of what was predicted, and it never goes stale.
 
 A fetch or parse failure against Open-Meteo is caught per window, logged, and
 leaves the previous row untouched; the run continues with the remaining windows
@@ -58,7 +65,8 @@ failure, say — and retries those with backoff up to three times.
 
 Nothing in the request path depends on a worker being up. Pages render from
 whatever forecast rows exist; with no worker those rows stop being refreshed and
-badges disappear six hours later. Beat tasks simply do not run, so no alert
+badges disappear once they go stale — two hours later for an event starting
+within a day, up to a day later for one a week out. Beat tasks simply do not run, so no alert
 emails are sent either.
 
 ## Knowing whether the schedule is running
@@ -78,7 +86,8 @@ look identical from the outside.
 `refresh_forecasts` also logs its own progress at INFO: how many events it is
 about to cover and how many are skipped as virtual, one line per stored row
 (`Stored forecast <id> for <start> to <end> with <n> hourly readings`), how many
-of the distinct windows were refreshed, and a closing summary. A run that fetched
+of the distinct windows were refreshed and how many were already fresh, and a
+closing summary. A run that fetched
 nothing says so explicitly rather than logging nothing at all, so an empty
 horizon is distinguishable from a task that never ran. Failures stay at WARNING
 with the window and the underlying error.

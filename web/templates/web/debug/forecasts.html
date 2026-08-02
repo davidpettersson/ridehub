@@ -4,7 +4,8 @@
 <p><a href="{% url 'debug_index' %}">Debug</a></p>
 
 <p>Queues <code>backoffice.tasks.refresh_forecasts</code> on the worker and lists the most
-    recently prepared forecast records.</p>
+    recently prepared forecast records. Windows that already have a fresh forecast are
+    skipped, so triggering this repeatedly does not fetch again.</p>
 
 {% if result %}
 <p>Queued task <code>{{ result.task_id }}</code>.</p>

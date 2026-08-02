@@ -58,7 +58,7 @@ class RefreshForecastsTaskTests(TestCase):
                 refresh_forecasts()
 
         # Assert
-        self.assertIn('2 windows stored for 1 events', logs.output[0])
+        self.assertIn('2 windows covered for 1 events', logs.output[0])
 
     def test_logs_and_stops_when_no_events_are_within_the_horizon(self):
         # Arrange

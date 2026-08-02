@@ -34,6 +34,6 @@ def refresh_forecasts() -> int:
 
     refreshed = service.refresh_forecasts(events)
     logger.info(
-        'Forecast refresh finished: %s windows stored for %s events', refreshed, len(events)
+        'Forecast refresh finished: %s windows covered for %s events', refreshed, len(events)
     )
     return refreshed

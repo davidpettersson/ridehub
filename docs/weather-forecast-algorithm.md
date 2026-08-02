@@ -101,16 +101,35 @@ For each hour in the window:
 - Lookups key on `(latitude, longitude, start_time, end_time)` and use the row
   with the latest `prepared_at`; events sharing the same snapped window share
   rows and fetches.
-- Rows are written only by the `refresh_forecasts` beat task, which runs
-  hourly over the events starting in the next seven days and always fetches,
-  with a 3-second timeout per request. Nothing is fetched on page load, and an
-  event that has already started is never fetched again.
-- A row is displayable for 6 hours, measured from the event start or from now,
-  whichever is earlier. An upcoming event therefore needs a row prepared within
-  the last 6 hours, and once the latest row is older than that no badge is
-  rendered — no forecast is better than a wrong one. A past event keeps the last
-  row prepared in the 6 hours before it started, indefinitely. The forecast
-  history page is subject to neither rule and shows every stored row.
+- Rows are written only by the `refresh_forecasts` beat task, which runs hourly
+  over the events starting in the next seven days, with a 3-second timeout per
+  request. Nothing is fetched on page load, and an event that has already
+  started is never fetched again.
+- **Refresh interval** scales with how far out the event is, so a distant event
+  is not re-fetched as often as an imminent one. It is linear between the two
+  anchor points — 1 hour at 24 hours out, 12 hours at 7 days out — rounded to
+  the closest hour and clamped outside that range:
+
+  ```
+  interval_hours = clamp(1, 12, round(1 + (lead_hours - 24) * 11 / 144))
+  ```
+
+  | Lead | <24h | 24h | 48h | 72h | 96h | 120h | 144h | 168h |
+  |------|------|-----|-----|-----|-----|------|------|------|
+  | Interval | 1h | 1h | 3h | 5h | 6h | 8h | 10h | 12h |
+
+- A row is **stale**, and therefore neither displayable nor reusable, once it is
+  older than twice the interval for its window, measured from the event start or
+  from now, whichever is earlier. An event 7 days out keeps a row for 24 hours;
+  one starting within a day keeps it for 2. Once the latest row is stale no
+  badge is rendered — no forecast is better than a wrong one. A past event is
+  anchored at its start, where the lead is zero, so it keeps the last row
+  prepared in the 2 hours before it started, indefinitely. The forecast history
+  page is subject to neither rule and shows every stored row.
+- Every run checks freshness before fetching: a window that already has a fresh
+  row is skipped and the existing row is reused. Running the task repeatedly —
+  including through the superuser debug trigger — therefore issues no further
+  requests until the row goes stale.
 - On any fetch or parse error the previous row is left alone and no new row is
   written. A failure never breaks the page and a partial or
   invalid value is never stored: model validation enforces top-of-hour times,
