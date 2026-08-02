@@ -213,12 +213,16 @@ def _scrub_sentry_event(event, hint):
     return event
 
 
+def _sentry_integrations():
+    return [DjangoIntegration(), CeleryIntegration(monitor_beat_tasks=True)]
+
+
 if SENTRY_DSN:
     sentry_sdk.init(
         dsn=os.environ.get('SENTRY_DSN', SENTRY_DSN),
         send_default_pii=False,
         traces_sample_rate=_sentry_traces_sample_rate(),
-        integrations=[DjangoIntegration(), CeleryIntegration()],
+        integrations=_sentry_integrations(),
         release=os.environ.get('HEROKU_RELEASE_VERSION', 'unknown'),
         before_send=_scrub_sentry_event,
         before_send_transaction=_scrub_sentry_event,
