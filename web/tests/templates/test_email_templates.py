@@ -281,6 +281,57 @@ class TestEventCancelledEmail(BaseEmailTestCase):
         self.assertIn(events_url, text_content)
 
 
+class TestUnconfirmedRegistrationsEmail(BaseEmailTestCase):
+    def setUp(self):
+        super().setUp()
+        self.program = Program.objects.create(name="Test Program")
+
+        event_start = datetime(2024, 12, 25, 10, 0, tzinfo=timezone.utc)
+        self.event = Event.objects.create(
+            name="Test Event",
+            starts_at=event_start,
+            registration_closes_at=event_start - timedelta(hours=1),
+            program=self.program,
+            location="Test Location",
+            description="Test Description"
+        )
+        self.registration = Registration.objects.create(
+            event=self.event,
+            first_name="Stale",
+            last_name="Rider",
+            name="Stale Rider",
+            email="stale@example.com",
+            ride_leader_preference=Registration.RideLeaderPreference.NO
+        )
+        self.context = {
+            'registrations': [self.registration],
+            'threshold_hours': 1,
+            'base_url': self.base_url
+        }
+
+    def test_contains_registration_and_event_details(self):
+        html_content = render_to_string('email/unconfirmed_registrations.html', self.context)
+        self.assertIn(self.registration.name, html_content)
+        self.assertIn(self.event.name, html_content)
+
+        text_content = render_to_string('email/unconfirmed_registrations.txt', self.context)
+        self.assertIn(self.registration.name, text_content)
+        self.assertIn(self.event.name, text_content)
+
+    def test_links_are_absolute(self):
+        html_content = render_to_string('email/unconfirmed_registrations.html', self.context)
+        self.assert_all_links_absolute(html_content)
+
+        manage_url = f"{self.base_url}{reverse('event_registrations_manage', kwargs={'event_id': self.event.id})}"
+        self.assertRegex(html_content, rf'href="{re.escape(manage_url)}"')
+
+    def test_text_version_has_absolute_urls(self):
+        text_content = render_to_string('email/unconfirmed_registrations.txt', self.context)
+
+        manage_url = f"{self.base_url}{reverse('event_registrations_manage', kwargs={'event_id': self.event.id})}"
+        self.assertIn(manage_url, text_content)
+
+
 class TestEventRescheduledEmail(BaseEmailTestCase):
     def setUp(self):
         super().setUp()

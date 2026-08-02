@@ -937,6 +937,118 @@ class Registration(models.Model):
                 })
 
 
+class RegistrationSnapshot(models.Model):
+    SNAPSHOT_FIELDS = (
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'ride',
+        'speed_range_preference',
+        'ride_leader_preference',
+        'first_time_attendee',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+    )
+
+    registration = models.ForeignKey(
+        Registration,
+        on_delete=models.CASCADE,
+        related_name='snapshots'
+    )
+
+    actor = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='registration_snapshots',
+        help_text='Who made the change that superseded this state.'
+    )
+
+    changed_fields = models.JSONField(
+        help_text='Names of the registration fields that the superseding change altered.'
+    )
+
+    superseded_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text='When this state stopped being current.'
+    )
+
+    first_name = models.CharField(
+        max_length=128
+    )
+
+    last_name = models.CharField(
+        max_length=128
+    )
+
+    email = models.EmailField()
+
+    phone = PhoneNumberField(
+        blank=True
+    )
+
+    ride = models.ForeignKey(
+        Ride,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='+'
+    )
+
+    speed_range_preference = models.ForeignKey(
+        SpeedRange,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='+'
+    )
+
+    ride_leader_preference = models.CharField(
+        max_length=2,
+        choices=Registration.RideLeaderPreference,
+        default=Registration.RideLeaderPreference.NOT_APPLICABLE
+    )
+
+    first_time_attendee = models.CharField(
+        max_length=2,
+        choices=Registration.FirstTimeAttendee,
+        default=Registration.FirstTimeAttendee.NOT_APPLICABLE
+    )
+
+    emergency_contact_name = models.CharField(
+        max_length=128,
+        blank=True
+    )
+
+    emergency_contact_phone = models.CharField(
+        max_length=128,
+        blank=True
+    )
+
+    class Meta:
+        ordering = ['-superseded_at']
+        indexes = [
+            models.Index(fields=['registration', '-superseded_at']),
+        ]
+
+    def __str__(self):
+        return f"Registration #{self.registration_id} as it was until {self.superseded_at}"
+
+    def clean(self):
+        if not isinstance(self.changed_fields, list) or not self.changed_fields:
+            raise ValidationError({
+                'changed_fields': "At least one changed field must be recorded."
+            })
+
+        unknown = [name for name in self.changed_fields if name not in self.SNAPSHOT_FIELDS]
+        if unknown:
+            raise ValidationError({
+                'changed_fields': f"Unknown registration fields: {', '.join(sorted(unknown))}."
+            })
+
+
 class Announcement(models.Model):
     TYPE_INFORMATION = 'i'
     TYPE_WARNING = 'w'

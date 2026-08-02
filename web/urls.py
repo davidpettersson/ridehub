@@ -3,6 +3,7 @@ from django.urls import path
 from web.views.events import event_detail, event_forecast_badge, event_forecasts, event_list, event_registrations, \
     event_emergency_contacts, event_emails, event_registrations_print, calendar_view, events_redirect, \
     upcoming_forecast_badges
+from web.views.debug import trigger_task
 from web.views.events_ical import EventFeed
 from web.views.helpers import changes_email_addresses
 from web.views.login import LoginFormView, logout_view, CustomLoginView
@@ -13,7 +14,7 @@ from web.views.registration_manage import (
     staff_registration_edit, staff_registration_withdraw,
 )
 from web.views.registrations import (
-    registration_create, registration_submitted, membership_number_capture,
+    registration_create, registration_edit, registration_submitted, membership_number_capture,
     registration_verification_sent, registration_verify,
 )
 from web.views.rides import ride_speed_ranges
@@ -44,8 +45,9 @@ urlpatterns = [
     path('events/<int:event_id>/forecasts', event_forecasts, name='event_forecasts'),
     path('events/<int:event_id>', event_detail, name='event_detail'),
     path('events.ics', EventFeed(), name='event_feed'),
+    path('registrations/<int:registration_id>/edit', registration_edit, name='registration_edit'),
     path('registrations/<int:registration_id>/withdraw', registration_withdraw, name='registration_withdraw'),
-    path('registrations/submitted', registration_submitted, name='registration_submitted'),
+    path('events/<int:event_id>/registrations/submitted', registration_submitted, name='registration_submitted'),
     path('registrations/verify', registration_verify, name='registration_verify'),
     path('registrations/verification-sent', registration_verification_sent, name='registration_verification_sent'),
     path('rides/<int:ride_id>/speed-ranges', ride_speed_ranges, name='get_speed_ranges'),
@@ -54,6 +56,7 @@ urlpatterns = [
     path('profile/membership-number', profile_membership_number, name='profile_membership_number'),
     path('profile/name-visibility', profile_name_visibility, name='profile_name_visibility'),
     path('reviews/2025', review_2025, name='review_2025'),
+    path('debug/trigger-task', trigger_task, name='debug_trigger_task'),
     path('robots.txt', robots_txt, name='robots_txt'),
     path('announcements', active_announcements, name='active_announcements'),
     path('help', page_detail, {'slug': 'help'}, name='help'),

@@ -1,7 +1,9 @@
 Hello {{ registration.first_name }},
 
-Your registration for {{ registration.event.name }} on {{ registration.event.starts_at|date:"l, M j" }} has been withdrawn by the event organizer.
+{% if withdrawn_by_organizer %}Your registration for {{ registration.event.name }} on {{ registration.event.starts_at|date:"l, M j" }} has been withdrawn by the event organizer.
 
-If you believe this was done in error or have questions, please contact the ride director.
+If you believe this was done in error or have questions, please contact the ride director.{% else %}Your registration for {{ registration.event.name }} on {{ registration.event.starts_at|date:"l, M j" }} has been withdrawn.
+
+If you did not make this change, or you have questions, please contact the ride director.{% endif %}
 
 Ottawa Bicycle Club

@@ -44,7 +44,7 @@ class RescheduledEventDisplayTests(TestCase):
         response = self.client.get(self.detail_url)
 
         # Assert
-        self.assertNotContains(response, 'Event Rescheduled')
+        self.assertNotContains(response, 'This event was rescheduled on')
         self.assertNotContains(response, '(rescheduled)')
 
     def test_detail_page_shows_reschedule_notice(self):
@@ -55,7 +55,7 @@ class RescheduledEventDisplayTests(TestCase):
         response = self.client.get(self.detail_url)
 
         # Assert
-        self.assertContains(response, 'Event Rescheduled')
+        self.assertContains(response, 'This event was rescheduled on')
         self.assertContains(response, 'Thunderstorms in the forecast')
 
     def test_detail_page_notice_shows_previous_and_new_times(self):
@@ -110,7 +110,7 @@ class RescheduledEventDisplayTests(TestCase):
         # Assert
         self.assertContains(response, '(cancelled)')
         self.assertNotContains(response, '(rescheduled)')
-        self.assertContains(response, 'Event Rescheduled')
+        self.assertContains(response, 'This event was rescheduled on')
 
 
 class RescheduledAllDayEventDisplayTests(TestCase):
@@ -173,6 +173,6 @@ class RescheduledAllDayEventDisplayTests(TestCase):
 
         # Assert
         new_date_text = date_format(timezone.localtime(new_starts_at), 'l, F j, Y')
-        self.assertContains(response, 'Now:</span>')
+        self.assertContains(response, 'Now:')
         self.assertContains(response, new_date_text)
         self.assertNotContains(response, f'{new_date_text} – {new_date_text}')

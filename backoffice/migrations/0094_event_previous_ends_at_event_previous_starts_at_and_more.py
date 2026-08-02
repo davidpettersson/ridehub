@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("backoffice", "0092_event_archival_reason"),
+        ("backoffice", "0093_registrationsnapshot"),
     ]
 
     operations = [

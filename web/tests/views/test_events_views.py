@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime, date
+﻿from datetime import timedelta, datetime, date
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth.models import User
@@ -184,6 +184,78 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertNotContains(response, 'Emergency Contact')  # The actual emergency contact name
         self.assertNotContains(response, '123-456-7890')  # The actual emergency contact phone
         self.assertNotContains(response, 'mailto:regular@example.com')  # Email links
+
+    def _add_unverified_registration(self):
+        unverified_user = User.objects.create_user(
+            username='bob_user',
+            email='bob@bobson.com',
+            password='password123',
+            first_name='Bob',
+            last_name='Bobson'
+        )
+        return Registration.objects.create(
+            first_name='Bob',
+            last_name='Bobson',
+            name='Bob Bobson',
+            email='bob@bobson.com',
+            event=self.event,
+            ride=self.ride,
+            speed_range_preference=self.speed_range,
+            ride_leader_preference=Registration.RideLeaderPreference.NO,
+            user=unverified_user,
+            state=Registration.STATE_UNVERIFIED
+        )
+
+    def test_staff_sees_unverified_rider_with_badge(self):
+        # Arrange
+        unverified = self._add_unverified_registration()
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertIn(unverified, response.context['filtered_riders'])
+        self.assertContains(response, 'Bob Bobson')
+        self.assertContains(response, '>Unverified</span>')
+
+    def test_ride_leader_does_not_see_unverified_rider(self):
+        # Arrange
+        self._add_unverified_registration()
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertNotIn('Bob Bobson', response.content.decode())
+        self.assertNotContains(response, 'Unverified')
+
+    def test_anonymous_does_not_see_unverified_rider(self):
+        # Arrange
+        self._add_unverified_registration()
+
+        # Act
+        response = Client().get(self.url)
+
+        # Assert
+        self.assertNotIn('Bob Bobson', response.content.decode())
+        self.assertNotContains(response, 'Unverified')
+
+    def test_unverified_rider_does_not_enable_ride_leader_emails(self):
+        # Arrange
+        unverified = self._add_unverified_registration()
+        unverified.ride_leader_preference = Registration.RideLeaderPreference.YES
+        unverified.save()
+        self.leader_registration.ride_leader_preference = Registration.RideLeaderPreference.NO
+        self.leader_registration.save()
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertFalse(response.context['has_ride_leaders'])
 
     def _add_confirmed_registration(self, user, days_offset):
         event = Event.objects.create(
@@ -1051,7 +1123,8 @@ class EventDetailViewTests(BaseEventViewTestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['user_is_registered'])
-        self.assertContains(response, 'You are registered for this event')
+        self.assertContains(response, "You're registered for this event")
+        self.assertContains(response, 'Withdraw')
 
     def test_unauthenticated_user_does_not_see_registration_status(self):
         # Act
@@ -1060,7 +1133,58 @@ class EventDetailViewTests(BaseEventViewTestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context['user_is_registered'])
-        self.assertNotContains(response, 'You are registered for this event')
+        self.assertNotContains(response, "You're registered for this event")
+
+    def test_registered_user_does_not_see_registration_status_for_cancelled_event(self):
+        # Arrange
+        self.event.cancel()
+        self.event.save()
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "You're registered for this event")
+        self.assertContains(response, 'This event was cancelled on')
+
+    def test_registered_user_keeps_actions_after_registration_closes(self):
+        # Arrange
+        self.event.registration_closes_at = timezone.now() - timedelta(hours=1)
+        self.event.save()
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "You're registered for this event")
+        self.assertContains(response, 'Withdraw')
+        self.assertNotContains(response, 'Registration for this event is closed')
+
+    def test_unregistered_user_sees_registration_closed_message(self):
+        # Arrange
+        self.event.registration_closes_at = timezone.now() - timedelta(hours=1)
+        self.event.save()
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Registration for this event is closed')
+
+    def test_registered_user_is_redirected_from_registration_form_to_event(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(reverse('registration_create', args=[self.event.id]))
+
+        # Assert
+        self.assertRedirects(response, reverse('event_detail', args=[self.event.id]))
 
     def test_event_detail_with_external_registration_url_and_no_registration_closes_at(self):
         now = timezone.now()
@@ -1568,7 +1692,7 @@ class AllDayEventViewTests(TestCase):
 class UpcomingViewQueryCountTests(TestCase):
     def setUp(self):
         self.client = Client()
-        self.program = Program.objects.create(name='Query Count Program', emoji='🚴', color='#ff0000')
+        self.program = Program.objects.create(name='Query Count Program', emoji='ðŸš´', color='#ff0000')
         self.speed_range = SpeedRange.objects.create(lower_limit=25, upper_limit=30)
         self.user = User.objects.create_user(
             username='query_count_user',
@@ -1646,3 +1770,5 @@ class UpcomingViewQueryCountTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '2 registered')
+
+

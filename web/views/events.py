@@ -176,30 +176,73 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
     else:
         rides = {}
 
-    user_is_registered = False
+    user_registration = None
     if request.user.is_authenticated:
-        user_is_registered = Registration.objects.filter(
+        user_registration = Registration.objects.filter(
             event_id=event_id,
             user=request.user,
             state=Registration.STATE_CONFIRMED,
-        ).exists()
+        ).order_by('-pk').first()
+
+    if user_registration is not None:
+        user_registration.event = event
+        registration_service = RegistrationService()
+        registration_service.mark_editable([user_registration])
+        registration_service.mark_withdrawable([user_registration])
 
     context = {
         'event': event,
         'rides': rides,
-        'user_is_registered': user_is_registered,
+        'user_is_registered': user_registration is not None,
+        'user_registration': user_registration,
         'registrations_available': _registrations_visible(event, request.user),
     }
 
     return render(request, 'web/events/detail.html', context)
 
 
+FORECAST_POLL_MAX_ATTEMPTS = 5
+
+
+def _forecast_poll_attempt(request: HttpRequest) -> int:
+    try:
+        return max(0, int(request.GET.get('attempt', 0)))
+    except ValueError:
+        return 0
+
+
 def event_forecast_badge(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
-    forecast = None
-    if flag_is_active(request, 'weather_forecast_badges'):
-        forecast = EventService().fetch_current_forecast(event)
+    if not flag_is_active(request, 'weather_forecast_badges'):
+        return render(request, 'web/events/_forecast_badge.html', {'event': event, 'forecast': None})
+
+    service = EventService()
+
+    if not flag_is_active(request, 'async_forecast_fetch'):
+        forecast = service.fetch_current_forecast(event)
+        return render(request, 'web/events/_forecast_badge.html', {
+            'event': event,
+            'forecast': forecast,
+            'expandable': True,
+            'show_history_link': True,
+        })
+
+    state = service.resolve_forecast(event)
+    if not state.possible:
+        return render(request, 'web/events/_forecast_badge.html', {'event': event, 'forecast': None})
+
+    forecast = service.fetch_cached_forecast(event)
+    service.request_forecast(event)
+
+    attempt = _forecast_poll_attempt(request)
+    if forecast is None and attempt < FORECAST_POLL_MAX_ATTEMPTS:
+        poll_url = f"{reverse('event_forecast_badge', args=[event.id])}?attempt={attempt + 1}"
+        return render(request, 'web/events/_forecast_badge_loading.html', {
+            'event': event,
+            'hx_get': poll_url,
+            'hx_delay': True,
+        })
 
     context = {
         'event': event,
@@ -215,17 +258,35 @@ def upcoming_forecast_badges(request: HttpRequest) -> HttpResponse:
     if not flag_is_active(request, 'weather_forecast_badges'):
         return HttpResponse()
 
-    active_query, _ = _get_filter_params(request)
+    active_query, filter_query_string = _get_filter_params(request)
 
     service = EventService()
     events = list(service.fetch_upcoming_events(query=active_query))
     states = service.resolve_forecasts(events)
     events = [event for event in events if states[event.id].possible]
-    forecasts = service.fetch_forecasts(events)
+
+    if not flag_is_active(request, 'async_forecast_fetch'):
+        return render(request, 'web/events/_forecast_badges_oob.html', {
+            'events': events,
+            'forecasts': service.fetch_forecasts(events),
+            'poll_url': None,
+        })
+
+    service.request_forecasts(events)
+    forecasts = service.fetch_cached_forecasts(events)
+
+    attempt = _forecast_poll_attempt(request)
+    still_pending = any(event.id not in forecasts for event in events)
+
+    poll_url = None
+    if still_pending and attempt < FORECAST_POLL_MAX_ATTEMPTS:
+        separator = '&' if filter_query_string else '?'
+        poll_url = f"{reverse('upcoming_forecast_badges')}{filter_query_string}{separator}attempt={attempt + 1}"
 
     context = {
         'events': events,
         'forecasts': forecasts,
+        'poll_url': poll_url,
     }
 
     return render(request, 'web/events/_forecast_badges_oob.html', context)
@@ -297,9 +358,13 @@ def _build_registrations_context(request, event, contacts_revealed):
     can_access_rider_contacts = is_ride_leader or is_staff
     can_reveal_contacts = can_access_rider_contacts
 
+    visible_states = [Registration.STATE_CONFIRMED]
+    if is_staff:
+        visible_states.append(Registration.STATE_UNVERIFIED)
+
     all_riders = Registration.objects.filter(
         event_id=event.id,
-        state=Registration.STATE_CONFIRMED
+        state__in=visible_states
     ).select_related(
         'ride',
         'speed_range_preference',
@@ -353,6 +418,7 @@ def _build_registrations_context(request, event, contacts_revealed):
         'contacts_revealed': contacts_revealed,
         'has_ride_leaders': any(
             rider.ride_leader_preference == Registration.RideLeaderPreference.YES
+            and rider.state == Registration.STATE_CONFIRMED
             for rider in all_riders
         ),
         'registrations_available': True,

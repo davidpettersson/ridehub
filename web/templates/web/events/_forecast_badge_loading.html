@@ -2,7 +2,7 @@
       class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted wx-loading"
       role="status"
       aria-label="Loading weather forecast"
-      {% if hx_get %}hx-get="{{ hx_get }}" hx-trigger="load" hx-swap="outerHTML"{% endif %}>
+      {% if hx_get %}hx-get="{{ hx_get }}" hx-trigger="load{% if hx_delay %} delay:2s{% endif %}" hx-swap="outerHTML"{% endif %}>
     <span class="wx-icon wx-shimmer wx-shimmer-icon" aria-hidden="true"></span>
     <span class="wx-temp" aria-hidden="true"><span class="wx-shimmer wx-shimmer-temp"></span>&deg;</span>
     <span class="wx-aqhi" aria-hidden="true">AQHI&nbsp;<span class="wx-shimmer wx-shimmer-aqhi"></span></span>

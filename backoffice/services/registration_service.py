@@ -7,11 +7,12 @@ from enum import Enum
 
 from django.contrib.auth.models import User
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
+from django.db import models, transaction
 from django.db.models import QuerySet, Subquery, OuterRef, Count
 from django.utils import timezone
 
 from audit.services import AuditService
-from backoffice.models import Event, Registration, SpeedRange, Ride, UserProfile
+from backoffice.models import Event, Registration, RegistrationSnapshot, SpeedRange, Ride, UserProfile
 from backoffice.services.email_service import EmailService
 from backoffice.services.request_service import RequestDetail
 from backoffice.services.user_service import UserService, UserDetail
@@ -204,6 +205,12 @@ class RegistrationService:
 
         return registration, None
 
+    def has_active_registration(self, user: User, event: Event) -> bool:
+        return Registration.objects.filter(
+            user=user, event=event,
+            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
+        ).exists()
+
     def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event,
                  request_detail: RequestDetail | None = None,
                  acting_user: User | None = None) -> RegistrationResult:
@@ -214,12 +221,7 @@ class RegistrationService:
         )
         user = self.user_service.find_by_email_or_create(user_detail, update_existing=update_existing)
 
-        active_registrations = Registration.objects.filter(
-            user=user, event=event,
-            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
-        )
-
-        if active_registrations.exists():
+        if self.has_active_registration(user, event):
             logger.info(
                 f"User {user.email} (id={user.id}) attempted to register for event {event.name} (id={event.id}) but already has an active registration"
             )
@@ -316,7 +318,7 @@ class RegistrationService:
             event__state__in=[Event.STATE_LIVE, Event.STATE_CANCELLED],
             state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED],
             pk=Subquery(latest_pk_subquery)
-        ).order_by('event__starts_at')
+        ).select_related('event', 'ride', 'speed_range_preference').order_by('event__starts_at')
 
     def fetch_past_registrations(self, user: User) -> QuerySet[Registration]:
         today = timezone.localdate()
@@ -388,6 +390,25 @@ class RegistrationService:
 
         return errors
 
+    def withdraw_registration(self, registration: Registration, user: User) -> None:
+        allowed, reason = self.is_registration_withdrawable(registration)
+
+        if not allowed:
+            raise ValueError(reason)
+
+        registration.withdraw()
+        registration.save()
+
+        logger.info(
+            "User %s (id=%d) withdrew registration %d from event %s (id=%d)",
+            user.email, user.id, registration.id,
+            registration.event.name, registration.event.id,
+        )
+
+        self.audit_service.log(user, 'registration_withdrawn', target=registration)
+
+        self._send_withdrawal_email(registration, withdrawn_by_organizer=False)
+
     def staff_withdraw(self, registration: Registration, staff_user) -> None:
         if registration.state not in [Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED]:
             raise ValueError(f"Cannot withdraw registration in state '{registration.state}'")
@@ -438,28 +459,172 @@ class RegistrationService:
         self._send_confirmation_email(registration)
         return registration
 
-    def staff_update_registration(self, registration: Registration, staff_user, **fields) -> None:
-        for field_name, value in fields.items():
-            setattr(registration, field_name, value)
+    def _field_has_changed(self, registration: Registration, field_name: str, value) -> bool:
+        current = getattr(registration, field_name)
 
-        if 'first_name' in fields or 'last_name' in fields:
-            registration.name = f"{registration.first_name} {registration.last_name}"
+        if isinstance(current, models.Model) or isinstance(value, models.Model):
+            current_id = current.pk if current is not None else None
+            new_id = value.pk if value is not None else None
+            return current_id != new_id
 
-        registration.full_clean(exclude=['state'])
-        registration.save()
+        return str(current or '') != str(value or '')
 
-        logger.info(
-            "Staff updated registration %d for %s (event %s, id=%d): %s",
-            registration.id, registration.email, registration.event.name,
-            registration.event.id, list(fields.keys()),
+    def _create_snapshot(self, registration: Registration, actor: User | None,
+                          changed_fields: list[str]) -> RegistrationSnapshot:
+        snapshot = RegistrationSnapshot(
+            registration=registration,
+            actor=actor,
+            changed_fields=changed_fields,
         )
 
-        self.audit_service.log(staff_user, 'staff_edited', target=registration)
+        for field_name in RegistrationSnapshot.SNAPSHOT_FIELDS:
+            setattr(snapshot, field_name, getattr(registration, field_name))
 
-    def _send_withdrawal_email(self, registration: Registration) -> None:
+        snapshot.full_clean()
+        snapshot.save()
+        return snapshot
+
+    def _apply_registration_changes(self, registration: Registration, actor: User | None,
+                                    action: str, fields: dict) -> list[str]:
+        changed_fields = [
+            field_name for field_name, value in fields.items()
+            if self._field_has_changed(registration, field_name, value)
+        ]
+
+        if not changed_fields:
+            return []
+
+        with transaction.atomic():
+            self._create_snapshot(registration, actor, changed_fields)
+
+            for field_name, value in fields.items():
+                setattr(registration, field_name, value)
+
+            if 'first_name' in changed_fields or 'last_name' in changed_fields:
+                registration.name = f"{registration.first_name} {registration.last_name}"
+
+            registration.full_clean(exclude=['state'])
+            registration.save()
+
+            self.audit_service.log(actor, action, target=registration)
+
+        return changed_fields
+
+    def staff_update_registration(self, registration: Registration, staff_user, **fields) -> list[str]:
+        changed_fields = self._apply_registration_changes(
+            registration, staff_user, 'staff_edited', fields
+        )
+
+        if changed_fields:
+            logger.info(
+                "Staff changed %s on registration %d for %s (event %s, id=%d)",
+                changed_fields, registration.id, registration.email,
+                registration.event.name, registration.event.id,
+            )
+
+        return changed_fields
+
+    def has_editable_fields(self, event: Event) -> bool:
+        return any([
+            event.has_rides,
+            event.ride_leaders_wanted,
+            event.ask_first_time_attendee,
+            event.requires_emergency_contact,
+        ])
+
+    def is_registration_editable(self, registration: Registration) -> tuple[bool, str | None]:
+        if registration.state != Registration.STATE_CONFIRMED:
+            return False, 'Only confirmed registrations can be edited.'
+
+        event = registration.event
+
+        if event.cancelled:
+            return False, 'Event is cancelled.'
+
+        if event.archived:
+            return False, 'Event is archived.'
+
+        if timezone.now() >= event.starts_at:
+            return False, 'Event has already started.'
+
+        if not self.has_editable_fields(event):
+            return False, 'This event has no editable registration details.'
+
+        return True, None
+
+    def mark_editable(self, registrations: list[Registration]) -> list[Registration]:
+        for registration in registrations:
+            registration.editable = self.is_registration_editable(registration)[0]
+        return registrations
+
+    def is_registration_withdrawable(self, registration: Registration) -> tuple[bool, str | None]:
+        if registration.state != Registration.STATE_CONFIRMED:
+            return False, 'Only confirmed registrations can be withdrawn.'
+
+        event = registration.event
+
+        if event.cancelled:
+            return False, 'Event is cancelled.'
+
+        if event.archived:
+            return False, 'Event is archived.'
+
+        if timezone.now() >= event.starts_at:
+            return False, 'Event has already started.'
+
+        return True, None
+
+    def mark_withdrawable(self, registrations: list[Registration]) -> list[Registration]:
+        for registration in registrations:
+            registration.withdrawable = self.is_registration_withdrawable(registration)[0]
+        return registrations
+
+    def _editable_fields(self, event: Event, registration_detail: RegistrationDetail) -> dict:
+        fields = {}
+
+        if event.has_rides:
+            fields['ride'] = registration_detail.ride
+            fields['speed_range_preference'] = registration_detail.speed_range_preference
+
+        if event.ride_leaders_wanted:
+            fields['ride_leader_preference'] = registration_detail.ride_leader_preference
+
+        if event.ask_first_time_attendee:
+            fields['first_time_attendee'] = registration_detail.first_time_attendee
+
+        if event.requires_emergency_contact:
+            fields['emergency_contact_name'] = registration_detail.emergency_contact_name
+            fields['emergency_contact_phone'] = registration_detail.emergency_contact_phone
+
+        return fields
+
+    def edit_registration(self, registration: Registration, user: User,
+                          registration_detail: RegistrationDetail) -> list[str]:
+        allowed, reason = self.is_registration_editable(registration)
+
+        if not allowed:
+            raise ValueError(reason)
+
+        fields = self._editable_fields(registration.event, registration_detail)
+        changed_fields = self._apply_registration_changes(
+            registration, user, 'registration_edited', fields
+        )
+
+        if changed_fields:
+            logger.info(
+                "User %s (id=%d) changed %s on registration %d for event %s (id=%d)",
+                user.email, user.id, changed_fields, registration.id,
+                registration.event.name, registration.event.id,
+            )
+
+        return changed_fields
+
+    def _send_withdrawal_email(self, registration: Registration,
+                               withdrawn_by_organizer: bool = True) -> None:
         context = {
             'base_url': f"https://{settings.WEB_HOST}",
             'registration': registration,
+            'withdrawn_by_organizer': withdrawn_by_organizer,
         }
 
         self.email_service.send_email(

@@ -85,8 +85,18 @@ class ForecastService:
             return ForecastState.ready(latest)
         return ForecastState.pending_fetch()
 
+    def get_cached_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> Forecast | None:
+        window = self._resolve_window(starts_at, ends_at, timezone.now())
+        if window is None:
+            return None
+        time, end_time = window
+        return self._latest_forecast(latitude, longitude, time, end_time)
+
     def get_forecasts_for_windows(self, windows) -> dict:
         return self._lookup_by_window(windows, self.get_forecast)
+
+    def get_cached_forecasts_for_windows(self, windows) -> dict:
+        return self._lookup_by_window(windows, self.get_cached_forecast)
 
     def resolve_for_windows(self, windows) -> dict:
         return self._lookup_by_window(windows, self.resolve)

@@ -5,9 +5,15 @@
 {% block content %}
     <h1>Hello {{ registration.first_name }},</h1>
 
-    <p>Your registration for <strong>{{ registration.event.name }}</strong> on <strong>{{ registration.event.starts_at|date:"l, M j" }}</strong> has been withdrawn by the event organizer.</p>
+    {% if withdrawn_by_organizer %}
+        <p>Your registration for <strong>{{ registration.event.name }}</strong> on <strong>{{ registration.event.starts_at|date:"l, M j" }}</strong> has been withdrawn by the event organizer.</p>
 
-    <p>If you believe this was done in error or have questions, please contact the ride director.</p>
+        <p>If you believe this was done in error or have questions, please contact the ride director.</p>
+    {% else %}
+        <p>Your registration for <strong>{{ registration.event.name }}</strong> on <strong>{{ registration.event.starts_at|date:"l, M j" }}</strong> has been withdrawn.</p>
+
+        <p>If you did not make this change, or you have questions, please contact the ride director.</p>
+    {% endif %}
 {% endblock %}
 
 {% block footer %}
