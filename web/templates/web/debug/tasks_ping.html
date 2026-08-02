@@ -1,0 +1,23 @@
+<title>Tasks ping</title>
+<h1>Tasks ping</h1>
+
+<p><a href="{% url 'debug_index' %}">Debug</a></p>
+
+<p>Queues <code>backoffice.tasks.debug_ping</code> on the worker. Use this to confirm that the
+    worker dyno is running and consuming the queue.</p>
+
+{% if result %}
+<p>Queued task <code>{{ result.task_id }}</code> with message <strong>{{ result.message }}</strong>.
+    Check the worker log for <code>debug_ping received {{ result.message }}</code>.</p>
+{% endif %}
+
+{% if error %}
+<p>Could not queue the task: <code>{{ error }}</code></p>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    <label for="message">Message</label>
+    <input type="text" id="message" name="message" value="{{ message|default:'ping' }}" maxlength="200">
+    <button type="submit">Queue task</button>
+</form>

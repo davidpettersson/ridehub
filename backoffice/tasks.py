@@ -2,7 +2,6 @@ import logging
 
 from celery import shared_task
 
-from backoffice.checks.registration_checks import submitted_registration_has_been_processed
 from backoffice.services.event_service import EventService
 from backoffice.services.registration_alert_service import RegistrationAlertService
 
@@ -13,11 +12,6 @@ logger = logging.getLogger(__name__)
 def debug_ping(message: str = 'ping') -> str:
     logger.info('debug_ping received %s', message)
     return message
-
-
-@shared_task
-def check_registrations():
-    submitted_registration_has_been_processed()
 
 
 @shared_task
