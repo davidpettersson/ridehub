@@ -27,8 +27,8 @@ AIR_QUALITY_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality'
 
 
 class ForecastService:
-    def refresh_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> Forecast | None:
-        now = timezone.now()
+    def refresh_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None, now=None) -> Forecast | None:
+        now = now or timezone.now()
         if starts_at <= now or starts_at > now + FORECAST_WINDOW:
             return None
         time, end_time = self._window(starts_at, ends_at, now)
@@ -60,7 +60,7 @@ class ForecastService:
         now = timezone.now()
         windows = list(windows)
 
-        fresh_by_window = self.get_forecasts_for_windows(windows)
+        fresh_by_window = self.get_forecasts_for_windows(windows, now)
 
         forecasts_by_snapped_window: dict = {}
         forecasts_by_window: dict = {}
@@ -74,7 +74,7 @@ class ForecastService:
                 if fresh:
                     skipped += 1
                 forecasts_by_snapped_window[snapped_window] = fresh or self.refresh_forecast(
-                    latitude, longitude, starts_at, ends_at
+                    latitude, longitude, starts_at, ends_at, now
                 )
             forecasts_by_window[window] = forecasts_by_snapped_window[snapped_window]
 
@@ -91,8 +91,8 @@ class ForecastService:
         window = (starts_at, ends_at or starts_at + timedelta(hours=1))
         return self.get_forecasts_for_windows([window])[window]
 
-    def get_forecasts_for_windows(self, windows) -> dict:
-        now = timezone.now()
+    def get_forecasts_for_windows(self, windows, now=None) -> dict:
+        now = now or timezone.now()
         latitude, longitude = YOW_LOCATION
 
         snapped_windows = {

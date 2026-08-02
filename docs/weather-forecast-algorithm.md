@@ -111,7 +111,7 @@ For each hour in the window:
   the closest hour and clamped outside that range:
 
   ```
-  interval_hours = clamp(1, 12, round(1 + (lead_hours − 24) × 11 / 144))
+  interval_hours = clamp(1, 12, round(1 + (lead_hours - 24) * 11 / 144))
   ```
 
   | Lead | <24h | 24h | 48h | 72h | 96h | 120h | 144h | 168h |
