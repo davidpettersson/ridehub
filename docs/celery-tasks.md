@@ -8,7 +8,7 @@ Background work runs on the `worker` dyno, which also carries the beat scheduler
 | Task | Trigger | What it does |
 | --- | --- | --- |
 | `backoffice.tasks.alert_unconfirmed_registrations` | Beat, hourly at :05 | Emails `REGISTRATION_ALERT_EMAILS` about registrations stuck in `submitted` or `unverified` for more than one hour |
-| `backoffice.tasks.refresh_forecasts` | Beat, every 2 hours at :00 | Fetches weather and air quality from Open-Meteo for every visible event starting in the next seven days |
+| `backoffice.tasks.refresh_forecasts` | Beat, every 2 hours at :23 | Fetches weather and air quality from Open-Meteo for every visible event starting in the next seven days |
 | `backoffice.tasks.check_registrations` | Beat, every 15 minutes | Logs registrations stuck in `submitted` |
 | `backoffice.tasks.debug_ping` | `/debug/trigger-task` | Logs a message; used to confirm the worker is consuming the queue |
 
@@ -24,11 +24,12 @@ is empty the task logs a warning and sends nothing.
 
 ## Forecast fetching
 
-`refresh_forecasts` runs every two hours. It walks the visible, non-archived,
-non-virtual events starting between now and seven days out, and writes a fresh
-`Forecast` row for each distinct hour window. Events sharing a window — the usual
-case, since every ride starts from the same coordinates — cost one fetch, not
-one per event.
+`refresh_forecasts` runs every two hours, at :23 rather than on the hour so the
+requests do not land on the same top-of-hour spike as everyone else's cron. It
+walks the visible, non-archived, non-virtual events starting between now and
+seven days out, and writes a fresh `Forecast` row for each distinct hour window.
+Events sharing a window — the usual case, since every ride starts from the same
+coordinates — cost one fetch, not one per event.
 
 The task is the only thing that calls Open-Meteo. Nothing in the request path
 fetches: pages read stored `Forecast` rows and nothing else.
