@@ -1,0 +1,19 @@
+{% extends 'email/_base_email.html' %}
+
+{% block title %}You are not registered yet{% endblock %}
+
+{% block content %}
+    <h1>You are not registered yet</h1>
+
+    <p>You started registering for <strong>{{ registration.event.name }}</strong> on <strong>{{ registration.event.starts_at|date:"l, M j" }}</strong> at <strong>{{ registration.event.starts_at|date:"g:i A" }}</strong>, but your email was never verified.</p>
+
+    <p>Your spot is <strong>not held</strong> until you click the link below.</p>
+
+    <p><a href="{{ verification_url }}" class="button">Verify my email</a></p>
+
+    <p>This link is valid for 24 hours. If you no longer want to attend, you can ignore this email.</p>
+{% endblock %}
+
+{% block footer %}
+    {{ block.super }}
+{% endblock %}

@@ -2,7 +2,12 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from backoffice.tasks import alert_unconfirmed_registrations, debug_ping, refresh_forecasts
+from backoffice.tasks import (
+    alert_unconfirmed_registrations,
+    debug_ping,
+    refresh_forecasts,
+    remind_unconfirmed_registrations,
+)
 
 
 class DebugPingTaskTests(TestCase):
@@ -92,3 +97,18 @@ class AlertUnconfirmedRegistrationsTaskTests(TestCase):
         # Assert
         self.assertEqual(result, 3)
         alert.assert_called_once()
+
+
+class RemindUnconfirmedRegistrationsTaskTests(TestCase):
+
+    def test_delegates_to_the_reminder_service(self):
+        # Act
+        with patch(
+            'backoffice.services.registration_reminder_service.RegistrationReminderService.remind_unconfirmed_registrations'
+        ) as remind:
+            remind.return_value = 2
+            result = remind_unconfirmed_registrations()
+
+        # Assert
+        self.assertEqual(result, 2)
+        remind.assert_called_once()

@@ -6,7 +6,7 @@ from django.utils.html import format_html
 
 from audit.context import actor
 from backoffice.actions import archive_event, cancel_event, duplicate_event, reschedule_event
-from backoffice.models import Forecast, Ride, Route, Event, Program, SpeedRange, Registration, RegistrationSnapshot, Announcement, UserProfile, UserMembershipNumber
+from backoffice.models import Forecast, Ride, Route, Event, Program, SpeedRange, Registration, RegistrationSnapshot, Announcement, Notification, UserProfile, UserMembershipNumber
 from .forms import EventAdminForm
 
 
@@ -253,6 +253,22 @@ class UserProfileAdmin(AuditedAdminMixin, admin.ModelAdmin):
         return False
 
 
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('sent_at', 'kind', 'recipients', 'target_repr')
+    list_filter = ('kind', 'sent_at')
+    search_fields = ('target_repr',)
+    date_hierarchy = 'sent_at'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 admin.site.register(Program, ProgramAdmin)
 admin.site.register(UserProfile, UserProfileAdmin)
 admin.site.register(Forecast, ForecastAdmin)
@@ -263,3 +279,4 @@ admin.site.register(Registration, RegistrationAdmin)
 admin.site.register(RegistrationSnapshot, RegistrationSnapshotAdmin)
 admin.site.register(Announcement, AnnouncementAdmin)
 admin.site.register(UserMembershipNumber, UserMembershipNumberAdmin)
+admin.site.register(Notification, NotificationAdmin)

@@ -1,0 +1,11 @@
+You are not registered yet
+
+You started registering for {{ registration.event.name }} on {{ registration.event.starts_at|date:"l, M j" }} at {{ registration.event.starts_at|date:"g:i A" }}, but your email was never verified.
+
+Your spot is NOT held until you click the link below.
+
+Verify your email: {{ verification_url }}
+
+This link is valid for 24 hours. If you no longer want to attend, you can ignore this email.
+
+Ottawa Bicycle Club

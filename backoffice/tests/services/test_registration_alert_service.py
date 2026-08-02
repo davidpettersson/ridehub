@@ -4,7 +4,7 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from backoffice.models import Event, Program, Registration
+from backoffice.models import Event, Notification, Program, Registration
 from backoffice.services.registration_alert_service import RegistrationAlertService
 
 
@@ -201,3 +201,34 @@ class RegistrationAlertServiceTests(TestCase):
         # Assert
         self.assertEqual(alerted, 0)
         self.assertEqual(len(mail.outbox), 0)
+
+    def test_records_a_notification_for_the_digest(self):
+        # Arrange
+        self._create_registration(Registration.STATE_UNVERIFIED, timedelta(hours=2))
+
+        # Act
+        self.service.alert_unconfirmed_registrations()
+
+        # Assert
+        notification = Notification.objects.get()
+        self.assertEqual(notification.kind, Notification.KIND_STAFF_UNCONFIRMED_DIGEST)
+        self.assertEqual(notification.recipients, ['staff@example.com'])
+        self.assertIsNone(notification.target)
+
+    def test_records_a_notification_for_every_digest_sent(self):
+        # Arrange
+        self._create_registration(Registration.STATE_UNVERIFIED, timedelta(hours=2))
+        self.service.alert_unconfirmed_registrations()
+
+        # Act
+        self.service.alert_unconfirmed_registrations()
+
+        # Assert
+        self.assertEqual(Notification.objects.count(), 2)
+
+    def test_records_nothing_when_there_is_nothing_to_alert_about(self):
+        # Act
+        self.service.alert_unconfirmed_registrations()
+
+        # Assert
+        self.assertEqual(Notification.objects.count(), 0)

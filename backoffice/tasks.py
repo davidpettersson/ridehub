@@ -4,6 +4,7 @@ from celery import shared_task
 
 from backoffice.services.event_service import EventService
 from backoffice.services.registration_alert_service import RegistrationAlertService
+from backoffice.services.registration_reminder_service import RegistrationReminderService
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,11 @@ def debug_ping(message: str = 'ping') -> str:
 @shared_task
 def alert_unconfirmed_registrations() -> int:
     return RegistrationAlertService().alert_unconfirmed_registrations()
+
+
+@shared_task
+def remind_unconfirmed_registrations() -> int:
+    return RegistrationReminderService().remind_unconfirmed_registrations()
 
 
 @shared_task(

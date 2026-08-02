@@ -251,6 +251,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'backoffice.tasks.alert_unconfirmed_registrations',
         'schedule': crontab(minute=5),
     },
+    'remind-unconfirmed-registrations': {
+        'task': 'backoffice.tasks.remind_unconfirmed_registrations',
+        'schedule': crontab(minute=20),
+    },
     'refresh-forecasts': {
         'task': 'backoffice.tasks.refresh_forecasts',
         'schedule': crontab(minute=42),

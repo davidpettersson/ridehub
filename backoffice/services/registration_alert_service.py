@@ -4,8 +4,9 @@ from datetime import timedelta
 from django.conf import settings
 from django.utils import timezone
 
-from backoffice.models import Registration
+from backoffice.models import Notification, Registration
 from backoffice.services.email_service import EmailService
+from backoffice.services.notification_service import NotificationService
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ UNCONFIRMED_STATES = [Registration.STATE_SUBMITTED, Registration.STATE_UNVERIFIE
 class RegistrationAlertService:
     def __init__(self):
         self.email_service = EmailService()
+        self.notification_service = NotificationService()
 
     def alert_unconfirmed_registrations(self) -> int:
         recipients = settings.REGISTRATION_ALERT_EMAILS
@@ -40,6 +42,11 @@ class RegistrationAlertService:
             },
             subject=f"{len(stale)} unconfirmed registration{'s' if len(stale) > 1 else ''}",
             recipient_list=recipients,
+        )
+
+        self.notification_service.record(
+            kind=Notification.KIND_STAFF_UNCONFIRMED_DIGEST,
+            recipients=recipients,
         )
 
         logger.info('Alerted %s about %s unconfirmed registrations', recipients, len(stale))

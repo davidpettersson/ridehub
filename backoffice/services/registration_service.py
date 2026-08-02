@@ -145,14 +145,16 @@ class RegistrationService:
             return True
         return False
 
-    def _send_verification_email(self, registration: Registration) -> None:
+    def build_verification_url(self, registration: Registration) -> str:
         signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
         token = signer.sign(str(registration.id))
+        return f"https://{settings.WEB_HOST}/registrations/verify?token={token}"
 
+    def _send_verification_email(self, registration: Registration) -> None:
         context = {
             'base_url': f"https://{settings.WEB_HOST}",
             'registration': registration,
-            'verification_url': f"https://{settings.WEB_HOST}/registrations/verify?token={token}",
+            'verification_url': self.build_verification_url(registration),
         }
 
         self.email_service.send_email(

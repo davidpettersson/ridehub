@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from colorfield.fields import ColorField
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
@@ -1102,3 +1104,73 @@ class Announcement(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Notification(models.Model):
+    KIND_REGISTRATION_VERIFICATION_REMINDER = 'registration_verification_reminder'
+    KIND_STAFF_UNCONFIRMED_DIGEST = 'staff_unconfirmed_digest'
+
+    KIND_CHOICES = [
+        (KIND_REGISTRATION_VERIFICATION_REMINDER, 'Registration verification reminder'),
+        (KIND_STAFF_UNCONFIRMED_DIGEST, 'Staff unconfirmed registration digest'),
+    ]
+
+    kind = models.CharField(
+        max_length=64,
+        choices=KIND_CHOICES,
+        help_text='Which notification was sent.'
+    )
+
+    recipients = models.JSONField(
+        help_text='Email addresses the notification was sent to.'
+    )
+
+    target_content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+
+    target_object_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+    )
+
+    target = GenericForeignKey('target_content_type', 'target_object_id')
+
+    target_repr = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-sent_at']
+        indexes = [
+            models.Index(fields=['target_content_type', 'target_object_id']),
+            models.Index(fields=['kind']),
+            models.Index(fields=['sent_at']),
+        ]
+
+    def clean(self):
+        if not isinstance(self.recipients, list) or not self.recipients:
+            raise ValidationError({
+                'recipients': 'At least one recipient is required.'
+            })
+
+        if any(not isinstance(recipient, str) or not recipient.strip() for recipient in self.recipients):
+            raise ValidationError({
+                'recipients': 'Every recipient must be a non-empty email address.'
+            })
+
+        if (self.target_content_type is None) != (self.target_object_id is None):
+            raise ValidationError({
+                'target_object_id': 'A target needs both a content type and an object id.'
+            })
+
+    def __str__(self):
+        if self.target_repr:
+            return f'{self.get_kind_display()} to {", ".join(self.recipients)} about {self.target_repr}'
+        return f'{self.get_kind_display()} to {", ".join(self.recipients)}'
