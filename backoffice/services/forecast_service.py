@@ -1,6 +1,5 @@
 import logging
 import math
-from dataclasses import dataclass
 from datetime import timedelta, timezone as datetime_timezone
 from decimal import Decimal
 
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 YOW_LOCATION = (Decimal('45.32250'), Decimal('-75.66920'))
 
-FORECAST_MAX_AGE = timedelta(hours=1)
+FORECAST_STALE_AFTER = timedelta(hours=6)
 FORECAST_WINDOW = timedelta(days=7)
 REQUEST_TIMEOUT_SECONDS = 3
 
@@ -22,39 +21,12 @@ WEATHER_URL = 'https://api.open-meteo.com/v1/forecast'
 AIR_QUALITY_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality'
 
 
-@dataclass(frozen=True)
-class ForecastState:
-    forecast: Forecast | None = None
-    pending: bool = False
-
-    @classmethod
-    def ready(cls, forecast: Forecast) -> 'ForecastState':
-        return cls(forecast=forecast)
-
-    @classmethod
-    def pending_fetch(cls) -> 'ForecastState':
-        return cls(pending=True)
-
-    @classmethod
-    def unavailable(cls) -> 'ForecastState':
-        return cls()
-
-    @property
-    def possible(self) -> bool:
-        return self.forecast is not None or self.pending
-
-
 class ForecastService:
-    def get_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> Forecast | None:
-        now = timezone.now()
-        window = self._resolve_window(starts_at, ends_at, now)
+    def refresh_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> Forecast | None:
+        window = self._resolve_window(starts_at, ends_at, timezone.now())
         if window is None:
             return None
         time, end_time = window
-
-        latest = self._latest_forecast(latitude, longitude, time, end_time)
-        if latest and self._is_fresh(latest, now):
-            return latest
 
         try:
             metrics = self._fetch_metrics(latitude, longitude, time, end_time)
@@ -63,7 +35,7 @@ class ForecastService:
                 'Forecast fetch failed for (%s, %s) from %s to %s: %s',
                 latitude, longitude, time, end_time, e,
             )
-            return latest
+            return None
 
         return Forecast.objects.create(
             latitude=latitude,
@@ -73,33 +45,51 @@ class ForecastService:
             **metrics,
         )
 
-    def resolve(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> ForecastState:
+    def get_fresh_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> Forecast | None:
         now = timezone.now()
         window = self._resolve_window(starts_at, ends_at, now)
         if window is None:
-            return ForecastState.unavailable()
+            return None
         time, end_time = window
 
         latest = self._latest_forecast(latitude, longitude, time, end_time)
         if latest and self._is_fresh(latest, now):
-            return ForecastState.ready(latest)
-        return ForecastState.pending_fetch()
+            return latest
+        return None
 
-    def get_cached_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> Forecast | None:
-        window = self._resolve_window(starts_at, ends_at, timezone.now())
-        if window is None:
-            return None
-        time, end_time = window
-        return self._latest_forecast(latitude, longitude, time, end_time)
+    def refresh_forecasts_for_windows(self, windows) -> dict:
+        return self._lookup_by_window(windows, self.refresh_forecast)
 
-    def get_forecasts_for_windows(self, windows) -> dict:
-        return self._lookup_by_window(windows, self.get_forecast)
+    def get_fresh_forecasts_for_windows(self, windows) -> dict:
+        now = timezone.now()
+        latitude, longitude = YOW_LOCATION
 
-    def get_cached_forecasts_for_windows(self, windows) -> dict:
-        return self._lookup_by_window(windows, self.get_cached_forecast)
+        resolved_windows = {}
+        for window in windows:
+            starts_at, ends_at = window
+            resolved_windows[window] = self._resolve_window(starts_at, ends_at, now)
 
-    def resolve_for_windows(self, windows) -> dict:
-        return self._lookup_by_window(windows, self.resolve)
+        wanted = {resolved for resolved in resolved_windows.values() if resolved}
+        if not wanted:
+            return {window: None for window in resolved_windows}
+
+        candidates = Forecast.objects.filter(
+            latitude=latitude,
+            longitude=longitude,
+            start_time__in=[start_time for start_time, _ in wanted],
+            end_time__in=[end_time for _, end_time in wanted],
+            prepared_at__gte=now - FORECAST_STALE_AFTER,
+        ).order_by('prepared_at')
+
+        latest_by_window = {
+            (forecast.start_time, forecast.end_time): forecast
+            for forecast in candidates
+        }
+
+        return {
+            window: latest_by_window.get(resolved) if resolved else None
+            for window, resolved in resolved_windows.items()
+        }
 
     def _lookup_by_window(self, windows, lookup) -> dict:
         latitude, longitude = YOW_LOCATION
@@ -147,7 +137,7 @@ class ForecastService:
 
     @staticmethod
     def _is_fresh(forecast: Forecast, now) -> bool:
-        return forecast.prepared_at >= now - FORECAST_MAX_AGE
+        return forecast.prepared_at >= now - FORECAST_STALE_AFTER
 
     def get_forecast_history(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> QuerySet:
         time = self._snap_to_hour(starts_at)

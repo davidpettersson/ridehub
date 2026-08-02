@@ -1,6 +1,3 @@
-{% if state.forecast %}
-{% include 'web/events/_forecast_badge.html' with forecast=state.forecast expandable=True show_history_link=True compact=compact %}
-{% elif state.pending %}
-{% url 'event_forecast_badge' event.id as forecast_badge_url %}
-{% include 'web/events/_forecast_badge_loading.html' with hx_get=forecast_badge_url compact=compact %}
+{% if forecast %}
+{% include 'web/events/_forecast_badge.html' with forecast=forecast expandable=True show_history_link=True compact=compact %}
 {% endif %}

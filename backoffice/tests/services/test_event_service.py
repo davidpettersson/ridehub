@@ -833,70 +833,141 @@ class EventServiceForecastTestCase(TestCase):
             }],
         )
 
-    def test_fetch_current_forecast_fetches_for_event_window(self):
+    def test_fetch_forecasts_returns_fresh_forecasts_by_event_id(self):
         # Arrange
         event = self._create_event()
+        forecast = self._create_forecast()
 
-        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
-
-            # Act
-            forecast = self.service.fetch_current_forecast(event)
+        # Act
+        forecasts = self.service.fetch_forecasts([event])
 
         # Assert
-        self.assertIsNotNone(forecast)
-        self.assertEqual(forecast.start_time, self.starts_at)
+        self.assertEqual(forecasts, {event.id: forecast})
 
-    def test_fetch_current_forecast_returns_none_for_virtual_event(self):
+    def test_fetch_forecasts_omits_events_with_only_stale_data(self):
         # Arrange
-        event = self._create_event(virtual=True)
+        event = self._create_event()
+        forecast = self._create_forecast()
+        Forecast.objects.filter(pk=forecast.pk).update(
+            prepared_at=timezone.now() - timedelta(hours=7)
+        )
 
-        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            # Act
-            forecast = self.service.fetch_current_forecast(event)
+        # Act
+        forecasts = self.service.fetch_forecasts([event])
 
         # Assert
-        self.assertIsNone(forecast)
-        mock_get.assert_not_called()
+        self.assertEqual(forecasts, {})
 
     def test_fetch_forecasts_groups_events_sharing_a_window(self):
         # Arrange
         first = self._create_event('First', self.starts_at + timedelta(minutes=1))
         second = self._create_event('Second', self.starts_at + timedelta(minutes=55))
+        forecast = self._create_forecast(end_time=self.starts_at + timedelta(hours=2))
 
-        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
-
-            # Act
-            forecasts = self.service.fetch_forecasts([first, second])
+        # Act
+        forecasts = self.service.fetch_forecasts([first, second])
 
         # Assert
-        self.assertEqual(mock_get.call_count, 2)
-        self.assertEqual(forecasts[first.id].pk, forecasts[second.id].pk)
+        self.assertEqual(forecasts, {first.id: forecast, second.id: forecast})
 
     def test_fetch_forecasts_skips_virtual_events(self):
+        # Arrange
+        event = self._create_event(virtual=True)
+        self._create_forecast()
+
+        # Act
+        forecasts = self.service.fetch_forecasts([event])
+
+        # Assert
+        self.assertEqual(forecasts, {})
+
+    def test_fetch_forecasts_never_calls_the_forecast_api(self):
+        # Arrange
+        event = self._create_event()
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            # Act
+            self.service.fetch_forecasts([event])
+
+        # Assert
+        mock_get.assert_not_called()
+
+    def test_fetch_forecast_returns_the_forecast_for_a_single_event(self):
+        # Arrange
+        event = self._create_event()
+        forecast = self._create_forecast()
+
+        # Act
+        result = self.service.fetch_forecast(event)
+
+        # Assert
+        self.assertEqual(result, forecast)
+
+    def test_fetch_forecast_returns_none_for_virtual_event(self):
+        # Arrange
+        event = self._create_event(virtual=True)
+        self._create_forecast()
+
+        # Act
+        result = self.service.fetch_forecast(event)
+
+        # Assert
+        self.assertIsNone(result)
+
+    def test_refresh_forecasts_fetches_once_per_shared_window(self):
+        # Arrange
+        first = self._create_event('First', self.starts_at + timedelta(minutes=1))
+        second = self._create_event('Second', self.starts_at + timedelta(minutes=55))
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=2))
+
+            # Act
+            refreshed = self.service.refresh_forecasts([first, second])
+
+        # Assert
+        self.assertEqual(refreshed, 1)
+        self.assertEqual(Forecast.objects.count(), 1)
+
+    def test_refresh_forecasts_skips_virtual_events(self):
         # Arrange
         event = self._create_event(virtual=True)
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             # Act
-            forecasts = self.service.fetch_forecasts([event])
+            refreshed = self.service.refresh_forecasts([event])
 
         # Assert
-        self.assertEqual(forecasts, {})
+        self.assertEqual(refreshed, 0)
         mock_get.assert_not_called()
 
-    def test_fetch_forecasts_excludes_events_beyond_forecast_window(self):
+    def test_fetch_events_within_forecast_horizon_covers_the_next_seven_days(self):
         # Arrange
-        event = self._create_event(starts_at=timezone.now() + timedelta(days=9))
+        soon = self._create_event('Soon', timezone.now() + timedelta(days=1))
+        edge = self._create_event('Edge', timezone.now() + timedelta(days=6, hours=23))
+        self._create_event('Beyond', timezone.now() + timedelta(days=8))
+        self._create_event('Virtual', timezone.now() + timedelta(days=1), virtual=True)
 
-        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            # Act
-            forecasts = self.service.fetch_forecasts([event])
+        # Act
+        events = list(self.service.fetch_events_within_forecast_horizon())
 
         # Assert
-        self.assertEqual(forecasts, {})
-        mock_get.assert_not_called()
+        self.assertEqual(events, [soon, edge])
+
+    def test_fetch_events_within_forecast_horizon_excludes_past_and_hidden_events(self):
+        # Arrange
+        upcoming = self._create_event('Upcoming', timezone.now() + timedelta(days=1))
+        self._create_event('Past', timezone.now() - timedelta(days=1))
+        draft = self._create_event('Draft', timezone.now() + timedelta(days=2))
+        Event.objects.filter(pk=draft.pk).update(state=Event.STATE_DRAFT)
+        archived = self._create_event('Archived', timezone.now() + timedelta(days=2))
+        Event.objects.filter(pk=archived.pk).update(state=Event.STATE_ARCHIVED)
+
+        # Act
+        events = list(self.service.fetch_events_within_forecast_horizon())
+
+        # Assert
+        self.assertEqual(events, [upcoming])
 
     def test_fetch_forecast_history_returns_forecasts_for_event_window_newest_first(self):
         # Arrange

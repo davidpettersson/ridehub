@@ -12,7 +12,6 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
 from django_tables2 import RequestConfig
-from waffle import flag_is_active
 
 from audit.services import AuditService
 from backoffice.models import Event, Registration
@@ -201,97 +200,6 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
     return render(request, 'web/events/detail.html', context)
 
 
-FORECAST_POLL_MAX_ATTEMPTS = 5
-
-
-def _forecast_poll_attempt(request: HttpRequest) -> int:
-    try:
-        return max(0, int(request.GET.get('attempt', 0)))
-    except ValueError:
-        return 0
-
-
-def event_forecast_badge(request: HttpRequest, event_id: int) -> HttpResponse:
-    event = get_object_or_404(Event, id=event_id)
-
-    if not flag_is_active(request, 'weather_forecast_badges'):
-        return render(request, 'web/events/_forecast_badge.html', {'event': event, 'forecast': None})
-
-    service = EventService()
-
-    if not flag_is_active(request, 'async_forecast_fetch'):
-        forecast = service.fetch_current_forecast(event)
-        return render(request, 'web/events/_forecast_badge.html', {
-            'event': event,
-            'forecast': forecast,
-            'expandable': True,
-            'show_history_link': True,
-        })
-
-    state = service.resolve_forecast(event)
-    if not state.possible:
-        return render(request, 'web/events/_forecast_badge.html', {'event': event, 'forecast': None})
-
-    forecast = service.fetch_cached_forecast(event)
-    service.request_forecast(event)
-
-    attempt = _forecast_poll_attempt(request)
-    if forecast is None and attempt < FORECAST_POLL_MAX_ATTEMPTS:
-        poll_url = f"{reverse('event_forecast_badge', args=[event.id])}?attempt={attempt + 1}"
-        return render(request, 'web/events/_forecast_badge_loading.html', {
-            'event': event,
-            'hx_get': poll_url,
-            'hx_delay': True,
-        })
-
-    context = {
-        'event': event,
-        'forecast': forecast,
-        'expandable': True,
-        'show_history_link': True,
-    }
-
-    return render(request, 'web/events/_forecast_badge.html', context)
-
-
-def upcoming_forecast_badges(request: HttpRequest) -> HttpResponse:
-    if not flag_is_active(request, 'weather_forecast_badges'):
-        return HttpResponse()
-
-    active_query, filter_query_string = _get_filter_params(request)
-
-    service = EventService()
-    events = list(service.fetch_upcoming_events(query=active_query))
-    states = service.resolve_forecasts(events)
-    events = [event for event in events if states[event.id].possible]
-
-    if not flag_is_active(request, 'async_forecast_fetch'):
-        return render(request, 'web/events/_forecast_badges_oob.html', {
-            'events': events,
-            'forecasts': service.fetch_forecasts(events),
-            'poll_url': None,
-        })
-
-    service.request_forecasts(events)
-    forecasts = service.fetch_cached_forecasts(events)
-
-    attempt = _forecast_poll_attempt(request)
-    still_pending = any(event.id not in forecasts for event in events)
-
-    poll_url = None
-    if still_pending and attempt < FORECAST_POLL_MAX_ATTEMPTS:
-        separator = '&' if filter_query_string else '?'
-        poll_url = f"{reverse('upcoming_forecast_badges')}{filter_query_string}{separator}attempt={attempt + 1}"
-
-    context = {
-        'events': events,
-        'forecasts': forecasts,
-        'poll_url': poll_url,
-    }
-
-    return render(request, 'web/events/_forecast_badges_oob.html', context)
-
-
 def event_forecasts(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
@@ -332,15 +240,8 @@ def event_list(request: HttpRequest) -> HttpResponse:
     today = timezone.localdate()
     tomorrow = today + timedelta(days=1)
 
-    forecast_states = {}
-    forecasts_pending = False
-    if flag_is_active(request, 'weather_forecast_badges'):
-        forecast_states = EventService().resolve_forecasts(events)
-        forecasts_pending = any(state.pending for state in forecast_states.values())
-
     context = {
-        'forecast_states': forecast_states,
-        'forecasts_pending': forecasts_pending,
+        'forecasts': EventService().fetch_forecasts(events),
         'events_by_date': events_by_date,
         'today': today,
         'tomorrow': tomorrow,

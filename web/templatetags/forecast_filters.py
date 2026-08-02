@@ -1,16 +1,16 @@
 from django import template
 
+from backoffice.services.event_service import EventService
 from backoffice.services.forecast_summary import summarize
-from web.forecast import resolve_forecast_state
 
 register = template.Library()
 
 
-@register.inclusion_tag('web/events/_forecast_badge_slot.html', takes_context=True)
-def forecast_badge(context, event, compact=False):
+@register.inclusion_tag('web/events/_forecast_badge_slot.html')
+def forecast_badge(event, compact=False):
     return {
         'event': event,
-        'state': resolve_forecast_state(context['request'], event),
+        'forecast': EventService().fetch_forecast(event),
         'compact': compact,
     }
 

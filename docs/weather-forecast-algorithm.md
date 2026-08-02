@@ -34,8 +34,7 @@ The hourly forecast modal is unaffected by that suppression: it lists each
 hour's numeric AQHI (shown as `10+` above 10) and its category, whatever the
 category is.
 
-The badge is gated behind the `weather_forecast_badges` waffle flag and
-credits its source: Open-Meteo.
+The badge credits its source: Open-Meteo.
 
 ## Data source
 
@@ -105,11 +104,15 @@ For each hour in the window:
 - Lookups key on `(latitude, longitude, start_time, end_time)` and use the row
   with the latest `prepared_at`; events sharing the same snapped window share
   rows and fetches.
-- A row younger than 1 hour is served as-is. When the latest row is older, a
-  new one is fetched (synchronously, on page load) with a 3-second timeout per
-  request.
-- On any fetch or parse error the latest stale row is served if one exists,
-  otherwise no badge is rendered. A failure never breaks the page and a partial or
+- Rows are written only by the `refresh_forecasts` beat task, which runs every
+  two hours over the events starting in the next seven days and always fetches,
+  with a 3-second timeout per request. Nothing is fetched on page load.
+- A row is usable for 6 hours after `prepared_at`. Once the latest row for a
+  window is older than that, no badge is rendered — no forecast is better than a
+  wrong one. The forecast history page is not subject to this and shows every
+  stored row.
+- On any fetch or parse error the previous row is left alone and no new row is
+  written. A failure never breaks the page and a partial or
   invalid value is never stored: model validation enforces top-of-hour times,
   UTC-offset-carrying hourly timestamps,
   ordered min/max pairs, AQHI in 1..11, and known precipitation categories.

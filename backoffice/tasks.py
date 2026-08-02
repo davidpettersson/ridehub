@@ -1,11 +1,9 @@
 import logging
-from decimal import Decimal
 
 from celery import shared_task
-from django.utils.dateparse import parse_datetime
 
 from backoffice.checks.registration_checks import submitted_registration_has_been_processed
-from backoffice.services.forecast_service import ForecastService
+from backoffice.services.event_service import EventService
 from backoffice.services.registration_alert_service import RegistrationAlertService
 
 logger = logging.getLogger(__name__)
@@ -32,11 +30,9 @@ def alert_unconfirmed_registrations() -> int:
     retry_backoff=True,
     retry_kwargs={'max_retries': 3},
 )
-def fetch_forecast(latitude: str, longitude: str, starts_at: str, ends_at: str) -> int | None:
-    forecast = ForecastService().get_forecast(
-        Decimal(latitude),
-        Decimal(longitude),
-        parse_datetime(starts_at),
-        parse_datetime(ends_at),
-    )
-    return forecast.id if forecast else None
+def refresh_forecasts() -> int:
+    service = EventService()
+    events = list(service.fetch_events_within_forecast_horizon())
+    refreshed = service.refresh_forecasts(events)
+    logger.info('Refreshed %s forecast windows for %s events', refreshed, len(events))
+    return refreshed
