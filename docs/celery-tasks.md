@@ -70,6 +70,24 @@ stale cached forecast when one exists. Publishing is configured to fail fast
 (`CELERY_TASK_PUBLISH_RETRY = False`, 2s socket timeouts) so a dead broker does
 not stall web requests behind connection retries.
 
+## Knowing whether the schedule is running
+
+`CeleryIntegration(monitor_beat_tasks=True)` registers a Sentry Cron monitor per
+`CELERY_BEAT_SCHEDULE` entry and checks in on every run, so Sentry alerts on a
+run that never happened rather than only on one that raised. Monitors appear
+under Crons in Sentry after the first run of each task; their schedules come from
+`CELERY_BEAT_SCHEDULE` and need no setup in Sentry.
+
+This matters because a successful run is otherwise silent. `check_registrations`
+logs only when it finds a stuck registration, and `alert_unconfirmed_registrations`
+emails only when something is past the threshold, so an idle worker and a dead
+worker look identical from the outside.
+
+The other signals, in decreasing usefulness: `last_run_at` and `total_run_count`
+at `/admin/django_celery_beat/periodictask/`; `Scheduler: Sending due task` lines
+in the worker log; and `/debug/trigger-task` to prove the queue is being consumed
+right now.
+
 ## Heroku setup
 
 ```
