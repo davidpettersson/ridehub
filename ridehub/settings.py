@@ -257,7 +257,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'refresh-forecasts': {
         'task': 'backoffice.tasks.refresh_forecasts',
-        'schedule': crontab(minute=23, hour='*/2'),
+        'schedule': crontab(minute=42),
     },
 }
 

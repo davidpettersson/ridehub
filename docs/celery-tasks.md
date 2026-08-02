@@ -8,9 +8,9 @@ Background work runs on the `worker` dyno, which also carries the beat scheduler
 | Task | Trigger | What it does |
 | --- | --- | --- |
 | `backoffice.tasks.alert_unconfirmed_registrations` | Beat, hourly at :05 | Emails `REGISTRATION_ALERT_EMAILS` about registrations stuck in `submitted` or `unverified` for more than one hour |
-| `backoffice.tasks.refresh_forecasts` | Beat, every 2 hours at :23 | Fetches weather and air quality from Open-Meteo for every visible event starting in the next seven days |
+| `backoffice.tasks.refresh_forecasts` | Beat, hourly at :42 | Fetches weather and air quality from Open-Meteo for every visible event starting in the next seven days |
 | `backoffice.tasks.check_registrations` | Beat, every 15 minutes | Logs registrations stuck in `submitted` |
-| `backoffice.tasks.debug_ping` | `/debug/trigger-task` | Logs a message; used to confirm the worker is consuming the queue |
+| `backoffice.tasks.debug_ping` | `/debug/tasks-ping` | Logs a message; used to confirm the worker is consuming the queue |
 
 ## Unconfirmed registration alerts
 
@@ -24,7 +24,7 @@ is empty the task logs a warning and sends nothing.
 
 ## Forecast fetching
 
-`refresh_forecasts` runs every two hours, at :23 rather than on the hour so the
+`refresh_forecasts` runs hourly, at :42 rather than on the hour so the
 requests do not land on the same top-of-hour spike as everyone else's cron. It
 walks the visible, non-archived, non-virtual events starting between now and
 seven days out, and writes a fresh `Forecast` row for each distinct hour window.
@@ -42,8 +42,8 @@ now, whichever comes first. For an upcoming event that means the usual freshness
 rule: nothing older than six hours. For an event that has already started it means
 the last forecast prepared in the six hours before it began, which keeps showing
 indefinitely — an old event's badge is a record of what was predicted, and it
-never goes stale. In steady state an upcoming event's data is at most two hours
-old, so its badge only goes dark after roughly three consecutive failed runs.
+never goes stale. In steady state an upcoming event's data is at most one hour
+old, so its badge only goes dark after roughly six consecutive failed runs.
 
 Each run always writes new rows rather than skipping windows that already have
 recent data; history is append-only, and `/events/<id>/forecasts` shows every
@@ -51,7 +51,7 @@ revision regardless of age.
 
 A fetch or parse failure against Open-Meteo is caught per window, logged, and
 leaves the previous row untouched; the run continues with the remaining windows
-and does not retry, since the next run is at most two hours away. The task's
+and does not retry, since the next run is at most an hour away. The task's
 `autoretry_for` covers only errors that escape that handling — a database
 failure, say — and retries those with backoff up to three times.
 
@@ -86,7 +86,7 @@ with the window and the underlying error.
 
 The other signals, in decreasing usefulness: `last_run_at` and `total_run_count`
 at `/admin/django_celery_beat/periodictask/`; `Scheduler: Sending due task` lines
-in the worker log; and `/debug/trigger-task` to prove the queue is being consumed
+in the worker log; and `/debug/tasks-ping` to prove the queue is being consumed
 right now.
 
 ## Heroku setup
@@ -119,7 +119,7 @@ there are overwritten on the next worker restart for any task still present in
 
 ## Verifying the worker
 
-Sign in as staff and open `/debug/trigger-task`. The page has a message field and
+Sign in as a superuser and open `/debug/tasks-ping`. The page has a message field and
 a Queue task button; submitting it shows the queued task id, and the worker log
 shows `debug_ping received <message>`.
 

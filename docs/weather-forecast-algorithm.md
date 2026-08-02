@@ -101,8 +101,8 @@ For each hour in the window:
 - Lookups key on `(latitude, longitude, start_time, end_time)` and use the row
   with the latest `prepared_at`; events sharing the same snapped window share
   rows and fetches.
-- Rows are written only by the `refresh_forecasts` beat task, which runs every
-  two hours over the events starting in the next seven days and always fetches,
+- Rows are written only by the `refresh_forecasts` beat task, which runs
+  hourly over the events starting in the next seven days and always fetches,
   with a 3-second timeout per request. Nothing is fetched on page load, and an
   event that has already started is never fetched again.
 - A row is displayable for 6 hours, measured from the event start or from now,
