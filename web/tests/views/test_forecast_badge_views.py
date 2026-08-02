@@ -200,11 +200,29 @@ class DetailPageForecastBadgeTests(ForecastBadgeTestCase):
         # Assert
         self.assertNotContains(response, 'AQHI&nbsp;moderate')
 
-    def test_detail_shows_no_badge_for_event_on_an_earlier_day(self):
+    def test_detail_keeps_the_badge_for_a_past_event(self):
         # Arrange
-        starts_at = _local_hour_today(12) - timedelta(days=1)
+        starts_at = _local_hour_today(12) - timedelta(days=30)
         event = self._create_event(starts_at=starts_at)
-        self._create_forecast(time=starts_at)
+        forecast = self._create_forecast(time=starts_at)
+        Forecast.objects.filter(pk=forecast.pk).update(
+            prepared_at=starts_at - timedelta(hours=2)
+        )
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[event.id]))
+
+        # Assert
+        self.assertContains(response, 'AQHI&nbsp;moderate')
+
+    def test_detail_shows_no_badge_for_a_past_event_forecast_prepared_too_early(self):
+        # Arrange
+        starts_at = _local_hour_today(12) - timedelta(days=30)
+        event = self._create_event(starts_at=starts_at)
+        forecast = self._create_forecast(time=starts_at)
+        Forecast.objects.filter(pk=forecast.pk).update(
+            prepared_at=starts_at - timedelta(hours=8)
+        )
 
         # Act
         response = self.client.get(reverse('event_detail', args=[event.id]))

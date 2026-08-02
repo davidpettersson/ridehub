@@ -6,11 +6,9 @@ from django.utils import timezone
 
 from backoffice.models import Event, Forecast, Registration, Ride
 from backoffice.services.email_service import EmailService
-from backoffice.services.forecast_service import ForecastService, YOW_LOCATION
+from backoffice.services.forecast_service import FORECAST_WINDOW, ForecastService, YOW_LOCATION
 
 logger = logging.getLogger(__name__)
-
-FORECAST_HORIZON = timedelta(days=7)
 
 
 class EventService:
@@ -156,8 +154,8 @@ class EventService:
         now = timezone.now()
         return self.fetch_events().filter(
             virtual=False,
-            starts_at__gte=now,
-            starts_at__lte=now + FORECAST_HORIZON,
+            starts_at__gt=now,
+            starts_at__lte=now + FORECAST_WINDOW,
         )
 
     def fetch_forecast(self, event: Event) -> Forecast | None:
@@ -165,7 +163,7 @@ class EventService:
 
     def fetch_forecasts(self, events) -> dict:
         windows_by_event_id = self._windows_by_event_id(events)
-        forecasts_by_window = ForecastService().get_fresh_forecasts_for_windows(windows_by_event_id.values())
+        forecasts_by_window = ForecastService().get_forecasts_for_windows(windows_by_event_id.values())
 
         return {
             event_id: forecasts_by_window[window]

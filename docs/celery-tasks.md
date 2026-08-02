@@ -28,16 +28,22 @@ is empty the task logs a warning and sends nothing.
 requests do not land on the same top-of-hour spike as everyone else's cron. It
 walks the visible, non-archived, non-virtual events starting between now and
 seven days out, and writes a fresh `Forecast` row for each distinct hour window.
+An event that has already started is never fetched again — its weather is
+settled, and refetching would only overwrite what it was forecast to be with
+what it turned out to be.
 Events sharing a window — the usual case, since every ride starts from the same
 coordinates — cost one fetch, not one per event.
 
 The task is the only thing that calls Open-Meteo. Nothing in the request path
 fetches: pages read stored `Forecast` rows and nothing else.
 
-A forecast is usable for six hours after `prepared_at`. Past that the badge
-disappears rather than showing data the job failed to refresh — no forecast beats
-a wrong forecast. In steady state data is at most two hours old, so a badge only
-goes dark after roughly three consecutive failed runs.
+A forecast is displayable for six hours, measured from the event start or from
+now, whichever comes first. For an upcoming event that means the usual freshness
+rule: nothing older than six hours. For an event that has already started it means
+the last forecast prepared in the six hours before it began, which keeps showing
+indefinitely — an old event's badge is a record of what was predicted, and it
+never goes stale. In steady state an upcoming event's data is at most two hours
+old, so its badge only goes dark after roughly three consecutive failed runs.
 
 Each run always writes new rows rather than skipping windows that already have
 recent data; history is append-only, and `/events/<id>/forecasts` shows every
