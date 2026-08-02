@@ -4,7 +4,7 @@ from datetime import timedelta, timezone as datetime_timezone
 from decimal import Decimal
 
 import requests
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 
 from backoffice.models import Forecast
@@ -80,13 +80,16 @@ class ForecastService:
         wanted = set(snapped_windows.values())
         earliest_usable = min(self._usable_from(time, now) for time, _ in wanted)
 
+        matches_a_window = Q()
+        for time, end_time in wanted:
+            matches_a_window |= Q(start_time=time, end_time=end_time)
+
         candidates = Forecast.objects.filter(
+            matches_a_window,
             latitude=latitude,
             longitude=longitude,
-            start_time__in=[time for time, _ in wanted],
-            end_time__in=[end_time for _, end_time in wanted],
             prepared_at__gte=earliest_usable,
-        ).order_by('prepared_at')
+        ).exclude(hourly=[]).order_by('prepared_at')
 
         latest_by_window = {
             (forecast.start_time, forecast.end_time): forecast

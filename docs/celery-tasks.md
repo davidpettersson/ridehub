@@ -49,8 +49,11 @@ Each run always writes new rows rather than skipping windows that already have
 recent data; history is append-only, and `/events/<id>/forecasts` shows every
 revision regardless of age.
 
-A fetch that fails is logged and leaves the previous row untouched. The task
-retries with backoff up to three times.
+A fetch or parse failure against Open-Meteo is caught per window, logged, and
+leaves the previous row untouched; the run continues with the remaining windows
+and does not retry, since the next run is at most two hours away. The task's
+`autoretry_for` covers only errors that escape that handling — a database
+failure, say — and retries those with backoff up to three times.
 
 ## Behaviour without a worker
 

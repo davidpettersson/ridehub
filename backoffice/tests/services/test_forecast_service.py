@@ -815,6 +815,40 @@ class ForecastServiceWindowsTestCase(TestCase):
             minute=0, second=0, microsecond=0
         )
 
+    def _create_forecast(self, start_time, end_time, hourly=None):
+        latitude, longitude = YOW_LOCATION
+        return Forecast.objects.create(
+            latitude=latitude,
+            longitude=longitude,
+            start_time=start_time,
+            end_time=end_time,
+            hourly=_hourly_entry(start_time) if hourly is None else hourly,
+        )
+
+    def test_lookup_ignores_a_row_that_only_matches_across_two_windows(self):
+        # Arrange
+        short = (self.starts_at, self.starts_at + timedelta(hours=1))
+        long = (self.starts_at + timedelta(hours=4), self.starts_at + timedelta(hours=6))
+        self._create_forecast(short[0], long[1])
+
+        # Act
+        forecasts = self.service.get_forecasts_for_windows([short, long])
+
+        # Assert
+        self.assertIsNone(forecasts[short])
+        self.assertIsNone(forecasts[long])
+
+    def test_lookup_ignores_a_row_without_hourly_readings(self):
+        # Arrange
+        window = (self.starts_at, self.starts_at + timedelta(hours=1))
+        self._create_forecast(window[0], window[1], hourly=[])
+
+        # Act
+        forecasts = self.service.get_forecasts_for_windows([window])
+
+        # Assert
+        self.assertIsNone(forecasts[window])
+
     def test_windows_sharing_an_hour_trigger_single_fetch(self):
         # Arrange
         first = (self.starts_at + timedelta(minutes=1), self.starts_at + timedelta(hours=1, minutes=1))
