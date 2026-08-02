@@ -9,7 +9,6 @@ Background work runs on the `worker` dyno, which also carries the beat scheduler
 | --- | --- | --- |
 | `backoffice.tasks.alert_unconfirmed_registrations` | Beat, hourly at :05 | Emails `REGISTRATION_ALERT_EMAILS` about registrations stuck in `submitted` or `unverified` for more than one hour |
 | `backoffice.tasks.refresh_forecasts` | Beat, hourly at :42 | Fetches weather and air quality from Open-Meteo for every visible event starting in the next seven days |
-| `backoffice.tasks.check_registrations` | Beat, every 15 minutes | Logs registrations stuck in `submitted` |
 | `backoffice.tasks.debug_ping` | `/debug/tasks-ping` | Logs a message; used to confirm the worker is consuming the queue |
 
 ## Unconfirmed registration alerts
@@ -70,9 +69,9 @@ run that never happened rather than only on one that raised. Monitors appear
 under Crons in Sentry after the first run of each task; their schedules come from
 `CELERY_BEAT_SCHEDULE` and need no setup in Sentry.
 
-This matters because a successful run is otherwise silent. `check_registrations`
-logs only when it finds a stuck registration, `alert_unconfirmed_registrations`
-emails only when something is past the threshold, and a missed `refresh_forecasts`
+This matters because a successful run is otherwise silent.
+`alert_unconfirmed_registrations` emails only when something is past the
+threshold, and a missed `refresh_forecasts`
 run shows up only as badges quietly vanishing, so an idle worker and a dead worker
 look identical from the outside.
 
