@@ -13,20 +13,22 @@ class RegistrationAlertServiceTests(TestCase):
 
     def setUp(self):
         self.program = Program.objects.create(name='Test Program')
-        starts_at = timezone.now() + timedelta(days=7)
-        self.event = Event.objects.create(
-            name='Test Event',
+        self.event = self._create_event('Test Event', timezone.now() + timedelta(hours=24))
+        self.service = RegistrationAlertService()
+
+    def _create_event(self, name, starts_at):
+        return Event.objects.create(
+            name=name,
             starts_at=starts_at,
             registration_closes_at=starts_at - timedelta(hours=1),
             program=self.program,
             location='Test Location',
             description='Test Description',
         )
-        self.service = RegistrationAlertService()
 
-    def _create_registration(self, state, submitted_ago, name='Stale Rider'):
+    def _create_registration(self, state, submitted_ago, name='Stale Rider', event=None):
         registration = Registration.objects.create(
-            event=self.event,
+            event=event or self.event,
             first_name=name.split()[0],
             last_name=name.split()[1],
             name=name,
@@ -135,6 +137,58 @@ class RegistrationAlertServiceTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('First Rider', mail.outbox[0].body)
         self.assertIn('Second Rider', mail.outbox[0].body)
+
+    def test_ignores_registrations_for_past_events(self):
+        # Arrange
+        past_event = self._create_event('Past Event', timezone.now() - timedelta(hours=1))
+        self._create_registration(Registration.STATE_UNVERIFIED, timedelta(hours=2), event=past_event)
+
+        # Act
+        alerted = self.service.alert_unconfirmed_registrations()
+
+        # Assert
+        self.assertEqual(alerted, 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_ignores_registrations_for_events_more_than_48_hours_away(self):
+        # Arrange
+        distant_event = self._create_event('Distant Event', timezone.now() + timedelta(hours=49))
+        self._create_registration(Registration.STATE_UNVERIFIED, timedelta(hours=2), event=distant_event)
+
+        # Act
+        alerted = self.service.alert_unconfirmed_registrations()
+
+        # Assert
+        self.assertEqual(alerted, 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_alerts_about_registrations_for_events_within_48_hours(self):
+        # Arrange
+        soon_event = self._create_event('Soon Event', timezone.now() + timedelta(hours=47))
+        self._create_registration(Registration.STATE_UNVERIFIED, timedelta(hours=2), event=soon_event)
+
+        # Act
+        alerted = self.service.alert_unconfirmed_registrations()
+
+        # Assert
+        self.assertEqual(alerted, 1)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_orders_registrations_by_event_start_time(self):
+        # Arrange
+        later_event = self._create_event('Later Event', timezone.now() + timedelta(hours=40))
+        earlier_event = self._create_event('Earlier Event', timezone.now() + timedelta(hours=4))
+        self._create_registration(Registration.STATE_UNVERIFIED, timedelta(hours=2), name='Later Rider',
+                                  event=later_event)
+        self._create_registration(Registration.STATE_UNVERIFIED, timedelta(hours=3), name='Earlier Rider',
+                                  event=earlier_event)
+
+        # Act
+        self.service.alert_unconfirmed_registrations()
+
+        # Assert
+        body = mail.outbox[0].body
+        self.assertLess(body.index('Earlier Rider'), body.index('Later Rider'))
 
     @override_settings(REGISTRATION_ALERT_EMAILS=[])
     def test_sends_nothing_when_no_recipients_configured(self):

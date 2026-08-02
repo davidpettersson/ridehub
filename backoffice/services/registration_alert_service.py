@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 UNCONFIRMED_ALERT_THRESHOLD = timedelta(hours=1)
 
+UNCONFIRMED_ALERT_EVENT_HORIZON = timedelta(hours=48)
+
 UNCONFIRMED_STATES = [Registration.STATE_SUBMITTED, Registration.STATE_UNVERIFIED]
 
 
@@ -34,6 +36,7 @@ class RegistrationAlertService:
                 'base_url': f"https://{settings.WEB_HOST}",
                 'registrations': stale,
                 'threshold_hours': int(UNCONFIRMED_ALERT_THRESHOLD.total_seconds() // 3600),
+                'horizon_hours': int(UNCONFIRMED_ALERT_EVENT_HORIZON.total_seconds() // 3600),
             },
             subject=f"{len(stale)} unconfirmed registration{'s' if len(stale) > 1 else ''}",
             recipient_list=recipients,
@@ -44,9 +47,12 @@ class RegistrationAlertService:
 
     @staticmethod
     def _stale_registrations():
-        cutoff = timezone.now() - UNCONFIRMED_ALERT_THRESHOLD
+        now = timezone.now()
+        cutoff = now - UNCONFIRMED_ALERT_THRESHOLD
 
         return Registration.objects.filter(
             state__in=UNCONFIRMED_STATES,
             submitted_at__lte=cutoff,
-        ).select_related('event').order_by('submitted_at')
+            event__starts_at__gte=now,
+            event__starts_at__lte=now + UNCONFIRMED_ALERT_EVENT_HORIZON,
+        ).select_related('event').order_by('event__starts_at', 'submitted_at')

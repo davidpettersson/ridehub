@@ -5,7 +5,7 @@
 {% block content %}
     <h1>Unconfirmed registrations</h1>
 
-    <p>The following registration{{ registrations|length|pluralize }} ha{{ registrations|length|pluralize:"s,ve" }} been waiting more than {{ threshold_hours }} hour{{ threshold_hours|pluralize }} without being confirmed.</p>
+    <p>The following registration{{ registrations|length|pluralize }} ha{{ registrations|length|pluralize:"s,ve" }} been waiting more than {{ threshold_hours }} hour{{ threshold_hours|pluralize }} without being confirmed, for events starting within the next {% with hours=horizon_hours|default:48 %}{{ hours }} hour{{ hours|pluralize }}{% endwith %}.</p>
 
     <ul>
         {% for registration in registrations %}
