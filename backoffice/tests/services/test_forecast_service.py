@@ -141,7 +141,7 @@ class ForecastServiceTestCase(TestCase):
         self.assertEqual(fresh, forecast)
         mock_get.assert_not_called()
 
-    def test_forecast_older_than_six_hours_is_not_fresh(self):
+    def test_forecast_older_than_two_refresh_intervals_is_not_fresh(self):
         # Arrange
         window_end = self.starts_at + timedelta(hours=1)
         forecast = Forecast.objects.create(
@@ -152,7 +152,7 @@ class ForecastServiceTestCase(TestCase):
             hourly=_hourly_entry(self.starts_at),
         )
         Forecast.objects.filter(pk=forecast.pk).update(
-            prepared_at=timezone.now() - timedelta(hours=6, minutes=1)
+            prepared_at=timezone.now() - timedelta(hours=2, minutes=1)
         )
 
         # Act
@@ -163,7 +163,7 @@ class ForecastServiceTestCase(TestCase):
         self.assertIsNone(fresh)
         mock_get.assert_not_called()
 
-    def test_forecast_just_under_six_hours_old_is_still_fresh(self):
+    def test_forecast_just_under_two_refresh_intervals_old_is_still_fresh(self):
         # Arrange
         window_end = self.starts_at + timedelta(hours=1)
         forecast = Forecast.objects.create(
@@ -174,7 +174,7 @@ class ForecastServiceTestCase(TestCase):
             hourly=_hourly_entry(self.starts_at),
         )
         Forecast.objects.filter(pk=forecast.pk).update(
-            prepared_at=timezone.now() - timedelta(hours=5, minutes=59)
+            prepared_at=timezone.now() - timedelta(hours=1, minutes=59)
         )
 
         # Act
@@ -182,6 +182,52 @@ class ForecastServiceTestCase(TestCase):
 
         # Assert
         self.assertEqual(fresh, forecast)
+
+    def test_distant_event_keeps_a_forecast_far_older_than_a_nearby_event_would(self):
+        # Arrange
+        starts_at = (timezone.now() + timedelta(days=7)).replace(
+            minute=0, second=0, microsecond=0
+        )
+        window_end = starts_at + timedelta(hours=1)
+        forecast = Forecast.objects.create(
+            latitude=self.latitude,
+            longitude=self.longitude,
+            start_time=starts_at,
+            end_time=window_end,
+            hourly=_hourly_entry(starts_at),
+        )
+        Forecast.objects.filter(pk=forecast.pk).update(
+            prepared_at=timezone.now() - timedelta(hours=23)
+        )
+
+        # Act
+        displayed = self.service.get_forecast(starts_at, window_end)
+
+        # Assert
+        self.assertEqual(displayed, forecast)
+
+    def test_distant_event_drops_a_forecast_older_than_two_twelve_hour_intervals(self):
+        # Arrange
+        starts_at = (timezone.now() + timedelta(days=7)).replace(
+            minute=0, second=0, microsecond=0
+        )
+        window_end = starts_at + timedelta(hours=1)
+        forecast = Forecast.objects.create(
+            latitude=self.latitude,
+            longitude=self.longitude,
+            start_time=starts_at,
+            end_time=window_end,
+            hourly=_hourly_entry(starts_at),
+        )
+        Forecast.objects.filter(pk=forecast.pk).update(
+            prepared_at=timezone.now() - timedelta(hours=25)
+        )
+
+        # Act
+        displayed = self.service.get_forecast(starts_at, window_end)
+
+        # Assert
+        self.assertIsNone(displayed)
 
     def test_past_event_keeps_a_forecast_prepared_shortly_before_it_started(self):
         # Arrange
@@ -195,7 +241,7 @@ class ForecastServiceTestCase(TestCase):
             hourly=_hourly_entry(starts_at),
         )
         Forecast.objects.filter(pk=forecast.pk).update(
-            prepared_at=starts_at - timedelta(hours=5)
+            prepared_at=starts_at - timedelta(hours=1)
         )
 
         # Act
@@ -216,7 +262,7 @@ class ForecastServiceTestCase(TestCase):
             hourly=_hourly_entry(starts_at),
         )
         Forecast.objects.filter(pk=forecast.pk).update(
-            prepared_at=starts_at - timedelta(hours=7)
+            prepared_at=starts_at - timedelta(hours=3)
         )
 
         # Act
@@ -237,7 +283,7 @@ class ForecastServiceTestCase(TestCase):
         }
         earlier = Forecast.objects.create(hourly=_hourly_entry(starts_at, condition='rain'), **common)
         Forecast.objects.filter(pk=earlier.pk).update(
-            prepared_at=starts_at - timedelta(hours=5)
+            prepared_at=starts_at - timedelta(hours=1, minutes=50)
         )
         latest = Forecast.objects.create(hourly=_hourly_entry(starts_at, condition='sun'), **common)
         Forecast.objects.filter(pk=latest.pk).update(
@@ -897,6 +943,94 @@ class ForecastServiceWindowsTestCase(TestCase):
 
         # Assert
         self.assertEqual(forecasts, {})
+
+    def test_fresh_forecast_is_reused_without_fetching(self):
+        # Arrange
+        window = (self.starts_at, self.starts_at + timedelta(hours=1))
+        existing = self._create_forecast(window[0], window[1])
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            # Act
+            forecasts = self.service.refresh_forecasts_for_windows([window])
+
+        # Assert
+        self.assertEqual(forecasts[window], existing)
+        mock_get.assert_not_called()
+        self.assertEqual(Forecast.objects.count(), 1)
+
+    def test_repeated_runs_fetch_only_once_while_the_forecast_stays_fresh(self):
+        # Arrange
+        window = (self.starts_at, self.starts_at + timedelta(hours=1))
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
+
+            # Act
+            first = self.service.refresh_forecasts_for_windows([window])
+            call_count_after_first = mock_get.call_count
+            second = self.service.refresh_forecasts_for_windows([window])
+
+        # Assert
+        self.assertEqual(second[window], first[window])
+        self.assertEqual(mock_get.call_count, call_count_after_first)
+        self.assertEqual(Forecast.objects.count(), 1)
+
+    def test_stale_forecast_is_refetched(self):
+        # Arrange
+        window = (self.starts_at, self.starts_at + timedelta(hours=1))
+        existing = self._create_forecast(window[0], window[1])
+        Forecast.objects.filter(pk=existing.pk).update(
+            prepared_at=timezone.now() - timedelta(hours=2, minutes=1)
+        )
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
+
+            # Act
+            forecasts = self.service.refresh_forecasts_for_windows([window])
+
+        # Assert
+        self.assertNotEqual(forecasts[window].pk, existing.pk)
+        self.assertEqual(Forecast.objects.count(), 2)
+
+
+class ForecastRefreshIntervalTestCase(TestCase):
+    def test_interval_scales_with_how_far_out_the_event_is(self):
+        # Arrange
+        now = timezone.now()
+        expected_hours_by_lead_hours = {
+            0: 1,
+            12: 1,
+            23: 1,
+            24: 1,
+            48: 3,
+            72: 5,
+            96: 6,
+            120: 8,
+            144: 10,
+            168: 12,
+        }
+
+        for lead_hours, expected_hours in expected_hours_by_lead_hours.items():
+            # Act
+            interval = ForecastService.refresh_interval(now + timedelta(hours=lead_hours), now)
+
+            # Assert
+            self.assertEqual(
+                interval, timedelta(hours=expected_hours), f'{lead_hours} hours out'
+            )
+
+    def test_interval_is_clamped_beyond_the_anchor_points(self):
+        # Arrange
+        now = timezone.now()
+
+        # Act
+        started = ForecastService.refresh_interval(now - timedelta(hours=5), now)
+        far_out = ForecastService.refresh_interval(now + timedelta(days=30), now)
+
+        # Assert
+        self.assertEqual(started, timedelta(hours=1))
+        self.assertEqual(far_out, timedelta(hours=12))
 
 
 class ForecastServiceHistoryTestCase(TestCase):

@@ -13,9 +13,14 @@ logger = logging.getLogger(__name__)
 
 YOW_LOCATION = (Decimal('45.32250'), Decimal('-75.66920'))
 
-FORECAST_STALE_AFTER = timedelta(hours=6)
 FORECAST_WINDOW = timedelta(days=7)
 REQUEST_TIMEOUT_SECONDS = 3
+
+REFRESH_INTERVAL_MIN_HOURS = 1
+REFRESH_INTERVAL_MAX_HOURS = 12
+REFRESH_LEAD_MIN_HOURS = 24
+REFRESH_LEAD_MAX_HOURS = 168
+STALE_AFTER_INTERVALS = 2
 
 WEATHER_URL = 'https://api.open-meteo.com/v1/forecast'
 AIR_QUALITY_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality'
@@ -53,23 +58,31 @@ class ForecastService:
     def refresh_forecasts_for_windows(self, windows) -> dict:
         latitude, longitude = YOW_LOCATION
         now = timezone.now()
+        windows = list(windows)
+
+        fresh_by_window = self.get_forecasts_for_windows(windows)
 
         forecasts_by_snapped_window: dict = {}
         forecasts_by_window: dict = {}
+        skipped = 0
 
         for window in windows:
             starts_at, ends_at = window
             snapped_window = self._window(starts_at, ends_at, now)
             if snapped_window not in forecasts_by_snapped_window:
-                forecasts_by_snapped_window[snapped_window] = self.refresh_forecast(
+                fresh = fresh_by_window.get(window)
+                if fresh:
+                    skipped += 1
+                forecasts_by_snapped_window[snapped_window] = fresh or self.refresh_forecast(
                     latitude, longitude, starts_at, ends_at
                 )
             forecasts_by_window[window] = forecasts_by_snapped_window[snapped_window]
 
         logger.info(
-            'Refreshed %s of %s distinct forecast windows',
-            len([f for f in forecasts_by_snapped_window.values() if f]),
+            'Refreshed %s of %s distinct forecast windows, %s already fresh',
+            len([f for f in forecasts_by_snapped_window.values() if f]) - skipped,
             len(forecasts_by_snapped_window),
+            skipped,
         )
 
         return forecasts_by_window
@@ -121,9 +134,21 @@ class ForecastService:
             return None
         return forecast
 
+    @classmethod
+    def _usable_from(cls, time, now):
+        return min(now, time) - STALE_AFTER_INTERVALS * cls.refresh_interval(time, now)
+
     @staticmethod
-    def _usable_from(time, now):
-        return min(now, time) - FORECAST_STALE_AFTER
+    def refresh_interval(time, now) -> timedelta:
+        lead_hours = (time - now).total_seconds() / 3600
+        slope = (
+            (REFRESH_INTERVAL_MAX_HOURS - REFRESH_INTERVAL_MIN_HOURS)
+            / (REFRESH_LEAD_MAX_HOURS - REFRESH_LEAD_MIN_HOURS)
+        )
+        hours = REFRESH_INTERVAL_MIN_HOURS + (lead_hours - REFRESH_LEAD_MIN_HOURS) * slope
+        return timedelta(hours=min(
+            REFRESH_INTERVAL_MAX_HOURS, max(REFRESH_INTERVAL_MIN_HOURS, round(hours))
+        ))
 
     @classmethod
     def _window(cls, starts_at, ends_at, now) -> tuple:
