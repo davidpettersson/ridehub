@@ -76,6 +76,14 @@ emails only when something is past the threshold, and a missed `refresh_forecast
 run shows up only as badges quietly vanishing, so an idle worker and a dead worker
 look identical from the outside.
 
+`refresh_forecasts` also logs its own progress at INFO: how many events it is
+about to cover and how many are skipped as virtual, one line per stored row
+(`Stored forecast <id> for <start> to <end> with <n> hourly readings`), how many
+of the distinct windows were refreshed, and a closing summary. A run that fetched
+nothing says so explicitly rather than logging nothing at all, so an empty
+horizon is distinguishable from a task that never ran. Failures stay at WARNING
+with the window and the underlying error.
+
 The other signals, in decreasing usefulness: `last_run_at` and `total_run_count`
 at `/admin/django_celery_beat/periodictask/`; `Scheduler: Sending due task` lines
 in the worker log; and `/debug/trigger-task` to prove the queue is being consumed

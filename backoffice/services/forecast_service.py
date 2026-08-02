@@ -37,13 +37,18 @@ class ForecastService:
             )
             return None
 
-        return Forecast.objects.create(
+        forecast = Forecast.objects.create(
             latitude=latitude,
             longitude=longitude,
             start_time=time,
             end_time=end_time,
             **metrics,
         )
+        logger.info(
+            'Stored forecast %s for %s to %s with %s hourly readings',
+            forecast.id, time, end_time, len(forecast.hourly),
+        )
+        return forecast
 
     def refresh_forecasts_for_windows(self, windows) -> dict:
         latitude, longitude = YOW_LOCATION
@@ -60,6 +65,12 @@ class ForecastService:
                     latitude, longitude, starts_at, ends_at
                 )
             forecasts_by_window[window] = forecasts_by_snapped_window[snapped_window]
+
+        logger.info(
+            'Refreshed %s of %s distinct forecast windows',
+            len([f for f in forecasts_by_snapped_window.values() if f]),
+            len(forecasts_by_snapped_window),
+        )
 
         return forecasts_by_window
 

@@ -42,6 +42,42 @@ class RefreshForecastsTaskTests(TestCase):
         self.assertEqual(result, 2)
         refresh.assert_called_once_with(events)
 
+    def test_logs_a_summary_of_the_run(self):
+        # Arrange
+        events = [object()]
+
+        # Act
+        with patch(
+            'backoffice.services.event_service.EventService.fetch_events_within_forecast_horizon'
+        ) as fetch_events, patch(
+            'backoffice.services.event_service.EventService.refresh_forecasts'
+        ) as refresh:
+            fetch_events.return_value = events
+            refresh.return_value = 2
+            with self.assertLogs('backoffice.tasks', level='INFO') as logs:
+                refresh_forecasts()
+
+        # Assert
+        self.assertIn('2 windows stored for 1 events', logs.output[0])
+
+    def test_logs_and_stops_when_no_events_are_within_the_horizon(self):
+        # Arrange
+        with patch(
+            'backoffice.services.event_service.EventService.fetch_events_within_forecast_horizon'
+        ) as fetch_events, patch(
+            'backoffice.services.event_service.EventService.refresh_forecasts'
+        ) as refresh:
+            fetch_events.return_value = []
+
+            # Act
+            with self.assertLogs('backoffice.tasks', level='INFO') as logs:
+                result = refresh_forecasts()
+
+        # Assert
+        self.assertEqual(result, 0)
+        refresh.assert_not_called()
+        self.assertIn('nothing to refresh', logs.output[0])
+
 
 class AlertUnconfirmedRegistrationsTaskTests(TestCase):
 

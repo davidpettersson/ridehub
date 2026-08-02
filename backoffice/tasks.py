@@ -33,6 +33,13 @@ def alert_unconfirmed_registrations() -> int:
 def refresh_forecasts() -> int:
     service = EventService()
     events = list(service.fetch_events_within_forecast_horizon())
+
+    if not events:
+        logger.info('No events within the forecast horizon, nothing to refresh')
+        return 0
+
     refreshed = service.refresh_forecasts(events)
-    logger.info('Refreshed %s forecast windows for %s events', refreshed, len(events))
+    logger.info(
+        'Forecast refresh finished: %s windows stored for %s events', refreshed, len(events)
+    )
     return refreshed

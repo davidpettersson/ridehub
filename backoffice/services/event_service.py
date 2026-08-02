@@ -173,6 +173,11 @@ class EventService:
 
     def refresh_forecasts(self, events) -> int:
         windows_by_event_id = self._windows_by_event_id(events)
+        skipped = len(events) - len(windows_by_event_id)
+        logger.info(
+            'Refreshing forecasts for %s events, skipping %s virtual', len(events), skipped
+        )
+
         forecasts_by_window = ForecastService().refresh_forecasts_for_windows(windows_by_event_id.values())
 
         return len({forecast.pk for forecast in forecasts_by_window.values() if forecast})
