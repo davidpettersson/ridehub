@@ -87,7 +87,11 @@
                         <p class="mb-1">
                             <span class="fw-medium">Was:</span>
                             {% if event.all_day %}
-                            {{ event.previous_starts_at|date:"l, F j, Y" }} · All day
+                              {% if event.previous_ends_at and event.previous_ends_at|date:"Y-m-d" != event.previous_starts_at|date:"Y-m-d" %}
+                              {{ event.previous_starts_at|date:"l, F j, Y" }} – {{ event.previous_ends_at|date:"l, F j, Y" }} · All day
+                              {% else %}
+                              {{ event.previous_starts_at|date:"l, F j, Y" }} · All day
+                              {% endif %}
                             {% else %}
                             {{ event.previous_starts_at|date:"l, F j, Y" }} at {{ event.previous_starts_at|date:"g:i A" }}{% if event.previous_ends_at %} - {{ event.previous_ends_at|date:"g:i A" }}{% endif %}
                             {% endif %}
@@ -95,7 +99,11 @@
                         <p class="mb-0">
                             <span class="fw-medium">Now:</span>
                             {% if event.all_day %}
-                            {{ event.starts_at|date:"l, F j, Y" }} · All day
+                              {% if event.ends_at and event.ends_at|date:"Y-m-d" != event.starts_at|date:"Y-m-d" %}
+                              {{ event.starts_at|date:"l, F j, Y" }} – {{ event.ends_at|date:"l, F j, Y" }} · All day
+                              {% else %}
+                              {{ event.starts_at|date:"l, F j, Y" }} · All day
+                              {% endif %}
                             {% else %}
                             {{ event.starts_at|date:"l, F j, Y" }} at {{ event.starts_at|date:"g:i A" }}{% if event.ends_at %} - {{ event.ends_at|date:"g:i A" }}{% endif %}
                             {% endif %}

@@ -590,6 +590,16 @@ class EventRescheduleValidationTestCase(TestCase):
         with self.assertRaises(ValidationError):
             self.event.clean()
 
+    def test_clean_requires_non_blank_reason_when_rescheduled(self):
+        # Arrange
+        self.event.rescheduled_at = self.now
+        self.event.previous_starts_at = self.tomorrow
+        self.event.reschedule_reason = '   '
+
+        # Act & Assert
+        with self.assertRaises(ValidationError):
+            self.event.clean()
+
     def test_clean_passes_for_complete_reschedule_data(self):
         # Arrange
         self.event.rescheduled_at = self.now

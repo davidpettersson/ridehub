@@ -379,7 +379,7 @@ class Event(models.Model):
                 'previous_starts_at': 'A rescheduled event must record its previous start time.'
             })
 
-        if self.rescheduled_at and not self.reschedule_reason:
+        if self.rescheduled_at and not self.reschedule_reason.strip():
             raise ValidationError({
                 'reschedule_reason': 'A rescheduled event must record a reschedule reason.'
             })
