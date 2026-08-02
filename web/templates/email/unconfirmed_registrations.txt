@@ -1,6 +1,6 @@
 Unconfirmed registrations
 
-The following registration{{ registrations|length|pluralize }} ha{{ registrations|length|pluralize:"s,ve" }} been waiting more than {{ threshold_hours }} hour{{ threshold_hours|pluralize }} without being confirmed, and the event starts within {{ horizon_hours }} hours.
+The following registration{{ registrations|length|pluralize }} ha{{ registrations|length|pluralize:"s,ve" }} been waiting more than {{ threshold_hours }} hour{{ threshold_hours|pluralize }} without being confirmed, for events starting within the next {% with hours=horizon_hours|default:48 %}{{ hours }} hour{{ hours|pluralize }}{% endwith %}.
 
 {% for registration in registrations %}- {{ registration.name }} - {{ registration.event.name }} on {{ registration.event.starts_at|date:"l, M j" }} (submitted {{ registration.submitted_at|date:"M j, H:i" }}, {{ registration.get_state_display|lower }})
   {{ base_url }}{% url 'event_registrations_manage' registration.event_id %}
