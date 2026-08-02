@@ -1,18 +1,14 @@
 import logging
 from datetime import date, datetime, timedelta
 
-from django.conf import settings
-from django.core.cache import caches
 from django.db.models import Count, Max, Min, Q, QuerySet
 from django.utils import timezone
 
 from backoffice.models import Event, Forecast, Registration, Ride
 from backoffice.services.email_service import EmailService
-from backoffice.services.forecast_service import ForecastService, ForecastState, YOW_LOCATION
+from backoffice.services.forecast_service import FORECAST_WINDOW, ForecastService, YOW_LOCATION
 
 logger = logging.getLogger(__name__)
-
-FORECAST_REQUEST_LOCK_SECONDS = 60
 
 
 class EventService:
@@ -154,89 +150,16 @@ class EventService:
 
         return notified
 
-    def resolve_forecast(self, event: Event) -> ForecastState:
-        return self.resolve_forecasts([event])[event.id]
-
-    def resolve_forecasts(self, events) -> dict:
-        windows_by_event_id = self._windows_by_event_id(events)
-        states_by_window = ForecastService().resolve_for_windows(windows_by_event_id.values())
-
-        return {
-            event.id: states_by_window[windows_by_event_id[event.id]]
-            if event.id in windows_by_event_id
-            else ForecastState.unavailable()
-            for event in events
-        }
-
-    def fetch_current_forecast(self, event: Event) -> Forecast | None:
-        if event.virtual:
-            return None
-        latitude, longitude = YOW_LOCATION
-        return ForecastService().get_forecast(latitude, longitude, event.starts_at, event.starts_at + event.duration)
-
-    def request_forecast(self, event: Event) -> None:
-        self.request_forecasts([event])
-
-    def request_forecasts(self, events) -> None:
-        from backoffice.tasks import fetch_forecast
-
-        windows_by_event_id = self._windows_by_event_id(events)
-        states_by_window = ForecastService().resolve_for_windows(windows_by_event_id.values())
-
-        latitude, longitude = YOW_LOCATION
-
-        for window, state in states_by_window.items():
-            if not state.pending:
-                continue
-
-            starts_at, ends_at = window
-            key = self._forecast_request_key(window)
-
-            try:
-                if not self._cache().add(key, True, FORECAST_REQUEST_LOCK_SECONDS):
-                    continue
-            except Exception as e:
-                logger.warning('Forecast request cache unavailable: %s', e)
-
-            try:
-                fetch_forecast.delay(str(latitude), str(longitude), starts_at.isoformat(), ends_at.isoformat())
-            except Exception as e:
-                self._release_forecast_request(key)
-                logger.warning('Could not queue forecast fetch for %s to %s: %s', starts_at, ends_at, e)
-
-    @staticmethod
-    def _cache():
-        return caches[settings.FORECAST_CACHE_ALIAS]
-
-    @classmethod
-    def _release_forecast_request(cls, key: str) -> None:
-        try:
-            cls._cache().delete(key)
-        except Exception:
-            pass
-
-    @staticmethod
-    def _forecast_request_key(window) -> str:
-        starts_at, ends_at = window
-        return f'forecast-requested:{starts_at.isoformat()}:{ends_at.isoformat()}'
-
-    def fetch_cached_forecast(self, event: Event) -> Forecast | None:
-        if event.virtual:
-            return None
-        latitude, longitude = YOW_LOCATION
-        return ForecastService().get_cached_forecast(
-            latitude, longitude, event.starts_at, event.starts_at + event.duration
+    def fetch_events_within_forecast_horizon(self) -> QuerySet[Event]:
+        now = timezone.now()
+        return self.fetch_events().filter(
+            virtual=False,
+            starts_at__gt=now,
+            starts_at__lte=now + FORECAST_WINDOW,
         )
 
-    def fetch_cached_forecasts(self, events) -> dict:
-        windows_by_event_id = self._windows_by_event_id(events)
-        forecasts_by_window = ForecastService().get_cached_forecasts_for_windows(windows_by_event_id.values())
-
-        return {
-            event_id: forecasts_by_window[window]
-            for event_id, window in windows_by_event_id.items()
-            if forecasts_by_window[window]
-        }
+    def fetch_forecast(self, event: Event) -> Forecast | None:
+        return self.fetch_forecasts([event]).get(event.id)
 
     def fetch_forecasts(self, events) -> dict:
         windows_by_event_id = self._windows_by_event_id(events)
@@ -247,6 +170,17 @@ class EventService:
             for event_id, window in windows_by_event_id.items()
             if forecasts_by_window[window]
         }
+
+    def refresh_forecasts(self, events) -> int:
+        windows_by_event_id = self._windows_by_event_id(events)
+        skipped = len(events) - len(windows_by_event_id)
+        logger.info(
+            'Refreshing forecasts for %s events, skipping %s virtual', len(events), skipped
+        )
+
+        forecasts_by_window = ForecastService().refresh_forecasts_for_windows(windows_by_event_id.values())
+
+        return len({forecast.pk for forecast in forecasts_by_window.values() if forecast})
 
     @staticmethod
     def _windows_by_event_id(events) -> dict:

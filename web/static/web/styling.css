@@ -163,49 +163,6 @@ button.meta-pill:focus-visible {
   margin-right: 0.25rem;
 }
 
-.wx-loading {
-  opacity: 0.6;
-}
-
-.wx-shimmer {
-  display: inline-block;
-  height: 1em;
-  border-radius: 0.25rem;
-  vertical-align: -0.15em;
-  background: linear-gradient(
-    90deg,
-    rgba(108, 117, 125, 0.15) 25%,
-    rgba(108, 117, 125, 0.35) 50%,
-    rgba(108, 117, 125, 0.15) 75%
-  );
-  background-size: 200% 100%;
-  animation: wx-shimmer 1.4s ease-in-out infinite;
-}
-
-@keyframes wx-shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .wx-shimmer {
-    animation: none;
-  }
-}
-
-.wx-shimmer-icon {
-  height: 1.2em;
-  border-radius: 50%;
-}
-
-.wx-shimmer-temp {
-  min-width: 1ch;
-}
-
-.wx-shimmer-aqhi {
-  min-width: 3ch;
-}
-
 .btn-danger {
   background-color: #dc2626;
   border-color: #dc2626;

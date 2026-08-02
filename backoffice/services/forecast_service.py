@@ -1,11 +1,10 @@
 import logging
 import math
-from dataclasses import dataclass
 from datetime import timedelta, timezone as datetime_timezone
 from decimal import Decimal
 
 import requests
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 
 from backoffice.models import Forecast
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 YOW_LOCATION = (Decimal('45.32250'), Decimal('-75.66920'))
 
-FORECAST_MAX_AGE = timedelta(hours=1)
+FORECAST_STALE_AFTER = timedelta(hours=6)
 FORECAST_WINDOW = timedelta(days=7)
 REQUEST_TIMEOUT_SECONDS = 3
 
@@ -22,39 +21,12 @@ WEATHER_URL = 'https://api.open-meteo.com/v1/forecast'
 AIR_QUALITY_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality'
 
 
-@dataclass(frozen=True)
-class ForecastState:
-    forecast: Forecast | None = None
-    pending: bool = False
-
-    @classmethod
-    def ready(cls, forecast: Forecast) -> 'ForecastState':
-        return cls(forecast=forecast)
-
-    @classmethod
-    def pending_fetch(cls) -> 'ForecastState':
-        return cls(pending=True)
-
-    @classmethod
-    def unavailable(cls) -> 'ForecastState':
-        return cls()
-
-    @property
-    def possible(self) -> bool:
-        return self.forecast is not None or self.pending
-
-
 class ForecastService:
-    def get_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> Forecast | None:
+    def refresh_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> Forecast | None:
         now = timezone.now()
-        window = self._resolve_window(starts_at, ends_at, now)
-        if window is None:
+        if starts_at <= now or starts_at > now + FORECAST_WINDOW:
             return None
-        time, end_time = window
-
-        latest = self._latest_forecast(latitude, longitude, time, end_time)
-        if latest and self._is_fresh(latest, now):
-            return latest
+        time, end_time = self._window(starts_at, ends_at, now)
 
         try:
             metrics = self._fetch_metrics(latitude, longitude, time, end_time)
@@ -63,62 +35,98 @@ class ForecastService:
                 'Forecast fetch failed for (%s, %s) from %s to %s: %s',
                 latitude, longitude, time, end_time, e,
             )
-            return latest
+            return None
 
-        return Forecast.objects.create(
+        forecast = Forecast.objects.create(
             latitude=latitude,
             longitude=longitude,
             start_time=time,
             end_time=end_time,
             **metrics,
         )
+        logger.info(
+            'Stored forecast %s for %s to %s with %s hourly readings',
+            forecast.id, time, end_time, len(forecast.hourly),
+        )
+        return forecast
 
-    def resolve(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> ForecastState:
-        now = timezone.now()
-        window = self._resolve_window(starts_at, ends_at, now)
-        if window is None:
-            return ForecastState.unavailable()
-        time, end_time = window
-
-        latest = self._latest_forecast(latitude, longitude, time, end_time)
-        if latest and self._is_fresh(latest, now):
-            return ForecastState.ready(latest)
-        return ForecastState.pending_fetch()
-
-    def get_cached_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> Forecast | None:
-        window = self._resolve_window(starts_at, ends_at, timezone.now())
-        if window is None:
-            return None
-        time, end_time = window
-        return self._latest_forecast(latitude, longitude, time, end_time)
-
-    def get_forecasts_for_windows(self, windows) -> dict:
-        return self._lookup_by_window(windows, self.get_forecast)
-
-    def get_cached_forecasts_for_windows(self, windows) -> dict:
-        return self._lookup_by_window(windows, self.get_cached_forecast)
-
-    def resolve_for_windows(self, windows) -> dict:
-        return self._lookup_by_window(windows, self.resolve)
-
-    def _lookup_by_window(self, windows, lookup) -> dict:
+    def refresh_forecasts_for_windows(self, windows) -> dict:
         latitude, longitude = YOW_LOCATION
+        now = timezone.now()
+
         forecasts_by_snapped_window: dict = {}
         forecasts_by_window: dict = {}
 
         for window in windows:
             starts_at, ends_at = window
-            snapped_window = (self._snap_to_hour(starts_at), self._snap_to_hour_ceiling(ends_at))
+            snapped_window = self._window(starts_at, ends_at, now)
             if snapped_window not in forecasts_by_snapped_window:
-                forecasts_by_snapped_window[snapped_window] = lookup(
+                forecasts_by_snapped_window[snapped_window] = self.refresh_forecast(
                     latitude, longitude, starts_at, ends_at
                 )
             forecasts_by_window[window] = forecasts_by_snapped_window[snapped_window]
 
+        logger.info(
+            'Refreshed %s of %s distinct forecast windows',
+            len([f for f in forecasts_by_snapped_window.values() if f]),
+            len(forecasts_by_snapped_window),
+        )
+
         return forecasts_by_window
 
+    def get_forecast(self, starts_at, ends_at=None) -> Forecast | None:
+        window = (starts_at, ends_at or starts_at + timedelta(hours=1))
+        return self.get_forecasts_for_windows([window])[window]
+
+    def get_forecasts_for_windows(self, windows) -> dict:
+        now = timezone.now()
+        latitude, longitude = YOW_LOCATION
+
+        snapped_windows = {
+            window: self._window(window[0], window[1], now) for window in windows
+        }
+        if not snapped_windows:
+            return {}
+
+        wanted = set(snapped_windows.values())
+        earliest_usable = min(self._usable_from(time, now) for time, _ in wanted)
+
+        matches_a_window = Q()
+        for time, end_time in wanted:
+            matches_a_window |= Q(start_time=time, end_time=end_time)
+
+        candidates = Forecast.objects.filter(
+            matches_a_window,
+            latitude=latitude,
+            longitude=longitude,
+            prepared_at__gte=earliest_usable,
+        ).exclude(hourly=[]).order_by('prepared_at')
+
+        latest_by_window = {
+            (forecast.start_time, forecast.end_time): forecast
+            for forecast in candidates
+        }
+
+        return {
+            window: self._usable(latest_by_window.get(snapped), snapped, now)
+            for window, snapped in snapped_windows.items()
+        }
+
     @classmethod
-    def _resolve_window(cls, starts_at, ends_at, now) -> tuple | None:
+    def _usable(cls, forecast: Forecast | None, snapped_window, now) -> Forecast | None:
+        if forecast is None:
+            return None
+        time, _ = snapped_window
+        if forecast.prepared_at < cls._usable_from(time, now):
+            return None
+        return forecast
+
+    @staticmethod
+    def _usable_from(time, now):
+        return min(now, time) - FORECAST_STALE_AFTER
+
+    @classmethod
+    def _window(cls, starts_at, ends_at, now) -> tuple:
         time = cls._snap_to_hour(starts_at)
         end_time = cls._snap_to_hour_ceiling(ends_at) if ends_at else time + timedelta(hours=1)
 
@@ -127,27 +135,7 @@ class ForecastService:
         if end_time < time:
             end_time = time
 
-        if time < cls._start_of_current_day(now) or time > now + FORECAST_WINDOW:
-            return None
-
         return time, end_time
-
-    @staticmethod
-    def _start_of_current_day(now):
-        local_midnight = timezone.localtime(now).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        return local_midnight.astimezone(datetime_timezone.utc)
-
-    @staticmethod
-    def _latest_forecast(latitude: Decimal, longitude: Decimal, time, end_time) -> Forecast | None:
-        return Forecast.objects.filter(
-            latitude=latitude, longitude=longitude, start_time=time, end_time=end_time
-        ).order_by('-prepared_at').first()
-
-    @staticmethod
-    def _is_fresh(forecast: Forecast, now) -> bool:
-        return forecast.prepared_at >= now - FORECAST_MAX_AGE
 
     def get_forecast_history(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> QuerySet:
         time = self._snap_to_hour(starts_at)

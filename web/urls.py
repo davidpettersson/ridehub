@@ -1,8 +1,7 @@
 from django.urls import path
 
-from web.views.events import event_detail, event_forecast_badge, event_forecasts, event_list, event_registrations, \
-    event_emergency_contacts, event_emails, event_registrations_print, calendar_view, events_redirect, \
-    upcoming_forecast_badges
+from web.views.events import event_detail, event_forecasts, event_list, event_registrations, \
+    event_emergency_contacts, event_emails, event_registrations_print, calendar_view, events_redirect
 from web.views.debug import trigger_task
 from web.views.events_ical import EventFeed
 from web.views.helpers import changes_email_addresses
@@ -30,7 +29,6 @@ urlpatterns = [
     path('calendar', calendar_view, name='calendar'),
     path('calendar/<int:year>/<int:month>', calendar_view, name='calendar_month'),
     path('upcoming', event_list, name='upcoming'),
-    path('upcoming/forecast-badges', upcoming_forecast_badges, name='upcoming_forecast_badges'),
     path('events', events_redirect, name='events'),
     path('events/<int:event_id>/registrations/manage', event_registrations_manage, name='event_registrations_manage'),
     path('events/<int:event_id>/registrations/add', staff_registration_add, name='staff_registration_add'),
@@ -41,7 +39,6 @@ urlpatterns = [
     path('events/<int:event_id>/registrations/print', event_registrations_print, name='event_registrations_print'),
     path('events/<int:event_id>/registrations', event_registrations, name='riders_list'),
     path('events/<int:event_id>/registration', registration_create, name='registration_create'),
-    path('events/<int:event_id>/forecast-badge', event_forecast_badge, name='event_forecast_badge'),
     path('events/<int:event_id>/forecasts', event_forecasts, name='event_forecasts'),
     path('events/<int:event_id>', event_detail, name='event_detail'),
     path('events.ics', EventFeed(), name='event_feed'),

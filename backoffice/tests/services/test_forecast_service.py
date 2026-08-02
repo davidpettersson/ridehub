@@ -104,7 +104,7 @@ class ForecastServiceTestCase(TestCase):
             )
 
             # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, starts_at, ends_at)
+            forecast = self.service.refresh_forecast(self.latitude, self.longitude, starts_at, ends_at)
 
         # Assert
         self.assertIsNotNone(forecast)
@@ -122,7 +122,7 @@ class ForecastServiceTestCase(TestCase):
         self.assertEqual([entry['aqhi'] for entry in forecast.hourly], [3, 3, 3, 3])
         self.assertEqual(Forecast.objects.count(), 1)
 
-    def test_resolve_returns_ready_state_without_fetching_when_forecast_fresh(self):
+    def test_fresh_forecast_returned_without_fetching(self):
         # Arrange
         window_end = self.starts_at + timedelta(hours=1)
         forecast = Forecast.objects.create(
@@ -135,17 +135,13 @@ class ForecastServiceTestCase(TestCase):
 
         # Act
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            state = self.service.resolve(
-                self.latitude, self.longitude, self.starts_at, window_end
-            )
+            fresh = self.service.get_forecast(self.starts_at, window_end)
 
         # Assert
-        self.assertEqual(state.forecast, forecast)
-        self.assertFalse(state.pending)
-        self.assertTrue(state.possible)
+        self.assertEqual(fresh, forecast)
         mock_get.assert_not_called()
 
-    def test_resolve_returns_pending_state_when_forecast_stale(self):
+    def test_forecast_older_than_six_hours_is_not_fresh(self):
         # Arrange
         window_end = self.starts_at + timedelta(hours=1)
         forecast = Forecast.objects.create(
@@ -156,32 +152,114 @@ class ForecastServiceTestCase(TestCase):
             hourly=_hourly_entry(self.starts_at),
         )
         Forecast.objects.filter(pk=forecast.pk).update(
-            prepared_at=timezone.now() - timedelta(hours=2)
+            prepared_at=timezone.now() - timedelta(hours=6, minutes=1)
         )
 
         # Act
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            state = self.service.resolve(
-                self.latitude, self.longitude, self.starts_at, window_end
-            )
+            fresh = self.service.get_forecast(self.starts_at, window_end)
 
         # Assert
-        self.assertIsNone(state.forecast)
-        self.assertTrue(state.pending)
-        self.assertTrue(state.possible)
+        self.assertIsNone(fresh)
         mock_get.assert_not_called()
 
-    def test_resolve_returns_pending_state_when_no_forecast_stored(self):
+    def test_forecast_just_under_six_hours_old_is_still_fresh(self):
+        # Arrange
+        window_end = self.starts_at + timedelta(hours=1)
+        forecast = Forecast.objects.create(
+            latitude=self.latitude,
+            longitude=self.longitude,
+            start_time=self.starts_at,
+            end_time=window_end,
+            hourly=_hourly_entry(self.starts_at),
+        )
+        Forecast.objects.filter(pk=forecast.pk).update(
+            prepared_at=timezone.now() - timedelta(hours=5, minutes=59)
+        )
+
+        # Act
+        fresh = self.service.get_forecast(self.starts_at, window_end)
+
+        # Assert
+        self.assertEqual(fresh, forecast)
+
+    def test_past_event_keeps_a_forecast_prepared_shortly_before_it_started(self):
+        # Arrange
+        starts_at = _local_hour_today(9) - timedelta(days=30)
+        window_end = starts_at + timedelta(hours=1)
+        forecast = Forecast.objects.create(
+            latitude=self.latitude,
+            longitude=self.longitude,
+            start_time=starts_at,
+            end_time=window_end,
+            hourly=_hourly_entry(starts_at),
+        )
+        Forecast.objects.filter(pk=forecast.pk).update(
+            prepared_at=starts_at - timedelta(hours=5)
+        )
+
+        # Act
+        displayed = self.service.get_forecast(starts_at, window_end)
+
+        # Assert
+        self.assertEqual(displayed, forecast)
+
+    def test_past_event_drops_a_forecast_prepared_long_before_it_started(self):
+        # Arrange
+        starts_at = _local_hour_today(9) - timedelta(days=30)
+        window_end = starts_at + timedelta(hours=1)
+        forecast = Forecast.objects.create(
+            latitude=self.latitude,
+            longitude=self.longitude,
+            start_time=starts_at,
+            end_time=window_end,
+            hourly=_hourly_entry(starts_at),
+        )
+        Forecast.objects.filter(pk=forecast.pk).update(
+            prepared_at=starts_at - timedelta(hours=7)
+        )
+
+        # Act
+        displayed = self.service.get_forecast(starts_at, window_end)
+
+        # Assert
+        self.assertIsNone(displayed)
+
+    def test_past_event_uses_the_last_forecast_prepared_before_it_started(self):
+        # Arrange
+        starts_at = _local_hour_today(9) - timedelta(days=30)
+        window_end = starts_at + timedelta(hours=1)
+        common = {
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'start_time': starts_at,
+            'end_time': window_end,
+        }
+        earlier = Forecast.objects.create(hourly=_hourly_entry(starts_at, condition='rain'), **common)
+        Forecast.objects.filter(pk=earlier.pk).update(
+            prepared_at=starts_at - timedelta(hours=5)
+        )
+        latest = Forecast.objects.create(hourly=_hourly_entry(starts_at, condition='sun'), **common)
+        Forecast.objects.filter(pk=latest.pk).update(
+            prepared_at=starts_at - timedelta(hours=1)
+        )
+
+        # Act
+        displayed = self.service.get_forecast(starts_at, window_end)
+
+        # Assert
+        self.assertEqual(displayed, latest)
+
+    def test_no_stored_forecast_yields_no_fresh_forecast(self):
         # Act
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            state = self.service.resolve(self.latitude, self.longitude, self.starts_at)
+            fresh = self.service.get_forecast(self.starts_at)
 
         # Assert
-        self.assertIsNone(state.forecast)
-        self.assertTrue(state.pending)
+        self.assertIsNone(fresh)
         mock_get.assert_not_called()
 
-    def test_resolve_returns_unavailable_state_beyond_window(self):
+    def test_no_fresh_forecast_beyond_window(self):
         # Arrange
         far_starts_at = (timezone.now() + timedelta(days=9)).replace(
             minute=0, second=0, microsecond=0
@@ -189,12 +267,10 @@ class ForecastServiceTestCase(TestCase):
 
         # Act
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-            state = self.service.resolve(self.latitude, self.longitude, far_starts_at)
+            fresh = self.service.get_forecast(far_starts_at)
 
         # Assert
-        self.assertIsNone(state.forecast)
-        self.assertFalse(state.pending)
-        self.assertFalse(state.possible)
+        self.assertIsNone(fresh)
         mock_get.assert_not_called()
 
     def test_air_quality_entirely_unavailable_still_produces_forecast(self):
@@ -212,7 +288,7 @@ class ForecastServiceTestCase(TestCase):
             mock_get.side_effect = side_effect
 
             # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at)
+            forecast = self.service.refresh_forecast(self.latitude, self.longitude, self.starts_at)
 
         # Assert
         self.assertIsNotNone(forecast)
@@ -233,7 +309,7 @@ class ForecastServiceTestCase(TestCase):
             mock_get.side_effect = side_effect
 
             # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at, window_end)
+            forecast = self.service.refresh_forecast(self.latitude, self.longitude, self.starts_at, window_end)
 
         # Assert
         self.assertIsNotNone(forecast)
@@ -245,33 +321,30 @@ class ForecastServiceTestCase(TestCase):
             mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
 
             # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at)
+            forecast = self.service.refresh_forecast(self.latitude, self.longitude, self.starts_at)
 
         # Assert
         self.assertEqual(forecast.end_time, self.starts_at + timedelta(hours=1))
 
-    def test_fresh_forecast_returned_without_fetching(self):
+    def test_refresh_always_fetches_even_when_a_fresh_forecast_exists(self):
         # Arrange
-        Forecast.objects.create(
+        existing = Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
             start_time=self.starts_at,
             end_time=self.starts_at + timedelta(hours=1),
-            hourly=[{
-                'time': self.starts_at.isoformat(),
-                'condition': 'sun',
-                'temperature': 10,
-                'aqhi': 3,
-            }],
+            hourly=_hourly_entry(self.starts_at, condition='sun'),
         )
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
+
             # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at)
+            forecast = self.service.refresh_forecast(self.latitude, self.longitude, self.starts_at)
 
         # Assert
-        self.assertIsNotNone(forecast)
-        mock_get.assert_not_called()
+        self.assertNotEqual(forecast.pk, existing.pk)
+        self.assertEqual(Forecast.objects.count(), 2)
 
     def test_same_start_different_end_uses_separate_forecasts(self):
         # Arrange
@@ -282,8 +355,8 @@ class ForecastServiceTestCase(TestCase):
             mock_get.side_effect = _mock_get(self.starts_at, long_end)
 
             # Act
-            short = self.service.get_forecast(self.latitude, self.longitude, self.starts_at, short_end)
-            long = self.service.get_forecast(self.latitude, self.longitude, self.starts_at, long_end)
+            short = self.service.refresh_forecast(self.latitude, self.longitude, self.starts_at, short_end)
+            long = self.service.refresh_forecast(self.latitude, self.longitude, self.starts_at, long_end)
 
         # Assert
         self.assertNotEqual(short.pk, long.pk)
@@ -310,7 +383,7 @@ class ForecastServiceTestCase(TestCase):
             )
 
             # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at)
+            forecast = self.service.refresh_forecast(self.latitude, self.longitude, self.starts_at)
 
         # Assert
         self.assertNotEqual(forecast.pk, stale.pk)
@@ -336,29 +409,28 @@ class ForecastServiceTestCase(TestCase):
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at)
+            forecast = self.service.get_forecast(self.starts_at)
 
         # Assert
         self.assertEqual(forecast.pk, newer.pk)
         mock_get.assert_not_called()
 
-    def test_start_times_in_same_hour_share_forecast(self):
+    def test_start_times_in_same_hour_share_a_window(self):
         # Arrange
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
 
             # Act
-            first = self.service.get_forecast(
+            first = self.service.refresh_forecast(
                 self.latitude, self.longitude, self.starts_at + timedelta(minutes=1)
             )
-            second = self.service.get_forecast(
+            second = self.service.refresh_forecast(
                 self.latitude, self.longitude, self.starts_at + timedelta(minutes=55)
             )
 
         # Assert
-        self.assertEqual(first.pk, second.pk)
-        self.assertEqual(mock_get.call_count, 2)
-        self.assertEqual(Forecast.objects.count(), 1)
+        self.assertEqual(first.start_time, second.start_time)
+        self.assertEqual(first.end_time, second.end_time)
 
     def test_missing_trailing_hours_still_produce_forecast_for_requested_window(self):
         # Arrange
@@ -369,7 +441,7 @@ class ForecastServiceTestCase(TestCase):
             mock_get.side_effect = _mock_get(self.starts_at, available_end)
 
             # Act
-            forecast = self.service.get_forecast(
+            forecast = self.service.refresh_forecast(
                 self.latitude, self.longitude, self.starts_at, requested_end
             )
 
@@ -386,7 +458,7 @@ class ForecastServiceTestCase(TestCase):
             mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=2))
 
             # Act
-            forecast = self.service.get_forecast(
+            forecast = self.service.refresh_forecast(
                 self.latitude, self.longitude, self.starts_at, requested_end
             )
 
@@ -398,7 +470,7 @@ class ForecastServiceTestCase(TestCase):
         }
         self.assertIn(forecast.end_time, expected)
 
-    def test_ongoing_event_returns_forecast_for_full_window(self):
+    def test_ongoing_event_is_not_refetched(self):
         # Arrange
         now = _local_hour_today(12)
         starts_at = now - timedelta(hours=1)
@@ -406,34 +478,16 @@ class ForecastServiceTestCase(TestCase):
 
         with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
             with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-                mock_get.side_effect = _mock_get(starts_at, ends_at)
-
                 # Act
-                forecast = self.service.get_forecast(
+                forecast = self.service.refresh_forecast(
                     self.latitude, self.longitude, starts_at, ends_at
                 )
 
         # Assert
-        self.assertIsNotNone(forecast)
-        self.assertEqual(forecast.start_time, starts_at)
-        self.assertEqual(forecast.end_time, ends_at)
-        self.assertEqual(len(forecast.hourly), 3)
+        self.assertIsNone(forecast)
+        mock_get.assert_not_called()
 
-    def test_ongoing_event_resolves_to_pending_state(self):
-        # Arrange
-        now = _local_hour_today(12)
-        starts_at = now - timedelta(hours=1)
-        ends_at = now + timedelta(hours=1)
-
-        with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
-            # Act
-            state = self.service.resolve(self.latitude, self.longitude, starts_at, ends_at)
-
-        # Assert
-        self.assertTrue(state.pending)
-        self.assertTrue(state.possible)
-
-    def test_event_finished_earlier_today_returns_forecast(self):
+    def test_event_finished_earlier_today_is_not_refetched(self):
         # Arrange
         now = _local_hour_today(20)
         starts_at = now - timedelta(hours=12)
@@ -441,16 +495,14 @@ class ForecastServiceTestCase(TestCase):
 
         with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
             with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-                mock_get.side_effect = _mock_get(starts_at, ends_at)
-
                 # Act
-                forecast = self.service.get_forecast(
+                forecast = self.service.refresh_forecast(
                     self.latitude, self.longitude, starts_at, ends_at
                 )
 
         # Assert
-        self.assertIsNotNone(forecast)
-        self.assertEqual(forecast.start_time, starts_at)
+        self.assertIsNone(forecast)
+        mock_get.assert_not_called()
 
     def test_event_on_an_earlier_day_returns_none(self):
         # Arrange
@@ -460,14 +512,14 @@ class ForecastServiceTestCase(TestCase):
         with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
             with patch('backoffice.services.forecast_service.requests.get') as mock_get:
                 # Act
-                forecast = self.service.get_forecast(self.latitude, self.longitude, past)
+                forecast = self.service.refresh_forecast(self.latitude, self.longitude, past)
 
         # Assert
         self.assertIsNone(forecast)
         mock_get.assert_not_called()
 
     @override_settings(TIME_ZONE='America/Vancouver')
-    def test_event_earlier_today_returns_forecast_in_a_western_timezone(self):
+    def test_event_earlier_today_is_not_refetched_in_a_western_timezone(self):
         # Arrange
         now = _local_hour_today(23)
         starts_at = now - timedelta(hours=14)
@@ -475,16 +527,14 @@ class ForecastServiceTestCase(TestCase):
 
         with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
             with patch('backoffice.services.forecast_service.requests.get') as mock_get:
-                mock_get.side_effect = _mock_get(starts_at, ends_at)
-
                 # Act
-                forecast = self.service.get_forecast(
+                forecast = self.service.refresh_forecast(
                     self.latitude, self.longitude, starts_at, ends_at
                 )
 
         # Assert
-        self.assertIsNotNone(forecast)
-        self.assertEqual(forecast.start_time, starts_at)
+        self.assertIsNone(forecast)
+        mock_get.assert_not_called()
 
     @override_settings(TIME_ZONE='America/Vancouver')
     def test_event_from_the_previous_local_day_returns_none_in_a_western_timezone(self):
@@ -495,7 +545,7 @@ class ForecastServiceTestCase(TestCase):
         with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
             with patch('backoffice.services.forecast_service.requests.get') as mock_get:
                 # Act
-                forecast = self.service.get_forecast(
+                forecast = self.service.refresh_forecast(
                     self.latitude, self.longitude, starts_at, starts_at + timedelta(hours=2)
                 )
 
@@ -511,7 +561,7 @@ class ForecastServiceTestCase(TestCase):
             mock_get.side_effect = _mock_get(self.starts_at, window_end)
 
             # Act
-            forecast = self.service.get_forecast(
+            forecast = self.service.refresh_forecast(
                 self.latitude, self.longitude, self.starts_at, window_end
             )
 
@@ -529,7 +579,7 @@ class ForecastServiceTestCase(TestCase):
             mock_get.side_effect = _mock_get(self.starts_at, window_end)
 
             # Act
-            self.service.get_forecast(self.latitude, self.longitude, self.starts_at, window_end)
+            self.service.refresh_forecast(self.latitude, self.longitude, self.starts_at, window_end)
 
         # Assert
         for call in mock_get.call_args_list:
@@ -543,7 +593,7 @@ class ForecastServiceTestCase(TestCase):
         with patch('backoffice.services.forecast_service.timezone.now', return_value=now):
             with patch('backoffice.services.forecast_service.requests.get') as mock_get:
                 # Act
-                forecast = self.service.get_forecast(
+                forecast = self.service.refresh_forecast(
                     self.latitude, self.longitude, starts_at, starts_at + timedelta(hours=6)
                 )
 
@@ -557,13 +607,13 @@ class ForecastServiceTestCase(TestCase):
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, far_future)
+            forecast = self.service.refresh_forecast(self.latitude, self.longitude, far_future)
 
         # Assert
         self.assertIsNone(forecast)
         mock_get.assert_not_called()
 
-    def test_fetch_failure_returns_stale_forecast(self):
+    def test_fetch_failure_leaves_the_previous_forecast_untouched(self):
         # Arrange
         stale = Forecast.objects.create(
             latitude=self.latitude,
@@ -573,17 +623,21 @@ class ForecastServiceTestCase(TestCase):
             hourly=_hourly_entry(self.starts_at, condition='cloud'),
         )
         Forecast.objects.filter(pk=stale.pk).update(
-            prepared_at=timezone.now() - timedelta(hours=2)
+            prepared_at=timezone.now() - timedelta(hours=7)
         )
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             mock_get.side_effect = requests.ConnectionError('boom')
 
             # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at)
+            forecast = self.service.refresh_forecast(self.latitude, self.longitude, self.starts_at)
 
         # Assert
-        self.assertEqual(forecast.pk, stale.pk)
+        self.assertIsNone(forecast)
+        self.assertEqual(Forecast.objects.count(), 1)
+        self.assertIsNone(
+            self.service.get_forecast(self.starts_at)
+        )
 
     def test_fetch_failure_without_stored_forecast_returns_none(self):
         # Arrange
@@ -591,7 +645,7 @@ class ForecastServiceTestCase(TestCase):
             mock_get.side_effect = requests.ConnectionError('boom')
 
             # Act
-            forecast = self.service.get_forecast(self.latitude, self.longitude, self.starts_at)
+            forecast = self.service.refresh_forecast(self.latitude, self.longitude, self.starts_at)
 
         # Assert
         self.assertIsNone(forecast)
@@ -745,7 +799,7 @@ class AqhiComputationTestCase(TestCase):
             mock_get.side_effect = side_effect
 
             # Act
-            forecast = service.get_forecast(latitude, longitude, starts_at)
+            forecast = service.refresh_forecast(latitude, longitude, starts_at)
 
         # Assert
         self.assertIsNotNone(forecast)
@@ -761,6 +815,40 @@ class ForecastServiceWindowsTestCase(TestCase):
             minute=0, second=0, microsecond=0
         )
 
+    def _create_forecast(self, start_time, end_time, hourly=None):
+        latitude, longitude = YOW_LOCATION
+        return Forecast.objects.create(
+            latitude=latitude,
+            longitude=longitude,
+            start_time=start_time,
+            end_time=end_time,
+            hourly=_hourly_entry(start_time) if hourly is None else hourly,
+        )
+
+    def test_lookup_ignores_a_row_that_only_matches_across_two_windows(self):
+        # Arrange
+        short = (self.starts_at, self.starts_at + timedelta(hours=1))
+        long = (self.starts_at + timedelta(hours=4), self.starts_at + timedelta(hours=6))
+        self._create_forecast(short[0], long[1])
+
+        # Act
+        forecasts = self.service.get_forecasts_for_windows([short, long])
+
+        # Assert
+        self.assertIsNone(forecasts[short])
+        self.assertIsNone(forecasts[long])
+
+    def test_lookup_ignores_a_row_without_hourly_readings(self):
+        # Arrange
+        window = (self.starts_at, self.starts_at + timedelta(hours=1))
+        self._create_forecast(window[0], window[1], hourly=[])
+
+        # Act
+        forecasts = self.service.get_forecasts_for_windows([window])
+
+        # Assert
+        self.assertIsNone(forecasts[window])
+
     def test_windows_sharing_an_hour_trigger_single_fetch(self):
         # Arrange
         first = (self.starts_at + timedelta(minutes=1), self.starts_at + timedelta(hours=1, minutes=1))
@@ -770,7 +858,7 @@ class ForecastServiceWindowsTestCase(TestCase):
             mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=2))
 
             # Act
-            forecasts = self.service.get_forecasts_for_windows([first, second])
+            forecasts = self.service.refresh_forecasts_for_windows([first, second])
 
         # Assert
         self.assertEqual(mock_get.call_count, 2)
@@ -785,7 +873,7 @@ class ForecastServiceWindowsTestCase(TestCase):
             mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=4))
 
             # Act
-            forecasts = self.service.get_forecasts_for_windows([short, long])
+            forecasts = self.service.refresh_forecasts_for_windows([short, long])
 
         # Assert
         self.assertNotEqual(forecasts[short].pk, forecasts[long].pk)
@@ -797,7 +885,7 @@ class ForecastServiceWindowsTestCase(TestCase):
 
         with patch('backoffice.services.forecast_service.requests.get') as mock_get:
             # Act
-            forecasts = self.service.get_forecasts_for_windows([window])
+            forecasts = self.service.refresh_forecasts_for_windows([window])
 
         # Assert
         self.assertIsNone(forecasts[window])
@@ -805,7 +893,7 @@ class ForecastServiceWindowsTestCase(TestCase):
 
     def test_empty_windows_returns_empty_dict(self):
         # Act
-        forecasts = self.service.get_forecasts_for_windows([])
+        forecasts = self.service.refresh_forecasts_for_windows([])
 
         # Assert
         self.assertEqual(forecasts, {})

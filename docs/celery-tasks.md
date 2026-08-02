@@ -8,7 +8,7 @@ Background work runs on the `worker` dyno, which also carries the beat scheduler
 | Task | Trigger | What it does |
 | --- | --- | --- |
 | `backoffice.tasks.alert_unconfirmed_registrations` | Beat, hourly at :05 | Emails `REGISTRATION_ALERT_EMAILS` about registrations stuck in `submitted` or `unverified` for more than one hour |
-| `backoffice.tasks.fetch_forecast` | Enqueued by the web dyno | Fetches weather and air quality from Open-Meteo off the request path |
+| `backoffice.tasks.refresh_forecasts` | Beat, every 2 hours at :23 | Fetches weather and air quality from Open-Meteo for every visible event starting in the next seven days |
 | `backoffice.tasks.check_registrations` | Beat, every 15 minutes | Logs registrations stuck in `submitted` |
 | `backoffice.tasks.debug_ping` | `/debug/trigger-task` | Logs a message; used to confirm the worker is consuming the queue |
 
@@ -24,51 +24,43 @@ is empty the task logs a warning and sends nothing.
 
 ## Forecast fetching
 
-Gated behind the `async_forecast_fetch` waffle flag. With the flag off, the
-forecast endpoints fetch from Open-Meteo inline, exactly as before.
+`refresh_forecasts` runs every two hours, at :23 rather than on the hour so the
+requests do not land on the same top-of-hour spike as everyone else's cron. It
+walks the visible, non-archived, non-virtual events starting between now and
+seven days out, and writes a fresh `Forecast` row for each distinct hour window.
+An event that has already started is never fetched again — its weather is
+settled, and refetching would only overwrite what it was forecast to be with
+what it turned out to be.
+Events sharing a window — the usual case, since every ride starts from the same
+coordinates — cost one fetch, not one per event.
 
-With the flag on, `/events/<id>/forecast-badge` and `/upcoming/forecast-badges`
-serve whatever forecast is already cached and enqueue `fetch_forecast` for any
-window that needs refreshing. The badge re-polls every two seconds, up to five
-attempts, and then gives up for that page load. A stale cached forecast is shown
-immediately rather than held back while the refresh runs.
+The task is the only thing that calls Open-Meteo. Nothing in the request path
+fetches: pages read stored `Forecast` rows and nothing else.
 
-Events with no possible forecast — virtual events, and events outside the
-seven-day horizon — render an empty badge instead of polling for a forecast that
-will never arrive.
+A forecast is displayable for six hours, measured from the event start or from
+now, whichever comes first. For an upcoming event that means the usual freshness
+rule: nothing older than six hours. For an event that has already started it means
+the last forecast prepared in the six hours before it began, which keeps showing
+indefinitely — an old event's badge is a record of what was predicted, and it
+never goes stale. In steady state an upcoming event's data is at most two hours
+old, so its badge only goes dark after roughly three consecutive failed runs.
 
-Enqueueing is deduplicated through a cache lock: a window that has been requested
-is locked for `FORECAST_REQUEST_LOCK_SECONDS` (60s), so repeated poll attempts
-and concurrent visitors do not pile up duplicate tasks for the same window.
+Each run always writes new rows rather than skipping windows that already have
+recent data; history is append-only, and `/events/<id>/forecasts` shows every
+revision regardless of age.
 
-The lock uses its own cache alias (`forecast`), backed by Redis when `REDIS_URL`
-is set so it holds across dynos. The `default` cache stays in-process on purpose:
-waffle reads every flag through it, so putting it on Redis would make flag
-evaluation — and therefore most page renders — depend on Redis being reachable.
-A failing forecast cache is caught and logged; the page still renders.
-
-Note that the two Redis URLs are not interchangeable. Celery goes through kombu,
-which wants `ssl_cert_reqs=CERT_NONE`; the Django cache goes through redis-py,
-which only accepts `none`, `optional`, or `required` and raises on anything else.
-`ridehub/redis_url.py` exposes `celery_redis_url()` and `cache_redis_url()` for
-this reason.
+A fetch or parse failure against Open-Meteo is caught per window, logged, and
+leaves the previous row untouched; the run continues with the remaining windows
+and does not retry, since the next run is at most two hours away. The task's
+`autoretry_for` covers only errors that escape that handling — a database
+failure, say — and retries those with backoff up to three times.
 
 ## Behaviour without a worker
 
-Nothing in the request path depends on a worker being up.
-
-With `async_forecast_fetch` off — the default — no task is enqueued at all, so
-the site behaves exactly as it did before this was added.
-
-With the flag on and no worker consuming the queue, badges poll five times, find
-nothing, and disappear for that page load. Pages render normally and the next
-page load tries again. Beat tasks simply do not run, so no alert emails are sent.
-
-If the broker itself is unreachable, `request_forecasts` logs a warning, releases
-its lock so a later request can retry, and the page still renders — serving a
-stale cached forecast when one exists. Publishing is configured to fail fast
-(`CELERY_TASK_PUBLISH_RETRY = False`, 2s socket timeouts) so a dead broker does
-not stall web requests behind connection retries.
+Nothing in the request path depends on a worker being up. Pages render from
+whatever forecast rows exist; with no worker those rows stop being refreshed and
+badges disappear six hours later. Beat tasks simply do not run, so no alert
+emails are sent either.
 
 ## Knowing whether the schedule is running
 
@@ -79,9 +71,18 @@ under Crons in Sentry after the first run of each task; their schedules come fro
 `CELERY_BEAT_SCHEDULE` and need no setup in Sentry.
 
 This matters because a successful run is otherwise silent. `check_registrations`
-logs only when it finds a stuck registration, and `alert_unconfirmed_registrations`
-emails only when something is past the threshold, so an idle worker and a dead
-worker look identical from the outside.
+logs only when it finds a stuck registration, `alert_unconfirmed_registrations`
+emails only when something is past the threshold, and a missed `refresh_forecasts`
+run shows up only as badges quietly vanishing, so an idle worker and a dead worker
+look identical from the outside.
+
+`refresh_forecasts` also logs its own progress at INFO: how many events it is
+about to cover and how many are skipped as virtual, one line per stored row
+(`Stored forecast <id> for <start> to <end> with <n> hourly readings`), how many
+of the distinct windows were refreshed, and a closing summary. A run that fetched
+nothing says so explicitly rather than logging nothing at all, so an empty
+horizon is distinguishable from a task that never ran. Failures stay at WARNING
+with the window and the underlying error.
 
 The other signals, in decreasing usefulness: `last_run_at` and `total_run_count`
 at `/admin/django_celery_beat/periodictask/`; `Scheduler: Sending due task` lines
@@ -115,9 +116,6 @@ Admin at `/admin/django_celery_beat/periodictask/` is for operational overrides:
 disabling a task without a deploy, or adjusting a schedule temporarily. Edits
 there are overwritten on the next worker restart for any task still present in
 `CELERY_BEAT_SCHEDULE`.
-
-To turn on async forecast fetching, add the `async_forecast_fetch` flag at
-`/admin/waffle/flag/` and set it to Everyone → Yes.
 
 ## Verifying the worker
 
