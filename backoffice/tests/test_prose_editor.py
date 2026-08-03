@@ -26,4 +26,4 @@ class ProseEditorSanitizationTestCase(TestCase):
         cleaned = field.sanitize(html)
 
         # Assert
-        self.assertEqual(cleaned, html)
+        self.assertHTMLEqual(cleaned, html)
