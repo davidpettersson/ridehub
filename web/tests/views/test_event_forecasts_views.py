@@ -154,3 +154,28 @@ class EventForecastsViewTestCase(TestCase):
 
         # Assert
         self.assertContains(response, reverse('event_detail', args=[event.id]))
+
+
+class EventForecastsWithoutReadingsTestCase(EventForecastsViewTestCase):
+    def test_forecast_with_no_readings_does_not_break_the_page(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast(hourly=[])
+
+        # Act
+        response = self.client.get(reverse('event_forecasts', args=[event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+
+    def test_forecast_with_a_non_list_hourly_does_not_break_the_page(self):
+        # Arrange
+        event = self._create_event()
+        forecast = self._create_forecast()
+        Forecast.objects.filter(pk=forecast.pk).update(hourly={})
+
+        # Act
+        response = self.client.get(reverse('event_forecasts', args=[event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)

@@ -1,6 +1,6 @@
 {% load forecast_filters %}
-{% if forecast %}
 {% with summary=forecast|forecast_summary %}
+{% if summary %}
 {% if expandable %}
 <button type="button"
         class="meta-pill{% if compact %} meta-pill-sm{% endif %} text-muted"
@@ -20,5 +20,5 @@
     {% include 'web/events/_forecast_badge_content.html' with summary=summary %}
 </span>
 {% endif %}
-{% endwith %}
 {% endif %}
+{% endwith %}

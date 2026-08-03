@@ -474,6 +474,11 @@ class Route(models.Model):
         return self.name
 
 
+class ForecastQuerySet(models.QuerySet):
+    def with_readings(self):
+        return self.filter(hourly__0__isnull=False)
+
+
 class Forecast(models.Model):
     class Condition(models.TextChoices):
         SUN = 'sun', 'Sun'
@@ -533,10 +538,16 @@ class Forecast(models.Model):
         )
     )
 
+    objects = ForecastQuerySet.as_manager()
+
     class Meta:
         indexes = [
             models.Index(fields=['latitude', 'longitude', 'start_time', 'end_time'], name='forecast_location_window_idx'),
         ]
+
+    @property
+    def has_readings(self) -> bool:
+        return isinstance(self.hourly, list) and bool(self.hourly)
 
     @staticmethod
     def format_aqhi(value: int) -> str:

@@ -95,6 +95,14 @@ def usable(forecast: Forecast | None, window: Window, now: datetime) -> Forecast
     return forecast
 
 
+def due_from(window_start: datetime, now: datetime) -> datetime:
+    return min(now, window_start) - refresh_interval(window_start, now)
+
+
+def due(forecast: Forecast | None, window: Window, now: datetime) -> bool:
+    return forecast is None or forecast.prepared_at < due_from(window.start, now)
+
+
 def hour_key(time: datetime) -> str:
     return time.astimezone(datetime_timezone.utc).strftime('%Y-%m-%dT%H:%M')
 
@@ -211,26 +219,29 @@ class ForecastService:
         latitude, longitude = YOW_LOCATION
 
         requested = [(window, window_for(window[0], window[1], now)) for window in windows]
-        fresh = self.get_forecasts_for_windows([window for window, _ in requested], now)
+        if not requested:
+            return {}
 
-        stale = dict.fromkeys(
+        latest = self._latest_by_window({snapped for _, snapped in requested}, now)
+
+        overdue = dict.fromkeys(
             snapped for window, snapped in requested
-            if not fresh.get(window) and within_forecast_range(window[0], now)
+            if due(latest.get(snapped), snapped, now) and within_forecast_range(window[0], now)
         )
         fetched = {
             snapped: self._fetch_and_store(latitude, longitude, snapped)
-            for snapped in stale
+            for snapped in overdue
         }
 
         logger.info(
-            'Refreshed %s of %s distinct forecast windows, %s already fresh',
+            'Refreshed %s of %s distinct forecast windows, %s not yet due',
             len([forecast for forecast in fetched.values() if forecast]),
             len({snapped for _, snapped in requested}),
-            len({snapped for window, snapped in requested if fresh.get(window)}),
+            len({snapped for _, snapped in requested} - set(overdue)),
         )
 
         return {
-            window: fresh.get(window) or fetched.get(snapped)
+            window: fetched.get(snapped) or usable(latest.get(snapped), snapped, now)
             for window, snapped in requested
         }
 
@@ -261,12 +272,12 @@ class ForecastService:
             or_, (Q(start_time=window.start, end_time=window.end) for window in windows)
         )
 
-        candidates = Forecast.objects.filter(
+        candidates = Forecast.objects.with_readings().filter(
             matches_a_window,
             latitude=latitude,
             longitude=longitude,
             prepared_at__gte=min(usable_from(window.start, now) for window in windows),
-        ).exclude(hourly=[]).order_by('prepared_at')
+        ).order_by('prepared_at')
 
         return {
             Window(forecast.start_time, forecast.end_time): forecast
@@ -277,10 +288,10 @@ class ForecastService:
                              ends_at=None) -> QuerySet:
         window = raw_window(starts_at, ends_at)
 
-        return Forecast.objects.filter(
+        return Forecast.objects.with_readings().filter(
             latitude=latitude, longitude=longitude,
             start_time=window.start, end_time=window.end,
-        ).exclude(hourly=[]).order_by('-prepared_at')
+        ).order_by('-prepared_at')
 
     def _fetch_and_store(self, latitude: Decimal, longitude: Decimal,
                          window: Window) -> Forecast | None:

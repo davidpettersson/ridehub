@@ -17,6 +17,6 @@ def forecast_badge(event, compact=False):
 
 @register.filter
 def forecast_summary(forecast):
-    if not forecast:
+    if not forecast or not forecast.has_readings:
         return None
     return summarize(forecast)
