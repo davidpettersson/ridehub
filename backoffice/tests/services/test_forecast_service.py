@@ -11,6 +11,10 @@ from backoffice.services.forecast_service import (
     ForecastService,
     WEATHER_URL,
     YOW_LOCATION,
+    compute_aqhi,
+    condition_from_weather_code,
+    refresh_interval,
+    snap_to_hour_ceiling,
 )
 
 
@@ -511,8 +515,8 @@ class ForecastServiceTestCase(TestCase):
         # Assert
         after = timezone.now()
         expected = {
-            ForecastService._snap_to_hour_ceiling(before + timedelta(days=7)),
-            ForecastService._snap_to_hour_ceiling(after + timedelta(days=7)),
+            snap_to_hour_ceiling(before + timedelta(days=7)),
+            snap_to_hour_ceiling(after + timedelta(days=7)),
         }
         self.assertIn(forecast.end_time, expected)
 
@@ -717,7 +721,7 @@ class ForecastServiceTestCase(TestCase):
 
         for code, expected in expectations.items():
             # Act
-            result = ForecastService._condition_from_weather_code(code)
+            result = condition_from_weather_code(code)
 
             # Assert
             self.assertEqual(result, expected, f'weather code {code}')
@@ -736,7 +740,7 @@ class AqhiComputationTestCase(TestCase):
         hourly = self._hourly([0.0] * 3, [0.0] * 3, [0.0] * 3)
 
         # Act
-        aqhi = ForecastService._compute_aqhi(hourly, 2)
+        aqhi = compute_aqhi(hourly, 2)
 
         # Assert
         self.assertEqual(aqhi, 1)
@@ -746,7 +750,7 @@ class AqhiComputationTestCase(TestCase):
         hourly = self._hourly([2000.0] * 3, [1000.0] * 3, [1000.0] * 3)
 
         # Act
-        aqhi = ForecastService._compute_aqhi(hourly, 2)
+        aqhi = compute_aqhi(hourly, 2)
 
         # Assert
         self.assertEqual(aqhi, 11)
@@ -756,7 +760,7 @@ class AqhiComputationTestCase(TestCase):
         hourly = self._hourly([8.0] * 3, [15.0] * 3, [60.0] * 3)
 
         # Act
-        aqhi = ForecastService._compute_aqhi(hourly, 2)
+        aqhi = compute_aqhi(hourly, 2)
 
         # Assert
         self.assertEqual(aqhi, 3)
@@ -771,7 +775,7 @@ class AqhiComputationTestCase(TestCase):
                     hourly = self._hourly([pm2_5] * 3, [nitrogen_dioxide] * 3, [ozone] * 3)
 
                     # Act
-                    aqhi = ForecastService._compute_aqhi(hourly, 2)
+                    aqhi = compute_aqhi(hourly, 2)
 
                     # Assert
                     self.assertIsInstance(aqhi, int)
@@ -787,7 +791,7 @@ class AqhiComputationTestCase(TestCase):
         )
 
         # Act
-        aqhi = ForecastService._compute_aqhi(hourly, 2)
+        aqhi = compute_aqhi(hourly, 2)
 
         # Assert
         self.assertEqual(aqhi, 3)
@@ -801,25 +805,27 @@ class AqhiComputationTestCase(TestCase):
         )
 
         # Act
-        aqhi = ForecastService._compute_aqhi(hourly, 2)
+        aqhi = compute_aqhi(hourly, 2)
 
         # Assert
         self.assertEqual(aqhi, 3)
 
-    def test_no_pollutant_data_raises(self):
+    def test_no_pollutant_data_yields_no_aqhi(self):
         # Arrange
         hourly = self._hourly([None] * 3, [None] * 3, [None] * 3)
 
-        # Act & Assert
-        with self.assertRaises(ValueError):
-            ForecastService._compute_aqhi(hourly, 2)
+        # Act
+        aqhi = compute_aqhi(hourly, 2)
+
+        # Assert
+        self.assertIsNone(aqhi)
 
     def test_hour_index_at_start_of_series_uses_single_hour(self):
         # Arrange
         hourly = self._hourly([8.0], [15.0], [60.0])
 
         # Act
-        aqhi = ForecastService._compute_aqhi(hourly, 0)
+        aqhi = compute_aqhi(hourly, 0)
 
         # Assert
         self.assertEqual(aqhi, 3)
@@ -1013,7 +1019,7 @@ class ForecastRefreshIntervalTestCase(TestCase):
 
         for lead_hours, expected_hours in expected_hours_by_lead_hours.items():
             # Act
-            interval = ForecastService.refresh_interval(now + timedelta(hours=lead_hours), now)
+            interval = refresh_interval(now + timedelta(hours=lead_hours), now)
 
             # Assert
             self.assertEqual(
@@ -1025,8 +1031,8 @@ class ForecastRefreshIntervalTestCase(TestCase):
         now = timezone.now()
 
         # Act
-        started = ForecastService.refresh_interval(now - timedelta(hours=5), now)
-        far_out = ForecastService.refresh_interval(now + timedelta(days=30), now)
+        started = refresh_interval(now - timedelta(hours=5), now)
+        far_out = refresh_interval(now + timedelta(days=30), now)
 
         # Assert
         self.assertEqual(started, timedelta(hours=1))

@@ -1,7 +1,11 @@
 import logging
 import math
-from datetime import timedelta, timezone as datetime_timezone
+from datetime import datetime, timedelta, timezone as datetime_timezone
 from decimal import Decimal
+from functools import reduce
+from itertools import count, takewhile
+from operator import or_
+from typing import NamedTuple
 
 import requests
 from django.db.models import Q, QuerySet
@@ -22,70 +26,213 @@ REFRESH_LEAD_MIN_HOURS = 24
 REFRESH_LEAD_MAX_HOURS = 168
 STALE_AFTER_INTERVALS = 2
 
+NO2_UG_M3_PER_PPB = 1.88
+O3_UG_M3_PER_PPB = 1.96
+
 WEATHER_URL = 'https://api.open-meteo.com/v1/forecast'
 AIR_QUALITY_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality'
 
 
+class Window(NamedTuple):
+    start: datetime
+    end: datetime
+
+
+def snap_to_hour(value: datetime) -> datetime:
+    return value.replace(minute=0, second=0, microsecond=0)
+
+
+def snap_to_hour_ceiling(value: datetime) -> datetime:
+    snapped = snap_to_hour(value)
+    return snapped if snapped == value else snapped + timedelta(hours=1)
+
+
+def raw_window(starts_at: datetime, ends_at: datetime | None) -> Window:
+    start = snap_to_hour(starts_at)
+    end = snap_to_hour_ceiling(ends_at) if ends_at else start + timedelta(hours=1)
+    return Window(start, end)
+
+
+def clamp_to_horizon(window: Window, now: datetime) -> Window:
+    horizon = snap_to_hour_ceiling(now + FORECAST_WINDOW)
+    return Window(window.start, max(window.start, min(window.end, horizon)))
+
+
+def window_for(starts_at: datetime, ends_at: datetime | None, now: datetime) -> Window:
+    return clamp_to_horizon(raw_window(starts_at, ends_at), now)
+
+
+def hours_in(window: Window) -> list[datetime]:
+    return list(takewhile(
+        lambda hour: hour <= window.end,
+        (window.start + timedelta(hours=n) for n in count()),
+    ))
+
+
+def within_forecast_range(starts_at: datetime, now: datetime) -> bool:
+    return now < starts_at <= now + FORECAST_WINDOW
+
+
+def refresh_interval(window_start: datetime, now: datetime) -> timedelta:
+    lead_hours = (window_start - now).total_seconds() / 3600
+    slope = (
+        (REFRESH_INTERVAL_MAX_HOURS - REFRESH_INTERVAL_MIN_HOURS)
+        / (REFRESH_LEAD_MAX_HOURS - REFRESH_LEAD_MIN_HOURS)
+    )
+    hours = REFRESH_INTERVAL_MIN_HOURS + (lead_hours - REFRESH_LEAD_MIN_HOURS) * slope
+    return timedelta(hours=min(
+        REFRESH_INTERVAL_MAX_HOURS, max(REFRESH_INTERVAL_MIN_HOURS, round(hours))
+    ))
+
+
+def usable_from(window_start: datetime, now: datetime) -> datetime:
+    return min(now, window_start) - STALE_AFTER_INTERVALS * refresh_interval(window_start, now)
+
+
+def usable(forecast: Forecast | None, window: Window, now: datetime) -> Forecast | None:
+    if forecast is None or forecast.prepared_at < usable_from(window.start, now):
+        return None
+    return forecast
+
+
+def hour_key(time: datetime) -> str:
+    return time.astimezone(datetime_timezone.utc).strftime('%Y-%m-%dT%H:%M')
+
+
+def indexed_hours(data: dict, window: Window) -> list[tuple[datetime, int]]:
+    index_by_key = {key: index for index, key in enumerate(data['hourly']['time'])}
+    available = takewhile(lambda hour: hour_key(hour) in index_by_key, hours_in(window))
+    return [
+        (hour.astimezone(datetime_timezone.utc), index_by_key[hour_key(hour)])
+        for hour in available
+    ]
+
+
+def series_values(data: dict, field: str, indexes: list[int]) -> list:
+    values = [data['hourly'][field][index] for index in indexes]
+    if any(value is None for value in values):
+        raise ValueError(f'Missing {field} data in forecast window')
+    return values
+
+
+def condition_from_weather_code(code: int) -> str:
+    if code >= 95:
+        return Forecast.Condition.THUNDER
+    if 71 <= code <= 77 or code in (85, 86):
+        return Forecast.Condition.SNOW
+    if code >= 51:
+        return Forecast.Condition.RAIN
+    if code >= 2:
+        return Forecast.Condition.CLOUD
+    return Forecast.Condition.SUN
+
+
+def pollutant_averages(hourly: dict, hour_index: int) -> tuple[float, float, float] | None:
+    series = (hourly['pm2_5'], hourly['nitrogen_dioxide'], hourly['ozone'])
+    rows = (
+        tuple(values[index] for values in series)
+        for index in range(max(0, hour_index - 2), hour_index + 1)
+    )
+    complete = [
+        row for row in rows
+        if all(isinstance(value, (int, float)) for value in row)
+    ]
+    if not complete:
+        return None
+    return tuple(sum(values) / len(complete) for values in zip(*complete))
+
+
+def compute_aqhi(hourly: dict, hour_index: int) -> int | None:
+    averages = pollutant_averages(hourly, hour_index)
+    if averages is None:
+        return None
+
+    pm25, no2, o3 = averages
+    aqhi = (10 / 10.4) * 100 * (
+        (math.exp(0.000871 * (no2 / NO2_UG_M3_PER_PPB)) - 1)
+        + (math.exp(0.000537 * (o3 / O3_UG_M3_PER_PPB)) - 1)
+        + (math.exp(0.000487 * pm25) - 1)
+    )
+    return min(11, max(1, round(aqhi)))
+
+
+def aqhi_by_hour(air_quality_data: dict, window: Window) -> dict:
+    readings = (
+        (hour, compute_aqhi(air_quality_data['hourly'], index))
+        for hour, index in indexed_hours(air_quality_data, window)
+    )
+    return {hour: aqhi for hour, aqhi in readings if aqhi is not None}
+
+
+def weather_by_hour(weather_data: dict, window: Window) -> dict:
+    hours = indexed_hours(weather_data, window)
+    if not hours:
+        raise ValueError(f'No forecast data available between {window.start} and {window.end}')
+
+    indexes = [index for _, index in hours]
+    return {
+        hour: (condition_from_weather_code(int(code)), round(temperature))
+        for (hour, _), code, temperature in zip(
+            hours,
+            series_values(weather_data, 'weather_code', indexes),
+            series_values(weather_data, 'temperature_2m', indexes),
+        )
+    }
+
+
+def hourly_readings(weather: dict, aqhi: dict) -> list[dict]:
+    return [
+        {
+            'time': hour.isoformat(),
+            'condition': condition,
+            'temperature': temperature,
+            'aqhi': aqhi.get(hour),
+        }
+        for hour, (condition, temperature) in weather.items()
+    ]
+
+
+def _get_json(url: str, params: dict) -> dict:
+    response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
+    response.raise_for_status()
+    return response.json()
+
+
 class ForecastService:
-    def refresh_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None, now=None) -> Forecast | None:
+    def refresh_forecast(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None,
+                         now=None) -> Forecast | None:
         now = now or timezone.now()
-        if starts_at <= now or starts_at > now + FORECAST_WINDOW:
+        if not within_forecast_range(starts_at, now):
             return None
-        time, end_time = self._window(starts_at, ends_at, now)
+        return self._fetch_and_store(latitude, longitude, window_for(starts_at, ends_at, now))
 
-        try:
-            metrics = self._fetch_metrics(latitude, longitude, time, end_time)
-        except (requests.RequestException, KeyError, ValueError, IndexError, TypeError) as e:
-            logger.warning(
-                'Forecast fetch failed for (%s, %s) from %s to %s: %s',
-                latitude, longitude, time, end_time, e,
-            )
-            return None
-
-        forecast = Forecast.objects.create(
-            latitude=latitude,
-            longitude=longitude,
-            start_time=time,
-            end_time=end_time,
-            **metrics,
-        )
-        logger.info(
-            'Stored forecast %s for %s to %s with %s hourly readings',
-            forecast.id, time, end_time, len(forecast.hourly),
-        )
-        return forecast
-
-    def refresh_forecasts_for_windows(self, windows) -> dict:
+    def refresh_forecasts_for_windows(self, windows, now=None) -> dict:
+        now = now or timezone.now()
         latitude, longitude = YOW_LOCATION
-        now = timezone.now()
-        windows = list(windows)
 
-        fresh_by_window = self.get_forecasts_for_windows(windows, now)
+        requested = [(window, window_for(window[0], window[1], now)) for window in windows]
+        fresh = self.get_forecasts_for_windows([window for window, _ in requested], now)
 
-        forecasts_by_snapped_window: dict = {}
-        forecasts_by_window: dict = {}
-        skipped = 0
-
-        for window in windows:
-            starts_at, ends_at = window
-            snapped_window = self._window(starts_at, ends_at, now)
-            if snapped_window not in forecasts_by_snapped_window:
-                fresh = fresh_by_window.get(window)
-                if fresh:
-                    skipped += 1
-                forecasts_by_snapped_window[snapped_window] = fresh or self.refresh_forecast(
-                    latitude, longitude, starts_at, ends_at, now
-                )
-            forecasts_by_window[window] = forecasts_by_snapped_window[snapped_window]
+        stale = dict.fromkeys(
+            snapped for window, snapped in requested
+            if not fresh.get(window) and within_forecast_range(window[0], now)
+        )
+        fetched = {
+            snapped: self._fetch_and_store(latitude, longitude, snapped)
+            for snapped in stale
+        }
 
         logger.info(
             'Refreshed %s of %s distinct forecast windows, %s already fresh',
-            len([f for f in forecasts_by_snapped_window.values() if f]) - skipped,
-            len(forecasts_by_snapped_window),
-            skipped,
+            len([forecast for forecast in fetched.values() if forecast]),
+            len({snapped for _, snapped in requested}),
+            len({snapped for window, snapped in requested if fresh.get(window)}),
         )
 
-        return forecasts_by_window
+        return {
+            window: fresh.get(window) or fetched.get(snapped)
+            for window, snapped in requested
+        }
 
     def get_forecast(self, starts_at, ends_at=None) -> Forecast | None:
         window = (starts_at, ends_at or starts_at + timedelta(hours=1))
@@ -93,218 +240,91 @@ class ForecastService:
 
     def get_forecasts_for_windows(self, windows, now=None) -> dict:
         now = now or timezone.now()
-        latitude, longitude = YOW_LOCATION
 
-        snapped_windows = {
-            window: self._window(window[0], window[1], now) for window in windows
+        snapped_by_window = {
+            window: window_for(window[0], window[1], now) for window in windows
         }
-        if not snapped_windows:
+        if not snapped_by_window:
             return {}
 
-        wanted = set(snapped_windows.values())
-        earliest_usable = min(self._usable_from(time, now) for time, _ in wanted)
+        latest = self._latest_by_window(set(snapped_by_window.values()), now)
 
-        matches_a_window = Q()
-        for time, end_time in wanted:
-            matches_a_window |= Q(start_time=time, end_time=end_time)
+        return {
+            window: usable(latest.get(snapped), snapped, now)
+            for window, snapped in snapped_by_window.items()
+        }
+
+    @staticmethod
+    def _latest_by_window(windows: set, now: datetime) -> dict:
+        latitude, longitude = YOW_LOCATION
+        matches_a_window = reduce(
+            or_, (Q(start_time=window.start, end_time=window.end) for window in windows)
+        )
 
         candidates = Forecast.objects.filter(
             matches_a_window,
             latitude=latitude,
             longitude=longitude,
-            prepared_at__gte=earliest_usable,
+            prepared_at__gte=min(usable_from(window.start, now) for window in windows),
         ).exclude(hourly=[]).order_by('prepared_at')
 
-        latest_by_window = {
-            (forecast.start_time, forecast.end_time): forecast
+        return {
+            Window(forecast.start_time, forecast.end_time): forecast
             for forecast in candidates
         }
 
-        return {
-            window: self._usable(latest_by_window.get(snapped), snapped, now)
-            for window, snapped in snapped_windows.items()
-        }
-
-    @classmethod
-    def _usable(cls, forecast: Forecast | None, snapped_window, now) -> Forecast | None:
-        if forecast is None:
-            return None
-        time, _ = snapped_window
-        if forecast.prepared_at < cls._usable_from(time, now):
-            return None
-        return forecast
-
-    @classmethod
-    def _usable_from(cls, time, now):
-        return min(now, time) - STALE_AFTER_INTERVALS * cls.refresh_interval(time, now)
-
-    @staticmethod
-    def refresh_interval(time, now) -> timedelta:
-        lead_hours = (time - now).total_seconds() / 3600
-        slope = (
-            (REFRESH_INTERVAL_MAX_HOURS - REFRESH_INTERVAL_MIN_HOURS)
-            / (REFRESH_LEAD_MAX_HOURS - REFRESH_LEAD_MIN_HOURS)
-        )
-        hours = REFRESH_INTERVAL_MIN_HOURS + (lead_hours - REFRESH_LEAD_MIN_HOURS) * slope
-        return timedelta(hours=min(
-            REFRESH_INTERVAL_MAX_HOURS, max(REFRESH_INTERVAL_MIN_HOURS, round(hours))
-        ))
-
-    @classmethod
-    def _window(cls, starts_at, ends_at, now) -> tuple:
-        time = cls._snap_to_hour(starts_at)
-        end_time = cls._snap_to_hour_ceiling(ends_at) if ends_at else time + timedelta(hours=1)
-
-        horizon = cls._snap_to_hour_ceiling(now + FORECAST_WINDOW)
-        end_time = min(end_time, horizon)
-        if end_time < time:
-            end_time = time
-
-        return time, end_time
-
-    def get_forecast_history(self, latitude: Decimal, longitude: Decimal, starts_at, ends_at=None) -> QuerySet:
-        time = self._snap_to_hour(starts_at)
-        end_time = self._snap_to_hour_ceiling(ends_at) if ends_at else time + timedelta(hours=1)
+    def get_forecast_history(self, latitude: Decimal, longitude: Decimal, starts_at,
+                             ends_at=None) -> QuerySet:
+        window = raw_window(starts_at, ends_at)
 
         return Forecast.objects.filter(
-            latitude=latitude, longitude=longitude, start_time=time, end_time=end_time
+            latitude=latitude, longitude=longitude,
+            start_time=window.start, end_time=window.end,
         ).exclude(hourly=[]).order_by('-prepared_at')
 
-    @staticmethod
-    def _snap_to_hour(value):
-        return value.replace(minute=0, second=0, microsecond=0)
+    def _fetch_and_store(self, latitude: Decimal, longitude: Decimal,
+                         window: Window) -> Forecast | None:
+        try:
+            readings = hourly_readings(
+                weather_by_hour(self._weather_data(latitude, longitude), window),
+                aqhi_by_hour(self._air_quality_data(latitude, longitude), window),
+            )
+        except (requests.RequestException, KeyError, ValueError, IndexError, TypeError) as e:
+            logger.warning(
+                'Forecast fetch failed for (%s, %s) from %s to %s: %s',
+                latitude, longitude, window.start, window.end, e,
+            )
+            return None
 
-    @classmethod
-    def _snap_to_hour_ceiling(cls, value):
-        snapped = cls._snap_to_hour(value)
-        if snapped == value:
-            return snapped
-        return snapped + timedelta(hours=1)
-
-    def _fetch_metrics(self, latitude: Decimal, longitude: Decimal, time, end_time) -> dict:
-        weather = requests.get(
-            WEATHER_URL,
-            params={
-                'latitude': str(latitude),
-                'longitude': str(longitude),
-                'hourly': 'weather_code,temperature_2m',
-                'timezone': 'UTC',
-                'forecast_days': 8,
-            },
-            timeout=REQUEST_TIMEOUT_SECONDS,
+        forecast = Forecast.objects.create(
+            latitude=latitude,
+            longitude=longitude,
+            start_time=window.start,
+            end_time=window.end,
+            hourly=readings,
         )
-        weather.raise_for_status()
-        weather_data = weather.json()
-
-        weather_hours = self._window_hours(weather_data, time, end_time)
-        weather_indexes = [index for _, index in weather_hours]
-        weather_codes = self._series_values(weather_data, 'weather_code', weather_indexes)
-        temperatures = self._series_values(weather_data, 'temperature_2m', weather_indexes)
-
-        air_quality = requests.get(
-            AIR_QUALITY_URL,
-            params={
-                'latitude': str(latitude),
-                'longitude': str(longitude),
-                'hourly': 'pm2_5,nitrogen_dioxide,ozone',
-                'timezone': 'UTC',
-                'forecast_days': 7,
-            },
-            timeout=REQUEST_TIMEOUT_SECONDS,
+        logger.info(
+            'Stored forecast %s for %s to %s with %s hourly readings',
+            forecast.id, window.start, window.end, len(forecast.hourly),
         )
-        air_quality.raise_for_status()
-        air_quality_data = air_quality.json()
-
-        aqhi_by_hour = self._aqhi_by_hour(air_quality_data, time, end_time)
-
-        hourly = [
-            {
-                'time': hour.isoformat(),
-                'condition': self._condition_from_weather_code(int(code)),
-                'temperature': round(temperature),
-                'aqhi': aqhi_by_hour.get(hour),
-            }
-            for (hour, _), code, temperature in zip(weather_hours, weather_codes, temperatures)
-        ]
-
-        return {'hourly': hourly}
-
-    @classmethod
-    def _aqhi_by_hour(cls, air_quality_data: dict, time, end_time) -> dict:
-        aqhi_by_hour = {}
-        for hour, index in cls._window_hours(air_quality_data, time, end_time, required=False):
-            try:
-                aqhi_by_hour[hour] = cls._compute_aqhi(air_quality_data['hourly'], index)
-            except ValueError:
-                continue
-        return aqhi_by_hour
-
-    @classmethod
-    def _window_hours(cls, data: dict, time, end_time, required: bool = True) -> list[tuple]:
-        hours = []
-        hour = time
-        while hour <= end_time:
-            try:
-                index = data['hourly']['time'].index(cls._hour_key(hour))
-            except ValueError:
-                break
-            hours.append((hour.astimezone(datetime_timezone.utc), index))
-            hour += timedelta(hours=1)
-        if required and not hours:
-            raise ValueError(f'No forecast data available between {time} and {end_time}')
-        return hours
+        return forecast
 
     @staticmethod
-    def _series_values(data: dict, field: str, indexes: list[int]) -> list:
-        values = [data['hourly'][field][index] for index in indexes]
-        if any(v is None for v in values):
-            raise ValueError(f'Missing {field} data in forecast window')
-        return values
-
-    NO2_UG_M3_PER_PPB = 1.88
-    O3_UG_M3_PER_PPB = 1.96
-
-    @classmethod
-    def _compute_aqhi(cls, hourly: dict, hour_index: int) -> int:
-        pm25, no2, o3 = cls._pollutant_averages(hourly, hour_index)
-
-        no2_ppb = no2 / cls.NO2_UG_M3_PER_PPB
-        o3_ppb = o3 / cls.O3_UG_M3_PER_PPB
-
-        aqhi = (10 / 10.4) * 100 * (
-            (math.exp(0.000871 * no2_ppb) - 1)
-            + (math.exp(0.000537 * o3_ppb) - 1)
-            + (math.exp(0.000487 * pm25) - 1)
-        )
-        return min(11, max(1, round(aqhi)))
+    def _weather_data(latitude: Decimal, longitude: Decimal) -> dict:
+        return _get_json(WEATHER_URL, {
+            'latitude': str(latitude),
+            'longitude': str(longitude),
+            'hourly': 'weather_code,temperature_2m',
+            'timezone': 'UTC',
+            'forecast_days': 8,
+        })
 
     @staticmethod
-    def _pollutant_averages(hourly: dict, hour_index: int) -> tuple[float, float, float]:
-        series = (hourly['pm2_5'], hourly['nitrogen_dioxide'], hourly['ozone'])
-
-        window = []
-        for index in range(max(0, hour_index - 2), hour_index + 1):
-            values = tuple(s[index] for s in series)
-            if all(isinstance(v, (int, float)) for v in values):
-                window.append(values)
-
-        if not window:
-            raise ValueError(f'No pollutant data available around hour index {hour_index}')
-
-        return tuple(sum(values) / len(window) for values in zip(*window))
-
-    @staticmethod
-    def _hour_key(time) -> str:
-        return time.astimezone(datetime_timezone.utc).strftime('%Y-%m-%dT%H:%M')
-
-    @staticmethod
-    def _condition_from_weather_code(code: int) -> str:
-        if code >= 95:
-            return Forecast.Condition.THUNDER
-        if 71 <= code <= 77 or code in (85, 86):
-            return Forecast.Condition.SNOW
-        if code >= 51:
-            return Forecast.Condition.RAIN
-        if code >= 2:
-            return Forecast.Condition.CLOUD
-        return Forecast.Condition.SUN
+    def _air_quality_data(latitude: Decimal, longitude: Decimal) -> dict:
+        return _get_json(AIR_QUALITY_URL, {
+            'latitude': str(latitude),
+            'longitude': str(longitude),
+            'hourly': 'pm2_5,nitrogen_dioxide,ozone',
+            'timezone': 'UTC',
+            'forecast_days': 7,
+        })
