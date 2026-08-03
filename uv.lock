@@ -533,15 +533,15 @@ phonenumberslite = [
 
 [[package]]
 name = "django-prose-editor"
-version = "0.23.2"
+version = "0.25.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "django-js-asset" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e8/f0/1b72bb9863cd50272cff7f11553561660ab6027005b42f81275f17a52db6/django_prose_editor-0.23.2.tar.gz", hash = "sha256:9ad3cbe4c30eb942032a00f4ee4c1908931337e796f0812cbc9b8be9f5a12eb5", size = 723873, upload-time = "2026-01-29T11:54:37.137Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/ad/f21dc483c8ab7b5601ba35af76453d89aa61760a9333f4247e8a7bc34629/django_prose_editor-0.25.1.tar.gz", hash = "sha256:0f97d7cfe4f290dd31afa59b48167cfd77319512a8fa74cf31378189fb137934", size = 730613, upload-time = "2026-03-26T09:32:38.369Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e2/5d/c224bcda131e6af4d19f79cca2c15b47076f7be346e2e33ea578854ed55f/django_prose_editor-0.23.2-py3-none-any.whl", hash = "sha256:a4627537e44d7f945f52c151ddadc038ef4550bbe7ac79385314960c54fcd140", size = 743916, upload-time = "2026-01-29T11:54:33.629Z" },
+    { url = "https://files.pythonhosted.org/packages/10/06/83c0dd462b994c6264323726c0b654c49c3004267b6a85198cb364d52709/django_prose_editor-0.25.1-py3-none-any.whl", hash = "sha256:7d743fc01d4bb0f06ce19b137d38b22b84e286f888e317ab73956115204c3c26", size = 750819, upload-time = "2026-03-26T09:32:36.692Z" },
 ]
 
 [[package]]
@@ -1115,7 +1115,7 @@ requires-dist = [
     { name = "django-ical", specifier = "~=1.9.2" },
     { name = "django-markdownx", specifier = "~=4.0.11" },
     { name = "django-phonenumber-field", extras = ["phonenumberslite"], specifier = "~=8.4.0" },
-    { name = "django-prose-editor", specifier = "~=0.23.1" },
+    { name = "django-prose-editor", specifier = "~=0.25.1" },
     { name = "django-sesame", specifier = "~=3.2.3" },
     { name = "django-tables2", specifier = "~=2.7.5" },
     { name = "django-waffle", specifier = "~=5.0.0" },

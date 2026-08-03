@@ -48,6 +48,16 @@
     list-style: decimal;
 }
 
+.prose blockquote, .announcement blockquote {
+    margin: 0.5em 0;
+    padding-left: 1rem;
+    border-left: 3px solid var(--obc-border);
+}
+
+.prose blockquote p, .announcement blockquote p {
+    margin: 2pt 0;
+}
+
 /* Special to handle copy/paste */
 
 .prose h1:empty::after {
