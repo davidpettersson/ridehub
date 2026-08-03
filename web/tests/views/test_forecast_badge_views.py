@@ -137,7 +137,8 @@ class UpcomingPageForecastBadgeTests(ForecastBadgeTestCase):
         now = _local_hour_today(12)
         starts_at = now - timedelta(hours=1)
         self._create_event(starts_at=starts_at)
-        self._create_forecast(time=starts_at)
+        forecast = self._create_forecast(time=starts_at)
+        Forecast.objects.filter(pk=forecast.pk).update(prepared_at=now)
 
         # Act
         with patch('backoffice.services.forecast_service.timezone.now', return_value=now):

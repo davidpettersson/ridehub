@@ -1053,6 +1053,41 @@ class ForecastServiceWindowsTestCase(TestCase):
         self.assertEqual(forecasts[window].pk, existing.pk)
         self.assertEqual(Forecast.objects.count(), 1)
 
+    def test_hourly_run_refetches_despite_the_fetch_latency_of_the_previous_run(self):
+        # Arrange
+        window = (self.starts_at, self.starts_at + timedelta(hours=1))
+        existing = self._create_forecast(window[0], window[1])
+        now = timezone.now()
+        Forecast.objects.filter(pk=existing.pk).update(
+            prepared_at=now - timedelta(hours=1) + timedelta(seconds=1)
+        )
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
+
+            # Act
+            forecasts = self.service.refresh_forecasts_for_windows([window], now=now)
+
+        # Assert
+        self.assertNotEqual(forecasts[window].pk, existing.pk)
+
+    def test_a_second_run_soon_after_the_first_does_not_refetch(self):
+        # Arrange
+        window = (self.starts_at, self.starts_at + timedelta(hours=1))
+        existing = self._create_forecast(window[0], window[1])
+        now = timezone.now()
+        Forecast.objects.filter(pk=existing.pk).update(
+            prepared_at=now - timedelta(minutes=6)
+        )
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            # Act
+            forecasts = self.service.refresh_forecasts_for_windows([window], now=now)
+
+        # Assert
+        self.assertEqual(forecasts[window].pk, existing.pk)
+        mock_get.assert_not_called()
+
     def test_distant_window_is_not_refetched_every_run(self):
         # Arrange
         starts_at = (timezone.now() + timedelta(days=7)).replace(
