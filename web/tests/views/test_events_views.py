@@ -1,7 +1,8 @@
 ﻿from datetime import timedelta, datetime, date
 from zoneinfo import ZoneInfo
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
@@ -1201,6 +1202,96 @@ class EventDetailViewTests(BaseEventViewTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'web/events/detail.html')
+
+
+class EventDetailStaffActionsTests(BaseEventViewTestCase):
+    """Tests for the staff action buttons on the event_detail view."""
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('event_detail', kwargs={'event_id': self.event.id})
+        self.changelist_url = reverse('admin:backoffice_event_changelist')
+
+    def _grant_event_admin_permissions(self):
+        self.staff_user.user_permissions.set(
+            Permission.objects.filter(
+                content_type=ContentType.objects.get_for_model(Event),
+                codename__in=('view_event', 'add_event', 'change_event'),
+            )
+        )
+
+    def test_staff_sees_cancel_and_duplicate_buttons(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'Cancel event')
+        self.assertContains(response, 'Duplicate event')
+        self.assertContains(response, f'action="{self.changelist_url}"')
+        self.assertContains(response, 'value="cancel_event"')
+        self.assertContains(response, 'value="duplicate_event"')
+        self.assertContains(response, f'name="_selected_action" value="{self.event.id}"', count=2)
+
+    def test_non_staff_sees_no_staff_action_buttons(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertNotContains(response, 'Cancel event')
+        self.assertNotContains(response, 'Duplicate event')
+        self.assertNotContains(response, 'value="cancel_event"')
+        self.assertNotContains(response, 'value="duplicate_event"')
+
+    def test_cancelled_event_hides_cancel_but_keeps_duplicate(self):
+        # Arrange
+        self.event.cancel()
+        self.event.save()
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertNotContains(response, 'value="cancel_event"')
+        self.assertContains(response, 'value="duplicate_event"')
+
+    def test_cancel_button_posts_to_admin_confirmation_page(self):
+        # Arrange
+        self._grant_event_admin_permissions()
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.post(self.changelist_url, {
+            'action': 'cancel_event',
+            '_selected_action': str(self.event.id),
+        })
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'admin/backoffice/event/cancel_selected.html')
+        self.assertEqual(list(response.context['queryset']), [self.event])
+
+    def test_duplicate_button_posts_to_admin_confirmation_page(self):
+        # Arrange
+        self._grant_event_admin_permissions()
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.post(self.changelist_url, {
+            'action': 'duplicate_event',
+            '_selected_action': str(self.event.id),
+        })
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'admin/backoffice/event/duplicate_selected.html')
+        self.assertEqual(list(response.context['queryset']), [self.event])
 
 
 class ArchivedEventDetailViewTests(BaseEventViewTestCase):

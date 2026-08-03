@@ -262,6 +262,10 @@ class Event(models.Model):
         return self.state in (self.STATE_DRAFT, self.STATE_ANNOUNCED, self.STATE_LIVE)
 
     @property
+    def cancellable(self) -> bool:
+        return self.state == self.STATE_LIVE
+
+    @property
     def duration(self) -> timedelta:
         if self.ends_at:
             return self.ends_at - self.starts_at
