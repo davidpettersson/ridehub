@@ -1,7 +1,8 @@
 ﻿from datetime import timedelta, datetime, date
 from zoneinfo import ZoneInfo
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
@@ -1211,6 +1212,14 @@ class EventDetailStaffActionsTests(BaseEventViewTestCase):
         self.url = reverse('event_detail', kwargs={'event_id': self.event.id})
         self.changelist_url = reverse('admin:backoffice_event_changelist')
 
+    def _grant_event_admin_permissions(self):
+        self.staff_user.user_permissions.set(
+            Permission.objects.filter(
+                content_type=ContentType.objects.get_for_model(Event),
+                codename__in=('view_event', 'add_event', 'change_event'),
+            )
+        )
+
     def test_staff_sees_cancel_and_duplicate_buttons(self):
         # Arrange
         self.client.login(username='staff_user', password='password123')
@@ -1254,8 +1263,7 @@ class EventDetailStaffActionsTests(BaseEventViewTestCase):
 
     def test_cancel_button_posts_to_admin_confirmation_page(self):
         # Arrange
-        self.staff_user.is_superuser = True
-        self.staff_user.save()
+        self._grant_event_admin_permissions()
         self.client.login(username='staff_user', password='password123')
 
         # Act
@@ -1271,8 +1279,7 @@ class EventDetailStaffActionsTests(BaseEventViewTestCase):
 
     def test_duplicate_button_posts_to_admin_confirmation_page(self):
         # Arrange
-        self.staff_user.is_superuser = True
-        self.staff_user.save()
+        self._grant_event_admin_permissions()
         self.client.login(username='staff_user', password='password123')
 
         # Act
