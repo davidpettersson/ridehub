@@ -31,10 +31,11 @@ class EventForecastsViewTestCase(TestCase):
     def _create_forecast(self, start_time=None, end_time=None, prepared_at=None, hourly=None):
         start_time = start_time or self.starts_at
         end_time = end_time or (start_time + timedelta(hours=1))
-        hourly = hourly or [
-            {'time': start_time.isoformat(), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
-            {'time': end_time.isoformat(), 'condition': 'cloud', 'temperature': 15, 'aqhi': 5},
-        ]
+        if hourly is None:
+            hourly = [
+                {'time': start_time.isoformat(), 'condition': 'rain', 'temperature': 12, 'aqhi': 5},
+                {'time': end_time.isoformat(), 'condition': 'cloud', 'temperature': 15, 'aqhi': 5},
+            ]
         forecast = Forecast.objects.create(
             latitude=self.latitude,
             longitude=self.longitude,
@@ -155,8 +156,6 @@ class EventForecastsViewTestCase(TestCase):
         # Assert
         self.assertContains(response, reverse('event_detail', args=[event.id]))
 
-
-class EventForecastsWithoutReadingsTestCase(EventForecastsViewTestCase):
     def test_forecast_with_no_readings_does_not_break_the_page(self):
         # Arrange
         event = self._create_event()
@@ -167,6 +166,7 @@ class EventForecastsWithoutReadingsTestCase(EventForecastsViewTestCase):
 
         # Assert
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'No forecasts have been prepared')
 
     def test_forecast_with_a_non_list_hourly_does_not_break_the_page(self):
         # Arrange
