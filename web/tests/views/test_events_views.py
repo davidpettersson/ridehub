@@ -219,10 +219,23 @@ class EventRegistrationsViewTests(BaseEventViewTestCase):
         self.assertContains(response, 'Bob Bobson')
         self.assertContains(response, '>Unverified</span>')
 
-    def test_ride_leader_does_not_see_unverified_rider(self):
+    def test_ride_leader_sees_unverified_rider_with_badge(self):
+        # Arrange
+        unverified = self._add_unverified_registration()
+        self.client.login(username='leader_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertIn(unverified, response.context['filtered_riders'])
+        self.assertContains(response, 'Bob Bobson')
+        self.assertContains(response, '>Unverified</span>')
+
+    def test_regular_user_does_not_see_unverified_rider(self):
         # Arrange
         self._add_unverified_registration()
-        self.client.login(username='leader_user', password='password123')
+        self.client.login(username='regular_user', password='password123')
 
         # Act
         response = self.client.get(self.url)

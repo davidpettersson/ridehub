@@ -3,6 +3,7 @@ import logging
 import random
 import string
 from dataclasses import dataclass
+from datetime import timedelta
 from enum import Enum
 
 from django.contrib.auth.models import User
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 VERIFICATION_TOKEN_MAX_AGE = 86400
 VERIFICATION_TOKEN_SALT = 'email-verification'
+VERIFICATION_RESEND_INTERVAL = timedelta(minutes=5)
 
 
 MASK_DOT = '·'
@@ -162,6 +164,21 @@ class RegistrationService:
             recipient_list=[registration.email],
         )
 
+        registration.last_verification_sent_at = timezone.now()
+        registration.save(update_fields=['last_verification_sent_at'])
+
+    def _verification_resend_due(self, registration: Registration) -> bool:
+        return (registration.last_verification_sent_at is None
+                or timezone.now() - registration.last_verification_sent_at >= VERIFICATION_RESEND_INTERVAL)
+
+    def _resend_verification_if_due(self, user: User, event: Event) -> None:
+        registration = Registration.objects.filter(
+            user=user, event=event, state=Registration.STATE_UNVERIFIED,
+        ).order_by('-pk').first()
+
+        if registration is not None and self._verification_resend_due(registration):
+            self._send_verification_email(registration)
+
     def verify_registration(self, token: str) -> tuple[Registration | None, str | None]:
         signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
 
@@ -181,7 +198,9 @@ class RegistrationService:
             except Registration.DoesNotExist:
                 return None, 'not_found'
 
-            self._send_verification_email(registration)
+            if self._verification_resend_due(registration):
+                self._send_verification_email(registration)
+
             return None, 'expired'
         except BadSignature:
             return None, 'invalid'
@@ -189,10 +208,13 @@ class RegistrationService:
         try:
             registration = Registration.objects.select_related('user', 'user__profile').get(
                 id=int(registration_id),
-                state=Registration.STATE_UNVERIFIED,
+                state__in=[Registration.STATE_UNVERIFIED, Registration.STATE_CONFIRMED],
             )
         except Registration.DoesNotExist:
             return None, 'not_found'
+
+        if registration.state == Registration.STATE_CONFIRMED:
+            return registration, None
 
         registration.confirm()
         registration.save()
@@ -225,6 +247,7 @@ class RegistrationService:
             logger.info(
                 f"User {user.email} (id={user.id}) attempted to register for event {event.name} (id={event.id}) but already has an active registration"
             )
+            self._resend_verification_if_due(user, event)
             return RegistrationResult.DUPLICATE
 
         registration = self._create_registration(event, user, user_detail, registration_detail, request_detail)
