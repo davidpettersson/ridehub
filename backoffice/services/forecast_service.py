@@ -19,13 +19,30 @@ YOW_LOCATION = (Decimal('45.32250'), Decimal('-75.66920'))
 
 FORECAST_WINDOW = timedelta(days=7)
 REQUEST_TIMEOUT_SECONDS = 3
+REQUESTS_PER_WINDOW = 2
 
 REFRESH_INTERVAL_MIN_HOURS = 1
 REFRESH_INTERVAL_MAX_HOURS = 12
 REFRESH_LEAD_MIN_HOURS = 24
 REFRESH_LEAD_MAX_HOURS = 168
 STALE_AFTER_INTERVALS = 2
-MAX_REFRESH_RUN_DURATION = timedelta(minutes=5)
+
+# A run fetches its windows one after another, and prepared_at is stamped once a
+# window's requests come back, so a stored forecast is always younger than the
+# run's clock by however long the run took to reach it. due_from allows for that
+# lag; without it a window is perpetually a fraction short of its interval and
+# waits for the run after next.
+#
+# Worst case is every window timing out on both requests:
+#   REQUEST_TIMEOUT_SECONDS * REQUESTS_PER_WINDOW * EXPECTED_REFRESH_RUN_WINDOWS
+# doubled, to leave room for more events than we see today. Raise the window
+# count if the season grows well past it. Any value here well under
+# REFRESH_INTERVAL_MIN_HOURS keeps a second run from refetching what the first
+# one just stored.
+EXPECTED_REFRESH_RUN_WINDOWS = 10
+MAX_REFRESH_RUN_DURATION = 2 * timedelta(
+    seconds=REQUEST_TIMEOUT_SECONDS * REQUESTS_PER_WINDOW * EXPECTED_REFRESH_RUN_WINDOWS
+)
 
 NO2_UG_M3_PER_PPB = 1.88
 O3_UG_M3_PER_PPB = 1.96

@@ -1071,7 +1071,7 @@ class ForecastServiceWindowsTestCase(TestCase):
         # Assert
         self.assertNotEqual(forecasts[window].pk, existing.pk)
 
-    def test_a_second_run_within_the_tolerance_does_not_refetch(self):
+    def test_a_second_run_soon_after_the_first_does_not_refetch(self):
         # Arrange
         window = (self.starts_at, self.starts_at + timedelta(hours=1))
         existing = self._create_forecast(window[0], window[1])
