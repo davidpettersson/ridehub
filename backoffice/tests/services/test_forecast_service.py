@@ -999,6 +999,79 @@ class ForecastServiceWindowsTestCase(TestCase):
         self.assertNotEqual(forecasts[window].pk, existing.pk)
         self.assertEqual(Forecast.objects.count(), 2)
 
+    def test_forecast_past_one_interval_is_refetched_even_though_still_usable(self):
+        # Arrange
+        window = (self.starts_at, self.starts_at + timedelta(hours=1))
+        existing = self._create_forecast(window[0], window[1])
+        Forecast.objects.filter(pk=existing.pk).update(
+            prepared_at=timezone.now() - timedelta(minutes=90)
+        )
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = _mock_get(self.starts_at, self.starts_at + timedelta(hours=1))
+
+            # Act
+            forecasts = self.service.refresh_forecasts_for_windows([window])
+
+        # Assert
+        self.assertNotEqual(forecasts[window].pk, existing.pk)
+        self.assertEqual(Forecast.objects.count(), 2)
+        self.assertEqual(self.service.get_forecast(window[0], window[1]).pk, forecasts[window].pk)
+
+    def test_forecast_within_one_interval_is_not_refetched(self):
+        # Arrange
+        window = (self.starts_at, self.starts_at + timedelta(hours=1))
+        existing = self._create_forecast(window[0], window[1])
+        Forecast.objects.filter(pk=existing.pk).update(
+            prepared_at=timezone.now() - timedelta(minutes=45)
+        )
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            # Act
+            forecasts = self.service.refresh_forecasts_for_windows([window])
+
+        # Assert
+        self.assertEqual(forecasts[window].pk, existing.pk)
+        mock_get.assert_not_called()
+        self.assertEqual(Forecast.objects.count(), 1)
+
+    def test_forecast_past_one_interval_but_unfetchable_still_returns_the_old_one(self):
+        # Arrange
+        window = (self.starts_at, self.starts_at + timedelta(hours=1))
+        existing = self._create_forecast(window[0], window[1])
+        Forecast.objects.filter(pk=existing.pk).update(
+            prepared_at=timezone.now() - timedelta(minutes=90)
+        )
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            mock_get.side_effect = requests.RequestException('provider down')
+
+            # Act
+            forecasts = self.service.refresh_forecasts_for_windows([window])
+
+        # Assert
+        self.assertEqual(forecasts[window].pk, existing.pk)
+        self.assertEqual(Forecast.objects.count(), 1)
+
+    def test_distant_window_is_not_refetched_every_run(self):
+        # Arrange
+        starts_at = (timezone.now() + timedelta(days=7)).replace(
+            minute=0, second=0, microsecond=0
+        )
+        window = (starts_at, starts_at + timedelta(hours=1))
+        existing = self._create_forecast(window[0], window[1])
+        Forecast.objects.filter(pk=existing.pk).update(
+            prepared_at=timezone.now() - timedelta(hours=11)
+        )
+
+        with patch('backoffice.services.forecast_service.requests.get') as mock_get:
+            # Act
+            forecasts = self.service.refresh_forecasts_for_windows([window])
+
+        # Assert
+        self.assertEqual(forecasts[window].pk, existing.pk)
+        mock_get.assert_not_called()
+
 
 class ForecastRefreshIntervalTestCase(TestCase):
     def test_interval_scales_with_how_far_out_the_event_is(self):
