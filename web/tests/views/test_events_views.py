@@ -1203,6 +1203,90 @@ class EventDetailViewTests(BaseEventViewTestCase):
         self.assertTemplateUsed(response, 'web/events/detail.html')
 
 
+class EventDetailStaffActionsTests(BaseEventViewTestCase):
+    """Tests for the staff action buttons on the event_detail view."""
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('event_detail', kwargs={'event_id': self.event.id})
+        self.changelist_url = reverse('admin:backoffice_event_changelist')
+
+    def test_staff_sees_cancel_and_duplicate_buttons(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertContains(response, 'Cancel event')
+        self.assertContains(response, 'Duplicate event')
+        self.assertContains(response, f'action="{self.changelist_url}"')
+        self.assertContains(response, 'value="cancel_event"')
+        self.assertContains(response, 'value="duplicate_event"')
+        self.assertContains(response, f'name="_selected_action" value="{self.event.id}"', count=2)
+
+    def test_non_staff_sees_no_staff_action_buttons(self):
+        # Arrange
+        self.client.login(username='regular_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertNotContains(response, 'Cancel event')
+        self.assertNotContains(response, 'Duplicate event')
+        self.assertNotContains(response, 'value="cancel_event"')
+        self.assertNotContains(response, 'value="duplicate_event"')
+
+    def test_cancelled_event_hides_cancel_but_keeps_duplicate(self):
+        # Arrange
+        self.event.cancel()
+        self.event.save()
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.get(self.url)
+
+        # Assert
+        self.assertNotContains(response, 'value="cancel_event"')
+        self.assertContains(response, 'value="duplicate_event"')
+
+    def test_cancel_button_posts_to_admin_confirmation_page(self):
+        # Arrange
+        self.staff_user.is_superuser = True
+        self.staff_user.save()
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.post(self.changelist_url, {
+            'action': 'cancel_event',
+            '_selected_action': str(self.event.id),
+        })
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'admin/backoffice/event/cancel_selected.html')
+        self.assertEqual(list(response.context['queryset']), [self.event])
+
+    def test_duplicate_button_posts_to_admin_confirmation_page(self):
+        # Arrange
+        self.staff_user.is_superuser = True
+        self.staff_user.save()
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        response = self.client.post(self.changelist_url, {
+            'action': 'duplicate_event',
+            '_selected_action': str(self.event.id),
+        })
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'admin/backoffice/event/duplicate_selected.html')
+        self.assertEqual(list(response.context['queryset']), [self.event])
+
+
 class ArchivedEventDetailViewTests(BaseEventViewTestCase):
     """Tests for the event_detail view when the event is archived."""
 
