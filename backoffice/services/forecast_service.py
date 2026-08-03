@@ -25,6 +25,7 @@ REFRESH_INTERVAL_MAX_HOURS = 12
 REFRESH_LEAD_MIN_HOURS = 24
 REFRESH_LEAD_MAX_HOURS = 168
 STALE_AFTER_INTERVALS = 2
+MAX_REFRESH_RUN_DURATION = timedelta(minutes=5)
 
 NO2_UG_M3_PER_PPB = 1.88
 O3_UG_M3_PER_PPB = 1.96
@@ -96,7 +97,7 @@ def usable(forecast: Forecast | None, window: Window, now: datetime) -> Forecast
 
 
 def due_from(window_start: datetime, now: datetime) -> datetime:
-    return min(now, window_start) - refresh_interval(window_start, now)
+    return min(now, window_start) - refresh_interval(window_start, now) + MAX_REFRESH_RUN_DURATION
 
 
 def due(forecast: Forecast | None, window: Window, now: datetime) -> bool:
