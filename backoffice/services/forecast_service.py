@@ -21,10 +21,11 @@ FORECAST_WINDOW = timedelta(days=7)
 REQUEST_TIMEOUT_SECONDS = 3
 REQUESTS_PER_WINDOW = 2
 
-REFRESH_INTERVAL_MIN_HOURS = 1
+REFRESH_INTERVAL_BANDS = (
+    (24, 1),
+    (72, 4),
+)
 REFRESH_INTERVAL_MAX_HOURS = 12
-REFRESH_LEAD_MIN_HOURS = 24
-REFRESH_LEAD_MAX_HOURS = 168
 STALE_AFTER_INTERVALS = 2
 
 # A run fetches its windows one after another, and prepared_at is stamped once a
@@ -36,9 +37,9 @@ STALE_AFTER_INTERVALS = 2
 # Worst case is every window timing out on both requests:
 #   REQUEST_TIMEOUT_SECONDS * REQUESTS_PER_WINDOW * EXPECTED_REFRESH_RUN_WINDOWS
 # doubled, to leave room for more events than we see today. Raise the window
-# count if the season grows well past it. Any value here well under
-# REFRESH_INTERVAL_MIN_HOURS keeps a second run from refetching what the first
-# one just stored.
+# count if the season grows well past it. Any value here well under the shortest
+# band in REFRESH_INTERVAL_BANDS keeps a second run from refetching what the
+# first one just stored.
 EXPECTED_REFRESH_RUN_WINDOWS = 10
 MAX_REFRESH_RUN_DURATION = 2 * timedelta(
     seconds=REQUEST_TIMEOUT_SECONDS * REQUESTS_PER_WINDOW * EXPECTED_REFRESH_RUN_WINDOWS
@@ -93,14 +94,10 @@ def within_forecast_range(starts_at: datetime, now: datetime) -> bool:
 
 def refresh_interval(window_start: datetime, now: datetime) -> timedelta:
     lead_hours = (window_start - now).total_seconds() / 3600
-    slope = (
-        (REFRESH_INTERVAL_MAX_HOURS - REFRESH_INTERVAL_MIN_HOURS)
-        / (REFRESH_LEAD_MAX_HOURS - REFRESH_LEAD_MIN_HOURS)
-    )
-    hours = REFRESH_INTERVAL_MIN_HOURS + (lead_hours - REFRESH_LEAD_MIN_HOURS) * slope
-    return timedelta(hours=min(
-        REFRESH_INTERVAL_MAX_HOURS, max(REFRESH_INTERVAL_MIN_HOURS, round(hours))
-    ))
+    for band_lead_hours, interval_hours in REFRESH_INTERVAL_BANDS:
+        if lead_hours <= band_lead_hours:
+            return timedelta(hours=interval_hours)
+    return timedelta(hours=REFRESH_INTERVAL_MAX_HOURS)
 
 
 def usable_from(window_start: datetime, now: datetime) -> datetime:

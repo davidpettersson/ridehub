@@ -1109,7 +1109,7 @@ class ForecastServiceWindowsTestCase(TestCase):
 
 
 class ForecastRefreshIntervalTestCase(TestCase):
-    def test_interval_scales_with_how_far_out_the_event_is(self):
+    def test_interval_steps_down_as_the_event_approaches(self):
         # Arrange
         now = timezone.now()
         expected_hours_by_lead_hours = {
@@ -1117,11 +1117,13 @@ class ForecastRefreshIntervalTestCase(TestCase):
             12: 1,
             23: 1,
             24: 1,
-            48: 3,
-            72: 5,
-            96: 6,
-            120: 8,
-            144: 10,
+            25: 4,
+            48: 4,
+            72: 4,
+            73: 12,
+            96: 12,
+            120: 12,
+            144: 12,
             168: 12,
         }
 
@@ -1134,7 +1136,7 @@ class ForecastRefreshIntervalTestCase(TestCase):
                 interval, timedelta(hours=expected_hours), f'{lead_hours} hours out'
             )
 
-    def test_interval_is_clamped_beyond_the_anchor_points(self):
+    def test_interval_outside_the_bands_uses_the_nearest_one(self):
         # Arrange
         now = timezone.now()
 
