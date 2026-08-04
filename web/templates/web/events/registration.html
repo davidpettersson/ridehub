@@ -126,7 +126,7 @@
 
                         {% for field in form %}
                             {% if field.name == 'first_name' or field.name == 'last_name' or field.name == 'email' or field.name == 'phone' or field.name == 'emergency_contact_name' or field.name == 'emergency_contact_phone' %}
-                            {% elif field.name == 'ride_leader_preference' or field.name == 'first_time_attendee' %}
+                            {% elif field.name == 'ride_leader_preference' or field.name == 'first_time_attendee' or field.name == 'prospective_member' %}
                                 <div class="mb-3">
                                     <div class="form-check">
                                         {{ field }}

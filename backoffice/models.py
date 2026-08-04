@@ -174,6 +174,11 @@ class Event(models.Model):
         help_text='Check if you want to ask registrants whether this is their first time attending an event from this program.'
     )
 
+    ask_prospective_member = models.BooleanField(
+        default=False,
+        help_text='Check if you want to ask registrants whether they are not yet an OBC member.'
+    )
+
     registration_enabled = models.BooleanField(default=True)
     all_day = models.BooleanField(
         default=False,
@@ -778,6 +783,11 @@ class Registration(models.Model):
         NO = 'n', 'No'
         NOT_APPLICABLE = 'na', 'N/A'
 
+    class ProspectiveMember(models.TextChoices):
+        YES = 'y', 'Yes'
+        NO = 'n', 'No'
+        NOT_APPLICABLE = 'na', 'N/A'
+
     name = models.CharField(
         max_length=128
     )
@@ -825,6 +835,12 @@ class Registration(models.Model):
         max_length=2,
         choices=FirstTimeAttendee,
         default=FirstTimeAttendee.NOT_APPLICABLE
+    )
+
+    prospective_member = models.CharField(
+        max_length=2,
+        choices=ProspectiveMember,
+        default=ProspectiveMember.NOT_APPLICABLE
     )
 
     emergency_contact_name = models.CharField(
@@ -929,6 +945,12 @@ class Registration(models.Model):
                     'first_time_attendee': "This field is required as the event asks about first-time attendance."
                 })
 
+        if self.event.ask_prospective_member:
+            if self.prospective_member == Registration.ProspectiveMember.NOT_APPLICABLE:
+                raise ValidationError({
+                    'prospective_member': "This field is required as the event asks about membership status."
+                })
+
         if not self.event.ride_set.exists():
             return
 
@@ -962,6 +984,7 @@ class RegistrationSnapshot(models.Model):
         'speed_range_preference',
         'ride_leader_preference',
         'first_time_attendee',
+        'prospective_member',
         'emergency_contact_name',
         'emergency_contact_phone',
     )
@@ -1030,6 +1053,12 @@ class RegistrationSnapshot(models.Model):
         max_length=2,
         choices=Registration.FirstTimeAttendee,
         default=Registration.FirstTimeAttendee.NOT_APPLICABLE
+    )
+
+    prospective_member = models.CharField(
+        max_length=2,
+        choices=Registration.ProspectiveMember,
+        default=Registration.ProspectiveMember.NOT_APPLICABLE
     )
 
     emergency_contact_name = models.CharField(

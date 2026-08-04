@@ -850,6 +850,178 @@ class StaffFirstTimeAttendeeTests(TestCase):
         self.assertNotIn('first_time_attendee', column_names)
 
 
+class StaffProspectiveMemberTests(TestCase):
+    def setUp(self):
+        # Arrange
+        now = timezone.now()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Event with prospective member question",
+            program=self.program,
+            starts_at=now + timezone.timedelta(days=7),
+            ends_at=now + timezone.timedelta(days=7, hours=4),
+            registration_closes_at=now + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+            ask_prospective_member=True,
+        )
+        self.route = Route.objects.create(name="Test Route")
+        self.ride = Ride.objects.create(event=self.event, route=self.route, ordering=1)
+        self.staff_user = User.objects.create_user(
+            username='staff@example.com', email='staff@example.com',
+            password='password123', is_staff=True,
+        )
+        self.regular_user = User.objects.create_user(
+            username='regular@example.com', email='regular@example.com',
+            password='password123', first_name='Reg', last_name='User',
+        )
+
+    def _create_registration(self, prospective_member_value):
+        reg = Registration.objects.create(
+            event=self.event,
+            user=self.regular_user,
+            name=self.regular_user.get_full_name(),
+            first_name=self.regular_user.first_name,
+            last_name=self.regular_user.last_name,
+            email=self.regular_user.email,
+            phone='+16135550100',
+            ride=self.ride,
+            prospective_member=prospective_member_value,
+        )
+        reg.confirm()
+        reg.save()
+        return reg
+
+    def _column_names(self):
+        response = self.client.get(reverse('event_registrations_manage', args=[self.event.id]))
+        self.assertEqual(response.status_code, 200)
+        return [col.name for col in response.context['table'].columns]
+
+    def test_staff_add_persists_prospective_member_yes_when_checked(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.post(reverse('staff_registration_add', args=[self.event.id]), {
+            'first_name': 'New', 'last_name': 'Rider',
+            'email': 'newrider@example.com', 'phone': '+16135550200',
+            'ride': self.ride.id,
+            'prospective_member': 'on',
+        })
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        reg = Registration.objects.get(email='newrider@example.com')
+        self.assertEqual(reg.prospective_member, Registration.ProspectiveMember.YES)
+
+    def test_staff_add_persists_prospective_member_no_when_unchecked(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.post(reverse('staff_registration_add', args=[self.event.id]), {
+            'first_name': 'New', 'last_name': 'Rider',
+            'email': 'newrider@example.com', 'phone': '+16135550200',
+            'ride': self.ride.id,
+        })
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        reg = Registration.objects.get(email='newrider@example.com')
+        self.assertEqual(reg.prospective_member, Registration.ProspectiveMember.NO)
+
+    def test_staff_edit_writes_yes_when_checkbox_checked(self):
+        # Arrange
+        reg = self._create_registration(Registration.ProspectiveMember.NO)
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.post(
+            reverse('staff_registration_edit', args=[self.event.id, reg.id]),
+            {
+                'first_name': reg.first_name, 'last_name': reg.last_name,
+                'email': reg.email, 'phone': reg.phone,
+                'ride': self.ride.id,
+                'prospective_member': 'on',
+            },
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        reloaded = Registration.objects.get(id=reg.id)
+        self.assertEqual(reloaded.prospective_member, Registration.ProspectiveMember.YES)
+
+    def test_staff_edit_form_is_prefilled_from_the_registration(self):
+        # Arrange
+        reg = self._create_registration(Registration.ProspectiveMember.YES)
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        response = self.client.get(
+            reverse('staff_registration_edit', args=[self.event.id, reg.id])
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['form'].initial['prospective_member'])
+
+    def test_prospective_member_column_visible_on_manage_when_event_asks(self):
+        # Arrange
+        self._create_registration(Registration.ProspectiveMember.YES)
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        column_names = self._column_names()
+
+        # Assert
+        self.assertIn('prospective_member', column_names)
+
+    def test_prospective_member_column_hidden_on_manage_when_event_does_not_ask(self):
+        # Arrange
+        self.event.ask_prospective_member = False
+        self.event.save(update_fields=['ask_prospective_member'])
+        self._create_registration(Registration.ProspectiveMember.NOT_APPLICABLE)
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        column_names = self._column_names()
+
+        # Assert
+        self.assertNotIn('prospective_member', column_names)
+
+    def test_both_question_columns_visible_when_event_asks_both(self):
+        # Arrange
+        self.event.ask_first_time_attendee = True
+        self.event.save(update_fields=['ask_first_time_attendee'])
+        reg = self._create_registration(Registration.ProspectiveMember.YES)
+        reg.first_time_attendee = Registration.FirstTimeAttendee.YES
+        reg.save(update_fields=['first_time_attendee'])
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        column_names = self._column_names()
+
+        # Assert
+        self.assertIn('prospective_member', column_names)
+        self.assertIn('first_time_attendee', column_names)
+
+    def test_neither_question_column_visible_when_event_asks_neither(self):
+        # Arrange
+        self.event.ask_prospective_member = False
+        self.event.ask_first_time_attendee = False
+        self.event.save(update_fields=['ask_prospective_member', 'ask_first_time_attendee'])
+        self._create_registration(Registration.ProspectiveMember.NOT_APPLICABLE)
+        self.client.login(username='staff@example.com', password='password123')
+
+        # Act
+        column_names = self._column_names()
+
+        # Assert
+        self.assertNotIn('prospective_member', column_names)
+        self.assertNotIn('first_time_attendee', column_names)
+
+
 class ExternalRegistrationBlocksManageTests(BaseManageTestCase):
     def setUp(self):
         super().setUp()

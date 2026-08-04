@@ -104,6 +104,8 @@ class EventService:
             ride_leaders_wanted=source_event.ride_leaders_wanted,
             requires_emergency_contact=source_event.requires_emergency_contact,
             requires_membership=source_event.requires_membership,
+            ask_first_time_attendee=source_event.ask_first_time_attendee,
+            ask_prospective_member=source_event.ask_prospective_member,
             organizer_email=source_event.organizer_email,
         )
 

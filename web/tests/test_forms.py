@@ -3,7 +3,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from backoffice.models import Event, Ride, SpeedRange, Program, Route
-from web.forms import RegistrationForm, EmailLoginForm
+from web.forms import RegistrationForm, RegistrationEditForm, StaffRegistrationForm, EmailLoginForm
 
 
 class RegistrationFormTest(TestCase):
@@ -461,6 +461,94 @@ class FirstTimeAttendeeFormTests(TestCase):
 
         # Assert
         self.assertNotIn('first_time_attendee', form.fields)
+
+
+class ProspectiveMemberFormTests(TestCase):
+    def setUp(self):
+        # Arrange
+        now = timezone.now()
+        program = Program.objects.create(name="Test Program")
+        self.route = Route.objects.create(name="Test Route")
+
+        self.event_asks = Event.objects.create(
+            name="Event asks prospective member",
+            program=program,
+            starts_at=now,
+            ends_at=now,
+            registration_closes_at=now,
+            ask_prospective_member=True,
+        )
+        Ride.objects.create(event=self.event_asks, name="R", route=self.route)
+
+        self.event_does_not_ask = Event.objects.create(
+            name="Event does not ask",
+            program=program,
+            starts_at=now,
+            ends_at=now,
+            registration_closes_at=now,
+            ask_prospective_member=False,
+        )
+        Ride.objects.create(event=self.event_does_not_ask, name="R", route=self.route)
+
+    def test_registration_form_has_field_when_event_asks(self):
+        # Act
+        form = RegistrationForm(event=self.event_asks)
+
+        # Assert
+        self.assertIn('prospective_member', form.fields)
+        self.assertFalse(form.fields['prospective_member'].required)
+        self.assertEqual(form.fields['prospective_member'].label, "I am not (yet) a member")
+
+    def test_registration_form_does_not_have_field_when_event_does_not_ask(self):
+        # Act
+        form = RegistrationForm(event=self.event_does_not_ask)
+
+        # Assert
+        self.assertNotIn('prospective_member', form.fields)
+
+    def test_staff_form_has_field_when_event_asks(self):
+        # Act
+        form = StaffRegistrationForm(event=self.event_asks)
+
+        # Assert
+        self.assertIn('prospective_member', form.fields)
+
+    def test_staff_form_does_not_have_field_when_event_does_not_ask(self):
+        # Act
+        form = StaffRegistrationForm(event=self.event_does_not_ask)
+
+        # Assert
+        self.assertNotIn('prospective_member', form.fields)
+
+    def test_edit_form_never_has_field(self):
+        # Act
+        asking_form = RegistrationEditForm(event=self.event_asks)
+        other_form = RegistrationEditForm(event=self.event_does_not_ask)
+
+        # Assert
+        self.assertNotIn('prospective_member', asking_form.fields)
+        self.assertNotIn('prospective_member', other_form.fields)
+
+    def test_registration_form_valid_without_checking_the_box(self):
+        # Arrange
+        ride = self.event_asks.ride_set.first()
+        form_data = {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com',
+            'phone': '+16135550100',
+            'ride': ride.id,
+            'emergency_contact_name': 'Contact Person',
+            'emergency_contact_phone': '+16135550101',
+            'membership_confirmation': True,
+        }
+
+        # Act
+        form = RegistrationForm(data=form_data, event=self.event_asks)
+
+        # Assert
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertFalse(form.cleaned_data['prospective_member'])
 
 
 class EmailLoginFormTest(TestCase):

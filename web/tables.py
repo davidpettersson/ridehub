@@ -14,6 +14,7 @@ class RegistrationTable(tables.Table):
     speed_range_preference = tables.Column(verbose_name="Speed")
     ride_leader_preference = tables.Column(verbose_name="Ride leader")
     first_time_attendee = tables.Column(verbose_name="First time")
+    prospective_member = tables.Column(verbose_name="Prospective member")
     emergency_contact_name = tables.Column(verbose_name="Emergency contact")
     emergency_contact_phone = tables.Column(verbose_name="Emergency phone")
     actions = tables.TemplateColumn(
@@ -26,8 +27,8 @@ class RegistrationTable(tables.Table):
         model = Registration
         fields = (
             'name', 'email', 'phone', 'ride', 'speed_range_preference',
-            'ride_leader_preference', 'first_time_attendee', 'emergency_contact_name',
-            'emergency_contact_phone', 'actions',
+            'ride_leader_preference', 'first_time_attendee', 'prospective_member',
+            'emergency_contact_name', 'emergency_contact_phone', 'actions',
         )
         attrs = {
             'class': 'table',
@@ -71,6 +72,12 @@ class RegistrationTable(tables.Table):
         display = record.get_first_time_attendee_display()
         return format_html('<span class="small text-muted">{}</span>', display)
 
+    def render_prospective_member(self, value, record):
+        if value == Registration.ProspectiveMember.YES:
+            return format_html('<span class="badge bg-primary">Yes</span>')
+        display = record.get_prospective_member_display()
+        return format_html('<span class="small text-muted">{}</span>', display)
+
     def render_emergency_contact_name(self, value):
         return format_html('<span class="small text-muted">{}</span>', value)
 
@@ -86,6 +93,7 @@ class PublicRegistrationTable(tables.Table):
     ride = tables.Column()
     speed_range_preference = tables.Column(verbose_name="Speed group")
     first_time_attendee = tables.Column(verbose_name="First time")
+    prospective_member = tables.Column(verbose_name="Prospective member")
     email = tables.Column()
     phone = tables.Column()
     emergency_contact_name = tables.Column(verbose_name="Emergency contact")
@@ -95,7 +103,8 @@ class PublicRegistrationTable(tables.Table):
         model = Registration
         fields = (
             'name', 'ride', 'speed_range_preference',
-            'first_time_attendee', 'email', 'phone', 'emergency_contact_name', 'emergency_contact_phone',
+            'first_time_attendee', 'prospective_member', 'email', 'phone',
+            'emergency_contact_name', 'emergency_contact_phone',
         )
         attrs = {
             'class': 'table',
@@ -145,6 +154,10 @@ class PublicRegistrationTable(tables.Table):
 
     def render_first_time_attendee(self, value, record):
         display = record.get_first_time_attendee_display()
+        return format_html('<span class="small text-muted">{}</span>', display)
+
+    def render_prospective_member(self, value, record):
+        display = record.get_prospective_member_display()
         return format_html('<span class="small text-muted">{}</span>', display)
 
     def render_email(self, value):

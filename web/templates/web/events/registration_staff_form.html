@@ -31,7 +31,7 @@
 
                 <div class="mb-4">
                     {% for field in form %}
-                        {% if field.name == 'ride_leader_preference' or field.name == 'first_time_attendee' %}
+                        {% if field.name == 'ride_leader_preference' or field.name == 'first_time_attendee' or field.name == 'prospective_member' %}
                             <div class="mb-3">
                                 <div class="form-check">
                                     {{ field }}

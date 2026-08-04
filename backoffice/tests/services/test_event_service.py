@@ -449,6 +449,22 @@ class DuplicateEventTestCase(TestCase):
         self.assertEqual(new_event.requires_membership, True)
         self.assertEqual(new_event.organizer_email, "organizer@example.com")
 
+    def test_duplicate_event_copies_registration_question_flags(self):
+        # Arrange
+        self.source_event.ask_first_time_attendee = True
+        self.source_event.ask_prospective_member = True
+        self.source_event.save()
+        new_date = self.base_start_time.date() + datetime.timedelta(days=7)
+
+        # Act
+        new_event = self.service.duplicate_event(
+            self.source_event, "New Event Name", new_date
+        )
+
+        # Assert
+        self.assertTrue(new_event.ask_first_time_attendee)
+        self.assertTrue(new_event.ask_prospective_member)
+
     def test_duplicate_event_preserves_live_state(self):
         new_date = self.base_start_time.date() + datetime.timedelta(days=7)
 
