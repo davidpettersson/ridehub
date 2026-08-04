@@ -2570,6 +2570,105 @@ class FirstTimeAttendeeServiceTests(TestCase):
         with self.assertRaises(ValueError):
             self.service.register(user_detail, registration_detail, self.event)
 
+
+class ProspectiveMemberServiceTests(TestCase):
+    def setUp(self):
+        # Arrange
+        self.service = RegistrationService()
+        self.user = User.objects.create_user(
+            username='pmuser', email='pm@example.com', password='pw',
+            first_name='PM', last_name='User',
+        )
+        self.user.profile.phone = '+16135552222'
+        self.user.profile.email_verified = True
+        self.user.profile.save()
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            program=self.program,
+            name="Event asks prospective member",
+            starts_at=timezone.now() + timezone.timedelta(days=7),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=6),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            ask_prospective_member=True,
+        )
+
+    def _user_detail(self):
+        return UserDetail(
+            first_name=self.user.first_name, last_name=self.user.last_name,
+            email=self.user.email, phone='+16135552222',
+        )
+
+    def test_register_persists_prospective_member_yes(self):
+        # Arrange
+        registration_detail = RegistrationDetail(
+            ride=None, ride_leader_preference=None, speed_range_preference=None,
+            emergency_contact_name=None, emergency_contact_phone=None,
+            prospective_member=Registration.ProspectiveMember.YES,
+        )
+
+        # Act
+        self.service.register(self._user_detail(), registration_detail, self.event)
+
+        # Assert
+        registration = Registration.objects.get(user=self.user, event=self.event)
+        self.assertEqual(registration.prospective_member, Registration.ProspectiveMember.YES)
+
+    def test_register_persists_prospective_member_no(self):
+        # Arrange
+        registration_detail = RegistrationDetail(
+            ride=None, ride_leader_preference=None, speed_range_preference=None,
+            emergency_contact_name=None, emergency_contact_phone=None,
+            prospective_member=Registration.ProspectiveMember.NO,
+        )
+
+        # Act
+        self.service.register(self._user_detail(), registration_detail, self.event)
+
+        # Assert
+        registration = Registration.objects.get(user=self.user, event=self.event)
+        self.assertEqual(registration.prospective_member, Registration.ProspectiveMember.NO)
+
+    def test_register_raises_value_error_when_prospective_member_missing(self):
+        # Arrange
+        registration_detail = RegistrationDetail(
+            ride=None, ride_leader_preference=None, speed_range_preference=None,
+            emergency_contact_name=None, emergency_contact_phone=None,
+            prospective_member=None,
+        )
+
+        # Act & Assert
+        with self.assertRaises(ValueError):
+            self.service.register(self._user_detail(), registration_detail, self.event)
+
+    def test_register_leaves_prospective_member_not_applicable_when_event_does_not_ask(self):
+        # Arrange
+        self.event.ask_prospective_member = False
+        self.event.save()
+        registration_detail = RegistrationDetail(
+            ride=None, ride_leader_preference=None, speed_range_preference=None,
+            emergency_contact_name=None, emergency_contact_phone=None,
+        )
+
+        # Act
+        self.service.register(self._user_detail(), registration_detail, self.event)
+
+        # Assert
+        registration = Registration.objects.get(user=self.user, event=self.event)
+        self.assertEqual(registration.prospective_member, Registration.ProspectiveMember.NOT_APPLICABLE)
+
+    def test_get_event_requirements_reports_prospective_member_flag(self):
+        # Arrange
+        self.event.ask_prospective_member = True
+        self.event.save()
+
+        # Act
+        requirements = self.service.get_event_requirements(self.event)
+
+        # Assert
+        self.assertTrue(requirements.ask_prospective_member)
+
+
 class MaskHiddenNamesTestCase(TestCase):
     def setUp(self):
         self.service = RegistrationService()

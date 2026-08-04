@@ -67,6 +67,7 @@ class RegistrationDetail:
     emergency_contact_name: str | None
     emergency_contact_phone: str | None
     first_time_attendee: str | None = None
+    prospective_member: str | None = None
 
 
 @dataclass
@@ -76,6 +77,7 @@ class EventRequirements:
     requires_membership: bool
     ride_leaders_wanted: bool
     ask_first_time_attendee: bool
+    ask_prospective_member: bool
 
 
 class RegistrationService:
@@ -114,6 +116,13 @@ class RegistrationService:
                     "first_time_attendee must be provided when event.ask_first_time_attendee is True"
                 )
             registration.first_time_attendee = registration_detail.first_time_attendee
+
+        if event.ask_prospective_member:
+            if registration_detail.prospective_member is None:
+                raise ValueError(
+                    "prospective_member must be provided when event.ask_prospective_member is True"
+                )
+            registration.prospective_member = registration_detail.prospective_member
 
         if request_detail:
             registration.ip_address = request_detail.ip_address
@@ -370,6 +379,7 @@ class RegistrationService:
             requires_membership=event.requires_membership,
             ride_leaders_wanted=event.ride_leaders_wanted,
             ask_first_time_attendee=event.ask_first_time_attendee,
+            ask_prospective_member=event.ask_prospective_member,
         )
 
     def validate_registration_selections(self, event: Event, ride: Ride | None, speed_range: SpeedRange | None) -> dict:

@@ -92,7 +92,7 @@ class EventAdmin(AuditedAdminMixin, SortableAdminBase, admin.ModelAdmin):
                 'description': 'Configure when registration closes and/or provide an external registration URL.'
             }),
             ('Registration form settings', {
-                'fields': ('ride_leaders_wanted', 'requires_emergency_contact', 'requires_membership', 'ask_first_time_attendee'),
+                'fields': ('ride_leaders_wanted', 'requires_emergency_contact', 'requires_membership', 'ask_first_time_attendee', 'ask_prospective_member'),
                 'description': 'Configure what information is collected during registration.'
             }),
         ]

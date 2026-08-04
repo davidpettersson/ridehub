@@ -130,6 +130,12 @@ class RegistrationForm(EventRegistrationFieldsMixin, forms.Form):
                 required=False,
             )
 
+        if requirements.ask_prospective_member:
+            self.fields['prospective_member'] = forms.BooleanField(
+                label="I am not (yet) a member",
+                required=False,
+            )
+
         if requirements.requires_membership:
             self.fields['membership_confirmation'] = forms.BooleanField(
                 required=True,
@@ -213,6 +219,12 @@ class StaffRegistrationForm(EventRegistrationFieldsMixin, forms.Form):
         if requirements.ask_first_time_attendee:
             self.fields['first_time_attendee'] = forms.BooleanField(
                 label=f"First time attending {event.program.get_article_display()} {event.program.name} event",
+                required=False,
+            )
+
+        if requirements.ask_prospective_member:
+            self.fields['prospective_member'] = forms.BooleanField(
+                label="I am not (yet) a member",
                 required=False,
             )
 

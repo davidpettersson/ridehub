@@ -987,6 +987,60 @@ class EventRegistrationsColumnTests(BaseEventViewTestCase):
         self.assertContains(response, 'Ride leader')
 
 
+class EventRegistrationsProspectiveMemberColumnTests(BaseEventViewTestCase):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse('riders_list', kwargs={'event_id': self.event.id})
+        self.event.ask_prospective_member = True
+        self.event.save(update_fields=['ask_prospective_member'])
+        self.regular_registration.prospective_member = Registration.ProspectiveMember.YES
+        self.regular_registration.save(update_fields=['prospective_member'])
+
+    def _column_names(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        return [col.name for col in response.context['table'].columns]
+
+    def test_column_hidden_from_anonymous_user_even_when_event_asks(self):
+        # Act
+        column_names = self._column_names()
+
+        # Assert
+        self.assertNotIn('prospective_member', column_names)
+
+    def test_column_visible_to_staff_when_event_asks(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        column_names = self._column_names()
+
+        # Assert
+        self.assertIn('prospective_member', column_names)
+
+    def test_column_hidden_from_staff_when_event_does_not_ask(self):
+        # Arrange
+        self.event.ask_prospective_member = False
+        self.event.save(update_fields=['ask_prospective_member'])
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        column_names = self._column_names()
+
+        # Assert
+        self.assertNotIn('prospective_member', column_names)
+
+    def test_first_time_column_still_hidden_from_staff_when_only_prospective_asked(self):
+        # Arrange
+        self.client.login(username='staff_user', password='password123')
+
+        # Act
+        column_names = self._column_names()
+
+        # Assert
+        self.assertNotIn('first_time_attendee', column_names)
+
+
 class EventDetailViewTests(BaseEventViewTestCase):
     """Tests for the event_detail view."""
 

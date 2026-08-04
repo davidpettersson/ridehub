@@ -62,6 +62,7 @@ def _is_section_collapsed(form: RegistrationForm, field_names: tuple, initial_da
 def _get_registration_detail(form: RegistrationForm | RegistrationEditForm) -> RegistrationDetail:
     ride_leader_raw = form.cleaned_data.get('ride_leader_preference')
     first_time_raw = form.cleaned_data.get('first_time_attendee')
+    prospective_member_raw = form.cleaned_data.get('prospective_member')
     return RegistrationDetail(
         ride=form.cleaned_data.get('ride'),
         speed_range_preference=form.cleaned_data.get('speed_range_preference'),
@@ -71,6 +72,8 @@ def _get_registration_detail(form: RegistrationForm | RegistrationEditForm) -> R
         if 'ride_leader_preference' in form.cleaned_data else None,
         first_time_attendee=bool_to_yes_no(first_time_raw, Registration.FirstTimeAttendee)
         if 'first_time_attendee' in form.cleaned_data else None,
+        prospective_member=bool_to_yes_no(prospective_member_raw, Registration.ProspectiveMember)
+        if 'prospective_member' in form.cleaned_data else None,
     )
 
 
