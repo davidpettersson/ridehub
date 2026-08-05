@@ -83,6 +83,64 @@ class EventForecastsViewTestCase(TestCase):
         self.assertContains(response, 'sunny')
         self.assertLess(content.index('rainy'), content.index('sunny'))
 
+    def _create_forecast_prepared_minutes_ago(self, minutes, condition='sun', temperature=20):
+        return self._create_forecast(
+            hourly=[{
+                'time': self.starts_at.isoformat(),
+                'condition': condition,
+                'temperature': temperature,
+                'aqhi': 2,
+            }],
+            prepared_at=timezone.now() - timedelta(minutes=minutes),
+        )
+
+    def test_collapses_a_forecast_matching_the_older_one_below_it(self):
+        # Arrange
+        event = self._create_event()
+        oldest = self._create_forecast_prepared_minutes_ago(90, temperature=20)
+        middle = self._create_forecast_prepared_minutes_ago(60, temperature=20)
+        newest = self._create_forecast_prepared_minutes_ago(30, temperature=25)
+
+        # Act
+        response = self.client.get(reverse('event_forecasts', args=[event.id]))
+
+        # Assert
+        content = response.content.decode()
+        self.assertEqual(content.count('collapse fc-minor'), 1)
+        self.assertLess(content.index(f'forecast-hourly-{newest.pk}'), content.index('collapse fc-minor'))
+        self.assertLess(content.index('collapse fc-minor'), content.index(f'forecast-hourly-{middle.pk}'))
+        self.assertLess(content.index(f'forecast-hourly-{middle.pk}'), content.index(f'forecast-hourly-{oldest.pk}'))
+        self.assertContains(response, 'Show all 3 forecasts')
+
+    def test_always_shows_the_newest_forecast_even_when_unchanged(self):
+        # Arrange
+        event = self._create_event()
+        oldest = self._create_forecast_prepared_minutes_ago(90)
+        self._create_forecast_prepared_minutes_ago(60)
+        newest = self._create_forecast_prepared_minutes_ago(30)
+
+        # Act
+        response = self.client.get(reverse('event_forecasts', args=[event.id]))
+
+        # Assert
+        content = response.content.decode()
+        self.assertEqual(content.count('collapse fc-minor'), 1)
+        self.assertLess(content.index(f'forecast-hourly-{newest.pk}'), content.index('collapse fc-minor'))
+        self.assertIn(f'forecast-hourly-{oldest.pk}', content)
+
+    def test_shows_no_toggle_when_every_forecast_differs(self):
+        # Arrange
+        event = self._create_event()
+        self._create_forecast_prepared_minutes_ago(60, temperature=20)
+        self._create_forecast_prepared_minutes_ago(30, temperature=25)
+
+        # Act
+        response = self.client.get(reverse('event_forecasts', args=[event.id]))
+
+        # Assert
+        self.assertNotContains(response, 'collapse fc-minor')
+        self.assertNotContains(response, 'Show all')
+
     def test_excludes_forecasts_for_other_windows(self):
         # Arrange
         event = self._create_event()

@@ -18,12 +18,20 @@
         <h2 class="fs-5 fw-medium mb-3">Forecast history</h2>
         <div class="card shadow-sm mb-4">
             <div class="card-body p-4">
+                {% if forecast_hidden_count %}
+                <button type="button" class="btn btn-link btn-sm p-0 mb-2"
+                        data-bs-toggle="collapse" data-bs-target=".fc-minor" aria-expanded="false">
+                    Show all {{ forecast_total }} forecasts
+                </button>
+                {% endif %}
                 <div class="list-group list-group-flush">
-                    {% for forecast in forecasts %}
+                    {% for forecast, material in forecast_rows %}
+                    {% if not material %}<div class="collapse fc-minor">{% endif %}
                     <div class="list-group-item d-flex flex-wrap align-items-center justify-content-between gap-2 px-0">
                         <span class="text-muted small">{{ forecast.prepared_at|date:"M j, g:i A" }}</span>
                         {% include 'web/events/_forecast_badge.html' with expandable=True %}
                     </div>
+                    {% if not material %}</div>{% endif %}
                     {% empty %}
                     <p class="text-muted mb-0">No forecasts have been prepared for this event yet.</p>
                     {% endfor %}

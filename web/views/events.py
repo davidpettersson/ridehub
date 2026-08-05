@@ -16,6 +16,7 @@ from django_tables2 import RequestConfig
 from audit.services import AuditService
 from backoffice.models import Event, Registration
 from backoffice.services.event_service import EventService
+from backoffice.services.forecast_summary import summarize
 from backoffice.services.registration_service import RegistrationService
 from web.filters import PublicRegistrationFilter
 from web.tables import PublicRegistrationTable
@@ -200,14 +201,40 @@ def event_detail(request: HttpRequest, event_id: int) -> HttpResponse:
     return render(request, 'web/events/detail.html', context)
 
 
+def _forecast_badge_key(forecast) -> tuple | None:
+    if not forecast.has_readings:
+        return None
+    summary = summarize(forecast)
+    return (
+        summary.condition_primary,
+        summary.condition_warning,
+        summary.temperature_display,
+        summary.aqhi_category if summary.aqhi_visible else None,
+        summary.aqhi_warning_category,
+    )
+
+
+def _forecast_rows(forecasts) -> list[tuple]:
+    forecasts = list(forecasts)
+    keys = [_forecast_badge_key(forecast) for forecast in forecasts]
+    last = len(keys) - 1
+
+    return [
+        (forecast, index in (0, last) or keys[index] != keys[index + 1])
+        for index, forecast in enumerate(forecasts)
+    ]
+
+
 def event_forecasts(request: HttpRequest, event_id: int) -> HttpResponse:
     event = get_object_or_404(Event, id=event_id)
 
-    forecasts = EventService().fetch_forecast_history(event)
+    forecast_rows = _forecast_rows(EventService().fetch_forecast_history(event))
 
     context = {
         'event': event,
-        'forecasts': forecasts,
+        'forecast_rows': forecast_rows,
+        'forecast_total': len(forecast_rows),
+        'forecast_hidden_count': sum(1 for _, material in forecast_rows if not material),
     }
 
     return render(request, 'web/events/forecasts.html', context)
