@@ -11,6 +11,7 @@
         <a href="{% url 'staff_registration_add' event.id %}" class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center">
             <i class="bi bi-plus-circle me-2"></i> Add registration
         </a>
+        {% include 'web/events/_copy_emails_buttons.html' %}
         {% endif %}
     </div>
 

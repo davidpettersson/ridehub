@@ -127,6 +127,35 @@ class ManagePageAvailabilityTests(BaseManageTestCase):
         self.assertEqual(updated_reg.state, Registration.STATE_WITHDRAWN)
 
 
+class ManagePageCopyEmailsTests(BaseManageTestCase):
+    def test_manage_page_shows_copy_rider_emails_button(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+        self._create_confirmed_registration(self.regular_user, self.ride, self.speed_range)
+
+        # Act
+        response = self.client.get(reverse('event_registrations_manage', args=[self.event.id]))
+
+        # Assert
+        self.assertContains(response, 'Copy all rider emails')
+        self.assertNotContains(response, 'Copy ride leader emails')
+        self.assertFalse(response.context['has_ride_leaders'])
+
+    def test_manage_page_shows_ride_leader_button_when_leaders_present(self):
+        # Arrange
+        self.client.login(username='staff@example.com', password='password123')
+        reg = self._create_confirmed_registration(self.regular_user, self.ride, self.speed_range)
+        reg.ride_leader_preference = Registration.RideLeaderPreference.YES
+        reg.save()
+
+        # Act
+        response = self.client.get(reverse('event_registrations_manage', args=[self.event.id]))
+
+        # Assert
+        self.assertContains(response, 'Copy ride leader emails')
+        self.assertTrue(response.context['has_ride_leaders'])
+
+
 class ManagePageAccessTests(BaseManageTestCase):
     def test_staff_can_access_manage_page(self):
         # Arrange

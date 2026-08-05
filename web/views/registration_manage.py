@@ -61,6 +61,10 @@ def event_registrations_manage(request: HttpRequest, event_id: int) -> HttpRespo
         'filter': registration_filter,
         'filter_clear_url': reverse('event_registrations_manage', args=[event_id]),
         'registrations_available': True,
+        'has_ride_leaders': registrations.filter(
+            ride_leader_preference=Registration.RideLeaderPreference.YES,
+            state=Registration.STATE_CONFIRMED,
+        ).exists(),
     }
 
     return render(request, 'web/events/registrations_manage.html', context)
