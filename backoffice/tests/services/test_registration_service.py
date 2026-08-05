@@ -1,5 +1,6 @@
 import datetime
 import time
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.core.signing import TimestampSigner
@@ -11,8 +12,8 @@ from audit.models import AuditEvent
 from backoffice.models import Event, Registration, Program, UserProfile, Ride, Route, SpeedRange
 from backoffice.services.registration_service import (
     RegistrationService, UserDetail, RegistrationDetail, RegistrationResult,
-    VERIFICATION_TOKEN_SALT, mask_name_with_initials, mask_name_with_random_letters,
-    mask_name_with_dots,
+    VERIFICATION_TOKEN_SALT, VERIFICATION_RESEND_INTERVAL, mask_name_with_initials,
+    mask_name_with_random_letters, mask_name_with_dots,
 )
 from backoffice.services.request_service import RequestDetail
 
@@ -2467,6 +2468,8 @@ class EmailVerificationFlowTestCase(TestCase):
         registration = Registration.objects.get(event=self.event)
         signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
         token = signer.sign(str(registration.id))
+        registration.last_verification_sent_at = timezone.now() - timedelta(hours=24)
+        registration.save(update_fields=['last_verification_sent_at'])
         mail.outbox = []
 
         # Act
@@ -2480,6 +2483,37 @@ class EmailVerificationFlowTestCase(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('Verify', mail.outbox[0].subject)
 
+    def test_verify_expired_token_does_not_resend_within_interval(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+        registration = Registration.objects.get(event=self.event)
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+        token = signer.sign(str(registration.id))
+        registration.last_verification_sent_at = timezone.now() - timedelta(hours=24)
+        registration.save(update_fields=['last_verification_sent_at'])
+        mail.outbox = []
+
+        future_time = time.time() + 86401
+        with patch('django.core.signing.time.time', return_value=future_time):
+            self.service.verify_registration(token)
+            self.assertEqual(len(mail.outbox), 1)
+            mail.outbox = []
+
+            # Act
+            result_registration, error = self.service.verify_registration(token)
+
+        # Assert
+        self.assertIsNone(result_registration)
+        self.assertEqual(error, 'expired')
+        self.assertEqual(len(mail.outbox), 0)
+
     def test_verify_invalid_token_returns_error(self):
         # Act
         result_registration, error = self.service.verify_registration("totally-invalid-token")
@@ -2488,7 +2522,7 @@ class EmailVerificationFlowTestCase(TestCase):
         self.assertIsNone(result_registration)
         self.assertEqual(error, 'invalid')
 
-    def test_verify_already_confirmed_returns_not_found(self):
+    def test_verify_already_confirmed_succeeds_again(self):
         # Arrange
         request_detail = RequestDetail(
             ip_address='127.0.0.1',
@@ -2509,8 +2543,105 @@ class EmailVerificationFlowTestCase(TestCase):
         result_registration, error = self.service.verify_registration(token)
 
         # Assert
+        self.assertIsNone(error)
+        self.assertEqual(result_registration.pk, registration.pk)
+        self.assertEqual(result_registration.state, Registration.STATE_CONFIRMED)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_verify_withdrawn_returns_not_found(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+        registration = Registration.objects.get(event=self.event)
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+        token = signer.sign(str(registration.id))
+        registration.withdraw()
+        registration.save()
+
+        # Act
+        result_registration, error = self.service.verify_registration(token)
+
+        # Assert
         self.assertIsNone(result_registration)
         self.assertEqual(error, 'not_found')
+
+    def test_register_duplicate_resends_verification_after_interval(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+        registration = Registration.objects.get(event=self.event)
+        registration.last_verification_sent_at = timezone.now() - VERIFICATION_RESEND_INTERVAL - timedelta(seconds=1)
+        registration.save(update_fields=['last_verification_sent_at'])
+        mail.outbox = []
+
+        # Act
+        result = self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+
+        # Assert
+        self.assertEqual(result, RegistrationResult.DUPLICATE)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Verify', mail.outbox[0].subject)
+
+    def test_register_duplicate_does_not_resend_within_interval(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+        mail.outbox = []
+
+        # Act
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+
+        # Assert
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_register_duplicate_confirmed_does_not_resend_verification(self):
+        # Arrange
+        request_detail = RequestDetail(
+            ip_address='127.0.0.1',
+            user_agent='Test',
+            authenticated=False,
+        )
+        self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+        registration = Registration.objects.get(event=self.event)
+        registration.confirm()
+        registration.save()
+        mail.outbox = []
+
+        # Act
+        result = self.service.register(
+            self.user_detail, self.registration_detail, self.event, request_detail
+        )
+
+        # Assert
+        self.assertEqual(result, RegistrationResult.DUPLICATE)
+        self.assertEqual(len(mail.outbox), 0)
 
 
 class FirstTimeAttendeeServiceTests(TestCase):

@@ -1404,7 +1404,7 @@ class RegistrationVerifyViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'web/registrations/verification_failed.html')
 
-    def test_verify_already_confirmed_shows_not_found(self):
+    def test_verify_already_confirmed_still_logs_in(self):
         # Arrange
         self.registration.confirm()
         self.registration.save()
@@ -1416,6 +1416,36 @@ class RegistrationVerifyViewTests(TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/registrations/verification_success.html')
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.user.pk)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_verify_after_link_prefetch_still_logs_in(self):
+        # Arrange
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+        token = signer.sign(str(self.registration.id))
+        url = reverse('registration_verify') + f'?token={token}'
+        scanner = self.client_class()
+        scanner.get(url)
+
+        # Act
+        response = self.client.get(url)
+
+        # Assert
+        self.assertTemplateUsed(response, 'web/registrations/verification_success.html')
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.user.pk)
+
+    def test_verify_withdrawn_shows_not_found(self):
+        # Arrange
+        self.registration.withdraw()
+        self.registration.save()
+        signer = TimestampSigner(salt=VERIFICATION_TOKEN_SALT)
+        token = signer.sign(str(self.registration.id))
+
+        # Act
+        response = self.client.get(reverse('registration_verify') + f'?token={token}')
+
+        # Assert
         self.assertTemplateUsed(response, 'web/registrations/verification_failed.html')
         self.assertEqual(response.context['reason'], 'not_found')
 

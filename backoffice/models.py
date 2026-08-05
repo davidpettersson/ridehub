@@ -875,6 +875,7 @@ class Registration(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
     withdrawn_at = models.DateTimeField(null=True, blank=True)
+    last_verification_sent_at = models.DateTimeField(null=True, blank=True)
 
     user = models.ForeignKey(
         User,

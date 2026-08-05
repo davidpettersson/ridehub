@@ -287,7 +287,7 @@ def _build_registrations_context(request, event, contacts_revealed):
     can_reveal_contacts = can_access_rider_contacts
 
     visible_states = [Registration.STATE_CONFIRMED]
-    if is_staff:
+    if can_access_rider_contacts:
         visible_states.append(Registration.STATE_UNVERIFIED)
 
     all_riders = Registration.objects.filter(
