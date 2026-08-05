@@ -144,17 +144,17 @@
         {% include 'web/events/_copy_emails_buttons.html' %}
         {% endif %}
         {% if can_reveal_contacts and not contacts_revealed %}
-        <button class="btn btn-danger btn-sm rounded-pill d-inline-flex align-items-center"
+        <button class="btn btn-warning btn-sm rounded-pill d-inline-flex align-items-center"
                 hx-get="{% url 'event_emergency_contacts' event.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
                 hx-target="#registrations-content"
                 hx-swap="innerHTML"
-                hx-on::after-request="this.disabled=true; this.classList.remove('btn-danger'); this.classList.add('btn-outline-secondary')">
+                hx-on::after-request="this.disabled=true; this.classList.remove('btn-warning'); this.classList.add('btn-outline-secondary')">
             <i class="bi bi-shield-exclamation me-2"></i> Reveal contact details
         </button>
         {% endif %}
         {% if can_access_rider_contacts %}
         <a href="{% url 'event_registrations_print' event.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
-           class="btn btn-danger btn-sm rounded-pill d-inline-flex align-items-center"
+           class="btn btn-warning btn-sm rounded-pill d-inline-flex align-items-center"
            target="_blank" rel="noopener">
             <i class="bi bi-printer me-2"></i> Print contact details
         </a>
