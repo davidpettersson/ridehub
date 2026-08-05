@@ -1,0 +1,49 @@
+<button class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center copy-emails-btn" data-type="all">
+    <i class="bi bi-clipboard me-2"></i>
+    Copy all rider emails
+</button>
+{% if has_ride_leaders %}
+<button class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center copy-emails-btn" data-type="leaders">
+    <i class="bi bi-clipboard me-2"></i>
+    Copy ride leader emails
+</button>
+{% endif %}
+<div id="copy-success-message" class="alert alert-success w-100 mb-0 small d-none d-print-none" role="alert">
+    <i class="bi bi-check-circle me-2"></i>
+    <span id="copy-success-text"></span>
+</div>
+<script>
+(function() {
+    var copyButtons = document.querySelectorAll('.copy-emails-btn');
+    var successMessage = document.getElementById('copy-success-message');
+    var successText = document.getElementById('copy-success-text');
+
+    copyButtons.forEach(function(button) {
+        button.addEventListener('click', async function() {
+            var type = this.getAttribute('data-type');
+
+            try {
+                var url = "{% url 'event_emails' event.id %}" + (type === 'leaders' ? '?type=leaders' : '');
+                var response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch emails');
+                }
+                var emails = await response.text();
+
+                await navigator.clipboard.writeText(emails);
+
+                var count = emails ? emails.split(',').length : 0;
+                var label = type === 'all' ? 'rider' : 'ride leader';
+                successText.textContent = 'Copied ' + count + ' ' + label + ' email' + (count !== 1 ? 's' : '') + ' to clipboard!';
+                successMessage.classList.remove('d-none');
+
+                setTimeout(function() {
+                    successMessage.classList.add('d-none');
+                }, 3000);
+            } catch (err) {
+                alert('Failed to copy emails. Please try again.');
+            }
+        });
+    });
+})();
+</script>
