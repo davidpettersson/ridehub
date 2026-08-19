@@ -95,6 +95,10 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
     user = request.user if request.user.is_authenticated else None
 
     if user and registration_service.has_completed_registration(user, event):
+        logger.info(
+            "Redirecting user %s (id=%d) away from registration form for event %s (id=%d); already registered",
+            user.email, user.id, event.name, event.id,
+        )
         return redirect('event_detail', event_id=event.id)
 
     allowed, reason = registration_service.is_registration_allowed(event)

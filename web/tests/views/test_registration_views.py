@@ -1823,7 +1823,8 @@ class StaleUnverifiedRegistrationTests(TestCase):
 
     def test_signed_in_resubmission_does_not_create_duplicate_registration(self):
         # Arrange
-        self._register_anonymously()
+        registration = self._register_anonymously()
+
         self.client.force_login(self.user)
 
         # Act
@@ -1831,6 +1832,33 @@ class StaleUnverifiedRegistrationTests(TestCase):
 
         # Assert
         self.assertEqual(Registration.objects.filter(event=self.event).count(), 1)
+        self.assertEqual(Registration.objects.get(event=self.event).pk, registration.pk)
+
+    def test_signed_in_resubmission_preserves_original_submitted_at(self):
+        # Arrange
+        registration = self._register_anonymously()
+        original_submitted_at = registration.submitted_at
+        self.client.force_login(self.user)
+
+        # Act
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Assert
+        adopted = Registration.objects.get(pk=registration.pk)
+        self.assertEqual(adopted.submitted_at, original_submitted_at)
+        self.assertIsNotNone(adopted.confirmed_at)
+
+    def test_signed_in_resubmission_records_registration_as_authenticated(self):
+        # Arrange
+        registration = self._register_anonymously()
+        self.assertFalse(registration.authenticated)
+        self.client.force_login(self.user)
+
+        # Act
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Assert
+        self.assertTrue(Registration.objects.get(pk=registration.pk).authenticated)
 
     def test_signed_in_resubmission_sends_confirmation_not_verification_email(self):
         # Arrange
