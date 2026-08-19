@@ -2401,7 +2401,8 @@ class EmailVerificationFlowTestCase(TestCase):
 
         # Assert
         self.assertEqual(result, RegistrationResult.DUPLICATE)
-        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Verify", mail.outbox[0].subject)
 
     def test_verify_registration_confirms_and_marks_verified(self):
         # Arrange

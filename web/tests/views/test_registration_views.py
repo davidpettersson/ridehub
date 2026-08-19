@@ -1,4 +1,6 @@
+import re
 from datetime import timedelta
+from urllib.parse import urlparse
 
 from django.core.signing import TimestampSigner
 from django.test import TestCase
@@ -1739,3 +1741,239 @@ class SignedInRegistrationRoundTripTests(TestCase):
             ).count(),
             1,
         )
+
+
+class StaleUnverifiedRegistrationTests(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Pending Verification Event",
+            program=self.program,
+            starts_at=timezone.now() + timezone.timedelta(days=3),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=2),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+        )
+        self.user = User.objects.create_user(
+            username='rider@example.com',
+            email='rider@example.com',
+            first_name='Stale',
+            last_name='Rider',
+        )
+        self.user.profile.email_verified = True
+        self.user.profile.save()
+        self.form_data = {
+            'first_name': 'Stale',
+            'last_name': 'Rider',
+            'email': 'rider@example.com',
+            'phone': '+16135550100',
+        }
+
+    def _register_anonymously(self) -> Registration:
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+        mail.outbox = []
+        return Registration.objects.get(event=self.event)
+
+    def test_anonymous_registration_is_held_unverified(self):
+        # Act
+        registration = self._register_anonymously()
+
+        # Assert
+        self.assertEqual(registration.state, Registration.STATE_UNVERIFIED)
+
+    def test_event_page_offers_register_button_while_unverified(self):
+        # Arrange
+        self._register_anonymously()
+        self.client.force_login(self.user)
+
+        # Act
+        response = self.client.get(reverse('event_detail', args=[self.event.id]))
+
+        # Assert
+        self.assertFalse(response.context['user_is_registered'])
+
+    def test_signed_in_user_reaches_form_instead_of_silent_redirect(self):
+        # Arrange
+        self._register_anonymously()
+        self.client.force_login(self.user)
+
+        # Act
+        response = self.client.get(reverse('registration_create', args=[self.event.id]))
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/events/registration.html')
+
+    def test_signed_in_resubmission_confirms_stale_unverified_registration(self):
+        # Arrange
+        registration = self._register_anonymously()
+        self.client.force_login(self.user)
+
+        # Act
+        response = self.client.post(
+            reverse('registration_create', args=[self.event.id]), self.form_data
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('submitted', response.url)
+        self.assertEqual(
+            Registration.objects.get(pk=registration.pk).state,
+            Registration.STATE_CONFIRMED,
+        )
+
+    def test_signed_in_resubmission_does_not_create_duplicate_registration(self):
+        # Arrange
+        registration = self._register_anonymously()
+
+        self.client.force_login(self.user)
+
+        # Act
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Assert
+        self.assertEqual(Registration.objects.filter(event=self.event).count(), 1)
+        self.assertEqual(Registration.objects.get(event=self.event).pk, registration.pk)
+
+    def test_signed_in_resubmission_preserves_original_submitted_at(self):
+        # Arrange
+        registration = self._register_anonymously()
+        original_submitted_at = registration.submitted_at
+        self.client.force_login(self.user)
+
+        # Act
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Assert
+        adopted = Registration.objects.get(pk=registration.pk)
+        self.assertEqual(adopted.submitted_at, original_submitted_at)
+        self.assertIsNotNone(adopted.confirmed_at)
+
+    def test_signed_in_resubmission_records_registration_as_authenticated(self):
+        # Arrange
+        registration = self._register_anonymously()
+        self.assertFalse(registration.authenticated)
+        self.client.force_login(self.user)
+
+        # Act
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Assert
+        self.assertTrue(Registration.objects.get(pk=registration.pk).authenticated)
+
+    def test_signed_in_resubmission_sends_confirmation_not_verification_email(self):
+        # Arrange
+        self._register_anonymously()
+        self.client.force_login(self.user)
+
+        # Act
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Assert
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Confirmed', mail.outbox[0].subject)
+        self.assertNotIn('Verify', mail.outbox[0].subject)
+
+    def test_signed_in_resubmission_marks_profile_email_verified(self):
+        # Arrange
+        self.user.profile.email_verified = False
+        self.user.profile.save()
+        self._register_anonymously()
+        self.client.force_login(self.user)
+
+        # Act
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Assert
+        self.user.profile.refresh_from_db()
+        self.assertTrue(self.user.profile.email_verified)
+
+    def test_anonymous_resubmission_resends_verification_email(self):
+        # Arrange
+        self._register_anonymously()
+
+        # Act
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Assert
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Verify', mail.outbox[0].subject)
+
+
+class VerificationEmailRoundTripTests(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Round Trip Ride",
+            program=self.program,
+            starts_at=timezone.now() + timezone.timedelta(days=5),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=4),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+        )
+        self.form_data = {
+            'first_name': 'Round',
+            'last_name': 'Trip',
+            'email': 'roundtrip@example.com',
+            'phone': '+16135550100',
+        }
+        mail.outbox = []
+
+    def _verification_target(self) -> str:
+        body = mail.outbox[0].body
+        match = re.search(r'https?://\S+/registrations/verify\?token=\S+', body)
+        self.assertIsNotNone(match, f"no verification URL found in email body: {body}")
+        parsed = urlparse(match.group(0))
+        return f"{parsed.path}?{parsed.query}"
+
+    def test_verification_email_contains_a_followable_link(self):
+        # Arrange
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Act
+        response = self.client.get(self._verification_target())
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/registrations/verification_success.html')
+
+    def test_following_verification_link_confirms_registration(self):
+        # Arrange
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+        registration = Registration.objects.get(event=self.event)
+
+        # Act
+        self.client.get(self._verification_target())
+
+        # Assert
+        self.assertEqual(
+            Registration.objects.get(pk=registration.pk).state,
+            Registration.STATE_CONFIRMED,
+        )
+
+    def test_following_verification_link_signs_the_user_in(self):
+        # Arrange
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Act
+        self.client.get(self._verification_target())
+
+        # Assert
+        response = self.client.get(reverse('event_detail', args=[self.event.id]))
+        self.assertTrue(response.context['user'].is_authenticated)
+        self.assertEqual(response.context['user'].email, 'roundtrip@example.com')
+
+    def test_following_verification_link_twice_is_not_an_error(self):
+        # Arrange
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+        target = self._verification_target()
+        self.client.get(target)
+
+        # Act
+        response = self.client.get(target)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/registrations/verification_failed.html')
