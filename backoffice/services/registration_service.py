@@ -86,10 +86,10 @@ class RegistrationService:
         self.email_service = EmailService()
         self.audit_service = AuditService()
 
-    def _create_registration(self, event: Event, user: User, user_detail: UserDetail,
-                             registration_detail: RegistrationDetail,
-                             request_detail: RequestDetail | None = None) -> Registration:
-        registration = Registration()
+    def _assign_registration_fields(self, registration: Registration, event: Event, user: User,
+                                    user_detail: UserDetail,
+                                    registration_detail: RegistrationDetail,
+                                    request_detail: RequestDetail | None = None) -> None:
         registration.event = event
         registration.user = user
 
@@ -129,6 +129,13 @@ class RegistrationService:
             registration.user_agent = request_detail.user_agent
             registration.authenticated = request_detail.authenticated
 
+    def _create_registration(self, event: Event, user: User, user_detail: UserDetail,
+                             registration_detail: RegistrationDetail,
+                             request_detail: RequestDetail | None = None) -> Registration:
+        registration = Registration()
+        self._assign_registration_fields(
+            registration, event, user, user_detail, registration_detail, request_detail
+        )
         registration.full_clean(exclude=['state'])
         registration.save()
         return registration
@@ -214,11 +221,29 @@ class RegistrationService:
 
         return registration, None
 
-    def has_active_registration(self, user: User, event: Event) -> bool:
+    def has_completed_registration(self, user: User, event: Event) -> bool:
         return Registration.objects.filter(
             user=user, event=event,
-            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED, Registration.STATE_UNVERIFIED],
+            state__in=[Registration.STATE_SUBMITTED, Registration.STATE_CONFIRMED],
         ).exists()
+
+    def find_pending_verification(self, user: User, event: Event) -> Registration | None:
+        return Registration.objects.filter(
+            user=user, event=event, state=Registration.STATE_UNVERIFIED,
+        ).order_by('-pk').first()
+
+    def _adopt_pending_registration(self, registration: Registration, user_detail: UserDetail,
+                                    registration_detail: RegistrationDetail,
+                                    request_detail: RequestDetail | None = None) -> Registration:
+        self._assign_registration_fields(
+            registration, registration.event, registration.user,
+            user_detail, registration_detail, request_detail
+        )
+        registration.full_clean(exclude=['state'])
+        registration.confirm()
+        registration.save()
+        self._send_confirmation_email(registration)
+        return registration
 
     def register(self, user_detail: UserDetail, registration_detail: RegistrationDetail, event: Event,
                  request_detail: RequestDetail | None = None,
@@ -230,10 +255,26 @@ class RegistrationService:
         )
         user = self.user_service.find_by_email_or_create(user_detail, update_existing=update_existing)
 
-        if self.has_active_registration(user, event):
+        if self.has_completed_registration(user, event):
             logger.info(
                 f"User {user.email} (id={user.id}) attempted to register for event {event.name} (id={event.id}) but already has an active registration"
             )
+            return RegistrationResult.DUPLICATE
+
+        pending = self.find_pending_verification(user, event)
+
+        if pending is not None:
+            if self._should_skip_verification(user, acting_user):
+                logger.info(
+                    f"User {user.email} (id={user.id}) signed in and confirmed pending registration {pending.id} for event {event.name} (id={event.id})"
+                )
+                self._adopt_pending_registration(pending, user_detail, registration_detail, request_detail)
+                return RegistrationResult.CONFIRMED
+
+            logger.info(
+                f"User {user.email} (id={user.id}) resubmitted while registration {pending.id} for event {event.name} (id={event.id}) awaits verification; resending"
+            )
+            self._send_verification_email(pending)
             return RegistrationResult.DUPLICATE
 
         registration = self._create_registration(event, user, user_detail, registration_detail, request_detail)

@@ -94,7 +94,7 @@ def registration_create(request: HttpRequest, event_id: int) -> HttpResponseRedi
 
     user = request.user if request.user.is_authenticated else None
 
-    if user and registration_service.has_active_registration(user, event):
+    if user and registration_service.has_completed_registration(user, event):
         return redirect('event_detail', event_id=event.id)
 
     allowed, reason = registration_service.is_registration_allowed(event)
