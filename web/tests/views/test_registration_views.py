@@ -1,4 +1,6 @@
+import re
 from datetime import timedelta
+from urllib.parse import urlparse
 
 from django.core.signing import TimestampSigner
 from django.test import TestCase
@@ -1745,7 +1747,7 @@ class StaleUnverifiedRegistrationTests(TestCase):
     def setUp(self):
         self.program = Program.objects.create(name="Test Program")
         self.event = Event.objects.create(
-            name="Women's Evening Ride",
+            name="Pending Verification Event",
             program=self.program,
             starts_at=timezone.now() + timezone.timedelta(days=3),
             registration_closes_at=timezone.now() + timezone.timedelta(days=2),
@@ -1897,3 +1899,81 @@ class StaleUnverifiedRegistrationTests(TestCase):
         # Assert
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('Verify', mail.outbox[0].subject)
+
+
+class VerificationEmailRoundTripTests(TestCase):
+    def setUp(self):
+        self.program = Program.objects.create(name="Test Program")
+        self.event = Event.objects.create(
+            name="Round Trip Ride",
+            program=self.program,
+            starts_at=timezone.now() + timezone.timedelta(days=5),
+            registration_closes_at=timezone.now() + timezone.timedelta(days=4),
+            requires_emergency_contact=False,
+            ride_leaders_wanted=False,
+            requires_membership=False,
+        )
+        self.form_data = {
+            'first_name': 'Round',
+            'last_name': 'Trip',
+            'email': 'roundtrip@example.com',
+            'phone': '+16135550100',
+        }
+        mail.outbox = []
+
+    def _verification_target(self) -> str:
+        body = mail.outbox[0].body
+        match = re.search(r'https?://\S+/registrations/verify\?token=\S+', body)
+        self.assertIsNotNone(match, f"no verification URL found in email body: {body}")
+        parsed = urlparse(match.group(0))
+        return f"{parsed.path}?{parsed.query}"
+
+    def test_verification_email_contains_a_followable_link(self):
+        # Arrange
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Act
+        response = self.client.get(self._verification_target())
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/registrations/verification_success.html')
+
+    def test_following_verification_link_confirms_registration(self):
+        # Arrange
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+        registration = Registration.objects.get(event=self.event)
+
+        # Act
+        self.client.get(self._verification_target())
+
+        # Assert
+        self.assertEqual(
+            Registration.objects.get(pk=registration.pk).state,
+            Registration.STATE_CONFIRMED,
+        )
+
+    def test_following_verification_link_signs_the_user_in(self):
+        # Arrange
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+
+        # Act
+        self.client.get(self._verification_target())
+
+        # Assert
+        response = self.client.get(reverse('event_detail', args=[self.event.id]))
+        self.assertTrue(response.context['user'].is_authenticated)
+        self.assertEqual(response.context['user'].email, 'roundtrip@example.com')
+
+    def test_following_verification_link_twice_is_not_an_error(self):
+        # Arrange
+        self.client.post(reverse('registration_create', args=[self.event.id]), self.form_data)
+        target = self._verification_target()
+        self.client.get(target)
+
+        # Act
+        response = self.client.get(target)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/registrations/verification_failed.html')
