@@ -247,10 +247,6 @@ CELERY_RESULT_EXPIRES = 60 * 60
 CELERY_TASK_ALWAYS_EAGER = 'test' in sys.argv or 'behave' in sys.argv
 
 CELERY_BEAT_SCHEDULE = {
-    'alert-unconfirmed-registrations': {
-        'task': 'backoffice.tasks.alert_unconfirmed_registrations',
-        'schedule': crontab(minute=5),
-    },
     'refresh-forecasts': {
         'task': 'backoffice.tasks.refresh_forecasts',
         'schedule': crontab(minute=42),
