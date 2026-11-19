@@ -2,11 +2,11 @@ import json
 from datetime import timedelta
 
 from asgiref.sync import async_to_sync
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from agents.mcp_server import build_mcp_app
-from agents.middleware import AgentTrackingAsgiMiddleware
+from agents.middleware import AgentTrackingAsgiMiddleware, HttpsRequiredAsgiMiddleware
 from agents.models import AgentRequest
 from backoffice.models import Event, Program, Registration, Ride, Route
 
@@ -43,7 +43,9 @@ async def _send_request(app, body, headers):
         'client': ('127.0.0.1', 50000),
         'headers': [(key.lower().encode(), value.encode()) for key, value in headers.items()],
     }
-    starlette_app = app.app if isinstance(app, AgentTrackingAsgiMiddleware) else app
+    starlette_app = app
+    while isinstance(starlette_app, (AgentTrackingAsgiMiddleware, HttpsRequiredAsgiMiddleware)):
+        starlette_app = starlette_app.app
     async with starlette_app.router.lifespan_context(starlette_app):
         await app(scope, receive, send)
     return response
@@ -232,3 +234,77 @@ class McpTrackingTestCase(BaseMcpServerTestCase):
         agent_request = AgentRequest.objects.get()
         self.assertEqual(agent_request.family, 'unknown')
         self.assertEqual(agent_request.kind, AgentRequest.Kind.PROBE)
+
+
+HTTPS_SETTINGS = {
+    'SECURE_SSL_REDIRECT': True,
+    'SECURE_PROXY_SSL_HEADER': ('HTTP_X_FORWARDED_PROTO', 'https'),
+    'SECURE_HSTS_SECONDS': 31536000,
+    'SECURE_HSTS_INCLUDE_SUBDOMAINS': True,
+    'SECURE_HSTS_PRELOAD': True,
+}
+
+
+@override_settings(**HTTPS_SETTINGS)
+class McpHttpsRequiredTestCase(BaseMcpServerTestCase):
+    def _guarded_app(self):
+        return HttpsRequiredAsgiMiddleware(build_mcp_app())
+
+    def test_refuses_plain_http_request(self):
+        # Act
+        response, payload = self._rpc('tools/list', app=self._guarded_app())
+
+        # Assert
+        self.assertEqual(response['status'], 403)
+        self.assertEqual(payload['error'], 'https_required')
+
+    def test_refuses_request_forwarded_over_http(self):
+        # Act
+        response, payload = self._rpc('tools/list', headers={'x-forwarded-proto': 'http'}, app=self._guarded_app())
+
+        # Assert
+        self.assertEqual(response['status'], 403)
+        self.assertEqual(payload['error'], 'https_required')
+
+    def test_refused_request_does_not_run_tool(self):
+        # Arrange
+        event = self._create_event()
+
+        # Act
+        response, payload = self._rpc('tools/call', {'name': 'fetch_event', 'arguments': {'event_id': event.id}},
+                                      app=self._guarded_app())
+
+        # Assert
+        self.assertEqual(response['status'], 403)
+        self.assertNotIn('result', payload)
+
+    def test_accepts_request_forwarded_over_https_with_hsts(self):
+        # Act
+        response, payload = self._rpc('tools/list', headers={'x-forwarded-proto': 'https'}, app=self._guarded_app())
+
+        # Assert
+        self.assertEqual(response['status'], 200)
+        self.assertIn('tools', payload['result'])
+        self.assertEqual(response['headers']['strict-transport-security'],
+                         'max-age=31536000; includeSubDomains; preload')
+
+    def test_links_are_https(self):
+        # Arrange
+        event = self._create_event()
+
+        # Act
+        _, payload = self._rpc('tools/call', {'name': 'fetch_event', 'arguments': {'event_id': event.id}},
+                               headers={'x-forwarded-proto': 'https'}, app=self._guarded_app())
+
+        # Assert
+        self.assertEqual(payload['result']['structuredContent']['url'], f'https://localhost:8000/events/{event.id}')
+
+    def test_refused_attempt_is_recorded(self):
+        # Arrange
+        app = AgentTrackingAsgiMiddleware(self._guarded_app())
+
+        # Act
+        self._rpc('tools/list', headers={'user-agent': 'Claude-User/1.0'}, app=app)
+
+        # Assert
+        self.assertEqual(AgentRequest.objects.get().status_code, 403)

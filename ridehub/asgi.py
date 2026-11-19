@@ -7,10 +7,10 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ridehub.settings')
 django_application = get_asgi_application()
 
 from agents.mcp_server import MCP_PATH, build_mcp_app
-from agents.middleware import AgentTrackingAsgiMiddleware
+from agents.middleware import AgentTrackingAsgiMiddleware, HttpsRequiredAsgiMiddleware
 
 mcp_application = build_mcp_app()
-tracked_mcp_application = AgentTrackingAsgiMiddleware(mcp_application)
+tracked_mcp_application = AgentTrackingAsgiMiddleware(HttpsRequiredAsgiMiddleware(mcp_application))
 
 
 async def application(scope, receive, send):

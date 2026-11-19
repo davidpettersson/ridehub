@@ -1,7 +1,9 @@
+import json
 import logging
 
 import sentry_sdk
 from asgiref.sync import sync_to_async
+from django.conf import settings
 
 from agents.models import AgentRequest
 from agents.services import AgentDetectionService
@@ -82,3 +84,55 @@ class AgentTrackingAsgiMiddleware:
             )
         except Exception:
             logger.exception('Failed to record agent request')
+
+
+class HttpsRequiredAsgiMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope['type'] != 'http' or not settings.SECURE_SSL_REDIRECT:
+            await self.app(scope, receive, send)
+            return
+        if not self._is_secure(scope):
+            await self._refuse(send)
+            return
+
+        async def add_hsts(message):
+            if message['type'] == 'http.response.start' and settings.SECURE_HSTS_SECONDS:
+                message = {**message, 'headers': [*message.get('headers', []), self._hsts_header()]}
+            await send(message)
+
+        await self.app(scope, receive, add_hsts)
+
+    @staticmethod
+    def _is_secure(scope) -> bool:
+        if scope.get('scheme') == 'https':
+            return True
+        header_name, secure_value = settings.SECURE_PROXY_SSL_HEADER or (None, None)
+        if header_name is None:
+            return False
+        wanted = header_name.removeprefix('HTTP_').replace('_', '-').lower().encode('latin-1')
+        for key, value in scope.get('headers', []):
+            if key == wanted:
+                return value.decode('latin-1').split(',')[0].strip() == secure_value
+        return False
+
+    @staticmethod
+    def _hsts_header() -> tuple[bytes, bytes]:
+        value = f'max-age={settings.SECURE_HSTS_SECONDS}'
+        if settings.SECURE_HSTS_INCLUDE_SUBDOMAINS:
+            value += '; includeSubDomains'
+        if settings.SECURE_HSTS_PRELOAD:
+            value += '; preload'
+        return b'strict-transport-security', value.encode('latin-1')
+
+    @staticmethod
+    async def _refuse(send):
+        body = json.dumps({'error': 'https_required', 'error_description': 'This endpoint is only available over HTTPS.'}).encode()
+        await send({
+            'type': 'http.response.start',
+            'status': 403,
+            'headers': [(b'content-type', b'application/json'), (b'content-length', str(len(body)).encode())],
+        })
+        await send({'type': 'http.response.body', 'body': body})

@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 
 class LlmsTxtTestCase(TestCase):
@@ -100,3 +100,13 @@ class PoppyManifestTestCase(TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 404)
+
+
+    @override_settings(SECURE_SSL_REDIRECT=True)
+    def test_plain_http_redirects_to_https(self):
+        # Act
+        response = self.client.get('/.well-known/poppy.json', HTTP_HOST='localhost')
+
+        # Assert
+        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response['Location'], 'https://localhost/.well-known/poppy.json')

@@ -35,7 +35,9 @@ def base_url_for(ctx: Context) -> str:
     host = headers.get('host')
     if not host:
         return f'https://{settings.WEB_HOST}'
-    scheme = headers.get('x-forwarded-proto', 'https' if settings.IS_HEROKU_APP else 'http')
+    if settings.SECURE_SSL_REDIRECT:
+        return f'https://{host}'
+    scheme = headers.get('x-forwarded-proto', 'http')
     return f'{scheme}://{host}'
 
 
