@@ -50,6 +50,16 @@ class EventService:
             qs = qs.filter(Q(name__icontains=query) | Q(program__name__icontains=query)).distinct()
         return qs
 
+    def fetch_events_between(self, start_date: date, end_date: date,
+                             query: str | None = None) -> QuerySet[Event]:
+        qs = self._with_listing_stats(self.fetch_events()).filter(
+            starts_at__date__gte=start_date,
+            starts_at__date__lte=end_date,
+        )
+        if query:
+            qs = qs.filter(Q(name__icontains=query) | Q(program__name__icontains=query)).distinct()
+        return qs
+
     def fetch_events_for_month(self, year: int, month: int, include_archived: bool = False,
                                only_visible: bool = True, program_id: int | None = None,
                                query: str | None = None) -> QuerySet[Event]:

@@ -53,6 +53,8 @@ PROBE_PATHS = frozenset([
     '/llms-full.txt',
     '/.well-known/ai-plugin.json',
     '/.well-known/mcp.json',
+    '/.well-known/poppy.json',
+    '/mcp',
 ])
 
 

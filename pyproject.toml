@@ -33,4 +33,6 @@ dependencies = [
     "sentry-sdk[django]~=2.50.0",
     "whitenoise~=6.11.0",
     "nh3>=0.3.3",
+    "mcp~=2.3.0",
+    "uvicorn-worker~=0.4.0",
 ]
