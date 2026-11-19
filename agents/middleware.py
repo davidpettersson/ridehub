@@ -1,6 +1,7 @@
 import logging
 
 import sentry_sdk
+from asgiref.sync import sync_to_async
 
 from agents.models import AgentRequest
 from agents.services import AgentDetectionService
@@ -38,6 +39,46 @@ class AgentTrackingMiddleware:
                 status_code=response.status_code,
                 probe=probe,
                 authenticated=detail.authenticated,
+            )
+        except Exception:
+            logger.exception('Failed to record agent request')
+
+
+class AgentTrackingAsgiMiddleware:
+    def __init__(self, app):
+        self.app = app
+        self.detection_service = AgentDetectionService()
+
+    async def __call__(self, scope, receive, send):
+        if scope['type'] != 'http':
+            await self.app(scope, receive, send)
+            return
+        status = {'code': 500}
+
+        async def capture_status(message):
+            if message['type'] == 'http.response.start':
+                status['code'] = message['status']
+            await send(message)
+
+        try:
+            await self.app(scope, receive, capture_status)
+        finally:
+            await sync_to_async(self._record)(scope, status['code'])
+
+    def _record(self, scope, status_code):
+        try:
+            headers = {key.decode('latin-1'): value.decode('latin-1') for key, value in scope.get('headers', [])}
+            user_agent = headers.get('user-agent', '')
+            match = self.detection_service.detect(user_agent)
+            AgentRequest.objects.create(
+                family=match.family if match else 'unknown',
+                kind=match.kind if match else AgentRequest.Kind.PROBE,
+                user_agent=user_agent[:512],
+                path=scope['path'][:512],
+                method=scope['method'],
+                status_code=status_code,
+                probe=self.detection_service.is_probe_path(scope['path']),
+                authenticated=False,
             )
         except Exception:
             logger.exception('Failed to record agent request')

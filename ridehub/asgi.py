@@ -1,16 +1,22 @@
-"""
-ASGI config for ridehub project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
-"""
-
 import os
 
 from django.core.asgi import get_asgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ridehub.settings')
 
-application = get_asgi_application()
+django_application = get_asgi_application()
+
+from agents.mcp_server import MCP_PATH, build_mcp_app
+from agents.middleware import AgentTrackingAsgiMiddleware
+
+mcp_application = build_mcp_app()
+tracked_mcp_application = AgentTrackingAsgiMiddleware(mcp_application)
+
+
+async def application(scope, receive, send):
+    if scope['type'] == 'lifespan':
+        await mcp_application(scope, receive, send)
+    elif scope['type'] == 'http' and scope['path'] == MCP_PATH:
+        await tracked_mcp_application(scope, receive, send)
+    else:
+        await django_application(scope, receive, send)
